@@ -7,7 +7,7 @@ This page is the one place where this repository declares what the hygiene check
 - entries (knip): the check scripts and the ESLint configs are the production entries; templates and docs are not code.
 - core boundary: `scripts/hygiene/*.mjs` may import only `./lib.mjs` and Node built-ins (no runtime dependencies).
 - exceptions (path-bound, expire on `review_by`, reviewed by whoever reviews the change to that path):
-  `scripts/hygiene/large-files.mjs` and `tests/guards.test.mjs` contain the literal `gitleaks:allow` in string form because
+  `scripts/hygiene/large-files.mjs` and `tests/*.test.mjs` contain the literal `gitleaks:allow` in string form because
   they implement and test the suppression guard. They are not suppressions of a finding. Documentation mentions need no exception.
 - large files: only `package-lock.json` (lockfile, built-in exemption). Nothing else is allowed over 100KB.
 - mode: blocking from the first PR (this repository has no report-only period).
@@ -23,7 +23,7 @@ This page is the one place where this repository declares what the hygiene check
   "large_file_allow": [],
   "exceptions": [
     { "path": "scripts/hygiene/large-files.mjs", "kind": "gitleaks-allow", "reason": "implements the suppression guard; the marker is a string literal, not a suppression", "issue": "https://github.com/watchout/shirube/pull/1", "review_by": "2026-12-31" },
-    { "path": "tests/guards.test.mjs", "kind": "gitleaks-allow", "reason": "tests the suppression guard with the marker as fixture content", "issue": "https://github.com/watchout/shirube/pull/1", "review_by": "2026-12-31" }
+    { "path": "tests/*.test.mjs", "kind": "gitleaks-allow", "reason": "tests of the suppression guard use the marker as fixture content", "issue": "https://github.com/watchout/shirube/pull/1", "review_by": "2026-12-31" }
   ],
   "limits": {
     "new_file_lines": 300,
