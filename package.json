@@ -13,6 +13,7 @@
     "hygiene:ratchet": "node scripts/hygiene/lines-baseline.mjs --profile .shirube/hygiene-profile.md --ratchet",
     "hygiene:jscpd": "node scripts/hygiene/jscpd-guard.mjs --profile .shirube/hygiene-profile.md --targets \"scripts configs\"",
     "hygiene:budget": "node scripts/hygiene/own-code-budget.mjs --profile .shirube/hygiene-profile.md",
+    "hygiene:coverage": "node scripts/hygiene/targets-coverage.mjs --profile .shirube/hygiene-profile.md --targets \"scripts configs\"",
     "lint:structural": "eslint --config configs/structural-only.config.mjs scripts configs",
     "lint:guard": "eslint --no-inline-config --max-warnings 0 --config configs/guard-only.config.mjs scripts configs"
   },

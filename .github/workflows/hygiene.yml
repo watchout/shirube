@@ -1,10 +1,14 @@
 # W1 — reusable hygiene workflow (anti-bloat v5 §4.1; handover v5 §1 W1).
 # Called from a consumer repository as:
 #   uses: watchout/shirube/.github/workflows/hygiene.yml@<resolved commit sha>
-# Preconditions (owner, repo settings): this repository's Actions access must allow org repositories,
-# and consumers pass a read token (secrets.SHIRUBE_READ_TOKEN, Contents: read) while this repository is private.
+# The check scripts are taken from the CALLEE's own commit (job.workflow_repository / job.workflow_sha — the job
+# context of a reusable workflow identifies the reusable workflow file itself; the github context belongs to the caller).
+# Preconditions (owner, repo settings): this repository's Actions access must allow org repositories, and while this
+# repository is private the second checkout needs Contents: read on it (secrets.SHIRUBE_READ_TOKEN); the workflow file
+# delivery itself needs no token.
 # Every step fails closed; nothing hides a failure (engineering-standards S8).
-# PR size runs last so that an oversized introduction PR still shows the result of every other check.
+# PR size runs after the code checks so that an oversized introduction PR still shows every other result; the optional
+# Python step runs last.
 name: hygiene
 
 on:
@@ -32,7 +36,10 @@ on:
 env:
   GITLEAKS_VERSION: 8.30.1
   GITLEAKS_SHA256_LINUX_X64: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+  RUFF_VERSION: 0.16.9
+  VULTURE_VERSION: "2.16"
   SHIRUBE_TOOLS: .shirube-tools
+  SHIRUBE_PROFILE: ${{ inputs.profile }}
 
 jobs:
   hygiene:
@@ -43,13 +50,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Checkout shirube tools at the calling workflow's commit
+      - name: Checkout shirube tools at the reusable workflow's own commit (callee identity)
         uses: actions/checkout@v4
         with:
-          repository: watchout/shirube
-          ref: ${{ github.workflow_sha }}
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
           path: ${{ env.SHIRUBE_TOOLS }}
           token: ${{ secrets.SHIRUBE_READ_TOKEN || github.token }}
+
+      - name: Verify tools identity (repository and commit match the callee)
+        run: |
+          set -euo pipefail
+          test "${{ job.workflow_repository }}" = "watchout/shirube"
+          test "$(git -C "$SHIRUBE_TOOLS" rev-parse HEAD)" = "${{ job.workflow_sha }}"
+          echo "shirube tools: ${{ job.workflow_repository }}@${{ job.workflow_sha }} (caller: ${{ github.repository }}@${{ github.sha }})"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -60,7 +74,7 @@ jobs:
       - name: Install consumer dependencies from lockfile
         run: npm ci
 
-      - name: Resolve base / head
+      - name: Resolve base / head / today
         id: refs
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
@@ -70,17 +84,19 @@ jobs:
             echo "base=$(git rev-parse HEAD~1)" >> "$GITHUB_OUTPUT"
             echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
           fi
-          echo "tools=$(git -C "$SHIRUBE_TOOLS" rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          echo "shirube tools commit: $(git -C "$SHIRUBE_TOOLS" rev-parse HEAD)"
+          echo "today=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+
+      - name: Targets are covered by the profile language (B03 guard)
+        run: node "$SHIRUBE_TOOLS/scripts/hygiene/targets-coverage.mjs" --profile "$SHIRUBE_PROFILE" --targets "${{ inputs.targets }}" --python "${{ inputs.python }}" --today "${{ steps.refs.outputs.today }}"
 
       - name: File length vs baseline (AB-01, AB-06)
-        run: node "$SHIRUBE_TOOLS/scripts/hygiene/lines-baseline.mjs" --profile "${{ inputs.profile }}"
+        run: node "$SHIRUBE_TOOLS/scripts/hygiene/lines-baseline.mjs" --profile "$SHIRUBE_PROFILE" --today "${{ steps.refs.outputs.today }}"
 
       - name: Large files and secret-suppression guard (AB-10, AB-18 b/c)
-        run: node "$SHIRUBE_TOOLS/scripts/hygiene/large-files.mjs" --profile "${{ inputs.profile }}" --base "${{ steps.refs.outputs.base }}" --head "${{ steps.refs.outputs.head }}"
+        run: node "$SHIRUBE_TOOLS/scripts/hygiene/large-files.mjs" --profile "$SHIRUBE_PROFILE" --base "${{ steps.refs.outputs.base }}" --head "${{ steps.refs.outputs.head }}" --today "${{ steps.refs.outputs.today }}"
 
       - name: Cross-file duplication (AB-02, AB-08, AB-13)
-        run: node "$SHIRUBE_TOOLS/scripts/hygiene/jscpd-guard.mjs" --profile "${{ inputs.profile }}" --targets "${{ inputs.targets }}"
+        run: node "$SHIRUBE_TOOLS/scripts/hygiene/jscpd-guard.mjs" --profile "$SHIRUBE_PROFILE" --targets "${{ inputs.targets }}" --today "${{ steps.refs.outputs.today }}"
 
       - name: Unused code, production entries (AB-03, AB-08, AB-11)
         run: test -f knip.jsonc && npx --no-install knip --production --config knip.jsonc
@@ -105,13 +121,14 @@ jobs:
           ./gitleaks git --exit-code 1 --redact --no-banner --log-opts="${{ steps.refs.outputs.base }}..${{ steps.refs.outputs.head }}"
 
       - name: PR size (AB-05)
-        run: node "$SHIRUBE_TOOLS/scripts/hygiene/pr-size.mjs" --profile "${{ inputs.profile }}" --base "${{ steps.refs.outputs.base }}" --head "${{ steps.refs.outputs.head }}"
+        run: node "$SHIRUBE_TOOLS/scripts/hygiene/pr-size.mjs" --profile "$SHIRUBE_PROFILE" --base "${{ steps.refs.outputs.base }}" --head "${{ steps.refs.outputs.head }}" --today "${{ steps.refs.outputs.today }}"
 
-      - name: Python — ruff C901 / PLR0915 and vulture (AB-17)
+      - name: Python — ruff C901 / PLR0915 and vulture, pinned versions (AB-17)
         if: ${{ inputs.python }}
         run: |
           set -euo pipefail
           test -f pyproject.toml
-          python3 -m pip install --quiet ruff vulture
+          python3 -m pip install --quiet "ruff==${RUFF_VERSION}" "vulture==${VULTURE_VERSION}"
+          ruff --version && vulture --version
           ruff check --select C901,PLR0915 .
           vulture --min-confidence 80 $(python3 -c "import tomllib;print(' '.join(tomllib.load(open('pyproject.toml','rb')).get('tool',{}).get('shirube',{}).get('vulture_paths',['src'])))")

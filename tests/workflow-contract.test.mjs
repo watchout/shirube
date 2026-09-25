@@ -1,5 +1,5 @@
 // Contract of the reusable workflow (handover v5 §12 T2: inputs/outputs are the contract, versioned by commit).
-// Also the S8 guard: no failure hiding in either workflow.
+// Also the S8 guard (no failure hiding) and the callee-identity rule (audit B01).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -7,24 +7,36 @@ import { resolve } from "node:path";
 
 const wf = readFileSync(resolve(import.meta.dirname, "../.github/workflows/hygiene.yml"), "utf8");
 const ci = readFileSync(resolve(import.meta.dirname, "../.github/workflows/ci.yml"), "utf8");
+const body = wf.split("\n").filter((l) => !l.trim().startsWith("#")).join("\n"); // comments may mention forbidden words
 
 test("hygiene.yml declares the four inputs and the optional read token", () => {
   for (const key of ["profile:", "targets:", "node-version:", "python:"]) assert.match(wf, new RegExp(`\\n\\s+${key}`));
   assert.match(wf, /SHIRUBE_READ_TOKEN:\n\s+required: false/);
-  assert.match(wf, /ref: \$\{\{ github\.workflow_sha \}\}/); // tools come from the calling workflow's own commit
+});
+
+test("B01: tools are checked out from the callee's own repository and commit, never from the caller's context", () => {
+  assert.match(body, /repository: \$\{\{ job\.workflow_repository \}\}/);
+  assert.match(body, /ref: \$\{\{ job\.workflow_sha \}\}/);
+  assert.doesNotMatch(body, /github\.workflow_sha|github\.workflow_ref/);
+  assert.match(body, /test "\$\{\{ job\.workflow_repository \}\}" = "watchout\/shirube"/);
+  assert.match(body, /rev-parse HEAD\)" = "\$\{\{ job\.workflow_sha \}\}"/);
 });
 
 test("workflows hide no failures (S8): no continue-on-error, no || true, no if-present on required steps", () => {
-  for (const text of [wf, ci]) {
+  for (const text of [body, ci]) {
     assert.doesNotMatch(text, /continue-on-error/);
     assert.doesNotMatch(text, /\|\|\s*true/);
     assert.doesNotMatch(text, /--if-present/);
   }
 });
 
-test("gitleaks is pinned by version and sha256, and the guard run disables inline config", () => {
+test("gitleaks, ruff and vulture are pinned; the guard run disables inline config; every script gets the profile and the clock", () => {
   assert.match(wf, /GITLEAKS_VERSION: 8\.30\.1/);
   assert.match(wf, /GITLEAKS_SHA256_LINUX_X64: [0-9a-f]{64}/);
   assert.match(wf, /sha256sum -c -/);
+  assert.match(wf, /"ruff==\$\{RUFF_VERSION\}" "vulture==\$\{VULTURE_VERSION\}"/);
   assert.match(wf, /eslint --no-inline-config --max-warnings 0 --config "\$SHIRUBE_TOOLS\/configs\/guard-only\.config\.mjs"/);
+  const scriptSteps = body.match(/node "\$SHIRUBE_TOOLS\/scripts\/hygiene\/[a-z-]+\.mjs"[^\n]*/g);
+  assert.equal(scriptSteps.length, 5);
+  for (const s of scriptSteps) { assert.match(s, /--profile "\$SHIRUBE_PROFILE"/); assert.match(s, /--today/); }
 });

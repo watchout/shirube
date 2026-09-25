@@ -17,7 +17,7 @@
 
 - Step 1 問題定義: [検証済] anti-bloat v5 §1–§3 (iyasaka-arc, PASS 5827971404)
 - Step 2 Investigation: [検証済] ADR-001 Step 2
-- Step 5 Prototype smoke: [検証済] `npm test` 13/13, lints and knip on this repository; consumer AB-14 NOT_RUN
+- Step 5 Prototype smoke: [検証済] `npm test` 21/21, lints, knip and depcruise on this repository; consumer AB-14 NOT_RUN
 - Evidence labels: 採用 / 候補 は baseline ADR の出典確認列に従う
 
 ## Requirements (EARS — SRC-M-02; patterns chosen per requirement)
@@ -30,9 +30,12 @@
 | R4 | When a baseline file shrank and the baseline was not lowered, the check shall fail unless run with `--ratchet`, which only lowers values. | event |
 | R5 | When the PR adds more than `pr_added_lines` lines or changes more than `pr_changed_files` files (lockfiles, generated and deletion-only files excluded), the check shall fail. | event |
 | R6 | While the scan targets contain no tracked files, the duplication check shall fail; while all files are shorter than 10 lines, it shall pass and print the inventory. | state |
+| R6b | When a source file under the targets is not covered by the profile language (or the python input), the coverage check shall fail and name it. | event |
+| R6c | When a profile limit is not an integer in range, or the include set matches no tracked file, the check shall fail (`UNOBSERVABLE` / `FAIL`), never pass. | unwanted |
 | R7 | The guard-only ESLint run shall run with `--no-inline-config --max-warnings 0` and shall treat an expired `TODO [date]` as an error on pull requests. | ubiquitous |
 | R8 | The gitleaks binary shall be verified against a pinned sha256 before use; a mismatch shall fail the job. | ubiquitous |
-| R9 | If a change adds `gitleaks:allow` or edits a gitleaks config / ignore / baseline file without a matching `profile.exceptions` entry, the guard shall fail. | unwanted |
+| R9 | If a change adds `gitleaks:allow` to a code or config file, or edits a gitleaks config / ignore / baseline file, without a path-bound, unexpired `profile.exceptions` entry of the right kind, the guard shall fail; mentions in documentation shall not count. | unwanted |
+| R11 | The scripts shall be fetched from the callee's own repository and commit (`job.workflow_repository` / `job.workflow_sha`) and verified before use. | ubiquitous |
 | R10 | This repository's own code (scripts, workflows, configs) shall stay within `own_code_lines` (1,500). | ubiquitous |
 
 ## Acceptance examples (Given / When / Then — SRC-M-03; executable ones are in `tests/`)
@@ -44,7 +47,8 @@
 | AB-06 | 4,194-line baseline file: same / +3 / −3 without ratchet / ratchet | lines-baseline | PASS / FAIL / FAIL / PASS and 4,191 written; 4,192 then FAIL | yes |
 | AB-07 | expired `TODO [2026-01-01]` on a PR | guard-only run | FAIL (checkDatesOnPullRequests) | manual until consumer CI (recorded NOT_RUN) |
 | AB-08 | no files under targets / all files < 10 lines / no knip config | jscpd-guard, knip | FAIL / PASS with inventory / exit 2 | yes (jscpd part) |
-| AB-10 | 150KB `.log` added | large-files | FAIL; 150KB `.md` passes the size guard | yes |
+| AB-10 | 150KB `.log` / `.md` / `.txt` added | large-files | FAIL for every one; lockfile and allow-listed paths pass | yes |
+| B02–B07 | review counterexamples (path-bound exceptions, invalid limits, empty include, 0-line ratchet, unicode generated path, rename into generated, binary deletions, coverage, ESLint profile) | scripts / configs | as recorded in `tests/audit-counterexamples.test.mjs` | yes |
 | AB-12 | `/* eslint unicorn/expiring-todo-comments: "off" */` | guard-only run | still FAIL (inline config ignored) | manual until consumer CI |
 | AB-14 | defective PR / correct PR in a consumer | real required check | rejected / allowed | NOT_RUN (first consumer switch) |
 | AB-18 b/c | `gitleaks:allow` added without / with a profile exception | large-files | FAIL / PASS | yes |

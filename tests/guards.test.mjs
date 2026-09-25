@@ -12,14 +12,14 @@ test("AB-08: no tracked files under targets fails; all files shorter than 10 lin
   assert.equal(r.status, 0); assert.equal(r.summary.eligible, 0); assert.equal(r.summary.files, 1);
 });
 
-test("AB-10: a 150KB non-source file fails; a 150KB .md passes the size guard", () => {
+test("AB-10: any 150KB file fails whatever its extension; only lockfiles and allow-listed paths pass (B05)", () => {
   const dir = repo();
   const base = commit(dir, "base");
-  write(dir, "src/dump.log", "x".repeat(150 * 1024)); write(dir, "docs/big.md", "y".repeat(150 * 1024));
+  write(dir, "src/dump.log", "x".repeat(150 * 1024)); write(dir, "docs/big.md", "y".repeat(150 * 1024)); write(dir, "src/small.mjs", lines(5));
   const head = commit(dir, "dump");
   const r = run("large-files.mjs", dir, ["--base", base, "--head", head]);
   assert.equal(r.status, 1);
-  assert.deepEqual(r.summary.failures.map((f) => f.file), ["src/dump.log"]);
+  assert.deepEqual(r.summary.failures.map((f) => f.file).sort(), ["docs/big.md", "src/dump.log"]);
 });
 
 test("AB-18 b/c: gitleaks:allow or .gitleaks.toml without a profile exception fails; registered exception passes", () => {
@@ -30,11 +30,11 @@ test("AB-18 b/c: gitleaks:allow or .gitleaks.toml without a profile exception fa
   let r = run("large-files.mjs", dir, ["--base", base, "--head", head]);
   assert.equal(r.status, 1); assert.equal(r.summary.failures.length, 2);
   write(dir, ".shirube/hygiene-profile.md", PROFILE({}, { exceptions: [
-    { file: ".gitleaks.toml", reason: "test fixture value", issue: "https://github.com/watchout/shirube/issues/1", review_by: "2027-01-01" },
-    { file: "gitleaks:allow", reason: "same", issue: "https://github.com/watchout/shirube/issues/1", review_by: "2027-01-01" },
+    { path: ".gitleaks.toml", kind: "gitleaks-config", reason: "test fixture allowlist for this repository", issue: "https://github.com/watchout/shirube/issues/1", review_by: "2027-01-01" },
+    { path: "src/k.mjs", kind: "gitleaks-allow", reason: "documented marker in the fixture module", issue: "https://github.com/watchout/shirube/issues/1", review_by: "2027-01-01" },
   ] }));
   const head2 = commit(dir, "register");
-  r = run("large-files.mjs", dir, ["--base", base, "--head", head2]);
+  r = run("large-files.mjs", dir, ["--base", base, "--head", head2, "--today", "2026-09-26"]);
   assert.equal(r.status, 0, JSON.stringify(r.summary));
 });
 

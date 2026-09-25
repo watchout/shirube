@@ -5,6 +5,9 @@ All notable changes to this repository are recorded here (one entry per version;
 
 ## 0.1.0 — unreleased (first PR)
 
+### Changed after the first independent review (B01–B07)
+- tools are checked out at the callee's identity (`job.workflow_repository` / `job.workflow_sha`) and verified; `targets-coverage` added; ESLint configs read files / ignores / parser from the profile (global ignores, TS parser required when adopted); limits validated; exceptions path-bound with kind / reason / issue / expiry, documentation mentions excluded; large-file guard covers every extension (lockfiles and allow-list exempt); baseline accepts 0 after a ratchet; PR size reads NUL-separated numstat / name-status (renames, unicode, binary deletions); ruff / vulture pinned
+
 ### Added
 - W1 hygiene: reusable workflow `hygiene.yml` (file length vs baseline, PR size, large files + secret-suppression
   guard, jscpd inventory guard, knip, dependency-cruiser, ESLint structural run, ESLint guard-only run, gitleaks 8.30.1

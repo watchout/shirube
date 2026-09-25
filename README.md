@@ -13,9 +13,9 @@ This repository is being built by selective migration from `ai-dev-framework` (h
 
 | path | what |
 |---|---|
-| `.github/workflows/hygiene.yml` | reusable workflow: file length vs baseline, PR size, large files + secret-suppression guard, jscpd, knip, dependency-cruiser, ESLint structural run, ESLint guard-only run, gitleaks (pinned by sha256), optional ruff / vulture |
-| `scripts/hygiene/*.mjs` | the checks that are not an off-the-shelf tool (baseline, PR size, large files, jscpd inventory guard, own-code budget). No runtime dependencies |
-| `configs/` | the two ESLint configs (structural-only, guard-only) and templates for `knip.jsonc` and `.dependency-cruiser.cjs` |
+| `.github/workflows/hygiene.yml` | reusable workflow: targets coverage, file length vs baseline, large files + secret-suppression guard, jscpd, knip, dependency-cruiser, ESLint structural run, ESLint guard-only run, gitleaks (pinned by sha256), PR size, optional ruff / vulture (pinned) |
+| `scripts/hygiene/*.mjs` | the checks that are not an off-the-shelf tool (targets coverage, baseline, PR size, large files + suppression guard, jscpd inventory guard, own-code budget). No runtime dependencies |
+| `configs/` | the two ESLint configs (structural-only, guard-only; files / ignores / parser come from the profile via `profile-eslint.mjs`) and templates for `knip.jsonc` and `.dependency-cruiser.cjs` |
 | `templates/` | PR, Issue, ADR, hygiene profile, runbook, owner decision, one-page spec, AGENTS overlay |
 | `docs/` | boundary (one diagram), threats and failures, ADR-001, the one-page spec of W1 |
 | `.shirube/hygiene-profile.md` | this repository's own profile: the checks run on Shirube itself |
@@ -48,8 +48,10 @@ This repository is being built by selective migration from `ai-dev-framework` (h
 ## Preconditions that only the owner can set (protected surfaces)
 
 - Actions access of this repository must allow calls from organization repositories (repository setting).
-- While this repository is private, consumers need a read token (`SHIRUBE_READ_TOKEN`, Contents: read) to check out
-  the scripts; making the repository public removes that need. Both are owner decisions, not PR content.
+- While this repository is private, the workflow's second checkout (the scripts, at the callee's own commit) needs
+  Contents: read on this repository: consumers pass `SHIRUBE_READ_TOKEN` (a fine-grained token or an App installation
+  token). The reusable-workflow file itself is delivered by GitHub with the caller's scoped token and needs no PAT.
+  Making the repository public removes the need for the token. Both are owner decisions, not PR content.
 - Registering the workflow as a required check in a consumer repository is a branch-protection change (owner).
 
 ## Every check fails closed

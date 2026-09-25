@@ -12,9 +12,10 @@
   `--fail-on-empty`, knip exit 0/1/2 and `--production`, depcruise exit = error count, ESLint `--no-inline-config`,
   eslint-comments rule ids and `/configs` export, unicorn `checkDatesOnPullRequests` default false, gitleaks
   `--exit-code` default 1); gitleaks 8.30.1 checksums fetched from the release
-- Step 5 Prototype smoke: [検証済] 13 unit tests against real git repositories (AB-01, 05, 06, 08, 10, 18 b/c, OWN-01,
-  workflow contract, S8) pass locally; both ESLint runs and knip pass on this repository. Real required-check
-  behaviour in a consumer (AB-14) is NOT_RUN until the first consumer switch
+- Step 5 Prototype smoke: [検証済] 21 unit tests against real git repositories (AB-01, 05, 06, 08, 10, 18 b/c, OWN-01,
+  workflow contract, S8, and the review counterexamples B02–B07 / B03 coverage and ESLint-profile) pass locally; both
+  ESLint runs, knip and depcruise pass on this repository. Real required-check behaviour in a consumer (AB-14) is NOT_RUN
+  until the first consumer switch
 - Evidence labels: 外部手法の採用は baseline ADR の出典確認列に従う（採用 = カードあり、候補 = 未確認）
 
 ## Context
@@ -30,11 +31,13 @@ with an own-code budget of 1,500 lines and to start with the hygiene checks (W1)
    only what they do not do: numeric file-length baseline with a one-way ratchet, PR size with exclusions, the
    inventory guard around jscpd, the large-file / suppression guard, the own-code budget.
 2. **One reusable workflow, called by commit SHA.** Consumers call `hygiene.yml@<sha>`; the workflow checks out this
-   repository at `github.workflow_sha`, so the scripts always match the pinned workflow (T6 in threats).
+   repository at the callee's own identity (`job.workflow_repository` / `job.workflow_sha` — the `github` context belongs
+   to the caller, so `github.workflow_sha` would fetch the caller's commit; review B01) and verifies both before use (T6).
 3. **Two ESLint runs.** A structural run (limits; described disables allowed) and a guard-only run with
    `--no-inline-config --max-warnings 0` (exception rules; inline overrides ineffective). The same rule is never in both.
-4. **The profile is one Markdown page with one JSON block.** People read the page; scripts read the block. No second
-   declaration file (S3).
+4. **The profile is one Markdown page with one JSON block.** People read the page; scripts and both ESLint runs read the
+   block (files, ignores, parser, limits, exceptions). Limits are validated (integers), exceptions are path-bound with a
+   kind, reason, issue and expiry, and the clock is an input (`--today`). No second declaration file (S3).
 5. **Fail closed everywhere.** Exit 2 / `UNOBSERVABLE` for anything that cannot be observed; no `continue-on-error`.
 6. **Self-application.** This repository runs its own tests, its own hygiene workflow and its own budget (SR / K7).
 
@@ -54,4 +57,6 @@ with an own-code budget of 1,500 lines and to start with the hygiene checks (W1)
 | `no-restricted-disable` list | `comments/*` (plugin alias) | `@eslint-community/eslint-comments/*` | disable comments name the full plugin id; the alias would never match |
 | gitleaks version | "≥ 8" | 8.30.1 pinned with the linux_x64 sha256 | reproducibility; upgrade is a normal PR with a new checksum |
 | knip / depcruise steps | always run | `test -f <config> && …` | a missing config is exit 1 (fails), never skipped; keeps AB-08 |
-| secret suppression guard | AB-18 (v6 proposal) | implemented in `large-files.mjs` | small, same diff input; removed if AB-18 is rejected |
+| secret suppression guard | AB-18 (v6 proposal) | implemented in `large-files.mjs`; exceptions are path-bound and expire; documentation mentions are not suppressions | small, same diff input; removed if AB-18 is rejected |
+| large files | "100KB 超の非ソース" | every file over the limit fails unless it is a lockfile or allow-listed in the profile with a reason | an extension list exempted `.txt` / `.json` logs (review B05) |
+| coverage | — | `targets-coverage` fails on `.ts` / `.py` files the profile / python input do not cover | a missing parser silently shrank the lint to JS (review B03) |
