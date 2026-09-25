@@ -1,0 +1,116 @@
+# W1 — reusable hygiene workflow (anti-bloat v5 §4.1; handover v5 §1 W1).
+# Called from a consumer repository as:
+#   uses: watchout/shirube/.github/workflows/hygiene.yml@<resolved commit sha>
+# Preconditions (owner, repo settings): this repository's Actions access must allow org repositories,
+# and consumers pass a read token (secrets.SHIRUBE_READ_TOKEN, Contents: read) while this repository is private.
+# Every step fails closed; nothing hides a failure (engineering-standards S8).
+name: hygiene
+
+on:
+  workflow_call:
+    inputs:
+      profile:
+        description: path of the hygiene profile in the consumer repository
+        type: string
+        default: .shirube/hygiene-profile.md
+      targets:
+        description: space-separated directories scanned by jscpd / eslint / depcruise
+        type: string
+        default: src
+      node-version:
+        type: string
+        default: "22"
+      python:
+        description: also run ruff (C901, PLR0915) and vulture
+        type: boolean
+        default: false
+    secrets:
+      SHIRUBE_READ_TOKEN:
+        required: false
+
+env:
+  GITLEAKS_VERSION: 8.30.1
+  GITLEAKS_SHA256_LINUX_X64: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+  SHIRUBE_TOOLS: .shirube-tools
+
+jobs:
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout consumer (full history for diffs)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout shirube tools at the calling workflow's commit
+        uses: actions/checkout@v4
+        with:
+          repository: watchout/shirube
+          ref: ${{ github.workflow_sha }}
+          path: ${{ env.SHIRUBE_TOOLS }}
+          token: ${{ secrets.SHIRUBE_READ_TOKEN || github.token }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: npm
+
+      - name: Install consumer dependencies from lockfile
+        run: npm ci
+
+      - name: Resolve base / head
+        id: refs
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "base=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+            echo "head=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "base=$(git rev-parse HEAD~1)" >> "$GITHUB_OUTPUT"
+            echo "head=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+          echo "tools=$(git -C "$SHIRUBE_TOOLS" rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "shirube tools commit: $(git -C "$SHIRUBE_TOOLS" rev-parse HEAD)"
+
+      - name: File length vs baseline (AB-01, AB-06)
+        run: node "$SHIRUBE_TOOLS/scripts/hygiene/lines-baseline.mjs" --profile "${{ inputs.profile }}"
+
+      - name: PR size (AB-05)
+        run: node "$SHIRUBE_TOOLS/scripts/hygiene/pr-size.mjs" --profile "${{ inputs.profile }}" --base "${{ steps.refs.outputs.base }}" --head "${{ steps.refs.outputs.head }}"
+
+      - name: Large files and secret-suppression guard (AB-10, AB-18 b/c)
+        run: node "$SHIRUBE_TOOLS/scripts/hygiene/large-files.mjs" --profile "${{ inputs.profile }}" --base "${{ steps.refs.outputs.base }}" --head "${{ steps.refs.outputs.head }}"
+
+      - name: Cross-file duplication (AB-02, AB-08, AB-13)
+        run: node "$SHIRUBE_TOOLS/scripts/hygiene/jscpd-guard.mjs" --profile "${{ inputs.profile }}" --targets "${{ inputs.targets }}"
+
+      - name: Unused code, production entries (AB-03, AB-08, AB-11)
+        run: test -f knip.jsonc && npx --no-install knip --production --config knip.jsonc
+
+      - name: Dependency direction and cycles (AB-04, AB-08)
+        run: test -f .dependency-cruiser.cjs && npx --no-install depcruise --config .dependency-cruiser.cjs ${{ inputs.targets }}
+
+      - name: Structural limits — function length, complexity (AB-12 structural side, AB-13)
+        run: npx --no-install eslint --config "$SHIRUBE_TOOLS/configs/structural-only.config.mjs" ${{ inputs.targets }}
+
+      - name: Exception guard — descriptions, no unlimited disable, expiry (AB-07, AB-12)
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+        run: npx --no-install eslint --no-inline-config --max-warnings 0 --config "$SHIRUBE_TOOLS/configs/guard-only.config.mjs" ${{ inputs.targets }}
+
+      - name: Secrets — gitleaks pinned by checksum (AB-18 a/d/e)
+        run: |
+          set -euo pipefail
+          curl -sSL -o gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256_LINUX_X64}  gitleaks.tgz" | sha256sum -c -
+          tar -xzf gitleaks.tgz gitleaks
+          ./gitleaks git --exit-code 1 --redact --no-banner --log-opts="${{ steps.refs.outputs.base }}..${{ steps.refs.outputs.head }}"
+
+      - name: Python — ruff C901 / PLR0915 and vulture (AB-17)
+        if: ${{ inputs.python }}
+        run: |
+          set -euo pipefail
+          test -f pyproject.toml
+          python3 -m pip install --quiet ruff vulture
+          ruff check --select C901,PLR0915 .
+          vulture --min-confidence 80 $(python3 -c "import tomllib;print(' '.join(tomllib.load(open('pyproject.toml','rb')).get('tool',{}).get('shirube',{}).get('vulture_paths',['src'])))")
