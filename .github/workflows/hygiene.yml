@@ -4,6 +4,7 @@
 # Preconditions (owner, repo settings): this repository's Actions access must allow org repositories,
 # and consumers pass a read token (secrets.SHIRUBE_READ_TOKEN, Contents: read) while this repository is private.
 # Every step fails closed; nothing hides a failure (engineering-standards S8).
+# PR size runs last so that an oversized introduction PR still shows the result of every other check.
 name: hygiene
 
 on:
@@ -75,9 +76,6 @@ jobs:
       - name: File length vs baseline (AB-01, AB-06)
         run: node "$SHIRUBE_TOOLS/scripts/hygiene/lines-baseline.mjs" --profile "${{ inputs.profile }}"
 
-      - name: PR size (AB-05)
-        run: node "$SHIRUBE_TOOLS/scripts/hygiene/pr-size.mjs" --profile "${{ inputs.profile }}" --base "${{ steps.refs.outputs.base }}" --head "${{ steps.refs.outputs.head }}"
-
       - name: Large files and secret-suppression guard (AB-10, AB-18 b/c)
         run: node "$SHIRUBE_TOOLS/scripts/hygiene/large-files.mjs" --profile "${{ inputs.profile }}" --base "${{ steps.refs.outputs.base }}" --head "${{ steps.refs.outputs.head }}"
 
@@ -105,6 +103,9 @@ jobs:
           echo "${GITLEAKS_SHA256_LINUX_X64}  gitleaks.tgz" | sha256sum -c -
           tar -xzf gitleaks.tgz gitleaks
           ./gitleaks git --exit-code 1 --redact --no-banner --log-opts="${{ steps.refs.outputs.base }}..${{ steps.refs.outputs.head }}"
+
+      - name: PR size (AB-05)
+        run: node "$SHIRUBE_TOOLS/scripts/hygiene/pr-size.mjs" --profile "${{ inputs.profile }}" --base "${{ steps.refs.outputs.base }}" --head "${{ steps.refs.outputs.head }}"
 
       - name: Python — ruff C901 / PLR0915 and vulture (AB-17)
         if: ${{ inputs.python }}
