@@ -13,4 +13,4 @@ All notable changes to this repository are recorded here (one entry per version;
 - configs: `structural-only.config.mjs`, `guard-only.config.mjs`, `knip.template.jsonc`, `dependency-cruiser.template.cjs`
 - templates: PR, Issue, ADR, hygiene profile, runbook, owner decision, one-page spec, AGENTS overlay
 - docs: README, boundary, threats, ADR-001, spec-w1
-- self-application: `ci.yml` runs tests, the own hygiene workflow and the 1,500-line own-code budget
+- self-application: `ci.yml` runs tests, the own hygiene workflow (with `.dependency-cruiser.cjs`, `knip.jsonc` and the profile of this repository) and the 1,500-line own-code budget
