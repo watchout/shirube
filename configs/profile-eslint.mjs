@@ -25,9 +25,11 @@ export function profileConfigs(rules) {
   // (the configs live in .shirube-tools/configs when called from a consumer).
   // A config object with only `ignores` is a GLOBAL ignore; `ignores` next to `files` would only scope that object.
   const globalIgnores = { basePath: process.cwd(), ignores };
-  const base = { basePath: process.cwd(), files: JS, rules };
+  // JSX is in the covered set (LANGUAGE_EXTENSIONS), so the default parser must accept it (review R03).
+  const jsx = { ecmaFeatures: { jsx: true } };
+  const base = { basePath: process.cwd(), files: JS, languageOptions: { parserOptions: jsx }, rules };
   if (p.language !== "ts") return [globalIgnores, base];
   let parser;
   try { parser = consumerRequire("@typescript-eslint/parser"); } catch { throw new Error("profile.language is ts but @typescript-eslint/parser is not installed in the consumer repository"); }
-  return [globalIgnores, base, { ...base, files: TS, languageOptions: { parser } }];
+  return [globalIgnores, base, { ...base, files: TS, languageOptions: { parser, parserOptions: jsx } }];
 }

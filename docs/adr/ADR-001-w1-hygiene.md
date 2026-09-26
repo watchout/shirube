@@ -12,7 +12,7 @@
   `--fail-on-empty`, knip exit 0/1/2 and `--production`, depcruise exit = error count, ESLint `--no-inline-config`,
   eslint-comments rule ids and `/configs` export, unicorn `checkDatesOnPullRequests` default false, gitleaks
   `--exit-code` default 1); gitleaks 8.30.1 checksums fetched from the release
-- Step 5 Prototype smoke: [検証済] 21 unit tests against real git repositories (AB-01, 05, 06, 08, 10, 18 b/c, OWN-01,
+- Step 5 Prototype smoke: [検証済] 25 unit tests against real git repositories (AB-01, 05, 06, 08, 10, 18 b/c, OWN-01,
   workflow contract, S8, and the review counterexamples B02–B07 / B03 coverage and ESLint-profile) pass locally; both
   ESLint runs, knip and depcruise pass on this repository. Real required-check behaviour in a consumer (AB-14) is NOT_RUN
   until the first consumer switch
@@ -57,6 +57,6 @@ with an own-code budget of 1,500 lines and to start with the hygiene checks (W1)
 | `no-restricted-disable` list | `comments/*` (plugin alias) | `@eslint-community/eslint-comments/*` | disable comments name the full plugin id; the alias would never match |
 | gitleaks version | "≥ 8" | 8.30.1 pinned with the linux_x64 sha256 | reproducibility; upgrade is a normal PR with a new checksum |
 | knip / depcruise steps | always run | `test -f <config> && …` | a missing config is exit 1 (fails), never skipped; keeps AB-08 |
-| secret suppression guard | AB-18 (v6 proposal) | implemented in `large-files.mjs`; exceptions are path-bound and expire; documentation mentions are not suppressions | small, same diff input; removed if AB-18 is rejected |
+| secret suppression guard | AB-18 (v6 proposal) | gitleaks itself decides what a finding is: a second scan with `--ignore-gitleaks-allow` lists marker-hidden findings and `secret-suppressions.mjs` checks each against path-bound, expiring exceptions; `.gitleaks*` changes need a `gitleaks-config` exception | no home-made document heuristics (review R01); removed if AB-18 is rejected |
 | large files | "100KB 超の非ソース" | every file over the limit fails unless it is a lockfile or allow-listed in the profile with a reason | an extension list exempted `.txt` / `.json` logs (review B05) |
 | coverage | — | `targets-coverage` fails on `.ts` / `.py` files the profile / python input do not cover | a missing parser silently shrank the lint to JS (review B03) |

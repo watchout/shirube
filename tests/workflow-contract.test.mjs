@@ -35,8 +35,9 @@ test("gitleaks, ruff and vulture are pinned; the guard run disables inline confi
   assert.match(wf, /GITLEAKS_SHA256_LINUX_X64: [0-9a-f]{64}/);
   assert.match(wf, /sha256sum -c -/);
   assert.match(wf, /"ruff==\$\{RUFF_VERSION\}" "vulture==\$\{VULTURE_VERSION\}"/);
+  assert.match(body, /--ignore-gitleaks-allow --exit-code 0 [^\n]*--report-format json --report-path \.hygiene\/gitleaks-allowed\.json/);
   assert.match(wf, /eslint --no-inline-config --max-warnings 0 --config "\$SHIRUBE_TOOLS\/configs\/guard-only\.config\.mjs"/);
   const scriptSteps = body.match(/node "\$SHIRUBE_TOOLS\/scripts\/hygiene\/[a-z-]+\.mjs"[^\n]*/g);
-  assert.equal(scriptSteps.length, 5);
+  assert.equal(scriptSteps.length, 6);
   for (const s of scriptSteps) { assert.match(s, /--profile "\$SHIRUBE_PROFILE"/); assert.match(s, /--today/); }
 });

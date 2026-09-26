@@ -92,7 +92,7 @@ jobs:
       - name: File length vs baseline (AB-01, AB-06)
         run: node "$SHIRUBE_TOOLS/scripts/hygiene/lines-baseline.mjs" --profile "$SHIRUBE_PROFILE" --today "${{ steps.refs.outputs.today }}"
 
-      - name: Large files and secret-suppression guard (AB-10, AB-18 b/c)
+      - name: Large files and gitleaks-config guard (AB-10, AB-18 b/c)
         run: node "$SHIRUBE_TOOLS/scripts/hygiene/large-files.mjs" --profile "$SHIRUBE_PROFILE" --base "${{ steps.refs.outputs.base }}" --head "${{ steps.refs.outputs.head }}" --today "${{ steps.refs.outputs.today }}"
 
       - name: Cross-file duplication (AB-02, AB-08, AB-13)
@@ -112,13 +112,16 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: npx --no-install eslint --no-inline-config --max-warnings 0 --config "$SHIRUBE_TOOLS/configs/guard-only.config.mjs" ${{ inputs.targets }}
 
-      - name: Secrets — gitleaks pinned by checksum (AB-18 a/d/e)
+      - name: Secrets — gitleaks pinned by checksum; markers must be registered exceptions (AB-18 a/b/c/d/e)
         run: |
           set -euo pipefail
           curl -sSL -o gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
           echo "${GITLEAKS_SHA256_LINUX_X64}  gitleaks.tgz" | sha256sum -c -
           tar -xzf gitleaks.tgz gitleaks
           ./gitleaks git --exit-code 1 --redact --no-banner --log-opts="${{ steps.refs.outputs.base }}..${{ steps.refs.outputs.head }}"
+          mkdir -p .hygiene
+          ./gitleaks git --ignore-gitleaks-allow --exit-code 0 --redact --no-banner --report-format json --report-path .hygiene/gitleaks-allowed.json --log-opts="${{ steps.refs.outputs.base }}..${{ steps.refs.outputs.head }}"
+          node "$SHIRUBE_TOOLS/scripts/hygiene/secret-suppressions.mjs" --profile "$SHIRUBE_PROFILE" --report .hygiene/gitleaks-allowed.json --today "${{ steps.refs.outputs.today }}"
 
       - name: PR size (AB-05)
         run: node "$SHIRUBE_TOOLS/scripts/hygiene/pr-size.mjs" --profile "$SHIRUBE_PROFILE" --base "${{ steps.refs.outputs.base }}" --head "${{ steps.refs.outputs.head }}" --today "${{ steps.refs.outputs.today }}"

@@ -40,12 +40,19 @@ function isGlobList(v) {
 }
 
 // Exceptions are bound to paths and expire; a bare marker string is not an exception (audit B02).
+// A date must round-trip through the calendar (2026-99-99 looks like a date but is not one; review R01).
+function isRealDate(v) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v || "")) return false;
+  const d = new Date(`${v}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+}
+
 const EXCEPTION_FIELDS = [
   ["path", (v) => typeof v === "string" && v.length > 0, "path (glob) is required"],
   ["kind", (v) => EXCEPTION_KINDS.includes(v), `kind must be one of ${EXCEPTION_KINDS.join(", ")}`],
   ["reason", (v) => typeof v === "string" && v.length >= 10, "reason is required (>= 10 chars)"],
   ["issue", (v) => /^https:\/\/github\.com\//.test(v || ""), "issue must be a GitHub URL"],
-  ["review_by", (v) => /^\d{4}-\d{2}-\d{2}$/.test(v || ""), "review_by must be YYYY-MM-DD"],
+  ["review_by", isRealDate, "review_by must be a real calendar date, YYYY-MM-DD"],
 ];
 
 function validateException(e, i, today) {

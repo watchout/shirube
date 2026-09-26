@@ -22,16 +22,15 @@ test("AB-10: any 150KB file fails whatever its extension; only lockfiles and all
   assert.deepEqual(r.summary.failures.map((f) => f.file).sort(), ["docs/big.md", "src/dump.log"]);
 });
 
-test("AB-18 b/c: gitleaks:allow or .gitleaks.toml without a profile exception fails; registered exception passes", () => {
+test("AB-18 b/c: a gitleaks config change needs a path-bound gitleaks-config exception; marker lines are judged by gitleaks (see secret-suppressions)", () => {
   const dir = repo();
   const base = commit(dir, "base");
   write(dir, "src/k.mjs", "const k = 'x'; // gitleaks:allow\n"); write(dir, ".gitleaks.toml", "[allowlist]\n");
   const head = commit(dir, "suppress");
   let r = run("large-files.mjs", dir, ["--base", base, "--head", head]);
-  assert.equal(r.status, 1); assert.equal(r.summary.failures.length, 2);
+  assert.equal(r.status, 1); assert.deepEqual(r.summary.failures.map((f) => f.file), [".gitleaks.toml"]);
   write(dir, ".shirube/hygiene-profile.md", PROFILE({}, { exceptions: [
     { path: ".gitleaks.toml", kind: "gitleaks-config", reason: "test fixture allowlist for this repository", issue: "https://github.com/watchout/shirube/issues/1", review_by: "2027-01-01" },
-    { path: "src/k.mjs", kind: "gitleaks-allow", reason: "documented marker in the fixture module", issue: "https://github.com/watchout/shirube/issues/1", review_by: "2027-01-01" },
   ] }));
   const head2 = commit(dir, "register");
   r = run("large-files.mjs", dir, ["--base", base, "--head", head2, "--today", "2026-09-26"]);

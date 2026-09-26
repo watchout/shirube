@@ -13,8 +13,8 @@ This repository is being built by selective migration from `ai-dev-framework` (h
 
 | path | what |
 |---|---|
-| `.github/workflows/hygiene.yml` | reusable workflow: targets coverage, file length vs baseline, large files + secret-suppression guard, jscpd, knip, dependency-cruiser, ESLint structural run, ESLint guard-only run, gitleaks (pinned by sha256), PR size, optional ruff / vulture (pinned) |
-| `scripts/hygiene/*.mjs` | the checks that are not an off-the-shelf tool (targets coverage, baseline, PR size, large files + suppression guard, jscpd inventory guard, own-code budget). No runtime dependencies |
+| `.github/workflows/hygiene.yml` | reusable workflow: targets coverage, file length vs baseline, large files + gitleaks-config guard, jscpd, knip, dependency-cruiser, ESLint structural run, ESLint guard-only run, gitleaks (pinned by sha256; a second `--ignore-gitleaks-allow` pass makes every marker-hidden finding need a registered exception), PR size, optional ruff / vulture (pinned) |
+| `scripts/hygiene/*.mjs` | the checks that are not an off-the-shelf tool (targets coverage, baseline, PR size, large files + config guard, secret-suppressions, jscpd inventory guard, own-code budget). No runtime dependencies |
 | `configs/` | the two ESLint configs (structural-only, guard-only; files / ignores / parser come from the profile via `profile-eslint.mjs`) and templates for `knip.jsonc` and `.dependency-cruiser.cjs` |
 | `templates/` | PR, Issue, ADR, hygiene profile, runbook, owner decision, one-page spec, AGENTS overlay |
 | `docs/` | boundary (one diagram), threats and failures, ADR-001, the one-page spec of W1 |

@@ -10,18 +10,16 @@ const ROOT = resolve(import.meta.dirname, "..");
 const exception = (path, kind = "gitleaks-allow", review_by = "2027-01-01") =>
   ({ path, kind, reason: "documented test exception for this path", issue: "https://github.com/watchout/shirube/pull/1", review_by });
 
-test("B02: a marker exception is bound to a path, expires, and documentation mentions need none", () => {
+test("B02: gitleaks-config exceptions are path-bound and expire; a bare {file} entry is UNOBSERVABLE", () => {
   const dir = repo();
   const base = commit(dir, "base");
-  write(dir, "docs/notes.md", "gitleaks:allow is a marker\n"); const headDoc = commit(dir, "doc");
-  assert.equal(run("large-files.mjs", dir, ["--base", base, "--head", headDoc, "--today", "2026-09-26"]).status, 0);
-  write(dir, "src/payments.mjs", "const k = 'x'; // gitleaks:allow\n"); const headCode = commit(dir, "code");
-  assert.equal(run("large-files.mjs", dir, ["--base", base, "--head", headCode, "--today", "2026-09-26"]).status, 1);
-  write(dir, ".shirube/hygiene-profile.md", PROFILE({}, { exceptions: [exception("src/guard.mjs")] })); const headOther = commit(dir, "other path");
+  write(dir, ".gitleaks.toml", "[allowlist]\n"); const head = commit(dir, "config");
+  assert.equal(run("large-files.mjs", dir, ["--base", base, "--head", head, "--today", "2026-09-26"]).status, 1);
+  write(dir, ".shirube/hygiene-profile.md", PROFILE({}, { exceptions: [exception("gitleaks-baseline.json", "gitleaks-config")] })); const headOther = commit(dir, "other path");
   assert.equal(run("large-files.mjs", dir, ["--base", base, "--head", headOther, "--today", "2026-09-26"]).status, 1); // wrong path
-  write(dir, ".shirube/hygiene-profile.md", PROFILE({}, { exceptions: [exception("src/payments.mjs", "gitleaks-allow", "2020-01-01")] })); const headExpired = commit(dir, "expired");
+  write(dir, ".shirube/hygiene-profile.md", PROFILE({}, { exceptions: [exception(".gitleaks.toml", "gitleaks-config", "2020-01-01")] })); const headExpired = commit(dir, "expired");
   assert.equal(run("large-files.mjs", dir, ["--base", base, "--head", headExpired, "--today", "2026-09-26"]).status, 1); // expired
-  write(dir, ".shirube/hygiene-profile.md", PROFILE({}, { exceptions: [exception("src/payments.mjs")] })); const headOk = commit(dir, "bound");
+  write(dir, ".shirube/hygiene-profile.md", PROFILE({}, { exceptions: [exception(".gitleaks.toml", "gitleaks-config")] })); const headOk = commit(dir, "bound");
   assert.equal(run("large-files.mjs", dir, ["--base", base, "--head", headOk, "--today", "2026-09-26"]).status, 0);
   write(dir, ".shirube/hygiene-profile.md", PROFILE({}, { exceptions: [{ file: "gitleaks:allow" }] })); const headBare = commit(dir, "bare");
   assert.equal(run("large-files.mjs", dir, ["--base", base, "--head", headBare]).status, 2); // invalid exception = cannot observe

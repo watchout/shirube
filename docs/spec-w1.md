@@ -17,7 +17,7 @@
 
 - Step 1 問題定義: [検証済] anti-bloat v5 §1–§3 (iyasaka-arc, PASS 5827971404)
 - Step 2 Investigation: [検証済] ADR-001 Step 2
-- Step 5 Prototype smoke: [検証済] `npm test` 21/21, lints, knip and depcruise on this repository; consumer AB-14 NOT_RUN
+- Step 5 Prototype smoke: [検証済] `npm test` 25/25, lints, knip and depcruise on this repository; consumer AB-14 NOT_RUN
 - Evidence labels: 採用 / 候補 は baseline ADR の出典確認列に従う
 
 ## Requirements (EARS — SRC-M-02; patterns chosen per requirement)
@@ -34,7 +34,7 @@
 | R6c | When a profile limit is not an integer in range, or the include set matches no tracked file, the check shall fail (`UNOBSERVABLE` / `FAIL`), never pass. | unwanted |
 | R7 | The guard-only ESLint run shall run with `--no-inline-config --max-warnings 0` and shall treat an expired `TODO [date]` as an error on pull requests. | ubiquitous |
 | R8 | The gitleaks binary shall be verified against a pinned sha256 before use; a mismatch shall fail the job. | ubiquitous |
-| R9 | If a change adds `gitleaks:allow` to a code or config file, or edits a gitleaks config / ignore / baseline file, without a path-bound, unexpired `profile.exceptions` entry of the right kind, the guard shall fail; mentions in documentation shall not count. | unwanted |
+| R9 | If gitleaks, scanning with `--ignore-gitleaks-allow`, reports a finding that the normal scan did not (i.e. one hidden by a marker), and no unexpired path-bound `gitleaks-allow` exception covers its file, the guard shall fail; a gitleaks config / ignore / baseline change without a `gitleaks-config` exception shall fail. A mention of the marker that hides no finding shall pass. | unwanted |
 | R11 | The scripts shall be fetched from the callee's own repository and commit (`job.workflow_repository` / `job.workflow_sha`) and verified before use. | ubiquitous |
 | R10 | This repository's own code (scripts, workflows, configs) shall stay within `own_code_lines` (1,500). | ubiquitous |
 
@@ -51,7 +51,9 @@
 | B02–B07 | review counterexamples (path-bound exceptions, invalid limits, empty include, 0-line ratchet, unicode generated path, rename into generated, binary deletions, coverage, ESLint profile) | scripts / configs | as recorded in `tests/audit-counterexamples.test.mjs` | yes |
 | AB-12 | `/* eslint unicorn/expiring-todo-comments: "off" */` | guard-only run | still FAIL (inline config ignored) | manual until consumer CI |
 | AB-14 | defective PR / correct PR in a consumer | real required check | rejected / allowed | NOT_RUN (first consumer switch) |
-| AB-18 b/c | `gitleaks:allow` added without / with a profile exception | large-files | FAIL / PASS | yes |
+| AB-18 b/c | marker explanation only / mock value only / value + marker unregistered / value + marker registered | gitleaks 8.30.1 two-pass + secret-suppressions | PASS / FAIL (normal scan) / FAIL (guard) / PASS — confirmed end-to-end with the real binary on 2026-09-26; unit tests feed the report shape | yes (report) + e2e once |
+| R02 | rename 100,000 → 105,000 bytes / rename within the limit | large-files | FAIL on the new path / PASS | yes |
+| R03 | normal JSX / long JSX function + expired TODO | both ESLint runs | PASS / FAIL | yes |
 | OWN-01 | own code 1,600 lines / 1,500 lines | own-code-budget | FAIL / PASS | yes |
 | S8 | workflows contain `continue-on-error`, `\|\| true`, `--if-present` | contract test | FAIL | yes |
 

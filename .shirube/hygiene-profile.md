@@ -6,9 +6,9 @@ This page is the one place where this repository declares what the hygiene check
 - language: JavaScript (ESM, Node >= 22). No TypeScript, no Python. `targets-coverage` fails if a .ts or .py file appears under the scanned targets.
 - entries (knip): the check scripts and the ESLint configs are the production entries; templates and docs are not code.
 - core boundary: `scripts/hygiene/*.mjs` may import only `./lib.mjs` and Node built-ins (no runtime dependencies).
-- exceptions (path-bound, expire on `review_by`, reviewed by whoever reviews the change to that path):
-  `scripts/hygiene/large-files.mjs` and `tests/*.test.mjs` contain the literal `gitleaks:allow` in string form because
-  they implement and test the suppression guard. They are not suppressions of a finding. Documentation mentions need no exception.
+- exceptions (path-bound, expire on `review_by`, reviewed by whoever reviews the change to that path): none. The literal
+  `gitleaks:allow` in the guard's code, tests and docs hides no finding (gitleaks reports none under
+  `--ignore-gitleaks-allow`), so no exception is needed; an exception is required only when a real finding is suppressed.
 - large files: only `package-lock.json` (lockfile, built-in exemption). Nothing else is allowed over 100KB.
 - mode: blocking from the first PR (this repository has no report-only period).
 - limits that are internal budgets, not upstream recommendations: new file 300 lines, function 50 lines, complexity 10, PR +400 / 20 files, own code 1,500 lines.
@@ -21,10 +21,7 @@ This page is the one place where this repository declares what the hygiene check
   "jscpd": { "extensions": ["mjs", "cjs", "js"] },
   "own_code": { "include": ["scripts/**", "configs/**", ".github/workflows/**"], "exclude": [] },
   "large_file_allow": [],
-  "exceptions": [
-    { "path": "scripts/hygiene/large-files.mjs", "kind": "gitleaks-allow", "reason": "implements the suppression guard; the marker is a string literal, not a suppression", "issue": "https://github.com/watchout/shirube/pull/1", "review_by": "2026-12-31" },
-    { "path": "tests/*.test.mjs", "kind": "gitleaks-allow", "reason": "tests of the suppression guard use the marker as fixture content", "issue": "https://github.com/watchout/shirube/pull/1", "review_by": "2026-12-31" }
-  ],
+  "exceptions": [],
   "limits": {
     "new_file_lines": 300,
     "pr_added_lines": 400,
