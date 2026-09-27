@@ -96,7 +96,7 @@ jobs:
         run: node "$SHIRUBE_TOOLS/scripts/hygiene/large-files.mjs" --profile "$SHIRUBE_PROFILE" --base "${{ steps.refs.outputs.base }}" --head "${{ steps.refs.outputs.head }}" --today "${{ steps.refs.outputs.today }}"
 
       - name: Cross-file duplication (AB-02, AB-08, AB-13)
-        run: node "$SHIRUBE_TOOLS/scripts/hygiene/jscpd-guard.mjs" --profile "$SHIRUBE_PROFILE" --targets "${{ inputs.targets }}" --today "${{ steps.refs.outputs.today }}"
+        run: node "$SHIRUBE_TOOLS/scripts/hygiene/jscpd-guard.mjs" --profile "$SHIRUBE_PROFILE" --targets "${{ inputs.targets }}" --python "${{ inputs.python }}" --today "${{ steps.refs.outputs.today }}"
 
       - name: Unused code, production entries (AB-03, AB-08, AB-11)
         run: test -f knip.jsonc && npx --no-install knip --production --config knip.jsonc

@@ -99,3 +99,21 @@ test("B03: the ESLint configs read the profile — ts without parser fails close
   write(dir, ".shirube/hygiene-profile.md", PROFILE({}, { language: "ts" }));
   assert.equal(eslint("structural-only.config.mjs").status, 2); // language ts but no parser installed: fail closed
 });
+
+test("AUD-SHIRUBE1-JSCPD-COVERAGE-001: duplicated JSX is in the jscpd inventory (same covered set as coverage); short sources still pass", () => {
+  const dir = repo();
+  write(dir, "package.json", JSON.stringify({ name: "fixture", type: "module" }));
+  spawnSync("ln", ["-s", join(ROOT, "node_modules"), join(dir, "node_modules")]);
+  const jsx = "export const view = <div>\n" + Array.from({ length: 25 }, (_, i) => `  <span data-index="${i}">Shared row ${i}</span>\n`).join("") + "</div>;\n";
+  write(dir, "src/a.jsx", jsx); write(dir, "src/b.jsx", jsx);
+  write(dir, "src/entry.mjs", 'export { view as a } from "./a.jsx";\nexport { view as b } from "./b.jsx";\n');
+  commit(dir, "jsx dup");
+  let r = run("jscpd-guard.mjs", dir, ["--targets", "src"]);
+  assert.equal(r.status, 1, JSON.stringify(r.summary)); assert.equal(r.summary.files, 3); assert.equal(r.summary.eligible, 2); assert.equal(r.summary.clones, 1);
+  write(dir, "src/b.jsx", "export const other = <p>different</p>;\n"); commit(dir, "no dup");
+  r = run("jscpd-guard.mjs", dir, ["--targets", "src"]);
+  assert.equal(r.status, 0, JSON.stringify(r.summary)); assert.equal(r.summary.eligible, 1);
+  write(dir, ".shirube/hygiene-profile.md", PROFILE({}, { jscpd: { extensions: ["ts"] } })); commit(dir, "narrow outside covered set");
+  r = run("jscpd-guard.mjs", dir, ["--targets", "src"]);
+  assert.equal(r.status, 1); assert.match(r.summary.why, /no tracked files/); // narrowing cannot silently empty the scan into a PASS
+});
