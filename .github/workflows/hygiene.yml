@@ -123,8 +123,15 @@ jobs:
           ./gitleaks git --ignore-gitleaks-allow --exit-code 0 --redact --no-banner --report-format json --report-path .hygiene/gitleaks-allowed.json --log-opts="${{ steps.refs.outputs.base }}..${{ steps.refs.outputs.head }}"
           node "$SHIRUBE_TOOLS/scripts/hygiene/secret-suppressions.mjs" --profile "$SHIRUBE_PROFILE" --report .hygiene/gitleaks-allowed.json --today "${{ steps.refs.outputs.today }}"
 
-      - name: PR size (AB-05)
+      # AB-05 is a pull-request rule (added lines / changed files of one PR). On a push the diff HEAD~1..HEAD is the
+      # merge of an already-reviewed PR, so the same number would fail again for nothing; the step is declared
+      # not applicable there (skipped with its reason printed), never silently passed. Every other check still runs.
+      - name: PR size (AB-05) — pull_request only
+        if: ${{ github.event_name == 'pull_request' }}
         run: node "$SHIRUBE_TOOLS/scripts/hygiene/pr-size.mjs" --profile "$SHIRUBE_PROFILE" --base "${{ steps.refs.outputs.base }}" --head "${{ steps.refs.outputs.head }}" --today "${{ steps.refs.outputs.today }}"
+      - name: PR size (AB-05) — not applicable on push
+        if: ${{ github.event_name != 'pull_request' }}
+        run: echo '{"check":"pr-size","verdict":"NOT_APPLICABLE","why":"AB-05 applies to pull_request events; this run is ${{ github.event_name }}"}'
 
       - name: Python — ruff C901 / PLR0915 and vulture, pinned versions (AB-17)
         if: ${{ inputs.python }}

@@ -3,6 +3,11 @@
 All notable changes to this repository are recorded here (one entry per version; the format follows a plain
 "added / changed / removed" list — Keep a Changelog is a candidate in the baseline ADR, not an adopted rule).
 
+## 0.1.1 — unreleased
+
+### Changed
+- AB-05 (PR size) is declared pull_request-only: on a push to main the step prints `NOT_APPLICABLE` instead of failing the merge of an already-reviewed PR (suite-lead #48 5854299519). No threshold changed; every other check still runs on push.
+
 ## 0.1.0 — unreleased (first PR)
 
 ### Changed after the second independent review (R01–R03)
