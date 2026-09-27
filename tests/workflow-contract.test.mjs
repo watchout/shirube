@@ -41,3 +41,10 @@ test("gitleaks, ruff and vulture are pinned; the guard run disables inline confi
   assert.equal(scriptSteps.length, 6);
   for (const s of scriptSteps) { assert.match(s, /--profile "\$SHIRUBE_PROFILE"/); assert.match(s, /--today/); }
 });
+
+test("AB-05 is declared pull_request-only: the PR size step runs on pull_request, a NOT_APPLICABLE line runs otherwise, and no other check is conditioned on the event", () => {
+  assert.match(body, /name: PR size \(AB-05\) — pull_request only\n\s+if: \$\{\{ github\.event_name == 'pull_request' \}\}\n\s+run: node "\$SHIRUBE_TOOLS\/scripts\/hygiene\/pr-size\.mjs"/);
+  assert.match(body, /name: PR size \(AB-05\) — not applicable on push\n\s+if: \$\{\{ github\.event_name != 'pull_request' \}\}\n\s+run: echo '\{"check":"pr-size","verdict":"NOT_APPLICABLE"/);
+  const conditioned = body.match(/^\s+if: .*$/gm);
+  assert.deepEqual(conditioned.map((l) => l.trim()), ["if: ${{ github.event_name == 'pull_request' }}", "if: ${{ github.event_name != 'pull_request' }}", "if: ${{ inputs.python }}"]);
+});
