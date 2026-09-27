@@ -1,0 +1,17 @@
+// Template for the consumer repository's knip.jsonc (anti-bloat v5 §4.2 "起点").
+// Copy to the repository root, replace the entries, keep the reasons. knip runs as:
+//   knip --production --config knip.jsonc        (SRC-W1-02; exit 1 = issues, exit 2 = config/internal error)
+// Only `entry` and `project` patterns suffixed with `!` are used in production mode.
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    // production entry points: daemon / server / CLI (reason: what starts the process)
+    "src/server.ts!",
+    "bin/*.ts!",
+    // adopted public contract: files that external callers import (reason + adoption ref per line)
+    "src/public/index.ts!"
+  ],
+  "project": ["src/**/*.ts!", "bin/**/*.ts!"],
+  "ignore": ["**/generated/**", "tests/fixtures/**"],
+  "ignoreDependencies": []
+}

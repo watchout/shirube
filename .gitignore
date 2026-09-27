@@ -1,2 +1,3 @@
 node_modules/
 .hygiene/jscpd/
+.hygiene/gitleaks-allowed.json

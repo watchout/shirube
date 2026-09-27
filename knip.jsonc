@@ -1,0 +1,9 @@
+// knip for this repository itself (SR / K7). Entries = the check scripts (run by workflows) and the ESLint configs.
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["scripts/hygiene/*.mjs!", "configs/*.config.mjs!", "configs/profile-eslint.mjs!", "tests/*.test.mjs"],
+  "project": ["scripts/**/*.mjs!", "configs/**/*.mjs!", "tests/**/*.mjs"],
+  "ignore": ["tests/fixtures/**", "configs/dependency-cruiser.template.cjs"],
+  "ignoreDependencies": ["@eslint-community/eslint-plugin-eslint-comments", "eslint-plugin-unicorn", "jscpd", "dependency-cruiser"],
+  "ignoreBinaries": ["jscpd", "depcruise"]
+}

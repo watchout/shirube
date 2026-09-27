@@ -1,0 +1,30 @@
+# Self-application (handover v5 SR / K7): this repository runs its own unit tests and its own hygiene workflow.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Own-code budget (OWN-01, 1,500 lines)
+        run: node scripts/hygiene/own-code-budget.mjs --profile .shirube/hygiene-profile.md
+
+  hygiene:
+    uses: ./.github/workflows/hygiene.yml
+    with:
+      profile: .shirube/hygiene-profile.md
+      targets: scripts configs
+      node-version: "22"
