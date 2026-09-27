@@ -117,3 +117,26 @@ test("AUD-SHIRUBE1-JSCPD-COVERAGE-001: duplicated JSX is in the jscpd inventory 
   r = run("jscpd-guard.mjs", dir, ["--targets", "src"]);
   assert.equal(r.status, 1); assert.match(r.summary.why, /no tracked files/); // narrowing cannot silently empty the scan into a PASS
 });
+
+test("AUD-SHIRUBE1-JSCPD-SCANSET-002: the inventory and the real scan share one exclusion set; duplicates inside lines.exclude never fail, duplicates outside always do", () => {
+  const dir = repo();
+  write(dir, "package.json", JSON.stringify({ name: "fixture", type: "module" }));
+  spawnSync("ln", ["-s", join(ROOT, "node_modules"), join(dir, "node_modules")]);
+  const jsx = "export const view = <div>\n" + Array.from({ length: 25 }, (_, i) => `  <span data-index="${i}">Shared row ${i}</span>\n`).join("") + "</div>;\n";
+  // lines.exclude and exclude_generated are different lists on purpose: both must reach jscpd.
+  write(dir, ".shirube/hygiene-profile.md", PROFILE({}, { lines: { include: ["src/**"], exclude: ["src/fixtures/**"] }, exclude_generated: ["src/generated/**"] }));
+  write(dir, "src/a.jsx", "export const view = <div>Hello</div>;\n");
+  write(dir, "src/b.jsx", "export const other = <p>different</p>;\n");
+  write(dir, "src/fixtures/a.jsx", jsx); write(dir, "src/fixtures/b.jsx", jsx);   // duplicate inside lines.exclude
+  write(dir, "src/generated/c.jsx", jsx); write(dir, "src/generated/d.jsx", jsx); // duplicate inside exclude_generated
+  const short = 'export { view as a } from "./a.jsx";\nexport { other as b } from "./b.jsx";\n';
+  write(dir, "src/entry.mjs", short); commit(dir, "short entry");
+  let r = run("jscpd-guard.mjs", dir, ["--targets", "src"]);
+  assert.equal(r.status, 0, JSON.stringify(r.summary)); assert.equal(r.summary.files, 3); assert.equal(r.summary.eligible, 0); // scan skipped
+  write(dir, "src/entry.mjs", short + Array.from({ length: 10 }, (_, i) => `export const auditItem${i} = ${i};\n`).join("")); commit(dir, "long entry");
+  r = run("jscpd-guard.mjs", dir, ["--targets", "src"]);
+  assert.equal(r.status, 0, JSON.stringify(r.summary)); assert.equal(r.summary.eligible, 1); assert.equal(r.summary.clones, 0); // real scan, same exclusions
+  write(dir, "src/c.jsx", jsx); write(dir, "src/d.jsx", jsx); commit(dir, "duplicate outside the exclusions");
+  r = run("jscpd-guard.mjs", dir, ["--targets", "src"]);
+  assert.equal(r.status, 1, JSON.stringify(r.summary)); assert.equal(r.summary.clones, 1); // excluded copies stay silent, the real one fails
+});

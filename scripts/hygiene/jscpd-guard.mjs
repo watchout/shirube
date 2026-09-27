@@ -22,10 +22,18 @@ function coveredExtensions(profile, python) {
   return narrowed ? [...covered].filter((e) => narrowed.includes(e)) : [...covered];
 }
 
+// One exclusion set for BOTH the inventory (which decides whether the scan runs) and the real jscpd scan: the
+// profile's lines.exclude plus exclude_generated (devauditor AUD-SHIRUBE1-JSCPD-SCANSET-002 — before this, only
+// exclude_generated reached jscpd, so a duplicate inside lines.exclude was ignored or reported depending on the
+// length of unrelated files). jscpd 5.3.2 applies every repeated --ignore (verified with two patterns).
+function excludedGlobs(profile) {
+  return [...profile.lines.exclude, ...profile.exclude_generated];
+}
+
 function inventory(cwd, targets, profile, python) {
   const include = targets.map((t) => (t === "." ? "**" : `${t.replace(/\/$/, "")}/**`));
   const exts = coveredExtensions(profile, python);
-  const files = trackedFiles(cwd, { include, exclude: [...profile.lines.exclude, ...profile.exclude_generated] })
+  const files = trackedFiles(cwd, { include, exclude: excludedGlobs(profile) })
     .filter((f) => exts.includes(f.split(".").pop()));
   const eligible = files.filter((f) => countLines(readFileSync(join(cwd, f), "utf8")) >= MIN_LINES);
   return { files, eligible };
@@ -34,7 +42,7 @@ function inventory(cwd, targets, profile, python) {
 function runJscpd(cwd, targets, profile, reportDir) {
   const args = [...targets, "--min-lines", String(MIN_LINES), "--min-tokens", String(MIN_TOKENS), "--threshold", "0",
     "--exit-code", "1", "--fail-on-empty", "--reporters", "console,json", "--output", reportDir];
-  for (const ig of profile.exclude_generated || []) args.push("--ignore", ig);
+  for (const ig of excludedGlobs(profile)) args.push("--ignore", ig);
   const r = spawnSync("npx", ["--no-install", "jscpd", ...args], { cwd, encoding: "utf8", maxBuffer: 1 << 28 });
   return { status: r.status, stdout: r.stdout, stderr: r.stderr };
 }
