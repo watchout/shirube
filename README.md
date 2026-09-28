@@ -24,10 +24,11 @@ This repository is being built by selective migration from `ai-dev-framework` (h
 
 1. Copy `templates/hygiene-profile.md` to `.shirube/hygiene-profile.md` and fill the `json` block (language, include /
    exclude globs, generated paths, exceptions, limits). Copy `configs/knip.template.jsonc` → `knip.jsonc` and
-   `configs/dependency-cruiser.template.cjs` → `.dependency-cruiser.cjs`, and add the dev tools to the lockfile:
-   `eslint`, `@eslint-community/eslint-plugin-eslint-comments`, `eslint-plugin-unicorn`, `jscpd`, `knip`, `dependency-cruiser`
-   (`@typescript-eslint/parser` for TypeScript).
-2. Call the workflow, pinned to a resolved commit (never a branch):
+   `configs/dependency-cruiser.template.cjs` → `.dependency-cruiser.cjs`, and add the dev tools to the lockfile
+   (`package-lock.json` for npm, `bun.lock` for bun): `eslint`, `@eslint-community/eslint-plugin-eslint-comments`,
+   `eslint-plugin-unicorn`, `jscpd`, `knip`, `dependency-cruiser` (`@typescript-eslint/parser` for TypeScript).
+2. Call the workflow, pinned to a resolved commit (never a branch). `targets` are directories or tracked files (a root
+   entry point such as `server.ts` is named as itself):
 
    ```yaml
    jobs:
@@ -35,10 +36,11 @@ This repository is being built by selective migration from `ai-dev-framework` (h
        uses: watchout/shirube/.github/workflows/hygiene.yml@<commit sha>
        with:
          profile: .shirube/hygiene-profile.md
-         targets: src bin
-         node-version: "24"
+         targets: src bin server.ts
+         node-version: "22"
+         package-manager: npm   # or bun (bun install --frozen-lockfile)
        secrets:
-         SHIRUBE_READ_TOKEN: ${{ secrets.SHIRUBE_READ_TOKEN }}
+         SHIRUBE_READ_TOKEN: ${{ secrets.SHIRUBE_READ_TOKEN }}   # only while this repository is private
    ```
 
 3. Introduce it as `report_only` with an `enforce_by` date, then make it a required check. Introduction is complete only
@@ -47,12 +49,15 @@ This repository is being built by selective migration from `ai-dev-framework` (h
 
 ## Preconditions that only the owner can set (protected surfaces)
 
-- Actions access of this repository must allow calls from organization repositories (repository setting).
-- While this repository is private, the workflow's second checkout (the scripts, at the callee's own commit) needs
-  Contents: read on this repository: consumers pass `SHIRUBE_READ_TOKEN` (a fine-grained token or an App installation
-  token). The reusable-workflow file itself is delivered by GitHub with the caller's scoped token and needs no PAT.
-  Making the repository public removes the need for the token. Both are owner decisions, not PR content.
-- Registering the workflow as a required check in a consumer repository is a branch-protection change (owner).
+- Visibility. While this repository is private, GitHub allows calls to its reusable workflows **only from private
+  repositories** owned by the same account (repository setting "Accessible from repositories owned by the user";
+  REST `access_level: user`), and the second checkout (the scripts, at the callee's own commit) needs Contents: read
+  on this repository: consumers pass `SHIRUBE_READ_TOKEN` (a fine-grained token or an App installation token). A
+  **public consumer cannot call a private Shirube at all**, with or without a token. Making this repository public
+  removes both the setting and the token. The reusable-workflow file itself is always delivered by GitHub with the
+  caller's scoped token. Visibility and tokens are owner decisions, not PR content.
+- Registering the workflow as a required check in a consumer repository is a branch-protection change (owner). The
+  check is named `<caller job id> / hygiene` (for the example above: `hygiene / hygiene`).
 
 ## Every check fails closed
 

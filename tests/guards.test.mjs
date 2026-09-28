@@ -1,7 +1,11 @@
 // AB-08 (empty scan vs misconfiguration), AB-10 (100KB), AB-18 b/c (secret suppression), OWN-01 (own-code budget).
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { join, resolve } from "node:path";
 import { repo, write, lines, commit, run, PROFILE } from "./helpers.mjs";
+
+const ROOT = resolve(import.meta.dirname, "..");
 
 test("AB-08: no tracked files under targets fails; all files shorter than 10 lines passes with inventory", () => {
   const dir = repo();
@@ -10,6 +14,25 @@ test("AB-08: no tracked files under targets fails; all files shorter than 10 lin
   assert.equal(r.status, 1); assert.match(r.summary.why, /no tracked files/);
   r = run("jscpd-guard.mjs", dir, ["--targets", "src"]);
   assert.equal(r.status, 0); assert.equal(r.summary.eligible, 0); assert.equal(r.summary.files, 1);
+});
+
+test("AB-23: a target that is a tracked file is scanned as itself (root entry point); a directory target is unchanged; the same set feeds targets-coverage", () => {
+  const dir = repo();
+  write(dir, "package.json", JSON.stringify({ name: "fixture", type: "module" }));
+  spawnSync("ln", ["-s", join(ROOT, "node_modules"), join(dir, "node_modules")]); // jscpd resolves from the consumer
+  const js = (p) => Array.from({ length: 12 }, (_, i) => `export const ${p}${i} = ${i};`).join("\n") + "\n"; // valid JS: jscpd tokenizes nothing from invalid input and then reports an empty scan
+  write(dir, "server.mjs", js("s")); write(dir, "src/a.mjs", js("a")); commit(dir, "root entry");
+  let r = run("jscpd-guard.mjs", dir, ["--targets", "src"]);
+  assert.equal(r.status, 0, JSON.stringify(r.summary)); assert.equal(r.summary.files, 1);
+  r = run("jscpd-guard.mjs", dir, ["--targets", "src server.mjs"]);
+  assert.equal(r.status, 0, JSON.stringify(r.summary)); assert.equal(r.summary.files, 2); assert.equal(r.summary.eligible, 2);
+  r = run("jscpd-guard.mjs", dir, ["--targets", "server.mjs"]);
+  assert.equal(r.status, 0, JSON.stringify(r.summary)); assert.equal(r.summary.files, 1); assert.equal(r.summary.eligible, 1);
+  r = run("jscpd-guard.mjs", dir, ["--targets", "missing.mjs"]);
+  assert.equal(r.status, 1); assert.match(r.summary.why, /no tracked files/);
+  write(dir, "server.ts", lines(3)); commit(dir, "ts at root");
+  r = run("targets-coverage.mjs", dir, ["--targets", "src server.ts"]);
+  assert.equal(r.status, 1); assert.deepEqual(r.summary.uncovered, ["server.ts"]);
 });
 
 test("AB-10: any 150KB file fails whatever its extension; only lockfiles and allow-listed paths pass (B05)", () => {

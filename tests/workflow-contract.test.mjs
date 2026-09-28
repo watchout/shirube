@@ -9,9 +9,16 @@ const wf = readFileSync(resolve(import.meta.dirname, "../.github/workflows/hygie
 const ci = readFileSync(resolve(import.meta.dirname, "../.github/workflows/ci.yml"), "utf8");
 const body = wf.split("\n").filter((l) => !l.trim().startsWith("#")).join("\n"); // comments may mention forbidden words
 
-test("hygiene.yml declares the four inputs and the optional read token", () => {
-  for (const key of ["profile:", "targets:", "node-version:", "python:"]) assert.match(wf, new RegExp(`\\n\\s+${key}`));
+test("hygiene.yml declares the six inputs and the optional read token", () => {
+  for (const key of ["profile:", "targets:", "node-version:", "package-manager:", "bun-version:", "python:"]) assert.match(wf, new RegExp(`\\n\\s+${key}`));
   assert.match(wf, /SHIRUBE_READ_TOKEN:\n\s+required: false/);
+});
+
+test("AB-24: dependencies come from the consumer's lockfile by package manager — npm ci or bun install --frozen-lockfile, anything else exits 2; the npm cache is used only for npm", () => {
+  assert.match(body, /case "\$\{\{ inputs\.package-manager \}\}" in\n\s+npm\) npm ci ;;\n\s+bun\) bun install --frozen-lockfile ;;\n\s+\*\) echo '\{"check":"install","verdict":"UNOBSERVABLE"[^\n]*; exit 2 ;;/);
+  assert.match(body, /cache: \$\{\{ inputs\.package-manager == 'npm' && 'npm' \|\| '' \}\}/);
+  assert.match(body, /if: \$\{\{ inputs\.package-manager == 'bun' \}\}\n\s+uses: oven-sh\/setup-bun@v2/);
+  assert.doesNotMatch(body, /npm install\b/);
 });
 
 test("B01: tools are checked out from the callee's own repository and commit, never from the caller's context", () => {
@@ -46,5 +53,5 @@ test("AB-05 is declared pull_request-only: the PR size step runs on pull_request
   assert.match(body, /name: PR size \(AB-05\) — pull_request only\n\s+if: \$\{\{ github\.event_name == 'pull_request' \}\}\n\s+run: node "\$SHIRUBE_TOOLS\/scripts\/hygiene\/pr-size\.mjs"/);
   assert.match(body, /name: PR size \(AB-05\) — not applicable on push\n\s+if: \$\{\{ github\.event_name != 'pull_request' \}\}\n\s+run: echo '\{"check":"pr-size","verdict":"NOT_APPLICABLE"/);
   const conditioned = body.match(/^\s+if: .*$/gm);
-  assert.deepEqual(conditioned.map((l) => l.trim()), ["if: ${{ github.event_name == 'pull_request' }}", "if: ${{ github.event_name != 'pull_request' }}", "if: ${{ inputs.python }}"]);
+  assert.deepEqual(conditioned.map((l) => l.trim()), ["if: ${{ inputs.package-manager == 'bun' }}", "if: ${{ github.event_name == 'pull_request' }}", "if: ${{ github.event_name != 'pull_request' }}", "if: ${{ inputs.python }}"]);
 });

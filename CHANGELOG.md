@@ -3,7 +3,16 @@
 All notable changes to this repository are recorded here (one entry per version; the format follows a plain
 "added / changed / removed" list — Keep a Changelog is a candidate in the baseline ADR, not an adopted rule).
 
-## 0.1.1 — unreleased
+## 0.1.2 — unreleased
+
+### Added
+- `package-manager` input (`npm` | `bun`): dependencies are installed from the consumer's lockfile with `npm ci` or `bun install --frozen-lockfile`; any other value exits 2. `bun-version` input for setup-bun. The npm cache of setup-node is used only for npm (AB-24, R12). Reason: the first consumer (agent-comms-mcp) has only `bun.lock`.
+- `targets` may name tracked files, not only directories (`targetGlobs` in `lib.mjs`, used by the jscpd inventory and targets-coverage), so a root entry point such as `server.ts` is counted and scanned as the same set (AB-23, R13).
+
+### Changed
+- README / ADR-001 / threats T7 corrected: while this repository is private, GitHub allows its reusable workflows to be called only from private repositories of the same account; a public consumer needs this repository to be public, a token does not help. The 0.1.0 text said "org repositories".
+
+## 0.1.1 — included in tag v0.1.0 (`ab15006a`, no separate tag)
 
 ### Changed
 - AB-05 (PR size) is declared pull_request-only: on a push to main the step prints `NOT_APPLICABLE` instead of failing the merge of an already-reviewed PR (suite-lead #48 5854299519). No threshold changed; every other check still runs on push.

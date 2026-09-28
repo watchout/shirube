@@ -11,7 +11,8 @@
 - out of scope: execution, delivery, recovery, memory; acceptance matrix (W2), owner gate (W3), declaration
   consistency (W4), scope check (W5), seat readback (W6)
 - open questions kept: how baseline growth is authorized before W3 exists (owner line in the PR body, not verified
-  by machine yet); whether this repository becomes public (removes the read token)
+  by machine yet); whether this repository becomes public (0.1.2: a public consumer cannot call a private Shirube at
+  all, so the first consumer needs it — owner decision D1 in iyasaka-arc `2026-09-28-shirube-first-consumer-switch.md`)
 
 ## Pre-accept proofs
 
@@ -37,6 +38,8 @@
 | R9 | If gitleaks, scanning with `--ignore-gitleaks-allow`, reports a finding that the normal scan did not (i.e. one hidden by a marker), and no unexpired path-bound `gitleaks-allow` exception covers its file, the guard shall fail; a gitleaks config / ignore / baseline change without a `gitleaks-config` exception shall fail. A mention of the marker that hides no finding shall pass. | unwanted |
 | R11 | The scripts shall be fetched from the callee's own repository and commit (`job.workflow_repository` / `job.workflow_sha`) and verified before use. | ubiquitous |
 | R10 | This repository's own code (scripts, workflows, configs) shall stay within `own_code_lines` (1,500). | ubiquitous |
+| R12 | The workflow shall install the consumer's dependencies from the consumer's lockfile with the package manager named by `package-manager` (`npm ci` or `bun install --frozen-lockfile`); any other value shall fail with `UNOBSERVABLE`. | ubiquitous (0.1.2) |
+| R13 | When a `targets` entry is a tracked file, the inventory and coverage checks shall treat it as that file; when it is neither a tracked file nor a directory with tracked files, the duplication check shall fail. | event (0.1.2) |
 
 ## Acceptance examples (Given / When / Then — SRC-M-03; executable ones are in `tests/`)
 
@@ -56,6 +59,8 @@
 | R03 | normal JSX / long JSX function + expired TODO | both ESLint runs | PASS / FAIL | yes |
 | OWN-01 | own code 1,600 lines / 1,500 lines | own-code-budget | FAIL / PASS | yes |
 | S8 | workflows contain `continue-on-error`, `\|\| true`, `--if-present` | contract test | FAIL | yes |
+| AB-23 | `targets: src server.mjs` / `targets: server.mjs` / `targets: missing.mjs` / a root `.ts` file with a JS profile | jscpd-guard inventory, targets-coverage | 3 files / 1 file scanned / FAIL "no tracked files" / FAIL naming `server.ts` | yes (tests/guards) |
+| AB-24 | `package-manager: npm` / `bun` / other | install step | `npm ci` / `bun install --frozen-lockfile` / exit 2 `UNOBSERVABLE`; npm cache only for npm; `npm install` never | yes (contract test); real bun consumer run = first consumer switch |
 
 ## Protected surfaces and failure handling
 

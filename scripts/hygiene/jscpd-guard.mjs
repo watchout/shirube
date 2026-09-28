@@ -7,7 +7,7 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { main, readProfile, trackedFiles, countLines, LANGUAGE_EXTENSIONS, report } from "./lib.mjs";
+import { main, readProfile, trackedFiles, targetGlobs, countLines, LANGUAGE_EXTENSIONS, report } from "./lib.mjs";
 
 const CHECK = "jscpd";
 const MIN_LINES = 10;
@@ -31,7 +31,7 @@ function excludedGlobs(profile) {
 }
 
 function inventory(cwd, targets, profile, python) {
-  const include = targets.map((t) => (t === "." ? "**" : `${t.replace(/\/$/, "")}/**`));
+  const include = targetGlobs(cwd, targets);
   const exts = coveredExtensions(profile, python);
   const files = trackedFiles(cwd, { include, exclude: excludedGlobs(profile) })
     .filter((f) => exts.includes(f.split(".").pop()));

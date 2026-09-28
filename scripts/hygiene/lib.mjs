@@ -121,6 +121,19 @@ export function trackedFiles(cwd, { include = ["**"], exclude = [] } = {}) {
   return all.filter((f) => matchesAny(f, include) && !matchesAny(f, exclude));
 }
 
+// The workflow's `targets` are directories or tracked files (a repository whose entry point sits at the root, such as
+// `server.ts`, has no directory to name). A tracked file is its own glob; anything else is a directory (`dir/**`);
+// "." is the whole repository. The same set feeds the jscpd inventory and targets-coverage, so what is counted is
+// what is scanned (AB-23).
+export function targetGlobs(cwd, targets) {
+  const tracked = new Set(git(cwd, ["ls-files", "-z"]).split("\0").filter(Boolean));
+  return targets.map((t) => {
+    if (t === ".") return "**";
+    const p = t.replace(/\/$/, "");
+    return tracked.has(p) ? p : `${p}/**`;
+  });
+}
+
 export function extensionOf(path) {
   const base = path.split("/").pop();
   return base.includes(".") ? base.split(".").pop() : "";
