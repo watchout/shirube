@@ -3,9 +3,13 @@
 #   uses: watchout/shirube/.github/workflows/hygiene.yml@<resolved commit sha>
 # The check scripts are taken from the CALLEE's own commit (job.workflow_repository / job.workflow_sha — the job
 # context of a reusable workflow identifies the reusable workflow file itself; the github context belongs to the caller).
-# Preconditions (owner, repo settings): this repository's Actions access must allow org repositories, and while this
-# repository is private the second checkout needs Contents: read on it (secrets.SHIRUBE_READ_TOKEN); the workflow file
-# delivery itself needs no token.
+# Preconditions (owner, repo settings): while this repository is private, only PRIVATE repositories owned by the same
+# account can call it (GitHub: access to a private repository's reusable workflows "is allowed only from private
+# repositories"), the Actions access setting must allow them, and the second checkout needs Contents: read on it
+# (secrets.SHIRUBE_READ_TOKEN). A public consumer needs this repository to be public (then no setting and no token).
+# The workflow file delivery itself never needs a token.
+# The consumer's dependencies come from its own lockfile: `npm ci` (package-lock.json) or `bun install --frozen-lockfile`
+# (bun.lock), chosen by the `package-manager` input; the tools then run from the consumer's node_modules/.bin.
 # Every step fails closed; nothing hides a failure (engineering-standards S8).
 # PR size runs after the code checks so that an oversized introduction PR still shows every other result; the optional
 # Python step runs last.
@@ -19,12 +23,20 @@ on:
         type: string
         default: .shirube/hygiene-profile.md
       targets:
-        description: space-separated directories scanned by jscpd / eslint / depcruise
+        description: space-separated directories or tracked files scanned by jscpd / eslint / depcruise
         type: string
         default: src
       node-version:
         type: string
         default: "22"
+      package-manager:
+        description: how the consumer's dependencies are installed from its lockfile — npm (package-lock.json) or bun (bun.lock)
+        type: string
+        default: npm
+      bun-version:
+        description: bun version for setup-bun when package-manager is bun (the consumer's engines / packageManager is the pin)
+        type: string
+        default: latest
       python:
         description: also run ruff (C901, PLR0915) and vulture
         type: boolean
@@ -65,14 +77,26 @@ jobs:
           test "$(git -C "$SHIRUBE_TOOLS" rev-parse HEAD)" = "${{ job.workflow_sha }}"
           echo "shirube tools: ${{ job.workflow_repository }}@${{ job.workflow_sha }} (caller: ${{ github.repository }}@${{ github.sha }})"
 
-      - name: Setup Node
+      - name: Setup Node (npm cache only when npm is the package manager)
         uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node-version }}
-          cache: npm
+          cache: ${{ inputs.package-manager == 'npm' && 'npm' || '' }}
 
-      - name: Install consumer dependencies from lockfile
-        run: npm ci
+      - name: Setup bun
+        if: ${{ inputs.package-manager == 'bun' }}
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ inputs.bun-version }}
+
+      - name: Install consumer dependencies from lockfile (npm ci / bun install --frozen-lockfile)
+        run: |
+          set -euo pipefail
+          case "${{ inputs.package-manager }}" in
+            npm) npm ci ;;
+            bun) bun install --frozen-lockfile ;;
+            *) echo '{"check":"install","verdict":"UNOBSERVABLE","why":"package-manager must be npm or bun, got ${{ inputs.package-manager }}"}'; exit 2 ;;
+          esac
 
       - name: Resolve base / head / today
         id: refs

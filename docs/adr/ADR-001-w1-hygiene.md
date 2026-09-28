@@ -45,8 +45,14 @@ with an own-code budget of 1,500 lines and to start with the hygiene checks (W1)
 
 - Consumers must keep the tools in their own lockfile and add three files (profile, knip.jsonc, .dependency-cruiser.cjs).
 - Python coverage is thinner: ruff (C901, PLR0915) and vulture only; no dependency-direction check (limit recorded).
-- Cross-repository checkout needs a read token while this repository is private (owner decision), and Actions access
-  must be opened to the organization (owner decision). Until then the workflow cannot be called from consumers.
+- While this repository is private, only private consumer repositories of the same account can call the workflow
+  (GitHub: access to a private repository's reusable workflows is allowed only from private repositories), the
+  Actions access setting must allow them, and the second checkout needs a read token — all owner decisions. A public
+  consumer (agent-comms-mcp, agent-memory) needs this repository to be public. Corrected in 0.1.2: the 0.1.0 text
+  said "org repositories" and implied a token was enough.
+- Consumers keep one lockfile; the workflow installs with `npm ci` or `bun install --frozen-lockfile` by the
+  `package-manager` input (0.1.2: the first consumer uses bun). A repository whose entry point sits at the root names
+  the file in `targets` (0.1.2).
 - Baseline growth (new entries, raised values) is a hand edit that W1 only bounds (`baseline_max_entries`); the owner
   line that authorizes it is verified by W3, not yet built.
 

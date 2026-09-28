@@ -121,6 +121,35 @@ export function trackedFiles(cwd, { include = ["**"], exclude = [] } = {}) {
   return all.filter((f) => matchesAny(f, include) && !matchesAny(f, exclude));
 }
 
+// The workflow's `targets` are directories or tracked files (a repository whose entry point sits at the root, such
+// as `server.ts`, has no directory to name). Each entry is normalized to the repo-relative form git uses (`./x`, `x/`,
+// `a//b` -> `x`, `a/b`; devauditor AUD-SHIRUBE3-TARGET-PATH-001), then must be a tracked file (its own glob) or a
+// directory holding at least one tracked file (`dir/**`); "." is the whole repository. Anything else is a misconfigured
+// scan and is returned in `missing` so the caller fails instead of silently scanning less (AUD-SHIRUBE3-TARGET-ENTRY-002).
+// The same set feeds the jscpd inventory and targets-coverage, so what is counted is what is scanned (AB-23, R13).
+export function resolveTargets(cwd, targets) {
+  const tracked = git(cwd, ["ls-files", "-z"]).split("\0").filter(Boolean);
+  const set = new Set(tracked);
+  const include = [];
+  const missing = [];
+  for (const raw of targets) {
+    const t = normalizeTarget(raw);
+    if (t === ".") { include.push("**"); continue; }
+    if (t === null) { missing.push(raw); continue; }
+    if (set.has(t)) include.push(t);
+    else if (tracked.some((f) => f.startsWith(`${t}/`))) include.push(`${t}/**`);
+    else missing.push(raw);
+  }
+  return { include, missing };
+}
+
+// "./a/b/", "a//b" -> "a/b"; "." -> "."; absolute paths and ".." segments are not repo-relative -> null.
+function normalizeTarget(raw) {
+  const parts = String(raw).split("/").filter((p) => p !== "" && p !== ".");
+  if (parts.includes("..") || String(raw).startsWith("/")) return null;
+  return parts.length === 0 ? "." : parts.join("/");
+}
+
 export function extensionOf(path) {
   const base = path.split("/").pop();
   return base.includes(".") ? base.split(".").pop() : "";
