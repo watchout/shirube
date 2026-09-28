@@ -119,11 +119,11 @@ jobs:
       - name: Large files and gitleaks-config guard (AB-10, AB-18 b/c)
         run: node "$SHIRUBE_TOOLS/scripts/hygiene/large-files.mjs" --profile "$SHIRUBE_PROFILE" --base "${{ steps.refs.outputs.base }}" --head "${{ steps.refs.outputs.head }}" --today "${{ steps.refs.outputs.today }}"
 
-      - name: Cross-file duplication (AB-02, AB-08, AB-13)
+      - name: Cross-file duplication vs introduction baseline of clone fingerprints (AB-02, AB-08, AB-13, AB-21)
         run: node "$SHIRUBE_TOOLS/scripts/hygiene/jscpd-guard.mjs" --profile "$SHIRUBE_PROFILE" --targets "${{ inputs.targets }}" --python "${{ inputs.python }}" --today "${{ steps.refs.outputs.today }}"
 
-      - name: Unused code, production entries (AB-03, AB-08, AB-11)
-        run: test -f knip.jsonc && npx --no-install knip --production --config knip.jsonc
+      - name: Unused code, production entries, vs introduction baseline (AB-03, AB-08, AB-11, AB-22)
+        run: node "$SHIRUBE_TOOLS/scripts/hygiene/knip-baseline.mjs" --profile "$SHIRUBE_PROFILE" --today "${{ steps.refs.outputs.today }}"
 
       - name: Dependency direction and cycles (AB-04, AB-08)
         run: test -f .dependency-cruiser.cjs && npx --no-install depcruise --config .dependency-cruiser.cjs ${{ inputs.targets }}

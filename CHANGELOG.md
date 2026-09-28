@@ -3,9 +3,13 @@
 All notable changes to this repository are recorded here (one entry per version; the format follows a plain
 "added / changed / removed" list — Keep a Changelog is a candidate in the baseline ADR, not an adopted rule).
 
-## 0.2.0 — unreleased (part a: baseline rule + structural; part b adds clones and unused code)
+## 0.2.0 — unreleased (part a: baseline rule + structural; part b: clones and unused code)
 
-### Added
+### Added (part b)
+- `jscpd-guard.mjs` judges clone fingerprints (sha256 of the whitespace-normalized fragment) against `.hygiene/clones-baseline.json` (AB-21, R15): a moved clone keeps its fingerprint, a new clone fails, a removed one is stale until `--ratchet`. Profile limit `clone_baseline_max_entries`. jscpd writing no report is `UNOBSERVABLE`.
+- `scripts/hygiene/knip-baseline.mjs` (AB-22, R16): knip `--production --reporter json`, per-file counts vs `.hygiene/knip-baseline.json`; missing `knip.jsonc` or a knip crash is `UNOBSERVABLE`. Profile limit `knip_baseline_max_entries`. The workflow's knip step calls it (`test -f knip.jsonc && npx knip` before).
+
+### Added (part a)
 - `judgeBaseline` in `scripts/hygiene/lib.mjs`: the one introduction-baseline rule (frozen at introduction, only goes down, `--init` once, `--ratchet` lowers or removes, entry ceiling). Owner decision D0 extends anti-bloat v5 §4.1 "既存超過の扱い" beyond file length.
 - `scripts/hygiene/structural-baseline.mjs` (AB-20, R14): runs the structural ESLint config and judges per-file violation counts against `.hygiene/structural-baseline.json`; a parse error or an empty target is UNOBSERVABLE. Profile limit `structural_baseline_max_entries`.
 - `lines-baseline.mjs --init` (AB-06b).

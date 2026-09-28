@@ -5,5 +5,5 @@
   "project": ["scripts/**/*.mjs!", "configs/**/*.mjs!", "tests/**/*.mjs"],
   "ignore": ["tests/fixtures/**", "configs/dependency-cruiser.template.cjs"],
   "ignoreDependencies": ["@eslint-community/eslint-plugin-eslint-comments", "eslint-plugin-unicorn", "jscpd", "dependency-cruiser"],
-  "ignoreBinaries": ["jscpd", "depcruise", "eslint"]
+  "ignoreBinaries": ["jscpd", "depcruise", "eslint", "knip"]
 }

@@ -44,9 +44,10 @@ This repository is being built by selective migration from `ai-dev-framework` (h
    ```
 
 3. If the repository already exceeds the limits, freeze today's excess once, in the introduction PR: run
-   `node .shirube-tools/scripts/hygiene/lines-baseline.mjs --init` and `structural-baseline.mjs --init --targets "<targets>"`
-   (with a checkout of this repository at the pinned commit as `.shirube-tools`), commit the written `.hygiene/*.json`,
-   and set `baseline_max_entries` / `structural_baseline_max_entries` to the written counts. From then on the counts
+   `node .shirube-tools/scripts/hygiene/lines-baseline.mjs --init`, `structural-baseline.mjs --init --targets "<targets>"`,
+   `jscpd-guard.mjs --init --targets "<targets>"` and `knip-baseline.mjs --init` (with a checkout of this repository at
+   the pinned commit as `.shirube-tools`), commit the written `.hygiene/*.json`, and set `baseline_max_entries` /
+   `structural_baseline_max_entries` / `clone_baseline_max_entries` / `knip_baseline_max_entries` to the written counts. From then on the counts
    only go down (`--ratchet` after a fix); raising a value or adding an entry by hand is an owner line, and a file not
    in a baseline must be within the limit (anti-bloat v5 §4.1 "既存超過の扱い", owner decision D0 for functions).
 4. Introduce it as `report_only` with an `enforce_by` date, then make it a required check. Introduction is complete only
