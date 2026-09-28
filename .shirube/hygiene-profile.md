@@ -27,6 +27,7 @@ This page is the one place where this repository declares what the hygiene check
     "pr_changed_files": 20,
     "large_file_bytes": 102400,
     "baseline_max_entries": 0,
+    "structural_baseline_max_entries": 0,
     "own_code_lines": 1500
   },
   "mode": "blocking",

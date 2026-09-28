@@ -128,8 +128,8 @@ jobs:
       - name: Dependency direction and cycles (AB-04, AB-08)
         run: test -f .dependency-cruiser.cjs && npx --no-install depcruise --config .dependency-cruiser.cjs ${{ inputs.targets }}
 
-      - name: Structural limits — function length, complexity (AB-12 structural side, AB-13)
-        run: npx --no-install eslint --config "$SHIRUBE_TOOLS/configs/structural-only.config.mjs" ${{ inputs.targets }}
+      - name: Structural limits — function length, complexity vs introduction baseline (AB-12 structural side, AB-13, AB-20)
+        run: node "$SHIRUBE_TOOLS/scripts/hygiene/structural-baseline.mjs" --profile "$SHIRUBE_PROFILE" --targets "${{ inputs.targets }}" --today "${{ steps.refs.outputs.today }}"
 
       - name: Exception guard — descriptions, no unlimited disable, expiry (AB-07, AB-12)
         env:

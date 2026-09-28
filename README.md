@@ -14,7 +14,7 @@ This repository is being built by selective migration from `ai-dev-framework` (h
 | path | what |
 |---|---|
 | `.github/workflows/hygiene.yml` | reusable workflow: targets coverage, file length vs baseline, large files + gitleaks-config guard, jscpd, knip, dependency-cruiser, ESLint structural run, ESLint guard-only run, gitleaks (pinned by sha256; a second `--ignore-gitleaks-allow` pass makes every marker-hidden finding need a registered exception), PR size, optional ruff / vulture (pinned) |
-| `scripts/hygiene/*.mjs` | the checks that are not an off-the-shelf tool (targets coverage, baseline, PR size, large files + config guard, secret-suppressions, jscpd inventory guard, own-code budget). No runtime dependencies |
+| `scripts/hygiene/*.mjs` | the checks that are not an off-the-shelf tool (targets coverage, file-length baseline, structural baseline around ESLint, PR size, large files + config guard, secret-suppressions, jscpd inventory guard, own-code budget) and the one baseline rule they share (`baseline.mjs`: frozen at introduction, only goes down). No runtime dependencies |
 | `configs/` | the two ESLint configs (structural-only, guard-only; files / ignores / parser come from the profile via `profile-eslint.mjs`) and templates for `knip.jsonc` and `.dependency-cruiser.cjs` |
 | `templates/` | PR, Issue, ADR, hygiene profile, runbook, owner decision, one-page spec, AGENTS overlay |
 | `docs/` | boundary (one diagram), threats and failures, ADR-001, the one-page spec of W1 |
@@ -43,7 +43,13 @@ This repository is being built by selective migration from `ai-dev-framework` (h
          SHIRUBE_READ_TOKEN: ${{ secrets.SHIRUBE_READ_TOKEN }}   # only while this repository is private
    ```
 
-3. Introduce it as `report_only` with an `enforce_by` date, then make it a required check. Introduction is complete only
+3. If the repository already exceeds the limits, freeze today's excess once, in the introduction PR: run
+   `node .shirube-tools/scripts/hygiene/lines-baseline.mjs --init` and `structural-baseline.mjs --init --targets "<targets>"`
+   (with a checkout of this repository at the pinned commit as `.shirube-tools`), commit the written `.hygiene/*.json`,
+   and set `baseline_max_entries` / `structural_baseline_max_entries` to the written counts. From then on the counts
+   only go down (`--ratchet` after a fix); raising a value or adding an entry by hand is an owner line, and a file not
+   in a baseline must be within the limit (anti-bloat v5 §4.1 "既存超過の扱い", owner decision D0 for functions).
+4. Introduce it as `report_only` with an `enforce_by` date, then make it a required check. Introduction is complete only
    when every applicable AB row (anti-bloat v5 §7) has passed in that repository and AB-14 (a defective PR is rejected
    and a correct PR is allowed by the real required check) is recorded.
 

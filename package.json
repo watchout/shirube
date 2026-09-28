@@ -1,6 +1,6 @@
 {
   "name": "@watchout/shirube",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "private": true,
   "description": "Shirube — reusable hygiene checks (W1), templates and the migration records for IYASAKA repositories",
   "type": "module",
@@ -11,6 +11,7 @@
     "test": "node --test tests/*.test.mjs",
     "hygiene:lines": "node scripts/hygiene/lines-baseline.mjs --profile .shirube/hygiene-profile.md",
     "hygiene:ratchet": "node scripts/hygiene/lines-baseline.mjs --profile .shirube/hygiene-profile.md --ratchet",
+    "hygiene:structural": "node scripts/hygiene/structural-baseline.mjs --profile .shirube/hygiene-profile.md --targets \"scripts configs\"",
     "hygiene:jscpd": "node scripts/hygiene/jscpd-guard.mjs --profile .shirube/hygiene-profile.md --targets \"scripts configs\"",
     "hygiene:budget": "node scripts/hygiene/own-code-budget.mjs --profile .shirube/hygiene-profile.md",
     "hygiene:coverage": "node scripts/hygiene/targets-coverage.mjs --profile .shirube/hygiene-profile.md --targets \"scripts configs\"",

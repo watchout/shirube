@@ -3,6 +3,17 @@
 All notable changes to this repository are recorded here (one entry per version; the format follows a plain
 "added / changed / removed" list — Keep a Changelog is a candidate in the baseline ADR, not an adopted rule).
 
+## 0.2.0 — unreleased (part a: baseline rule + structural; part b adds clones and unused code)
+
+### Added
+- `scripts/hygiene/baseline.mjs`: the one introduction-baseline rule (frozen at introduction, only goes down, `--init` once, `--ratchet` lowers or removes, entry ceiling). Owner decision D0 extends anti-bloat v5 §4.1 "既存超過の扱い" beyond file length.
+- `scripts/hygiene/structural-baseline.mjs` (AB-20, R14): runs the structural ESLint config and judges per-file violation counts against `.hygiene/structural-baseline.json`; a parse error or an empty target is UNOBSERVABLE. Profile limit `structural_baseline_max_entries`.
+- `lines-baseline.mjs --init` (AB-06b).
+
+### Changed
+- the workflow's structural step calls `structural-baseline.mjs` instead of ESLint directly (same config, same thresholds).
+- `lines-baseline.mjs` uses the shared rule; `--ratchet` now also removes the entry of a deleted file (before: hand edit).
+
 ## 0.1.2 — unreleased
 
 ### Added

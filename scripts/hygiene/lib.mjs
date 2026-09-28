@@ -8,8 +8,8 @@ export const EXIT = { PASS: 0, FAIL: 1, UNOBSERVABLE: 2 };
 export const LANGUAGE_EXTENSIONS = { js: ["js", "mjs", "cjs", "jsx"], ts: ["js", "mjs", "cjs", "jsx", "ts", "tsx", "mts", "cts"], python: ["py"] };
 export const LOCKFILES = ["package-lock.json", "npm-shrinkwrap.json", "yarn.lock", "pnpm-lock.yaml", "poetry.lock", "uv.lock", "Cargo.lock", "Gemfile.lock"];
 
-const INTEGER_LIMITS = ["new_file_lines", "pr_added_lines", "pr_changed_files", "large_file_bytes", "baseline_max_entries"];
-const DEFAULT_LIMITS = { new_file_lines: 300, pr_added_lines: 400, pr_changed_files: 20, large_file_bytes: 102400, baseline_max_entries: 0, own_code_lines: null };
+const INTEGER_LIMITS = ["new_file_lines", "pr_added_lines", "pr_changed_files", "large_file_bytes", "baseline_max_entries", "structural_baseline_max_entries"];
+const DEFAULT_LIMITS = { new_file_lines: 300, pr_added_lines: 400, pr_changed_files: 20, large_file_bytes: 102400, baseline_max_entries: 0, structural_baseline_max_entries: 0, own_code_lines: null };
 const EXCEPTION_KINDS = ["gitleaks-allow", "gitleaks-config"];
 
 export function parseArgs(argv) {
@@ -30,7 +30,7 @@ function integerLimit(name, v, min) {
 
 function validateLimits(limits) {
   const l = { ...DEFAULT_LIMITS, ...(limits || {}) };
-  for (const k of INTEGER_LIMITS) integerLimit(k, l[k], k === "baseline_max_entries" ? 0 : 1);
+  for (const k of INTEGER_LIMITS) integerLimit(k, l[k], k.endsWith("_max_entries") ? 0 : 1);
   if (l.own_code_lines !== null) integerLimit("own_code_lines", l.own_code_lines, 1);
   return l;
 }

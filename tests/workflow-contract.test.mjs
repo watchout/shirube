@@ -45,7 +45,9 @@ test("gitleaks, ruff and vulture are pinned; the guard run disables inline confi
   assert.match(body, /--ignore-gitleaks-allow --exit-code 0 [^\n]*--report-format json --report-path \.hygiene\/gitleaks-allowed\.json/);
   assert.match(wf, /eslint --no-inline-config --max-warnings 0 --config "\$SHIRUBE_TOOLS\/configs\/guard-only\.config\.mjs"/);
   const scriptSteps = body.match(/node "\$SHIRUBE_TOOLS\/scripts\/hygiene\/[a-z-]+\.mjs"[^\n]*/g);
-  assert.equal(scriptSteps.length, 6);
+  assert.equal(scriptSteps.length, 7);
+  assert.match(body, /structural-baseline\.mjs" --profile "\$SHIRUBE_PROFILE" --targets "\$\{\{ inputs\.targets \}\}"/);
+  assert.doesNotMatch(body, /eslint --config "\$SHIRUBE_TOOLS\/configs\/structural-only/); // the structural run goes through the baseline script
   for (const s of scriptSteps) { assert.match(s, /--profile "\$SHIRUBE_PROFILE"/); assert.match(s, /--today/); }
 });
 

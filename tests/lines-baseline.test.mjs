@@ -47,6 +47,21 @@ test("baseline cannot gain entries beyond baseline_max_entries, and stale entrie
   write(dir, ".hygiene/lines-baseline.json", JSON.stringify({ "src/gone.mjs": 10 })); commit(dir, "stale");
   r = run(S, dir);
   assert.equal(r.status, 1); assert.match(r.summary.failures[0].why, /no longer exists/);
+  r = run(S, dir, ["--ratchet"]);                            // ratchet removes the entry for the deleted file
+  assert.equal(r.status, 0); assert.deepEqual(r.summary.ratcheted, ["src/gone.mjs"]);
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, ".hygiene/lines-baseline.json"), "utf8")), {});
+});
+
+test("--init writes today's over-limit files once (introduction), never when a baseline already exists; new growth then fails", () => {
+  const dir = repo();
+  write(dir, "src/big.mjs", lines(500)); write(dir, "src/small.mjs", lines(20)); commit(dir, "intro");
+  assert.equal(run(S, dir).status, 1);                       // no baseline: the 500-line file is a new file over limit
+  let r = run(S, dir, ["--init"]);
+  assert.equal(r.status, 0, JSON.stringify(r.summary)); assert.equal(r.summary.initialized, true); assert.equal(r.summary.baseline_entries, 1);
+  assert.deepEqual(JSON.parse(readFileSync(join(dir, ".hygiene/lines-baseline.json"), "utf8")), { "src/big.mjs": 500 }); // only the over-limit file is written
+  write(dir, "src/big.mjs", lines(600)); commit(dir, "grow");
+  r = run(S, dir, ["--init"]);                               // baseline exists: --init is ignored, growth fails
+  assert.equal(r.status, 1); assert.equal(r.summary.initialized, false); assert.equal(r.summary.failures[0].why, "grew past baseline");
 });
 
 test("missing profile is UNOBSERVABLE (exit 2), never a silent pass", () => {

@@ -40,6 +40,13 @@ with an own-code budget of 1,500 lines and to start with the hygiene checks (W1)
    kind, reason, issue and expiry, and the clock is an input (`--today`). No second declaration file (S3).
 5. **Fail closed everywhere.** Exit 2 / `UNOBSERVABLE` for anything that cannot be observed; no `continue-on-error`.
 6. **Self-application.** This repository runs its own tests, its own hygiene workflow and its own budget (SR / K7).
+7. **Introduction baselines (0.2.0, owner decision D0).** What exceeds a limit on the day a repository adopts W1 is
+   frozen per file — file length since 0.1.0, structural violations (function length, complexity) since 0.2.0 — and can
+   only go down: `--init` records it once in the introduction PR, `--ratchet` lowers it after a fix, nothing raises it,
+   and a file not in a baseline must be within the limit. The first consumer measured 912 structural violations in 168
+   files on the day of the switch (iyasaka-arc `2026-09-28-shirube-first-consumer-switch.md`); without this rule the
+   check could never become required there, and loosening the thresholds instead is forbidden (T1). One helper
+   (`scripts/hygiene/baseline.mjs`) holds the rule for every measure (third example → one abstraction, S2 / S3).
 
 ## Consequences (including what gets worse)
 

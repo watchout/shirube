@@ -22,7 +22,8 @@
     "pr_added_lines": 400,
     "pr_changed_files": 20,
     "large_file_bytes": 102400,
-    "baseline_max_entries": 0
+    "baseline_max_entries": 0,
+    "structural_baseline_max_entries": 0
   },
   "mode": "report_only",
   "enforce_by": "YYYY-MM-DD"

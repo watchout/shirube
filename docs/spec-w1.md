@@ -40,6 +40,7 @@
 | R10 | This repository's own code (scripts, workflows, configs) shall stay within `own_code_lines` (1,500). | ubiquitous |
 | R12 | The workflow shall install the consumer's dependencies from the consumer's lockfile with the package manager named by `package-manager` (`npm ci` or `bun install --frozen-lockfile`); any other value shall fail with `UNOBSERVABLE`. | ubiquitous (0.1.2) |
 | R13 | Each `targets` entry, normalized to the repo-relative form git uses (`./x`, `x/`, `a//b` → `x`, `a/b`; absolute or `..` paths rejected), shall be a tracked file (scanned as itself) or a directory holding at least one tracked file; otherwise both the duplication and the coverage check shall fail naming the entry, even when other entries are valid. | event (0.1.2) |
+| R14 | When a file under the targets has more structural violations (function length, complexity) than its baseline entry, or a file not in the baseline has any, the structural check shall fail; a count that went down (or a file that disappeared) shall fail until `--ratchet` lowers or removes the entry; `--init` shall record today's counts only when no baseline exists; the number of entries shall not exceed `structural_baseline_max_entries`. The same rule (one helper) governs file length. | event (0.2.0, owner decision D0) |
 
 ## Acceptance examples (Given / When / Then — SRC-M-03; executable ones are in `tests/`)
 
@@ -61,6 +62,8 @@
 | S8 | workflows contain `continue-on-error`, `\|\| true`, `--if-present` | contract test | FAIL | yes |
 | AB-23 | `targets: src server.mjs` / `src ./server.mjs` / `./src/ server.mjs` / `server.mjs` / `missing.mjs`, `src missing.mjs`, `src ../server.mjs`, `src /server.mjs` / a root `.ts` file with a JS profile as `server.ts` and as `./server.ts` / `src missing.ts` | jscpd-guard inventory, targets-coverage | 2 files / 2 files / 2 files / 1 file / FAIL naming the entry (all four) / FAIL naming `server.ts` (both spellings) / FAIL naming the entry | yes (tests/guards) |
 | AB-24 | `package-manager: npm` / `bun` / other | install step | `npm ci` / `bun install --frozen-lockfile` / exit 2 `UNOBSERVABLE`; npm cache only for npm; `npm install` never | yes (contract test); real bun consumer run = first consumer switch |
+| AB-20 | one 60-statement function, no baseline / `--init` / same file again / a second long function / fixed without ratchet / `--ratchet` / a new file with a long function / a parse error / two entries over the ceiling of 1 | structural-baseline | FAIL "new file over limit" / written `{file: 1}` / PASS / FAIL "grew past baseline" / FAIL "baseline was not lowered" / PASS and `{file: 0}` / FAIL on the new file / UNOBSERVABLE / FAIL ceiling | yes (tests/structural-baseline) |
+| AB-06b | a deleted file still in the lines baseline / `--init` with one 500-line and one 20-line file / `--init` again after growth | lines-baseline | FAIL "no longer exists", `--ratchet` removes it / `{big: 500}` written, PASS / ignored, FAIL "grew past baseline" | yes (tests/lines-baseline) |
 
 ## Protected surfaces and failure handling
 
