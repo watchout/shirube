@@ -39,7 +39,7 @@
 | R11 | The scripts shall be fetched from the callee's own repository and commit (`job.workflow_repository` / `job.workflow_sha`) and verified before use. | ubiquitous |
 | R10 | This repository's own code (scripts, workflows, configs) shall stay within `own_code_lines` (1,500). | ubiquitous |
 | R12 | The workflow shall install the consumer's dependencies from the consumer's lockfile with the package manager named by `package-manager` (`npm ci` or `bun install --frozen-lockfile`); any other value shall fail with `UNOBSERVABLE`. | ubiquitous (0.1.2) |
-| R13 | When a `targets` entry is a tracked file, the inventory and coverage checks shall treat it as that file; when it is neither a tracked file nor a directory with tracked files, the duplication check shall fail. | event (0.1.2) |
+| R13 | Each `targets` entry, normalized to the repo-relative form git uses (`./x`, `x/`, `a//b` → `x`, `a/b`; absolute or `..` paths rejected), shall be a tracked file (scanned as itself) or a directory holding at least one tracked file; otherwise both the duplication and the coverage check shall fail naming the entry, even when other entries are valid. | event (0.1.2) |
 
 ## Acceptance examples (Given / When / Then — SRC-M-03; executable ones are in `tests/`)
 
@@ -59,7 +59,7 @@
 | R03 | normal JSX / long JSX function + expired TODO | both ESLint runs | PASS / FAIL | yes |
 | OWN-01 | own code 1,600 lines / 1,500 lines | own-code-budget | FAIL / PASS | yes |
 | S8 | workflows contain `continue-on-error`, `\|\| true`, `--if-present` | contract test | FAIL | yes |
-| AB-23 | `targets: src server.mjs` / `targets: server.mjs` / `targets: missing.mjs` / a root `.ts` file with a JS profile | jscpd-guard inventory, targets-coverage | 3 files / 1 file scanned / FAIL "no tracked files" / FAIL naming `server.ts` | yes (tests/guards) |
+| AB-23 | `targets: src server.mjs` / `src ./server.mjs` / `./src/ server.mjs` / `server.mjs` / `missing.mjs`, `src missing.mjs`, `src ../server.mjs`, `src /server.mjs` / a root `.ts` file with a JS profile as `server.ts` and as `./server.ts` / `src missing.ts` | jscpd-guard inventory, targets-coverage | 2 files / 2 files / 2 files / 1 file / FAIL naming the entry (all four) / FAIL naming `server.ts` (both spellings) / FAIL naming the entry | yes (tests/guards) |
 | AB-24 | `package-manager: npm` / `bun` / other | install step | `npm ci` / `bun install --frozen-lockfile` / exit 2 `UNOBSERVABLE`; npm cache only for npm; `npm install` never | yes (contract test); real bun consumer run = first consumer switch |
 
 ## Protected surfaces and failure handling

@@ -7,7 +7,7 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { main, readProfile, trackedFiles, targetGlobs, countLines, LANGUAGE_EXTENSIONS, report } from "./lib.mjs";
+import { main, readProfile, trackedFiles, resolveTargets, countLines, LANGUAGE_EXTENSIONS, report } from "./lib.mjs";
 
 const CHECK = "jscpd";
 const MIN_LINES = 10;
@@ -31,12 +31,12 @@ function excludedGlobs(profile) {
 }
 
 function inventory(cwd, targets, profile, python) {
-  const include = targetGlobs(cwd, targets);
+  const { include, missing } = resolveTargets(cwd, targets);
   const exts = coveredExtensions(profile, python);
   const files = trackedFiles(cwd, { include, exclude: excludedGlobs(profile) })
     .filter((f) => exts.includes(f.split(".").pop()));
   const eligible = files.filter((f) => countLines(readFileSync(join(cwd, f), "utf8")) >= MIN_LINES);
-  return { files, eligible };
+  return { files, eligible, missing };
 }
 
 function runJscpd(cwd, targets, profile, reportDir) {
@@ -51,7 +51,8 @@ function run(args) {
   const cwd = args.cwd || process.cwd();
   const profile = readProfile(join(cwd, args.profile || ".shirube/hygiene-profile.md"));
   const targets = String(args.targets || "src").split(/\s+/).filter(Boolean);
-  const { files, eligible } = inventory(cwd, targets, profile, String(args.python) === "true");
+  const { files, eligible, missing } = inventory(cwd, targets, profile, String(args.python) === "true");
+  if (missing.length > 0) return report(CHECK, "FAIL", { targets, missing, why: "target is neither a tracked file nor a directory with tracked files (misconfigured scan)" });
   if (files.length === 0) return report(CHECK, "FAIL", { targets, why: "no tracked files under targets (misconfigured scan)" });
   if (eligible.length === 0) return report(CHECK, "PASS", { targets, files: files.length, eligible: 0, why: `all files shorter than ${MIN_LINES} lines; scan skipped with inventory` });
   const r = runJscpd(cwd, targets, profile, args["report-dir"] || ".hygiene/jscpd");

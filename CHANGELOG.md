@@ -7,6 +7,7 @@ All notable changes to this repository are recorded here (one entry per version;
 
 ### Added
 - `package-manager` input (`npm` | `bun`): dependencies are installed from the consumer's lockfile with `npm ci` or `bun install --frozen-lockfile`; any other value exits 2. `bun-version` input for setup-bun. The npm cache of setup-node is used only for npm (AB-24, R12). Reason: the first consumer (agent-comms-mcp) has only `bun.lock`.
+- `targets` entries are normalized (`./x`, `x/`, `a//b`) and each must be a tracked file or a directory with tracked files; a missing or non-relative entry fails even beside valid ones (`resolveTargets` in `lib.mjs`; devauditor AUD-SHIRUBE3-TARGET-PATH-001 / -ENTRY-002)
 - `targets` may name tracked files, not only directories (`targetGlobs` in `lib.mjs`, used by the jscpd inventory and targets-coverage), so a root entry point such as `server.ts` is counted and scanned as the same set (AB-23, R13).
 
 ### Changed
