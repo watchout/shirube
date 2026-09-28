@@ -1,14 +1,13 @@
 // Structural limits (function length, cyclomatic complexity: configs/structural-only.config.mjs, SRC-W1-04) with the
 // introduction baseline of anti-bloat v5 §4.1 "既存超過の扱い" extended to functions (owner decision D0): a file not in
 // the baseline must have 0 violations; a baseline file must not exceed its count; counts only go down (--ratchet);
-// --init records today's counts at introduction. The rule lives in baseline.mjs; ESLint is the measurement (AB-20).
+// --init records today's counts at introduction. The rule lives in lib.mjs (judgeBaseline); ESLint is the measurement (AB-20).
 // ESLint exit 0 / 1 are results; a crash or a parse error is UNOBSERVABLE, never PASS.
 // Usage: node structural-baseline.mjs --profile <md> --targets "src bin" [--baseline .hygiene/structural-baseline.json] [--ratchet | --init] [--cwd .]
 import { spawnSync } from "node:child_process";
 import { realpathSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { main, readProfile, report } from "./lib.mjs";
-import { judgeBaseline } from "./baseline.mjs";
+import { main, readProfile, report, judgeBaseline } from "./lib.mjs";
 
 const CHECK = "structural";
 const CONFIG = resolve(import.meta.dirname, "../../configs/structural-only.config.mjs");

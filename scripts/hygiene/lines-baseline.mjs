@@ -1,12 +1,11 @@
 // File-length check with a numeric baseline table (anti-bloat v5 §4.1 "ファイルの肥大", AB-01 / AB-06).
 // A file not in the baseline must be <= limits.new_file_lines (300); a baseline file must be <= its value; the rest of
-// the rules (stale -> FAIL unless --ratchet, --init at introduction, entry ceiling) live in baseline.mjs.
+// the rules (stale -> FAIL unless --ratchet, --init at introduction, entry ceiling) live in lib.mjs (judgeBaseline).
 // An include set that matches no tracked file is a misconfiguration -> FAIL (never "0 files, PASS").
 // Usage: node lines-baseline.mjs --profile <md> [--baseline .hygiene/lines-baseline.json] [--ratchet | --init] [--cwd .]
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { main, readProfile, trackedFiles, countLines, report } from "./lib.mjs";
-import { judgeBaseline } from "./baseline.mjs";
+import { main, readProfile, trackedFiles, countLines, report, judgeBaseline } from "./lib.mjs";
 
 const CHECK = "lines-baseline";
 

@@ -46,7 +46,7 @@ with an own-code budget of 1,500 lines and to start with the hygiene checks (W1)
    and a file not in a baseline must be within the limit. The first consumer measured 912 structural violations in 168
    files on the day of the switch (iyasaka-arc `2026-09-28-shirube-first-consumer-switch.md`); without this rule the
    check could never become required there, and loosening the thresholds instead is forbidden (T1). One helper
-   (`scripts/hygiene/baseline.mjs`) holds the rule for every measure (third example → one abstraction, S2 / S3).
+   (`judgeBaseline` in `scripts/hygiene/lib.mjs`, the only module a check may import besides Node built-ins) holds the rule for every measure (third example → one abstraction, S2 / S3).
 
 ## Consequences (including what gets worse)
 
