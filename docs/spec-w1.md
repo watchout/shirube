@@ -40,7 +40,7 @@
 | R10 | This repository's own code (scripts, workflows, configs) shall stay within `own_code_lines` (1,500). | ubiquitous |
 | R12 | The workflow shall install the consumer's dependencies from the consumer's lockfile with the package manager named by `package-manager` (`npm ci` or `bun install --frozen-lockfile`); any other value shall fail with `UNOBSERVABLE`. | ubiquitous (0.1.2) |
 | R13 | Each `targets` entry, normalized to the repo-relative form git uses (`./x`, `x/`, `a//b` → `x`, `a/b`; absolute or `..` paths rejected), shall be a tracked file (scanned as itself) or a directory holding at least one tracked file; otherwise both the duplication and the coverage check shall fail naming the entry, even when other entries are valid. | event (0.1.2) |
-| R6d | The duplication scan shall analyze exactly the extensions of the inventory (the profile language, plus Python when requested), passed to jscpd as `--format`; a duplicate in any other file type under the targets shall not be counted. | ubiquitous (0.1.3) |
+| R6d | The duplication scan shall analyze exactly the inventory's files (tracked, covered by the profile language plus Python when requested, not excluded): they are passed to jscpd as explicit paths, with `--format` naming their formats. A file outside the inventory shall not be scanned whatever its extension, and the summary shall report jscpd's `sources` beside the inventory's `files`. | ubiquitous (0.1.3) |
 
 ## Acceptance examples (Given / When / Then — SRC-M-03; executable ones are in `tests/`)
 
@@ -63,6 +63,7 @@
 | AB-23 | `targets: src server.mjs` / `src ./server.mjs` / `./src/ server.mjs` / `server.mjs` / `missing.mjs`, `src missing.mjs`, `src ../server.mjs`, `src /server.mjs` / a root `.ts` file with a JS profile as `server.ts` and as `./server.ts` / `src missing.ts` | jscpd-guard inventory, targets-coverage | 2 files / 2 files / 2 files / 1 file / FAIL naming the entry (all four) / FAIL naming `server.ts` (both spellings) / FAIL naming the entry | yes (tests/guards) |
 | AB-24 | `package-manager: npm` / `bun` / other | install step | `npm ci` / `bun install --frozen-lockfile` / exit 2 `UNOBSERVABLE`; npm cache only for npm; `npm install` never | yes (contract test); real bun consumer run = first consumer switch |
 | AB-25 | JS profile: a 14-line duplicate in two `.sql` files under the targets / the same in two `.mjs` files / TS profile with `.tsx` and `.mts` duplicates | jscpd-guard | PASS, clones 0 (sql is outside the inventory and the scan) / FAIL, clones 1 / FAIL, clones 3 (mjs + tsx + mts; sql still not counted) | yes (tests/guards) |
+| AB-26 | JS profile narrowed to `mjs` with a 14-line duplicate in two `.js` files / TS profile narrowed to `ts` with it in two `.mts` files / JS profile with it in two `.es6` files (jscpd's own format would scan all three; devauditor AUD-SHIRUBE7-EXTSET-001); then the same duplicate in two inventory files | jscpd-guard | PASS, files 1, sources 1, clones 0 in all three / FAIL, files 3, sources 3, clones 1 | yes (tests/guards) |
 
 ## Protected surfaces and failure handling
 

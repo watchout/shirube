@@ -6,7 +6,7 @@ All notable changes to this repository are recorded here (one entry per version;
 ## 0.1.3 — unreleased
 
 ### Changed
-- `jscpd-guard.mjs` passes `--format` (javascript / jsx / typescript / tsx, python when requested) so the real scan analyzes exactly the inventory's extensions (AB-25, R6d). Before, jscpd also scanned bash / sql / markdown / text under the targets: on the first consumer the inventory said 91 clones (TS / JS) while the scan reported 109 (aun, agent-comms-mcp#977 5883707313). No threshold changed.
+- `jscpd-guard.mjs` passes the inventory's files to jscpd as explicit paths (plus `--format` naming their formats) so the real scan is exactly the inventory (AB-25, AB-26, R6d). Before, jscpd received the target directories and also scanned bash / sql / markdown / text: on the first consumer the inventory said 91 clones (TS / JS) while the scan reported 109 (aun, agent-comms-mcp#977 5883707313). The first 0.1.3 head passed `--format` only; that maps extensions many-to-one, so a narrowed inventory (`mjs` only) let `.js` / `.mts` / `.es6` duplicates back into the scan (devauditor AUD-SHIRUBE7-EXTSET-001). The summary now reports jscpd's `sources` beside `files`. No threshold changed.
 
 ## 0.1.2 — released as tag v0.1.2 (`fda19c21`)
 
