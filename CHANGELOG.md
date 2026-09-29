@@ -3,7 +3,12 @@
 All notable changes to this repository are recorded here (one entry per version; the format follows a plain
 "added / changed / removed" list — Keep a Changelog is a candidate in the baseline ADR, not an adopted rule).
 
-## 0.1.2 — unreleased
+## 0.1.3 — unreleased
+
+### Changed
+- `jscpd-guard.mjs` passes `--format` (javascript / jsx / typescript / tsx, python when requested) so the real scan analyzes exactly the inventory's extensions (AB-25, R6d). Before, jscpd also scanned bash / sql / markdown / text under the targets: on the first consumer the inventory said 91 clones (TS / JS) while the scan reported 109 (aun, agent-comms-mcp#977 5883707313). No threshold changed.
+
+## 0.1.2 — released as tag v0.1.2 (`fda19c21`)
 
 ### Added
 - `package-manager` input (`npm` | `bun`): dependencies are installed from the consumer's lockfile with `npm ci` or `bun install --frozen-lockfile`; any other value exits 2. `bun-version` input for setup-bun. The npm cache of setup-node is used only for npm (AB-24, R12). Reason: the first consumer (agent-comms-mcp) has only `bun.lock`.

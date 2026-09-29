@@ -1,6 +1,6 @@
 {
   "name": "@watchout/shirube",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "description": "Shirube — reusable hygiene checks (W1), templates and the migration records for IYASAKA repositories",
   "type": "module",
