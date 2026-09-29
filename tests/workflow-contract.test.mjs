@@ -50,8 +50,27 @@ test("gitleaks, ruff and vulture are pinned; the guard run disables inline confi
 });
 
 test("AB-05 is declared pull_request-only: the PR size step runs on pull_request, a NOT_APPLICABLE line runs otherwise, and no other check is conditioned on the event", () => {
-  assert.match(body, /name: PR size \(AB-05\) — pull_request only\n\s+if: \$\{\{ github\.event_name == 'pull_request' \}\}\n\s+run: node "\$SHIRUBE_TOOLS\/scripts\/hygiene\/pr-size\.mjs"/);
-  assert.match(body, /name: PR size \(AB-05\) — not applicable on push\n\s+if: \$\{\{ github\.event_name != 'pull_request' \}\}\n\s+run: echo '\{"check":"pr-size","verdict":"NOT_APPLICABLE"/);
-  const conditioned = body.match(/^\s+if: .*$/gm);
-  assert.deepEqual(conditioned.map((l) => l.trim()), ["if: ${{ inputs.package-manager == 'bun' }}", "if: ${{ github.event_name == 'pull_request' }}", "if: ${{ github.event_name != 'pull_request' }}", "if: ${{ inputs.python }}"]);
+  assert.match(body, /name: PR size \(AB-05\) — pull_request only\n\s+id: prsize\n\s+if: \$\{\{ !cancelled\(\) && steps\.refs\.outcome == 'success' && github\.event_name == 'pull_request' \}\}\n\s+run: node "\$SHIRUBE_TOOLS\/scripts\/hygiene\/pr-size\.mjs"/);
+  assert.match(body, /name: PR size \(AB-05\) — not applicable on push\n\s+id: prsize_na\n\s+if: \$\{\{ !cancelled\(\) && steps\.refs\.outcome == 'success' && github\.event_name != 'pull_request' \}\}\n\s+run: echo '\{"check":"pr-size","verdict":"NOT_APPLICABLE"/);
+  const conditioned = body.match(/^\s+if: .*$/gm).map((l) => l.trim());
+  assert.deepEqual(conditioned.filter((l) => l.includes("github.event_name")), [`${RUN_AFTER_FAILURE} && github.event_name == 'pull_request' }}`, `${RUN_AFTER_FAILURE} && github.event_name != 'pull_request' }}`]);
+  assert.deepEqual(conditioned.filter((l) => !l.startsWith(RUN_AFTER_FAILURE)), ["if: ${{ inputs.package-manager == 'bun' }}", "if: ${{ always() }}"]);
+});
+
+const RUN_AFTER_FAILURE = "if: ${{ !cancelled() && steps.refs.outcome == 'success'";
+const CHECK_IDS = ["coverage", "lines", "large", "jscpd", "knip", "depcruise", "structural", "guard", "secrets", "prsize", "prsize_na", "python"];
+const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+test("AB-27: every check runs even after an earlier check failed (report_only needs every result); only a failed setup skips them; the last step lists every outcome and fails on a failed, cancelled or unexpectedly skipped check", () => {
+  const steps = body.split(/\n(?=\s+- name: )/).filter((s) => /^\s+- name: /.test(s));
+  const checks = steps.filter((s) => new RegExp(`\\n\\s+id: (${CHECK_IDS.join("|")})\\n`).test(s));
+  assert.equal(checks.length, CHECK_IDS.length);
+  for (const s of checks) assert.match(s, new RegExp(`\\n\\s+id: [a-z_]+\\n\\s+${escape(RUN_AFTER_FAILURE)}`), s.split("\n")[0]);  // the condition sits right after the id, before env/run
+  const summary = steps.find((s) => /\n\s+if: \$\{\{ always\(\) \}\}\n/.test(s));
+  assert.ok(summary, "a final always() step lists the outcomes");
+  for (const id of CHECK_IDS) assert.match(summary, new RegExp(`=\\$\\{\\{ steps\\.${id}\\.outcome \\}\\}`), id);
+  assert.match(summary, /\[ "\$\(get "\$k"\)" = success \] \|\| \{[^\n]*fail=1; \}/);  // nine unconditional checks must be success
+  assert.match(summary, /\[ "\$\(get python\)" = success \] \|\| \[ "\$\(get python\)" = skipped \] \|\|/);  // python may be skipped, never failed
+  assert.match(summary, /\n\s+exit \$fail\n?$/);
+  assert.equal(steps.indexOf(summary), steps.length - 1);
 });

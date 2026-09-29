@@ -110,33 +110,55 @@ jobs:
           fi
           echo "today=$(date -u +%F)" >> "$GITHUB_OUTPUT"
 
+      # Every check below runs even when an earlier check failed: a report_only consumer needs the whole picture
+      # (on the first consumer, one failing check left eight checks SKIPPED — aun #977 5884009062). Only a failed
+      # setup (refs skipped or failed) skips them. The job still fails on any failed check: no continue-on-error,
+      # and the last step re-reads every outcome (AB-27, R17).
       - name: Targets are covered by the profile language (B03 guard)
+        id: coverage
+        if: ${{ !cancelled() && steps.refs.outcome == 'success' }}
         run: node "$SHIRUBE_TOOLS/scripts/hygiene/targets-coverage.mjs" --profile "$SHIRUBE_PROFILE" --targets "${{ inputs.targets }}" --python "${{ inputs.python }}" --today "${{ steps.refs.outputs.today }}"
 
       - name: File length vs baseline (AB-01, AB-06)
+        id: lines
+        if: ${{ !cancelled() && steps.refs.outcome == 'success' }}
         run: node "$SHIRUBE_TOOLS/scripts/hygiene/lines-baseline.mjs" --profile "$SHIRUBE_PROFILE" --today "${{ steps.refs.outputs.today }}"
 
       - name: Large files and gitleaks-config guard (AB-10, AB-18 b/c)
+        id: large
+        if: ${{ !cancelled() && steps.refs.outcome == 'success' }}
         run: node "$SHIRUBE_TOOLS/scripts/hygiene/large-files.mjs" --profile "$SHIRUBE_PROFILE" --base "${{ steps.refs.outputs.base }}" --head "${{ steps.refs.outputs.head }}" --today "${{ steps.refs.outputs.today }}"
 
       - name: Cross-file duplication (AB-02, AB-08, AB-13)
+        id: jscpd
+        if: ${{ !cancelled() && steps.refs.outcome == 'success' }}
         run: node "$SHIRUBE_TOOLS/scripts/hygiene/jscpd-guard.mjs" --profile "$SHIRUBE_PROFILE" --targets "${{ inputs.targets }}" --python "${{ inputs.python }}" --today "${{ steps.refs.outputs.today }}"
 
       - name: Unused code, production entries (AB-03, AB-08, AB-11)
+        id: knip
+        if: ${{ !cancelled() && steps.refs.outcome == 'success' }}
         run: test -f knip.jsonc && npx --no-install knip --production --config knip.jsonc
 
       - name: Dependency direction and cycles (AB-04, AB-08)
+        id: depcruise
+        if: ${{ !cancelled() && steps.refs.outcome == 'success' }}
         run: test -f .dependency-cruiser.cjs && npx --no-install depcruise --config .dependency-cruiser.cjs ${{ inputs.targets }}
 
       - name: Structural limits — function length, complexity (AB-12 structural side, AB-13)
+        id: structural
+        if: ${{ !cancelled() && steps.refs.outcome == 'success' }}
         run: npx --no-install eslint --config "$SHIRUBE_TOOLS/configs/structural-only.config.mjs" ${{ inputs.targets }}
 
       - name: Exception guard — descriptions, no unlimited disable, expiry (AB-07, AB-12)
+        id: guard
+        if: ${{ !cancelled() && steps.refs.outcome == 'success' }}
         env:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: npx --no-install eslint --no-inline-config --max-warnings 0 --config "$SHIRUBE_TOOLS/configs/guard-only.config.mjs" ${{ inputs.targets }}
 
       - name: Secrets — gitleaks pinned by checksum; markers must be registered exceptions (AB-18 a/b/c/d/e)
+        id: secrets
+        if: ${{ !cancelled() && steps.refs.outcome == 'success' }}
         run: |
           set -euo pipefail
           curl -sSL -o gitleaks.tgz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
@@ -151,14 +173,17 @@ jobs:
       # merge of an already-reviewed PR, so the same number would fail again for nothing; the step is declared
       # not applicable there (skipped with its reason printed), never silently passed. Every other check still runs.
       - name: PR size (AB-05) — pull_request only
-        if: ${{ github.event_name == 'pull_request' }}
+        id: prsize
+        if: ${{ !cancelled() && steps.refs.outcome == 'success' && github.event_name == 'pull_request' }}
         run: node "$SHIRUBE_TOOLS/scripts/hygiene/pr-size.mjs" --profile "$SHIRUBE_PROFILE" --base "${{ steps.refs.outputs.base }}" --head "${{ steps.refs.outputs.head }}" --today "${{ steps.refs.outputs.today }}"
       - name: PR size (AB-05) — not applicable on push
-        if: ${{ github.event_name != 'pull_request' }}
+        id: prsize_na
+        if: ${{ !cancelled() && steps.refs.outcome == 'success' && github.event_name != 'pull_request' }}
         run: echo '{"check":"pr-size","verdict":"NOT_APPLICABLE","why":"AB-05 applies to pull_request events; this run is ${{ github.event_name }}"}'
 
       - name: Python — ruff C901 / PLR0915 and vulture, pinned versions (AB-17)
-        if: ${{ inputs.python }}
+        id: python
+        if: ${{ !cancelled() && steps.refs.outcome == 'success' && inputs.python }}
         run: |
           set -euo pipefail
           test -f pyproject.toml
@@ -166,3 +191,33 @@ jobs:
           ruff --version && vulture --version
           ruff check --select C901,PLR0915 .
           vulture --min-confidence 80 $(python3 -c "import tomllib;print(' '.join(tomllib.load(open('pyproject.toml','rb')).get('tool',{}).get('shirube',{}).get('vulture_paths',['src'])))")
+
+      # The job result above is the gate. This step is the list a report_only reader needs: one line per check, and
+      # it fails on any failed, cancelled or unexpectedly skipped check, so a green job can never hide a missing check.
+      - name: Outcome of every check
+        if: ${{ always() }}
+        env:
+          OUTCOMES: |
+            coverage=${{ steps.coverage.outcome }}
+            lines=${{ steps.lines.outcome }}
+            large-files=${{ steps.large.outcome }}
+            jscpd=${{ steps.jscpd.outcome }}
+            knip=${{ steps.knip.outcome }}
+            depcruise=${{ steps.depcruise.outcome }}
+            structural=${{ steps.structural.outcome }}
+            guard=${{ steps.guard.outcome }}
+            secrets=${{ steps.secrets.outcome }}
+            pr-size=${{ steps.prsize.outcome }}
+            pr-size-not-applicable=${{ steps.prsize_na.outcome }}
+            python=${{ steps.python.outcome }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$OUTCOMES" | sed '/^$/d' | tee -a "$GITHUB_STEP_SUMMARY"
+          get() { printf '%s\n' "$OUTCOMES" | sed -n "s/^$1=//p"; }
+          fail=0
+          for k in coverage lines large-files jscpd knip depcruise structural guard secrets; do
+            [ "$(get "$k")" = success ] || { echo "hygiene: $k=$(get "$k")"; fail=1; }
+          done
+          [ "$(get pr-size)" = success ] || [ "$(get pr-size-not-applicable)" = success ] || { echo "hygiene: pr-size=$(get pr-size) not-applicable=$(get pr-size-not-applicable)"; fail=1; }
+          [ "$(get python)" = success ] || [ "$(get python)" = skipped ] || { echo "hygiene: python=$(get python)"; fail=1; }
+          exit $fail
