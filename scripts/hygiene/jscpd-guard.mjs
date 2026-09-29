@@ -2,7 +2,12 @@
 // Distinguishes three outcomes that plain jscpd conflates:
 //   1. targets contain no tracked files at all            -> FAIL (misconfigured scan, AB-08)
 //   2. every tracked file is shorter than min-lines        -> PASS with the inventory printed
-//   3. otherwise run jscpd with --threshold 0 --exit-code 1 --fail-on-empty and pass its exit code through
+//   3. otherwise run jscpd with --threshold 0 --exit-code 1 --fail-on-empty and pass its exit code through.
+// The real scan is the inventory itself: the tracked, covered, non-excluded files are passed to jscpd as explicit
+// paths (AB-25 / AB-26, R6d). Before 0.1.3 jscpd received the target directories and scanned bash / sql / markdown /
+// text too (91 vs 109 clones on the first consumer, aun #977). The first 0.1.3 head passed `--format` only; that maps
+// extensions many-to-one (js / mjs / cjs -> javascript), so a narrowed inventory (`mjs` only) let `.js` duplicates
+// under the targets back into the scan (devauditor AUD-SHIRUBE7-EXTSET-001). jscpd 5.3.2 accepts files as paths.
 // Usage: node jscpd-guard.mjs --profile <md> --targets "src bin" [--python true] [--cwd .] [--report-dir .hygiene/jscpd]
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -26,6 +31,14 @@ function coveredExtensions(profile, python) {
 // profile's lines.exclude plus exclude_generated (devauditor AUD-SHIRUBE1-JSCPD-SCANSET-002 — before this, only
 // exclude_generated reached jscpd, so a duplicate inside lines.exclude was ignored or reported depending on the
 // length of unrelated files). jscpd 5.3.2 applies every repeated --ignore (verified with two patterns).
+// jscpd format names for the covered extensions (jscpd maps .js/.mjs/.cjs to javascript by itself; jsx / tsx /
+// python are separate formats that must be listed or they are not scanned at all).
+const FORMAT_BY_EXTENSION = { js: "javascript", mjs: "javascript", cjs: "javascript", jsx: "jsx", ts: "typescript", mts: "typescript", cts: "typescript", tsx: "tsx", py: "python" };
+
+function jscpdFormats(exts) {
+  return [...new Set(exts.map((e) => FORMAT_BY_EXTENSION[e]).filter(Boolean))];
+}
+
 function excludedGlobs(profile) {
   return [...profile.lines.exclude, ...profile.exclude_generated];
 }
@@ -39,9 +52,11 @@ function inventory(cwd, targets, profile, python) {
   return { files, eligible, missing };
 }
 
-function runJscpd(cwd, targets, profile, reportDir) {
-  const args = [...targets, "--min-lines", String(MIN_LINES), "--min-tokens", String(MIN_TOKENS), "--threshold", "0",
-    "--exit-code", "1", "--fail-on-empty", "--reporters", "console,json", "--output", reportDir];
+// `files` is the inventory (relative paths); `--format` still names their formats so jscpd cannot treat one as text.
+function runJscpd(cwd, files, profile, reportDir, python) {
+  const args = [...files, "--min-lines", String(MIN_LINES), "--min-tokens", String(MIN_TOKENS), "--threshold", "0",
+    "--exit-code", "1", "--fail-on-empty", "--reporters", "console,json", "--output", reportDir,
+    "--format", jscpdFormats(coveredExtensions(profile, python)).join(",")];
   for (const ig of excludedGlobs(profile)) args.push("--ignore", ig);
   const r = spawnSync("npx", ["--no-install", "jscpd", ...args], { cwd, encoding: "utf8", maxBuffer: 1 << 28 });
   return { status: r.status, stdout: r.stdout, stderr: r.stderr };
@@ -55,14 +70,19 @@ function run(args) {
   if (missing.length > 0) return report(CHECK, "FAIL", { targets, missing, why: "target is neither a tracked file nor a directory with tracked files (misconfigured scan)" });
   if (files.length === 0) return report(CHECK, "FAIL", { targets, why: "no tracked files under targets (misconfigured scan)" });
   if (eligible.length === 0) return report(CHECK, "PASS", { targets, files: files.length, eligible: 0, why: `all files shorter than ${MIN_LINES} lines; scan skipped with inventory` });
-  const r = runJscpd(cwd, targets, profile, args["report-dir"] || ".hygiene/jscpd");
-  return reportJscpd(r, { targets, files: files.length, eligible: eligible.length });
+  const reportDir = args["report-dir"] || ".hygiene/jscpd";
+  const r = runJscpd(cwd, files, profile, reportDir, String(args.python) === "true");
+  return reportJscpd(r, { targets, files: files.length, eligible: eligible.length }, join(cwd, reportDir, "jscpd-report.json"));
 }
 
-function reportJscpd(r, base) {
+// `sources` is what jscpd actually analyzed (its JSON report), printed beside `files` so a read-back can see that the
+// scan set and the inventory agree. An unreadable report gives null, never a silent PASS on a different set.
+function reportJscpd(r, base, reportPath) {
   if (r.status === null) return report(CHECK, "UNOBSERVABLE", { ...base, why: "jscpd could not be started", stderr: r.stderr });
   const found = r.stdout.match(/Found (\d+) clones?/);
-  return report(CHECK, r.status === 0 ? "PASS" : "FAIL", { ...base, jscpd_exit: r.status, clones: found ? Number(found[1]) : null });
+  let sources = null;
+  try { sources = JSON.parse(readFileSync(reportPath, "utf8")).statistics?.total?.sources ?? null; } catch { sources = null; }
+  return report(CHECK, r.status === 0 ? "PASS" : "FAIL", { ...base, jscpd_exit: r.status, clones: found ? Number(found[1]) : null, sources });
 }
 
 main(CHECK, run);

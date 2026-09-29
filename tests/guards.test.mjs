@@ -45,6 +45,52 @@ test("AB-23: a target that is a tracked file is scanned as itself (root entry po
   assert.equal(r.status, 1); assert.match(r.summary.why, /neither a tracked file nor a directory/);
 });
 
+test("AB-25: jscpd scans exactly the inventory's extensions — a duplicate in .sql under a JS profile is not counted, .mjs / .tsx / .mts duplicates are", () => {
+  const dir = repo();
+  write(dir, "package.json", JSON.stringify({ name: "fixture", type: "module" }));
+  spawnSync("ln", ["-s", join(ROOT, "node_modules"), join(dir, "node_modules")]);
+  const block = (mk) => Array.from({ length: 14 }, (_, i) => mk(i)).join("\n") + "\n";
+  const sql = block((i) => `INSERT INTO t (a, b) VALUES (${i}, ${i});`);
+  write(dir, "src/a.sql", sql); write(dir, "src/b.sql", sql); write(dir, "src/only.mjs", block((i) => `export const only${i} = ${i};`)); commit(dir, "sql dup only");
+  let r = run("jscpd-guard.mjs", dir, ["--targets", "src"]);
+  assert.equal(r.status, 0, JSON.stringify(r.summary)); assert.equal(r.summary.files, 1); assert.equal(r.summary.clones, 0); // .sql is outside the JS inventory and outside the scan
+  const mjs = block((i) => `export const shared${i} = ${i} * ${i} + ${i};`);
+  write(dir, "src/a.mjs", mjs); write(dir, "src/b.mjs", mjs); commit(dir, "mjs dup");
+  r = run("jscpd-guard.mjs", dir, ["--targets", "src"]);
+  assert.equal(r.status, 1, JSON.stringify(r.summary)); assert.equal(r.summary.files, 3); assert.equal(r.summary.clones, 1); // exactly the .mjs clone, not the .sql one
+  write(dir, ".shirube/hygiene-profile.md", PROFILE({}, { language: "ts" }));
+  const tsx = block((i) => `export const V${i} = () => <div id="x${i}">{${i}}</div>;`);
+  const mts = block((i) => `export const M${i}: number = ${i} * 2;`);
+  write(dir, "src/a.tsx", tsx); write(dir, "src/b.tsx", tsx); write(dir, "src/a.mts", mts); write(dir, "src/b.mts", mts); commit(dir, "tsx + mts dup");
+  r = run("jscpd-guard.mjs", dir, ["--targets", "src"]);
+  assert.equal(r.status, 1, JSON.stringify(r.summary)); assert.equal(r.summary.files, 7); assert.equal(r.summary.clones, 3); // mjs + tsx + mts, still not sql
+});
+
+test("AB-26: the scan set is the inventory's files themselves — a duplicate outside a narrowed inventory is not scanned even though jscpd's format for it is on (mjs-only vs .js, ts-only vs .mts, default JS vs .es6); the same duplicate inside the inventory still fails", () => {
+  const block = (mk) => Array.from({ length: 14 }, (_, i) => mk(i)).join("\n") + "\n";
+  const control = block((i) => `export const unique${i} = ${i};`);
+  const dup = block((i) => `export const repeated${i} = ${i} * ${i} + ${i};`);
+  const cases = [  // devauditor AUD-SHIRUBE7-EXTSET-001: all three passed the inventory count (1) while the --format-only scan analyzed 3 sources / 1 clone
+    { profile: { jscpd: { extensions: ["mjs"] } }, control: "src/control.mjs", outside: ["src/duplicate_a.js", "src/duplicate_b.js"], inside: ["src/in_a.mjs", "src/in_b.mjs"] },
+    { profile: { language: "ts", jscpd: { extensions: ["ts"] } }, control: "src/control.ts", outside: ["src/duplicate_a.mts", "src/duplicate_b.mts"], inside: ["src/in_a.ts", "src/in_b.ts"] },
+    { profile: {}, control: "src/control.mjs", outside: ["src/duplicate_a.es6", "src/duplicate_b.es6"], inside: ["src/in_a.mjs", "src/in_b.mjs"] },
+  ];
+  for (const c of cases) {
+    const dir = repo();
+    write(dir, "package.json", JSON.stringify({ name: "fixture", type: "module" }));
+    spawnSync("ln", ["-s", join(ROOT, "node_modules"), join(dir, "node_modules")]);
+    write(dir, ".shirube/hygiene-profile.md", PROFILE({}, c.profile));
+    write(dir, c.control, control); for (const f of c.outside) write(dir, f, dup); commit(dir, "duplicate outside the inventory");
+    let r = run("jscpd-guard.mjs", dir, ["--targets", "src"]);
+    let why = JSON.stringify({ profile: c.profile, summary: r.summary });
+    assert.equal(r.status, 0, why); assert.equal(r.summary.files, 1, why); assert.equal(r.summary.sources, 1, why); assert.equal(r.summary.clones, 0, why);
+    for (const f of c.inside) write(dir, f, dup); commit(dir, "duplicate inside the inventory");
+    r = run("jscpd-guard.mjs", dir, ["--targets", "src"]);
+    why = JSON.stringify({ profile: c.profile, summary: r.summary });
+    assert.equal(r.status, 1, why); assert.equal(r.summary.files, 3, why); assert.equal(r.summary.sources, 3, why); assert.equal(r.summary.clones, 1, why);
+  }
+});
+
 test("AB-10: any 150KB file fails whatever its extension; only lockfiles and allow-listed paths pass (B05)", () => {
   const dir = repo();
   const base = commit(dir, "base");
