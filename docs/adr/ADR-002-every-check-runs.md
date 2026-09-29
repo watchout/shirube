@@ -3,7 +3,7 @@
 
 - Status: proposed（独立レビュー待ち）
 - Approver(s): pending（devauditor の独立レビュー、merge = suite-lead。採択コメントの URL + sha256 をここに記録する）
-- Target: spec R17 / AB-27 (0.1.4); handover v5 §1 W1; one-page `docs/specs/0.1.4-every-check-runs.md`
+- Target: spec R17 / AB-27 (0.1.4); handover v5 §1 W1; requirement sheet `docs/requirements/0.1.4-every-check-runs.md` (spec seat), technical design `docs/design/0.1.4-every-check-runs.md` (arc)
 - Effective: tag v0.1.4; consumers adopt by pinning (agent-comms-mcp#980 moves its pin to 0.1.4 before it merges)
 
 ## Context
