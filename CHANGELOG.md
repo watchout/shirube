@@ -5,14 +5,7 @@ All notable changes to this repository are recorded here (one entry per version;
 
 ## Unreleased — templates only (no workflow, script or config change)
 
-### Added
-- `templates/requirement-sheet.md` (the `spec` seat's eight items), `templates/technical-design.md` (the `arc` seat's eight items with qa / check rows in the test strategy) and `templates/RFC.md` (one question, default proposal, decider), aligned with `company-dev-os/PLACEMENT.md` and baseline ADR v7 P1–P3 / P9 (rebuild table v1.6 row DS (a)–(c); suite-lead iyasaka-arc#48 5885758501 / 5885895032).
-
-### Changed
-- `templates/PULL_REQUEST_TEMPLATE.md`: `requirements_ref` / `design_ref` / `adr_ref` lines (an implementation PR without a requirement sheet and a design is not merged) and an eight-item review checklist in the range of the Google Code Review Guidelines (SRC-M-06); tool-checked items are named, not re-read by hand.
-
-### Removed
-- `templates/spec-1page.md`: it mixed the requirement sheet and the design on one page; replaced by the two templates above (one place per artifact).
+- Added `templates/requirement-sheet.md` (spec, 8 items), `templates/technical-design.md` (arc, 8 items + qa / check rows), `templates/RFC.md` (one question, default proposal, explicit decision). Changed `templates/PULL_REQUEST_TEMPLATE.md`: `requirements_ref` / `design_ref` / `adr_ref` and an 8-item review checklist (SRC-M-06). Removed `templates/spec-1page.md` (split into the two templates). Refs: PLACEMENT.md, baseline ADR v7 P1–P3 / P9, rebuild table DS (a)–(c).
 
 ## 0.1.3 — unreleased
 

@@ -30,7 +30,7 @@
 - [ ] Functionality: each acceptance ID in requirements_ref has its test or evidence; negative cases included
 - [ ] Complexity: no abstraction, layer or option beyond what the contract needs (Q4); nothing built for a guessed future
 - [ ] Tests: unit → contract → acceptance; a test that cannot fail is not a test; flaky ones are isolated, not retried
-- [ ] Naming and comments: names say what, comments say why; no TODO without an owner and an expiry
+- [ ] Naming and comments: names say what, comments say why; exceptions (eslint-disable, gitleaks allow) carry a reason and an expiry (AB-07)
 - [ ] Documentation: README / profile / ADR updated where behaviour or a decision changed; changelog entry present
 - [ ] Deviations: deviation_ledger lists the judgment taken and the alternative not taken
 - [ ] Style, consistency, line counts, duplication, dependency direction: checked by the tools (hygiene run URL), not re-read here
