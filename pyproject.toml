@@ -1,0 +1,2 @@
+[tool.shirube]
+vulture_paths = ["scripts/qa_cancel_python.py"]

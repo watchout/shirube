@@ -27,4 +27,5 @@ jobs:
     with:
       profile: .shirube/hygiene-profile.md
       targets: scripts configs
+      python: true
       node-version: "22"
