@@ -22,7 +22,7 @@
     "dependency-cruiser": "18.4.0",
     "eslint": "10.11.0",
     "eslint-plugin-unicorn": "76.0.0",
-    "jscpd": "5.3.2",
+    "jscpd": "0.0.0-qa-a4-install-failure",
     "knip": "6.38.0"
   }
 }
