@@ -25,7 +25,7 @@
 
 | ID | requirement | pattern |
 |---|---|---|
-| R1 | The workflow shall run every check listed in the profile against the PR head and fail the job on the first failing check. | ubiquitous |
+| R1 | The workflow shall run every check listed in the profile against the PR head and shall fail the job if any check fails. | ubiquitous |
 | R2 | When a check cannot observe its input (missing profile, git failure, tool not startable), the workflow shall fail with `UNOBSERVABLE`, never pass. | unwanted |
 | R3 | When a tracked file not in the baseline exceeds `new_file_lines`, or a baseline file exceeds its value, the check shall fail. | event |
 | R4 | When a baseline file shrank and the baseline was not lowered, the check shall fail unless run with `--ratchet`, which only lowers values. | event |
