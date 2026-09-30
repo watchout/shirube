@@ -31,8 +31,11 @@ decision 5 ("fail closed everywhere, no `continue-on-error`") stays [文献確�
 
 - A consumer sees every outcome in one run (switch plan v2.6 2-S2, "all steps recorded").
 - The workflow grows by about 45 lines (own code 904 / 1,500 [検証済: own-code-budget at `f8f16f60`]). The check names
-  now exist in two places (step ids and the outcome list); AB-27 pins the two lists to each other, so a check added
-  without an outcome line fails the test.
+  now exist in two places (step ids and the outcome list). Today's AB-27 asserts each step's condition and the
+  presence of the 12 outcome lines; it does not yet bind the outcome list and the aggregate rules to the check set
+  [検証済: devauditor shirube#8 5905921585 — three mutations undetected]. The takeover commit strengthens it to
+  design A1 (ii)–(iv) and adds A6, after which a check added without an outcome line, or dropped from the aggregate
+  rules, fails the test.
 - The failure path is not observable in this repository's own CI (its checks pass [検証済: run 36527824537]); the
   first negative observation is the consumer run after the pin bump (acceptance A3, NOT_RUN).
 
