@@ -3,6 +3,11 @@
 All notable changes to this repository are recorded here (one entry per version; the format follows a plain
 "added / changed / removed" list — Keep a Changelog is a candidate in the baseline ADR, not an adopted rule).
 
+## 0.1.4 — unreleased
+
+### Changed
+- `hygiene.yml`: every check step runs even after an earlier check failed (`if: !cancelled() && steps.refs.outcome == 'success'`, plus the step's own condition); a failed setup still skips them. A last `always()` step lists every outcome and fails on any failed, cancelled or unexpectedly skipped check (AB-27, R17). Reason: on the first consumer (agent-comms-mcp#980, run 36524256657) lines-baseline failed with 103 files and the eight later checks were SKIPPED, so a report_only consumer got no depcruise / knip / structural result at all (aun #977 5884009062). No `continue-on-error`; the job result is unchanged (fail on any failure). No threshold changed.
+
 ## 0.1.3 — unreleased
 
 ### Changed
