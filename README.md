@@ -22,6 +22,10 @@ This repository is being built by selective migration from `ai-dev-framework` (h
 
 ## How a consumer repository uses it
 
+For P1 (goal definition), read [the Working Backwards procedure](docs/process/p1-working-backwards.md).
+It connects the primary PR/FAQ source to the requirement sheet and distinguishes source facts, SDS conditions,
+and proposed local application. It is a procedure for the work, independent of installing the checks below.
+
 1. Copy `templates/hygiene-profile.md` to `.shirube/hygiene-profile.md` and fill the `json` block (language, include /
    exclude globs, generated paths, exceptions, limits). Copy `configs/knip.template.jsonc` → `knip.jsonc` and
    `configs/dependency-cruiser.template.cjs` → `.dependency-cruiser.cjs`, and add the dev tools to the lockfile
