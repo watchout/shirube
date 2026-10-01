@@ -1,9 +1,11 @@
-<!-- Shirube requirement sheet = the `spec` seat's output (company-dev-os/PLACEMENT.md). Required information may live in the existing Issue/PR; risk and protected scope determine review depth. P1 = Working Backwards (SRC-M-01), P2 = EARS (SRC-M-02) + Given / When / Then (SRC-M-03). -->
+<!-- Shirube requirement sheet = the `spec` seat's output (company-dev-os/PLACEMENT.md). Reuse information in the Issue/PR; risk/protected scope determines review depth. Candidate revision: AI-DLC P1/P2 dialogue; EARS/BDD retained, Working Backwards optional. Activate only after independent audit and adoption. -->
 # <unit> — requirement sheet (spec)
 
-Adopted claims declared (baseline ADR v7 @ <commit>): <SRC-M-01 / SRC-M-02 / SRC-M-03 …>; confirmation refs: <source cards / independent check>.
+Lifecycle candidate: [AI-DLC procedure §§1–4,9](https://github.com/watchout/shirube/blob/6b9e6facf47add5d1dbf02159372c22c1240ada7/docs/process/ai-dlc.md). Record the adopted lifecycle/baseline commit and claims (AI-00/12, SRC-M-02/03 as applicable), with adoption / independent check refs.
 Seat: spec = <seat id>. <!-- a stand-in author says so here and removes the note when spec endorses -->
 Risk / applicable profile: <!-- R0-R4; protected scope overrides risk; no separate sheet required for an existing-design R0/R1 change -->
+Change entry: <!-- new / addition / fix; reason, target/version, priority, affected units/contracts; reuse unchanged requirements -->
+Dialogue evidence: <!-- owner words, observed facts, assumptions/open questions, who confirmed which version; silence is not agreement -->
 
 ## Feature Goal
 <!-- one sentence: who gets what improvement -->
@@ -13,6 +15,7 @@ Risk / applicable profile: <!-- R0-R4; protected scope overrides risk; no separa
 <!-- the observed problem with its evidence (run URL, measurement, owner words), not a wish -->
 ## Main Flow
 1.
+Unit / iteration mapping: <!-- requirement IDs → responsible units, dependencies, first integrated slice and observable completion; a PR is not automatically a Unit/Bolt -->
 ## Acceptance Criteria (EARS; each row is an acceptance ID; many-to-many links to the necessary tests/evidence; all adopted IDs remain covered)
 | ID | criterion | pattern (ubiquitous / state / event / optional / unwanted) | evidence type |
 |---|---|---|---|

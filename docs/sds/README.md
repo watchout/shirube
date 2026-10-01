@@ -1,13 +1,14 @@
-# SDS の入口 — 2026-10-01 必要十分性監査への改訂
+# SDS の入口 — AI-DLCを基盤にした開発規格の改訂候補
 
-状態: **本文・測定修正のレビュー候補。独立監査・採択・配布切替は未完了。** SDS が「AI開発に必要十分」とは認定していない。
+状態: **AI-DLCへの原典・手順改訂は独立監査/採択/配布前。** 前段のF01〜F10改訂（Shirube #19 / arc #55 / org #7）の独立監査と区別する。SDSが「AI開発に必要十分」とは認定していない。
 
 更新依頼: https://github.com/watchout/shirube/issues/6#issuecomment-5922221959 / 本文 SHA-256 `860492462b3eb5f990184c0031dbd2229e14a425ca01a67b4150e15f05874fa5`。
 別キットの撤回: https://github.com/watchout/shirube/issues/6#issuecomment-5921805227 / 本文 SHA-256 `7802c88e0b67fabeb20b26985dd67486239b1f1732bbfdefefa859d976f1dc63`。Shirube 本体が入口で、別キットは再作成しない。
 
 ## 正本と改訂の範囲
 
-- [P1〜P12 / T1〜T11][baseline]: baseline v9 改訂案。採択済み v7 と未採択の v8/v9 を区別する。
+- 開発の入口は[AI-DLC実施手順](../process/ai-dlc.md)。[原典選定・補完の正本](lifecycle-basis.md)に依頼原文・公開根拠・比較・適用差分、[source lock](source-lock.json)に取得版を集約。
+- [P1〜P12 / T1〜T11][baseline]: baseline v10 改訂案。採択済みv7と未採択の後継を区別。既存IDは保持し、実施手順への対応は原典正本§5を参照する。
 - [監査規格 v1.1][audit]と[原典対応表][sources]: 共通判定・証拠・対象別の確認。原典本文の二重回答は求めない。
 - [runtime policy 改訂案][policy]と[公開決定の索引][owner-index]: リスク別深度・権限・独立性・証拠の扱い。
 - [S1〜S9 改訂本文](engineering-standards.md): 旧 rules snapshot を継承した版管理原稿。
@@ -37,6 +38,7 @@
 
 入力は独立監査 `reports/2026-10-01-sds-sufficiency/audit.md`（SHA-256 `c2b2247a361d4f2eaef6fe0d23a9a5e3614c68ccb3563398ee86f964381148ea`）と `ledger.md`（`44158c2a6884cbc8aaefbb34e398201c361c0767c79d6a153f506507dcb765f3`）。監査対象 digest は `13827e0afc10ba478081f4a49e939e4f23119dea0dcf021666a2f060d4e89ada`。
 64 は規範・道具・索引を含む追跡母集団で、等重みの64安全条件や適合率ではない。維持18／統合18／補強14／条件化9／修正5。適用条件・判定は参照先の該当 ID/節を使う。
+下表の処置区分は前段F01〜F10への対応履歴。今回の原典入替は同じP/T IDに原典正本§5の対応を重ね、既存受入・保護を削らない。
 
 | ID（監査と同じ） | 処置 | 正本の該当行・節 | 指摘 |
 |---|---|---|---|
@@ -107,14 +109,14 @@
 
 ## 検証と発効
 
-作者の検証: 測定9試験PASS（N1 403/404/429、N2名前のみ、N3空参照/文字列、N4整形のみ、timeout/不正JSON、旧schema、公開本文生成等）。Shirube既存85試験PASS、自前code予算904/1500。これは規格の独立監査や全製品での適用試験の代用ではない。
-次の順序: 独立監査（作者以外）→ 必要なowner採択と別担当merge → 配布元/利用元の版切替・読戻し → 実案件での適用。機械検査の登録だけで適用完了としない。P1手順書（PR#18）は採択版との照合・独立監査後に実行する。
+前段F01〜F10の作者検証: 測定9試験PASS（N1 403/404/429、N2名前のみ、N3空参照/文字列、N4整形のみ、timeout/不正JSON、旧schema、公開本文生成等）。Shirube既存85試験PASS、自前code予算904/1500。今回の原典改訂の監査や全製品での適用試験の代用ではない。今回の対象版と検証は改訂PRから辿る。
+次の順序: 独立監査（作者以外）→ 必要なowner採択と別担当merge → 配布元/利用元の版切替・読戻し → 実案件での適用。機械検査の登録だけで適用完了としない。P1もAI-DLC手順§2の対話から進める候補。PR#18のPR/FAQは補助手順として整理し、新入口を上書きしない。
 
-[baseline]: https://github.com/watchout/iyasaka-arc/blob/e12656006d0c81a61b420702d8194fef164b24e0/cross-cutting/decisions/2026-09-25-established-practice-baseline.md
+[baseline]: https://github.com/watchout/iyasaka-arc/blob/36b837b242478bcf210db2cd1791c265615564a7/cross-cutting/decisions/2026-09-25-established-practice-baseline.md
 [audit]: https://github.com/watchout/iyasaka-arc/blob/e12656006d0c81a61b420702d8194fef164b24e0/cross-cutting/decisions/2026-09-30-sds-audit-standard-v1.md
 [sources]: https://github.com/watchout/iyasaka-arc/blob/e12656006d0c81a61b420702d8194fef164b24e0/cross-cutting/decisions/2026-09-30-sds-audit-v1-source-checklist.md
 [policy]: https://github.com/watchout/iyasaka-org/blob/d3f1a1e90499f77772d48fba33532c68ed4cb1fa/docs/shirube/shirube-v3-runtime-policy.md
 [owner-index]: https://github.com/watchout/iyasaka-org/blob/d3f1a1e90499f77772d48fba33532c68ed4cb1fa/docs/shirube/owner-instruction-index.md
-[handover]: https://github.com/watchout/iyasaka-arc/blob/e12656006d0c81a61b420702d8194fef164b24e0/cross-cutting/decisions/2026-09-25-shirube-handover-list.md
+[handover]: https://github.com/watchout/iyasaka-arc/blob/36b837b242478bcf210db2cd1791c265615564a7/cross-cutting/decisions/2026-09-25-shirube-handover-list.md
 [measure]: https://github.com/watchout/iyasaka-arc/blob/e12656006d0c81a61b420702d8194fef164b24e0/tools/sds-conformance.py
 [tests]: https://github.com/watchout/iyasaka-arc/blob/e12656006d0c81a61b420702d8194fef164b24e0/tools/test_sds_conformance.py
