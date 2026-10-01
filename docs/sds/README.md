@@ -9,7 +9,7 @@
 
 - 開発の入口は[AI-DLC実施手順](../process/ai-dlc.md)。[原典選定・補完の正本](lifecycle-basis.md)に依頼原文・公開根拠・比較・適用差分、[source lock](source-lock.json)に取得版を集約。
 - [P1〜P12 / T1〜T11][baseline]: baseline v10 改訂案。採択済みv7と未採択の後継を区別。既存IDは保持し、実施手順への対応は原典正本§5を参照する。
-- [監査規格 v1.1][audit]と[原典対応表][sources]: 共通判定・証拠・対象別の確認。原典本文の二重回答は求めない。
+- [監査方法][audit]: AI-DLC一体系を主軸に機械/独立LLM/人の担当を固定。既存保護と対象別IDを継承し、[旧原典対応表][sources]は後継への参照にする。
 - [runtime policy 改訂案][policy]と[公開決定の索引][owner-index]: リスク別深度・権限・独立性・証拠の扱い。
 - [S1〜S9 改訂本文](engineering-standards.md): 旧 rules snapshot を継承した版管理原稿。
 - [道具と受入 ID][handover]: W1〜W6 / K1 / RR / DS / OR。規範の意味は上記正本を参照し、道具を新規の規範と数えない。
@@ -23,16 +23,16 @@
 
 | 指摘 | 改訂した本文・実装 | 確認方法と残る適用確認 |
 |---|---|---|
-| F01 判定矛盾 | [監査 §1][audit]、policy Evidence Rules、S1〜S9 冒頭 | 全軸の重大未達/UNKNOWN/例外条件を独立に読み合わせる |
+| F01 判定矛盾 | [監査 §2][audit]、policy Evidence Rules、S1〜S9 冒頭 | 全軸の重大未達/UNKNOWN/例外条件を独立に読み合わせる |
 | F02 適用度過大 | [測定 script][measure]、[回帰試験][tests]、監査 §3/5、W2/W4 | N1〜N4を含む9試験PASS。配置観測のみ。実効性の証拠結合はW2/W4、定期公開への反映は未実施 |
 | F03 AI信頼境界 | baseline P12/T2/T3、policy Memory Partition、S9 | 旧 governance §8/§11.2–3との継承確認。製品の攻撃拒否・外部効果0は別途実測 |
 | F04 依存・脆弱性 | baseline P7/T6/T10、S9 | 既存scan/waiver/runbookへ接続。製品の導入・復旧試験は未実施 |
-| F05 リスク比例 | baseline P3、監査 §1、policy、残件表 G1/DS、templates | 軽微変更の重複文書を除き保護面のgateを保持。今回の独立監査は省略しない |
-| F06 検証の対応 | baseline P2/P5、監査 §2/4、W2、templates | 多対多・採択全ID・重要不変条件・親自身の受入・隔離負例を読み合わせる |
+| F05 リスク比例 | baseline P3、監査 §2、policy、残件表 G1/DS、templates | 軽微変更の重複文書を除き保護面のgateを保持。今回の独立監査は省略しない |
+| F06 検証の対応 | baseline P2/P5、監査 §3/5、W2、templates | 多対多・採択全ID・重要不変条件・親自身の受入・隔離負例を読み合わせる |
 | F07 AI受入 | baseline T5/T9、policy Memory Partition、technical-design、S4 | AI搭載製品の評価契約を補完。製品別閾値の採択/実測は未実施 |
 | F08 過大制約 | S1/S2/S5/S6 | 引退列・3例・cache・downを不変条件へ訂正。製品別のDB試験は未実施 |
 | F09 正本の重複 | 原典対応表、PR雛形、適用表、索引、本入口 | 64IDを維持。6軸の対応/17repo/旧称を訂正。参照統合と物理集約は区別 |
-| F10 改善の根拠 | baseline P9、監査 §4、owner-fit-check | 既存PDCAへ負担・リスク・誤拒否/流出/負例検出を接続。速度効果は未測定 |
+| F10 改善の根拠 | baseline P9、監査 §5、owner-fit-check | 既存PDCAへ負担・リスク・誤拒否/流出/負例検出を接続。速度効果は未測定 |
 
 ## 64項目の処置と参照
 
@@ -113,7 +113,7 @@
 次の順序: 独立監査（作者以外）→ 必要なowner採択と別担当merge → 配布元/利用元の版切替・読戻し → 実案件での適用。機械検査の登録だけで適用完了としない。P1もAI-DLC手順§2の対話から進める候補。PR#18のPR/FAQは補助手順として整理し、新入口を上書きしない。
 
 [baseline]: https://github.com/watchout/iyasaka-arc/blob/36b837b242478bcf210db2cd1791c265615564a7/cross-cutting/decisions/2026-09-25-established-practice-baseline.md
-[audit]: https://github.com/watchout/iyasaka-arc/blob/e12656006d0c81a61b420702d8194fef164b24e0/cross-cutting/decisions/2026-09-30-sds-audit-standard-v1.md
+[audit]: audit-method.md
 [sources]: https://github.com/watchout/iyasaka-arc/blob/e12656006d0c81a61b420702d8194fef164b24e0/cross-cutting/decisions/2026-09-30-sds-audit-v1-source-checklist.md
 [policy]: https://github.com/watchout/iyasaka-org/blob/d3f1a1e90499f77772d48fba33532c68ed4cb1fa/docs/shirube/shirube-v3-runtime-policy.md
 [owner-index]: https://github.com/watchout/iyasaka-org/blob/d3f1a1e90499f77772d48fba33532c68ed4cb1fa/docs/shirube/owner-instruction-index.md

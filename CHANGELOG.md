@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased — deterministic audit receipt checks
+
+- Select AI-DLC as the audit-method source; bind review requests, target versions, required items, CI and authenticated evidence before accepting a receipt. Semantic review and authorization remain separate.
+
 ## Unreleased — AI-DLC lifecycle revision candidate
 
 - Make AI-DLC the primary procedure; supplement integration/design/boundaries with Fowler/Cockburn and iteration feedback/change intake with OpenUP, with source identities and audit cases.
