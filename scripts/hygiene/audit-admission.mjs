@@ -11,7 +11,8 @@ function need(ok, why) { if (!ok) throw new Error(why); }
 function same(a, b) { return JSON.stringify(a.toSorted()) === JSON.stringify(b.toSorted()); }
 function unique(a) { return a.length > 0 && a.every(nonempty) && new Set(a).size === a.length; }
 function github(path) {
-  return JSON.parse(execFileSync("gh", ["api", path], { encoding: "utf8", timeout: 20000, maxBuffer: 8000000 }));
+  const body = execFileSync("gh", ["api", path], { encoding: "utf8", timeout: 20000, maxBuffer: 8000000 });
+  return path.endsWith("/logs") ? body : JSON.parse(body);
 }
 function comment(url, api) {
   const m = /^https:\/\/github\.com\/(watchout\/[\w.-]+)\/(?:issues|pull)\/(\d+)#issuecomment-(\d+)$/.exec(url);
@@ -57,8 +58,8 @@ function targetCheck(t, api) {
   need(runs.total_count === runs.check_runs.length, "Incomplete checks observation");
   for (const name of t.checks) {
     const run = successfulRun(runs.check_runs, name, t.head);
-    workflowCheck(run, t, api);
-    observed.push({ name, id: run.id, url: run.html_url });
+    const testedMerge = workflowCheck(run, t, api);
+    observed.push({ name, id: run.id, url: run.html_url, tested_merge: testedMerge });
   }
   return observed;
 }
@@ -69,11 +70,31 @@ function successfulRun(runs, name, head) {
 }
 function workflowCheck(run, t, api) {
   const prefix = `https://github.com/${t.repo}/actions/runs/`;
-  const id = run.html_url?.startsWith(prefix) && /^(\d+)\/job\/\d+$/.exec(run.html_url.slice(prefix.length))?.[1];
-  need(id && nonempty(t.workflow), "Unbound workflow run");
-  const w = api(`repos/${t.repo}/actions/runs/${id}`);
+  const ids = run.html_url?.startsWith(prefix) && /^(\d+)\/job\/(\d+)$/.exec(run.html_url.slice(prefix.length));
+  need(ids && nonempty(t.workflow), "Unbound workflow run");
+  const w = api(`repos/${t.repo}/actions/runs/${ids[1]}`);
   need(w.path === t.workflow && w.head_sha === t.head && w.event === "pull_request", "Wrong workflow/trigger/head");
   need(w.status === "completed" && w.conclusion === "success", "Workflow not successful");
+  workflowPr(w, t);
+  return checkoutProof(run, ids, t, api);
+}
+function workflowPr(w, t) {
+  const repoUrl = `https://api.github.com/repos/${t.repo}`;
+  need(w.repository?.full_name === t.repo && Array.isArray(w.pull_requests), "CI repository/PR association missing");
+  const prs = w.pull_requests.filter((p) => p.number === t.pr && p.url === `${repoUrl}/pulls/${t.pr}`);
+  need(prs.length === 1, "CI does not identify the requested PR");
+  const p = prs[0];
+  need(p.head?.sha === t.head && p.base?.sha === t.base && p.base?.repo?.url === repoUrl, "CI PR/head/base differs");
+}
+function checkoutProof(run, ids, t, api) {
+  const job = api(`repos/${t.repo}/actions/jobs/${ids[2]}`);
+  need(job.run_id === Number(ids[1]) && job.head_sha === t.head && job.check_run_url === `https://api.github.com/repos/${t.repo}/check-runs/${run.id}`, "Check/job/run binding differs");
+  const logs = api(`repos/${t.repo}/actions/jobs/${ids[2]}/logs`);
+  const shas = [...new Set([...logs.matchAll(/^\S+ \[command\]\/\S*git log -1 --format=%H\r?\n\S+ ([a-f0-9]{40})(?:\r?\n|$)/gm)].map((m) => m[1]))];
+  need(shas.length === 1, "Missing or ambiguous checkout commit");
+  const commit = api(`repos/${t.repo}/git/commits/${shas[0]}`);
+  need(commit.sha === shas[0] && same(commit.parents.map((p) => p.sha), [t.base, t.head]), "Tested merge parents differ from requested base/head");
+  return commit.sha;
 }
 function evidence(ref, targets, api) {
   const t = targets.find((x) => x.id === ref.target);

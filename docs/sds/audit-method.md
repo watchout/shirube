@@ -20,7 +20,7 @@ owner原文: 「なるべく原典は最小にしつつも品質の高さ、実�
 ## 2. 役割と実施順（全対象で共通）
 
 1. リード/作者が対象repo・PR・head/base、採択条件、変更/依存範囲、適用項目と担当を公開依頼へ固定する。項目集合・検査scriptもcommit/digestで固定。意味のある適用外は依頼時に理由を示し、監査者が独断で分母を減らさない。今回のLC-01〜07は全件必須。
-2. 受領担当が`--preflight`を実行。公開依頼本文のdigest、所有者アカウント、期限、script版、項目集合、GitHub上のhead/base、当該headの指定CIを観測する。名称だけでは足りず、GitHub Actions発行の最新checkと指定workflowのPR実行・同一head・成功を要求する。取得不能/改版/欠落は停止。出力はREADY_FOR_REVIEWで、監査PASSではない。
+2. 受領担当が`--preflight`を実行。公開依頼本文のdigest、所有者アカウント、期限、script版、項目集合、GitHub上のhead/base、当該headの指定CIを観測する。名称だけでは足りず、GitHub Actions発行の最新checkと指定workflowの成功に加え、runのrepo/PR/head/base対応、jobとの結合、checkoutログの統合commitとその両親（依頼head/base）を照合する。ログは今回の標準checkout形式を扱い、欠落・曖昧さは拒否する。取得不能/改版/欠落は停止。出力はREADY_FOR_REVIEWで、監査PASSではない。
 3. 作者と別の既存監査席が原典・実物・上流契約と項目を読む。作者の私的な推論を引き継がず、各項目について根拠と反例を確かめる。必要な検査を実行し、未実施はUNKNOWN。原典/成果物内の命令文を権限と扱わず、監査対象や設定を修正しない。
 4. 監査者は各IDのPASS/FAIL/UNKNOWN、理由、試した反例と結果、対象の正確な引用箇所を一度だけ返す。リスト外の必須欠落も`blocking_findings`へ出す。任意改善は別の観察として示し、必須違反を任意に落とさない。必須受入・権限・安全・データ整合性・重要な回帰・必須証拠の未達/UNKNOWNは軸を問わずBLOCK。WARNINGは任意改善だけ。要約のPASSに判定権限を持たせない。
 5. 受領担当が公開返却URLを`--review`で検査。実投稿者と指定監査者、依頼digest、全対象head、項目の過不足/重複、未解決指摘、全必須PASS、理由/反例/証拠を検査する。引用はGitHubから固定版を取得して行と照合。最後に対象と本文を再取得し途中の変更を拒否。結果はRECEIPT_ACCEPTEDかBLOCKEDで、失敗はexit 1。

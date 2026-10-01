@@ -2,7 +2,7 @@
 
 ## Unreleased — deterministic audit receipt checks
 
-- Select AI-DLC as the audit-method source; bind review requests, target versions, required items, CI and authenticated evidence before accepting a receipt. Semantic review and authorization remain separate.
+- Select AI-DLC as the audit-method source; bind review requests, target versions, required items, CI repo/PR/base plus checked-out merge parents, and authenticated evidence before accepting a receipt. Semantic review and authorization remain separate.
 
 ## Unreleased — AI-DLC lifecycle revision candidate
 

@@ -7,6 +7,7 @@ import { verifyAudit } from "../scripts/hygiene/audit-admission.mjs";
 const hash = (s) => createHash("sha256").update(s).digest("hex");
 const json = (v) => `\`\`\`json\n${JSON.stringify(v)}\n\`\`\``;
 const head = "a".repeat(40), base = "b".repeat(40);
+const merge = "c".repeat(40), repoUrl = "https://api.github.com/repos/watchout/shirube";
 function fixture() {
   const set = JSON.stringify({ schema: "sds-audit-items/1", items: [{ id: "LC-01" }, { id: "LC-02" }] });
   const target = { id: "s", repo: "watchout/shirube", pr: 21, head, base, checks: ["test"], workflow: ".github/workflows/ci.yml" };
@@ -17,7 +18,8 @@ function fixture() {
   const record = { schema: "sds-audit-review/1", request_digest: hash(origin.body), reviewer: "checker", targets: [{ id: "s", head }], items, blocking_findings: [], verdict: "PASS" };
   const review = { issue_url: control, user: { login: "iyasaka-ai" }, updated_at: "2026-10-01T01:00:00Z", body: json(record) };
   const runs = { total_count: 1, check_runs: [{ id: 1, name: "test", app: { slug: "github-actions" }, head_sha: head, status: "completed", conclusion: "success", html_url: "https://github.com/watchout/shirube/actions/runs/10/job/1" }] };
-  const workflow = { path: target.workflow, head_sha: head, event: "pull_request", status: "completed", conclusion: "success" };
+  const workflow = { path: target.workflow, head_sha: head, event: "pull_request", status: "completed", conclusion: "success", repository: { full_name: target.repo }, pull_requests: [{ number: 21, url: `${repoUrl}/pulls/21`, head: { sha: head }, base: { sha: base, repo: { url: repoUrl } } }] };
+  const proof = { job: { run_id: 10, head_sha: head, check_run_url: `${repoUrl}/check-runs/1` }, commit: { sha: merge, parents: [{ sha: base }, { sha: head }] }, log: `2026-10-01T00:00:00Z [command]/usr/bin/git log -1 --format=%H\n2026-10-01T00:00:01Z ${merge}\n` };
   const pr = { state: "open", head: { sha: head }, base: { sha: base } };
   const calls = [];
   const api = (path) => {
@@ -27,12 +29,15 @@ function fixture() {
     if (path.endsWith("/pulls/21")) return pr;
     if (path.includes("/check-runs?")) return runs;
     if (path.includes("/actions/runs/")) return workflow;
+    if (path.endsWith("/logs")) return proof.log;
+    if (path.includes("/actions/jobs/")) return proof.job;
+    if (path.includes("/git/commits/")) return proof.commit;
     const content = path.includes("/items.json?") ? set : "# Design\nHuman confirmation required\n";
     assert.ok(path.includes("/contents/"));
     return { type: "file", encoding: "base64", content: Buffer.from(content).toString("base64") };
   };
   const args = { request: "https://github.com/watchout/shirube/issues/6#issuecomment-1", sha256: hash(origin.body), review: "https://github.com/watchout/shirube/issues/6#issuecomment-2" };
-  return { args, api, pr, runs, workflow, request, origin, review, record, calls, now: Date.parse("2026-10-01T02:00:00Z") };
+  return { args, api, pr, runs, workflow, proof, request, origin, review, record, calls, now: Date.parse("2026-10-01T02:00:00Z") };
 }
 test("authenticated, complete receipt is accepted; preflight is not a semantic verdict", () => {
   const f = fixture();
@@ -72,6 +77,14 @@ const observedMutations = [
   ["same check name in another workflow", (f) => { f.workflow.path = ".github/workflows/fake.yml"; }],
   ["workflow_dispatch instead of PR CI", (f) => { f.workflow.event = "workflow_dispatch"; }],
   ["workflow not finished", (f) => { f.workflow.status = "in_progress"; }],
+  ["CI belongs to another repository", (f) => { f.workflow.repository.full_name = "watchout/other"; }],
+  ["same head but another PR", (f) => { f.workflow.pull_requests[0].number = 22; }],
+  ["same PR and head but another base", (f) => { f.workflow.pull_requests[0].base.sha = "1".repeat(40); }],
+  ["CI has no PR association", (f) => { f.workflow.pull_requests = []; }],
+  ["job belongs to another run", (f) => { f.proof.job.run_id = 11; }],
+  ["no observed checkout commit", (f) => { f.proof.log = ""; }],
+  ["ambiguous checkout commits", (f) => { f.proof.log += f.proof.log.replace(merge, head); }],
+  ["metadata matches but actual tested base is stale", (f) => { f.proof.commit.parents[0].sha = "1".repeat(40); }],
   ["partial API page", (f) => { f.runs.total_count = 101; }],
   ["edited request", (f) => { f.origin.body += " edited"; }],
   ["multiple records", (f) => { f.review.body += "\n" + f.review.body; }],
