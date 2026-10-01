@@ -1,7 +1,7 @@
 <!-- Shirube requirement sheet = the `spec` seat's output (company-dev-os/PLACEMENT.md). Reuse information in the Issue/PR; risk/protected scope determines review depth. Candidate revision: AI-DLC P1/P2 dialogue; EARS/BDD retained, Working Backwards optional. Activate only after independent audit and adoption. -->
 # <unit> — requirement sheet (spec)
 
-Lifecycle candidate: [AI-DLC procedure §§1–4,9](https://github.com/watchout/shirube/blob/6b9e6facf47add5d1dbf02159372c22c1240ada7/docs/process/ai-dlc.md). Record the adopted lifecycle/baseline commit and claims (AI-00/12, SRC-M-02/03 as applicable), with adoption / independent check refs.
+Lifecycle candidate: [AI-DLC procedure §§1–4,9](https://github.com/watchout/shirube/blob/7fa597393d32738a548d9d882b6b930689b96a60/docs/process/ai-dlc.md). Record the adopted lifecycle/baseline commit and claims (AI-00/12, SRC-M-02/03 as applicable), with adoption / independent check refs.
 Seat: spec = <seat id>. <!-- a stand-in author says so here and removes the note when spec endorses -->
 Risk / applicable profile: <!-- R0-R4; protected scope overrides risk; no separate sheet required for an existing-design R0/R1 change -->
 Change entry: <!-- new / addition / fix; reason, target/version, priority, affected units/contracts; reuse unchanged requirements -->

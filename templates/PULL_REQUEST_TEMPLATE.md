@@ -9,7 +9,7 @@
 - owner decision (only R3/R4, protected surfaces, E1–E5): <!-- URL + sha256, or "not required" -->
 - execution context: <!-- reuse the existing Issue/PR: actor, target head, allowed scope, required evidence; no duplicate start form for a routine change -->
 - 採用版: <!-- policy commit + declaration reference the repository adopts -->
-- lifecycle_ref: <!-- adopted procedure commit + applicable sections/reused evidence; candidate: https://github.com/watchout/shirube/blob/6b9e6facf47add5d1dbf02159372c22c1240ada7/docs/process/ai-dlc.md (requires audit/adoption) -->
+- lifecycle_ref: <!-- adopted procedure commit + applicable sections/reused evidence; candidate: https://github.com/watchout/shirube/blob/7fa597393d32738a548d9d882b6b930689b96a60/docs/process/ai-dlc.md (requires audit/adoption) -->
 
 ## The four questions (anti-bloat v5 §9)
 
@@ -27,13 +27,13 @@
 
 ## Review result (when required by risk/protected scope or explicit request)
 
-- adopted audit-standard / source-map version:
+- audit_ref: <!-- adopted method/item-set version; candidate: https://github.com/watchout/shirube/blob/7fa597393d32738a548d9d882b6b930689b96a60/docs/sds/audit-method.md -->
 - independent checker / exact target head:
 - applicable item IDs → evidence / PASS, FAIL, UNKNOWN, or justified N/A:
 - blocking findings / optional improvements / unreviewed scope:
 - evidence identity: producer, executor, target/check/policy versions, settings, environment, observed_at, expiry/invalidation
 - invariant coverage: many-to-many acceptance/test links; meaningful normal/boundary/failure evidence; parent acceptance retained
-- verdict / correction and next actor:
+- verdict / correction and next actor: <!-- reference the structured review and machine receipt when used; do not transcribe a second verdict -->
 
 Reference the adopted checklist once. Do not repeat its text or rejudge valid machine results. Any mandatory acceptance, authority, safety, integrity, serious regression or required evidence failure blocks, regardless of the review axis. WARNING covers optional improvements only. Missing observations are UNKNOWN. Protected authority and independent review are not waived by a deviation note.
 
