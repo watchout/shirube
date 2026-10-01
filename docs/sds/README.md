@@ -112,11 +112,11 @@
 前段F01〜F10の作者検証: 測定9試験PASS（N1 403/404/429、N2名前のみ、N3空参照/文字列、N4整形のみ、timeout/不正JSON、旧schema、公開本文生成等）。Shirube既存85試験PASS、自前code予算904/1500。今回の原典改訂の監査や全製品での適用試験の代用ではない。今回の対象版と検証は改訂PRから辿る。
 次の順序: 独立監査（作者以外）→ 必要なowner採択と別担当merge → 配布元/利用元の版切替・読戻し → 実案件での適用。機械検査の登録だけで適用完了としない。P1もAI-DLC手順§2の対話から進める候補。PR#18のPR/FAQは補助手順として整理し、新入口を上書きしない。
 
-[baseline]: https://github.com/watchout/iyasaka-arc/blob/36b837b242478bcf210db2cd1791c265615564a7/cross-cutting/decisions/2026-09-25-established-practice-baseline.md
+[baseline]: https://github.com/watchout/iyasaka-arc/blob/52bc4d13246d0bfe39d5d9c1683a805e10b33616/cross-cutting/decisions/2026-09-25-established-practice-baseline.md
 [audit]: audit-method.md
-[sources]: https://github.com/watchout/iyasaka-arc/blob/e12656006d0c81a61b420702d8194fef164b24e0/cross-cutting/decisions/2026-09-30-sds-audit-v1-source-checklist.md
+[sources]: https://github.com/watchout/iyasaka-arc/blob/52bc4d13246d0bfe39d5d9c1683a805e10b33616/cross-cutting/decisions/2026-09-30-sds-audit-v1-source-checklist.md
 [policy]: https://github.com/watchout/iyasaka-org/blob/d3f1a1e90499f77772d48fba33532c68ed4cb1fa/docs/shirube/shirube-v3-runtime-policy.md
 [owner-index]: https://github.com/watchout/iyasaka-org/blob/d3f1a1e90499f77772d48fba33532c68ed4cb1fa/docs/shirube/owner-instruction-index.md
-[handover]: https://github.com/watchout/iyasaka-arc/blob/36b837b242478bcf210db2cd1791c265615564a7/cross-cutting/decisions/2026-09-25-shirube-handover-list.md
+[handover]: https://github.com/watchout/iyasaka-arc/blob/52bc4d13246d0bfe39d5d9c1683a805e10b33616/cross-cutting/decisions/2026-09-25-shirube-handover-list.md
 [measure]: https://github.com/watchout/iyasaka-arc/blob/e12656006d0c81a61b420702d8194fef164b24e0/tools/sds-conformance.py
 [tests]: https://github.com/watchout/iyasaka-arc/blob/e12656006d0c81a61b420702d8194fef164b24e0/tools/test_sds_conformance.py

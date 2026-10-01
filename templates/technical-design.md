@@ -3,7 +3,7 @@
 
 - requirements_ref: <Issue URL + sha256 of the requirement sheet>
 - adr_ref: <docs/adr/ADR-NNN-….md, or "none" when no decision is recorded>
-- lifecycle candidate: [AI-DLC procedure §§3–9](https://github.com/watchout/shirube/blob/6b9e6facf47add5d1dbf02159372c22c1240ada7/docs/process/ai-dlc.md); adopted lifecycle/baseline commit + claims + independent confirmation: <refs>
+- lifecycle candidate: [AI-DLC procedure §§3–9](https://github.com/watchout/shirube/blob/614ef9924f34b4c38c6f871b706cebfdc7442c11/docs/process/ai-dlc.md); adopted lifecycle/baseline commit + claims + independent confirmation: <refs>
 - status: <before the code / after the code (which head; the code follows the design from here)>
 Review depth: <!-- reference the adopted policy risk table; R0/R1 no automatic LLM audit, R2 post-implementation, R3/R4 add pre-review; protected scope and explicit audit requests still apply -->
 
