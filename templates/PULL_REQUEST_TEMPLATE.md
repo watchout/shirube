@@ -9,6 +9,7 @@
 - owner decision (only R3/R4, protected surfaces, E1–E5): <!-- URL + sha256, or "not required" -->
 - execution context: <!-- reuse the existing Issue/PR: actor, target head, allowed scope, required evidence; no duplicate start form for a routine change -->
 - 採用版: <!-- policy commit + declaration reference the repository adopts -->
+- lifecycle_ref: <!-- adopted procedure commit + applicable sections/reused evidence; candidate: https://github.com/watchout/shirube/blob/6b9e6facf47add5d1dbf02159372c22c1240ada7/docs/process/ai-dlc.md (requires audit/adoption) -->
 
 ## The four questions (anti-bloat v5 §9)
 
@@ -40,4 +41,5 @@ Reference the adopted checklist once. Do not repeat its text or rejudge valid ma
 
 - merge commit / merged_at:
 - re-check on main (same commands, main SHA) or N/A with reason:
+- integration: <!-- actual shared-main SHA/build/test evidence; branch checks alone are not CI completion; material code changes require main verification, not unexplained N/A -->
 - next step:

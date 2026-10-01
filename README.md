@@ -74,4 +74,4 @@ adopted baseline and an independent review are the basis, never a threshold loos
 
 ## SDS 規格の改訂
 
-[64項目の入口と2026-10-01改訂の反映先](docs/sds/README.md)。規格本文の改訂、配布、実案件での適用は別に確認する。
+[SDSの入口・64項目の参照](docs/sds/README.md)から、[AI-DLCを主軸とする実施手順](docs/process/ai-dlc.md)と[補完原典の選定根拠](docs/sds/lifecycle-basis.md)へ進む改訂候補。独立監査・採択前。規格の採択、配布、実案件での適用は別に確認する。

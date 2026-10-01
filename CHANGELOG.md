@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — AI-DLC lifecycle revision candidate
+
+- Make AI-DLC the primary procedure; supplement integration/design/boundaries with Fowler/Cockburn and iteration feedback/change intake with OpenUP, with source identities and audit cases.
+- Align the SDS entry and existing templates; preserve acceptance IDs and protections. Independent audit, adoption and actual use remain separate.
+
 ## Unreleased — SDS sufficiency remediation
 
 - Align requirement/design/review templates with risk-based review and many-to-many evidence.
