@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased — SDS sufficiency remediation
+
+- Align requirement/design/review templates with risk-based review and many-to-many evidence.
+- Add versioned S1–S9 revision and the existing 64-ID source index; activation and independent audit remain separate.
+
 All notable changes to this repository are recorded here (one entry per version; the format follows a plain
 "added / changed / removed" list — Keep a Changelog is a candidate in the baseline ADR, not an adopted rule).
 

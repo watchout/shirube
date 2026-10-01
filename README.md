@@ -71,3 +71,7 @@ git failure). Nothing in the workflow hides a failure. An empty scan is distingu
 `npm run lint:guard`, `npm run hygiene:lines`, `npm run hygiene:jscpd`, `npm run hygiene:budget` run the same checks
 on this repository. Changes to rules, checkers, configs or thresholds follow SR-01..03 (handover v5 §1 SR): the previous
 adopted baseline and an independent review are the basis, never a threshold loosened in the same PR.
+
+## SDS 規格の改訂
+
+[64項目の入口と2026-10-01改訂の反映先](docs/sds/README.md)。規格本文の改訂、配布、実案件での適用は別に確認する。

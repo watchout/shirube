@@ -2,12 +2,12 @@
 ## What this PR does
 
 - cell_id / Issue: <!-- e.g. AUN-V2-TRIM-001, link to the Issue whose completion conditions this PR serves -->
-- requirements_ref: <!-- the unit's requirement sheet (spec seat; Issue URL + sha256). An implementation PR without one is not merged -->
-- design_ref: <!-- the unit's technical design (arc seat; docs/design/… at a commit) -->
+- requirements_ref: <!-- adopted requirements or the same Issue/PR's scope/acceptance; URL + sha256; preserve required information without duplicating sheets -->
+- design_ref: <!-- existing design plus the change, or a new design where risk/new decisions require it -->
 - adr_ref: <!-- docs/adr/ADR-NNN, or "none" -->
 - risk_class: <!-- R0 / R1 / R2 / R3 / R4 (docs/10 of the consumer's Control, or the profile's risk table) -->
 - owner decision (only R3/R4, protected surfaces, E1–E5): <!-- URL + sha256, or "not required" -->
-- 開始記録（編集前に投稿した開始記録コメントの URL）: <!-- seat id, repo/branch/head, node -v, allowed paths, time -->
+- execution context: <!-- reuse the existing Issue/PR: actor, target head, allowed scope, required evidence; no duplicate start form for a routine change -->
 - 採用版: <!-- policy commit + declaration reference the repository adopts -->
 
 ## The four questions (anti-bloat v5 §9)
@@ -21,19 +21,20 @@
 
 - commands run and results (exact head):
 - design_judgments[] (each with a basis ref; write `[]` explicitly when none):
-- deviation_ledger (the judgment taken, the alternative not taken, why):
+- deviation_ledger (reason, alternative, valid authority/expiry/compensating protection where an exception is allowed; recording alone is not permission):
 - next_action:
 
-## Review points (reviewer; P6 = Google Code Review Guidelines, SRC-M-06; the tool-checked items are not re-read by hand)
+## Review result (when required by risk/protected scope or explicit request)
 
-- [ ] Design: the change matches design_ref and belongs where it is put; no second writer or second decision path (Q2)
-- [ ] Functionality: each acceptance ID in requirements_ref has its test or evidence; negative cases included
-- [ ] Complexity: no abstraction, layer or option beyond what the contract needs (Q4); nothing built for a guessed future
-- [ ] Tests: unit → contract → acceptance; a test that cannot fail is not a test; flaky ones are isolated, not retried
-- [ ] Naming and comments: names say what, comments say why; exceptions (eslint-disable, gitleaks allow) carry a reason and an expiry (AB-07)
-- [ ] Documentation: README / profile / ADR updated where behaviour or a decision changed; changelog entry present
-- [ ] Deviations: deviation_ledger lists the judgment taken and the alternative not taken
-- [ ] Style, consistency, line counts, duplication, dependency direction: checked by the tools (hygiene run URL), not re-read here
+- adopted audit-standard / source-map version:
+- independent checker / exact target head:
+- applicable item IDs → evidence / PASS, FAIL, UNKNOWN, or justified N/A:
+- blocking findings / optional improvements / unreviewed scope:
+- evidence identity: producer, executor, target/check/policy versions, settings, environment, observed_at, expiry/invalidation
+- invariant coverage: many-to-many acceptance/test links; meaningful normal/boundary/failure evidence; parent acceptance retained
+- verdict / correction and next actor:
+
+Reference the adopted checklist once. Do not repeat its text or rejudge valid machine results. Any mandatory acceptance, authority, safety, integrity, serious regression or required evidence failure blocks, regardless of the review axis. WARNING covers optional improvements only. Missing observations are UNKNOWN. Protected authority and independent review are not waived by a deviation note.
 
 ## Post-merge (fill after merge; "merged" is not "done" without this)
 
