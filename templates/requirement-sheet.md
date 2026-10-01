@@ -5,6 +5,8 @@ Adopted claims declared (baseline ADR v7 @ <commit>): <SRC-M-01 / SRC-M-02 / SRC
 Seat: spec = <seat id>. <!-- a stand-in author says so here and removes the note when spec endorses -->
 ## Feature Goal
 <!-- one sentence: who gets what improvement -->
+P1 PR/FAQ reference (location + version): <!-- retain both FAQs and unresolved questions -->
+See [the P1 procedure](https://github.com/watchout/shirube/blob/676cdb953b73ca1890d4ef40dcd2637d74f10255/docs/process/p1-working-backwards.md).
 ## Target User
 <!-- the people or seats who notice the change -->
 ## Business / Operational Reason
