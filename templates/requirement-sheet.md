@@ -6,7 +6,7 @@ Seat: spec = <seat id>. <!-- a stand-in author says so here and removes the note
 ## Feature Goal
 <!-- one sentence: who gets what improvement -->
 P1 PR/FAQ reference (location + version): <!-- retain both FAQs and unresolved questions -->
-See [the P1 procedure](../docs/process/p1-working-backwards.md).
+See [the P1 procedure](https://github.com/watchout/shirube/blob/676cdb953b73ca1890d4ef40dcd2637d74f10255/docs/process/p1-working-backwards.md).
 ## Target User
 <!-- the people or seats who notice the change -->
 ## Business / Operational Reason
