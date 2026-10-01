@@ -9,7 +9,7 @@
 - owner decision (only R3/R4, protected surfaces, E1–E5): <!-- URL + sha256, or "not required" -->
 - execution context: <!-- reuse the existing Issue/PR: actor, target head, allowed scope, required evidence; no duplicate start form for a routine change -->
 - 採用版: <!-- policy commit + declaration reference the repository adopts -->
-- lifecycle_ref: <!-- adopted procedure commit + applicable sections/reused evidence; candidate: https://github.com/watchout/shirube/blob/614ef9924f34b4c38c6f871b706cebfdc7442c11/docs/process/ai-dlc.md (requires audit/adoption) -->
+- lifecycle_ref: <!-- adopted procedure commit + applicable sections/reused evidence; candidate: https://github.com/watchout/shirube/blob/7fa597393d32738a548d9d882b6b930689b96a60/docs/process/ai-dlc.md (requires audit/adoption) -->
 
 ## The four questions (anti-bloat v5 §9)
 
@@ -27,7 +27,7 @@
 
 ## Review result (when required by risk/protected scope or explicit request)
 
-- audit_ref: <!-- adopted method/item-set version; candidate: https://github.com/watchout/shirube/blob/614ef9924f34b4c38c6f871b706cebfdc7442c11/docs/sds/audit-method.md -->
+- audit_ref: <!-- adopted method/item-set version; candidate: https://github.com/watchout/shirube/blob/7fa597393d32738a548d9d882b6b930689b96a60/docs/sds/audit-method.md -->
 - independent checker / exact target head:
 - applicable item IDs → evidence / PASS, FAIL, UNKNOWN, or justified N/A:
 - blocking findings / optional improvements / unreviewed scope:
