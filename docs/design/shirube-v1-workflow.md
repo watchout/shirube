@@ -6,6 +6,7 @@
 追加要求の独立監査は[受領記録](https://github.com/watchout/shirube/issues/6#issuecomment-5967428674)（本文SHA-256 `5fd7c3335de30ff76c15c8b1a78dbd01809ddaa71cdb94863aeff1130307a4a3`）で完了。入力版は `e43f0580dce6bf0782af142df30f012d1b0b6364`。要求の監査受領と本設計の監査を区別する。
 目的原文: 「開発の高効率化自動化による高速開発化」。第一段階: 「完成できることでいい」。
 原典・適用差分・公開根拠S1〜S7は[責務対応](shirube-v1-design-questions.md)§2を参照し、本文を複製しない。
+新SDS手順§3の具体的な責任/データ所有・外部境界と比較案は[責任・データ境界](shirube-v1-responsibility-and-data.md)に置く。以下の工程説明を同文書から実装済みと読み替えない。
 
 具体化を進めるcontrol_source_ref:
 - url: https://github.com/watchout/shirube/issues/6#issuecomment-5965595727
@@ -57,7 +58,7 @@ AI-01/03/06の質問・回答確認を経て設計を生成する順を守る。
 | 案件と工程試行 / Shirube工程制御 | 計画/対象の版、順序/依存/完了条件、予定/実担当、実着手/終了/確認、待機/手戻りと問題/成功の事実。[工程記録の追加要求](../requirements/shirube-work-progress-learning.md)へ結ぶ | 終了条件を満たさず先へ進めない。同じ試行の二重開始を許さず、計画と実績・過去の試行を保持する |
 | 判断と履歴 / Shirube工程制御 | 公開URL/digest、対象/範囲、当時の質問と回答・主体/時点/出所、照合/公開/変更/失効と作業適用の経緯。[追加要求](../requirements/shirube-v1-approval-history.md)に従う | 権限の正本はGitHub。履歴の保存済みと現在有効な承認を区別し、過去を黙って上書きしない |
 | 検査・実行証拠の参照 / Shirube工程制御 | 対象/検査版、発行元、観測時点、適用条件、結果、元証拠 | PASS/FAIL/UNKNOWN/NOT_RUNを区別。原典参照やhashだけで内容の正しさにしない |
-| 配送・処理試行 / aun | 提供側の契約で定める依頼・配送・処理報告 | Shirubeには参照だけを保持。通信の受領は工程完了ではない |
+| 親依頼・タスク・実行試行・配送/報告 / aun | 提供側の契約で定める処理と通信の記録 | Shirubeには実行元参照を保持し、工程条件への照合を所有。処理完了は工程合格ではない |
 | 文脈・復元資料 / kusabi | 出所、版、欠落、復元した文脈 | 復元後にGitHubと現在の作業へ再照合。記憶にある承認を復活させない |
 | 共通席と実行主体 / Onza共通定義 | 共通仕様が定める席・主体・接続の参照 | Shirubeの独自共通テーブルや型を追加しない |
 
@@ -71,7 +72,7 @@ AI-01/03/06の質問・回答確認を経て設計を生成する順を守る。
 | 判断の取得・実行前照合 | CLI host / 実行側 ↔ Shirube / 本人回答と対象、実行操作と許可の照合 | 下記DQ-02と実行権限の設計が必要。フック障害を暗黙の許可にしない |
 
 この表は必要な契約内容で、相手側APIが実装済みという主張ではない。形式・認証・期限・確定点を選定後、提供側と利用側の同じ契約試験へ落とす。
-aun PR #5 @ `07793bcbcedbb421c528867e5a2a65ae8d32358e` の[通信契約](https://github.com/watchout/aun/blob/07793bcbcedbb421c528867e5a2a65ae8d32358e/docs/design/communication-contract.md)と[既存session接続案](https://github.com/watchout/aun/blob/07793bcbcedbb421c528867e5a2a65ae8d32358e/docs/adr/0002-existing-session-connections.md)を確認した。設計案であり技術方式の採択・実通信成立は未確認。
+aun PR #5の先行版 `07793bcbcedbb421c528867e5a2a65ae8d32358e` の[通信契約](https://github.com/watchout/aun/blob/07793bcbcedbb421c528867e5a2a65ae8d32358e/docs/design/communication-contract.md)と[既存session接続案](https://github.com/watchout/aun/blob/07793bcbcedbb421c528867e5a2a65ae8d32358e/docs/adr/0002-existing-session-connections.md)を確認した。現在の入力は `9e54940496934171a243eaeafa2a584e86470a62` の親依頼/タスク/実行試行を含む設計案で、参照と適用差分は[責任・データ境界§4](shirube-v1-responsibility-and-data.md)へ集約する。両版とも実通信成立の証拠ではない。
 Shirubeが各通信ごとに独自のCLIを起動し直す設計は、aunの既存会話への配送案と衝突するため前提にしない。
 
 ## 4. 最初の実証の順序と状態
