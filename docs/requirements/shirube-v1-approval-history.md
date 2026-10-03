@@ -19,6 +19,7 @@ GitHubは承認権限の正本。Shirubeは判断要求と履歴の保存・照�
 [Onza共通仕様の固定版](https://github.com/watchout/onza/blob/5abd5d93952434228a6e2387b2714d19ec133a9a/docs/common/README.md)に従い、共有PostgreSQLでは履歴をShirube固有スキーマに置き、人・席・実行主体等は提供側が定める共通参照へ結ぶ。物理テーブル名・型は本書で決定しない。
 共通基盤のcontrol_source_ref: url=https://github.com/watchout/onza/issues/2#issuecomment-5941785917 / sha256=0efd4a1ecc36794b53f3c79e99e7c3cb027055dbfcc563292088b185f75a596d。
 aunの配送記録とkusabiの復元元は参照で結ぶ。それらの状態管理を複製せず、承認履歴をOnzaの画面だけに保存しない。Onza UIや任意の他MCPが停止中でも、Shirubeの保存・照会を利用できること。
+[工程の見通し・実績・改善の追加要求](shirube-work-progress-learning.md)は、同じ案件/工程/試行/承認への参照で接続する。第一段階の基本工程表と実績記録、次段階の詳細可視化/PDCAの導入順を同書に保持し、本書で別の工程台帳を定義しない。
 
 ## 2. 残す情報の意味
 
