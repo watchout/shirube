@@ -27,6 +27,7 @@ Ownerの目的は「開発の高効率化自動化による高速開発化」。
 追加要求の入力は[工程1の確認入口](../requirements/shirube-v1-p1-current.md) @ `e43f0580dce6bf0782af142df30f012d1b0b6364`。要求監査の現在の受領記録は工程設計の冒頭から辿れる。
 工程表の粒度の方向性はOwner確認済み。確認範囲・control_source_refと具体化案は工程設計§7に集約する。個別Unit境界・技術方式の未決は保持する。
 現在の対話材料は[責任・データ境界の比較案](shirube-v1-responsibility-and-data.md)。新SDS手順§3の意味の所有者・依存・全要求への対応を先に確認し、Unitの個数からは選ばない。
+Ownerの単独利用の確認を受け、[AUNなしの開始・結果接続案](shirube-v1-standalone-execution.md)に具体化指示・提供範囲・方式比較と実証条件を追記した。内部境界の選択と、単独時の入口/権限方式の選択を区別する。
 
 ## 2. 原典の進め方・責務とShirubeへの対応
 

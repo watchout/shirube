@@ -74,6 +74,7 @@ AI-01/03/06の質問・回答確認を経て設計を生成する順を守る。
 この表は必要な契約内容で、相手側APIが実装済みという主張ではない。形式・認証・期限・確定点を選定後、提供側と利用側の同じ契約試験へ落とす。
 aun PR #5の先行版 `07793bcbcedbb421c528867e5a2a65ae8d32358e` の[通信契約](https://github.com/watchout/aun/blob/07793bcbcedbb421c528867e5a2a65ae8d32358e/docs/design/communication-contract.md)と[既存session接続案](https://github.com/watchout/aun/blob/07793bcbcedbb421c528867e5a2a65ae8d32358e/docs/adr/0002-existing-session-connections.md)を確認した。現在の入力は `9e54940496934171a243eaeafa2a584e86470a62` の親依頼/タスク/実行試行を含む設計案で、参照と適用差分は[責任・データ境界§4](shirube-v1-responsibility-and-data.md)へ集約する。両版とも実通信成立の証拠ではない。
 Shirubeが各通信ごとに独自のCLIを起動し直す設計は、aunの既存会話への配送案と衝突するため前提にしない。
+上記はAUN接続時の境界。AUNを導入しない構成は[単独実行の接続案](shirube-v1-standalone-execution.md)で開始/結果の取り込みと拒否・復旧を具体化する。連携障害時の自動代替起動には使わない。
 
 ## 4. 最初の実証の順序と状態
 
