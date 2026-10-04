@@ -1,6 +1,6 @@
 # Shirube初版 — 工程・引継ぎ・開始照合の設計案
 
-状態: **対話中の設計案 / 技術方式は未採択 / 実装前**。作者: codex-adf。
+状態: **内部責任の分担はOwner採択済み / 技術方式は未採択 / 実装前**。作者: codex-adf。採択範囲/公開参照は下記の責任・データ境界を参照。
 入力要求: [P1固定版](../requirements/shirube-v1-p1.md) @ `b769909d44e044ee3570fce3a630d219b52cad23`。
 追加分を含む現在の要求と監査範囲は[工程1の確認入口](../requirements/shirube-v1-p1-current.md)を参照する。既存P1のPASSを追加分/技術設計/実装へ流用しない。
 追加要求の独立監査は[受領記録](https://github.com/watchout/shirube/issues/6#issuecomment-5967428674)（本文SHA-256 `5fd7c3335de30ff76c15c8b1a78dbd01809ddaa71cdb94863aeff1130307a4a3`）で完了。入力版は `e43f0580dce6bf0782af142df30f012d1b0b6364`。要求の監査受領と本設計の監査を区別する。

@@ -1,6 +1,6 @@
 # Shirube初版 — 全体の責任境界と最初の実証の設計案
 
-状態: **対話用の設計案 / 境界の選択は未採択 / 実装前**。作者: codex-adf。
+状態: **内部責任の分担はOwner採択済み / Unit・接続技術は設計中 / 実装前**。作者: codex-adf。採択参照と範囲は[責任・データ境界](shirube-v1-responsibility-and-data.md)冒頭を参照。
 入力: [Owner確認・独立要求監査済みの要求](../requirements/shirube-v1-p1.md) @ `b769909d44e044ee3570fce3a630d219b52cad23`。
 要求本文SHA-256: `9a5b1bc530ae93133cb3d0197bce23edaad558ea00f7b664fb66cf6484ab1340`。
 この文書の作成は実装、DB/CLI設定変更、既存席の起動、独立監査PASSの認可ではない。
@@ -26,7 +26,7 @@ Ownerの目的は「開発の高効率化自動化による高速開発化」。
 具体化した[工程・引継ぎ・開始照合の設計案](shirube-v1-workflow.md)で、各工程の入口/出口、情報所有、外部契約、最初の実証の順序を対応づける。現在の対話事項DQ-02は同文書§5に置く。
 追加要求の入力は[工程1の確認入口](../requirements/shirube-v1-p1-current.md) @ `e43f0580dce6bf0782af142df30f012d1b0b6364`。要求監査の現在の受領記録は工程設計の冒頭から辿れる。
 工程表の粒度の方向性はOwner確認済み。確認範囲・control_source_refと具体化案は工程設計§7に集約する。個別Unit境界・技術方式の未決は保持する。
-現在の対話材料は[責任・データ境界の比較案](shirube-v1-responsibility-and-data.md)。新SDS手順§3の意味の所有者・依存・全要求への対応を先に確認し、Unitの個数からは選ばない。
+現在の入力は[採択した責任・データ境界](shirube-v1-responsibility-and-data.md)。新SDS手順§3の分担の確認を受け、§4のUnitと反復へ進む。二つの責任をそのまま二つのUnitにはしない。
 Ownerの単独利用の確認を受け、[AUNなしの開始・結果接続案](shirube-v1-standalone-execution.md)に具体化指示・提供範囲・方式比較と実証条件を追記した。内部境界の選択と、単独時の入口/権限方式の選択を区別する。
 
 ## 2. 原典の進め方・責務とShirubeへの対応
