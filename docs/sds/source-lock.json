@@ -1,5 +1,6 @@
 {
   "format": "sds-source-lock/1",
+  "standard": "SDS-V2",
   "state": "candidate_author_checked_independent_review_pending",
   "retrieval": "HTTP GET; Accept-Encoding: identity; SHA-256 over exact response body bytes; no text normalization",
   "interpretation": "lifecycle-basis.md; source identity alone is not evidence of correct interpretation or adoption",
@@ -26,6 +27,7 @@
     {"id": "XP-01", "url": "https://www.martinfowler.com/articles/designDead.html", "resolved_url": "https://www.martinfowler.com/articles/designDead.html", "sha256": "4c4ba9c4ad55f25807d52e81c431e64caff3db8ea45a47c3f5a43519300ad9c9", "bytes": 66485, "retrieved_at": "2026-10-01T02:10:24.609830+00:00", "section": "The Enabling Practices of XP; Growing an Architecture; Reversibility; The Will to Design", "role": "supplement"},
     {"id": "AI-13", "url": "https://raw.githubusercontent.com/awslabs/aidlc-workflows/9b8df02231f0230fd6f19846a0df1fb5567e7ece/core/aidlc-common/protocols/stage-protocol-reviewer.md", "sha256": "13c866eac629eeb27e581c3f59f389c67953f9bf7d7a5c6a382d3a51086a0da4", "bytes": 42775, "retrieved_at": "2026-10-01T02:43:31.229232+00:00", "section": "12a Reviewer Invocation; Flow; gate/completion precondition", "role": "primary"},
     {"id": "AI-14", "url": "https://raw.githubusercontent.com/awslabs/aidlc-workflows/9b8df02231f0230fd6f19846a0df1fb5567e7ece/core/knowledge/aidlc-architecture-reviewer-agent/reviewing.md", "sha256": "0521b9327583a89a4de158ced6aca66be9e5eda915176584c834fedf185b171c", "bytes": 7854, "retrieved_at": "2026-10-01T02:43:31.488644+00:00", "section": "Stance; What to Check; Output; Severity/Verdict; Subsequent Iterations", "role": "primary"},
-    {"id": "AI-15", "url": "https://raw.githubusercontent.com/awslabs/aidlc-workflows/9b8df02231f0230fd6f19846a0df1fb5567e7ece/core/agents/aidlc-quality-agent.md", "sha256": "a1119a0b93e46dce0b93f10c39181ec798c0e38fbe3cfc26829eac88f86acec6", "bytes": 3890, "retrieved_at": "2026-10-01T02:43:31.712215+00:00", "section": "Core Responsibilities; Key Principles", "role": "primary"}
+    {"id": "AI-15", "url": "https://raw.githubusercontent.com/awslabs/aidlc-workflows/9b8df02231f0230fd6f19846a0df1fb5567e7ece/core/agents/aidlc-quality-agent.md", "sha256": "a1119a0b93e46dce0b93f10c39181ec798c0e38fbe3cfc26829eac88f86acec6", "bytes": 3890, "retrieved_at": "2026-10-01T02:43:31.712215+00:00", "section": "Core Responsibilities; Key Principles", "role": "primary"},
+    {"id": "ANT-01", "url": "https://code.claude.com/docs/en/best-practices", "resolved_url": "https://code.claude.com/docs/en/best-practices", "sha256": "55e6de5095491d778c848a28582fa0a293ed23a59151a4969a1565fd787ad6a1", "bytes": 739991, "retrieved_at": "2026-10-06T23:56:33.476671+00:00", "section": "Give Claude a way to verify its work; Explore first, then plan, then code; Run multiple Claude sessions; Add an adversarial review step", "role": "supplement", "versioning": "mutable official page; exact retrieved body only; refetch mismatch requires source review, not silent replacement"}
   ]
 }
