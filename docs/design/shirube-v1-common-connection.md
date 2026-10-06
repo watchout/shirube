@@ -14,17 +14,19 @@
 | CF-AUTH-01 A採択 | [ARC #57 / 5990876569](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-5990876569) / `9461d4a314f5da34765022f44a0602a30030a4ea4cd0a7058019a58f5d6a4a15` |
 | 共通候補の返却 | [ARC #57 / 5991059854](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-5991059854) / `f0246f9f0935f7ed3c139824cd0beb6d94b5b546b524421bbc837681f0a2ac3f` |
 | Shirube論理設計の独立PASS・F01解消 | [Shirube #6 / 5992984615](https://github.com/watchout/shirube/issues/6#issuecomment-5992984615) / `e9ae3164323c38f28a7d2da0d7d6ade5bd35af0d3c758f9c39aa685438f5502a` |
-| 共通候補の独立BLOCK | [ARC #57 / 5991664550](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-5991664550) / `d92b815ca8865c8b25d26675c846948ec6d7af9a23e43f255cb659aacdb43bf2` |
+| 共通候補の旧版独立BLOCK（是正前の履歴） | [ARC #57 / 5991664550](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-5991664550) / `d92b815ca8865c8b25d26675c846948ec6d7af9a23e43f255cb659aacdb43bf2` |
+| 共通候補の是正後独立PASS・F01解消 | [ARC #57 / 6023794868](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6023794868) / `ff96233abebc193ba56349b1a65c068a260cca81608a31a34ee8e7e2bbc73e0d` |
+| ARC本人の同版受領 | [ARC #57 / 6023905120](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6023905120) / `024a9816fe1cc53a8a29f2bf6474a3beadcecef925428828a4e0907fde02e1fb` |
 
-提供側入力はOnza PR14 `c41c9c5712b6f8a7bb87dac2a2f2422742a6aaa9` / `onza-common/0.2.0-draft.1`。型・エラー・DB定義・共通SQLの正本はOnzaに置き、本書で複製しない。
+提供側入力はOnza PR14 `098b7f79435cb7911e873dfd392d59ac62753906` / `onza-common/0.2.0-draft.1`。型・エラー・DB定義・共通SQLの正本はOnzaに置き、本書で複製しない。
 
 | 固定入力 | bytes SHA-256 |
 |---|---|
 | [architecture.md][architecture] | `c9932c648f3c2db7e07ed084b6f8049b3d9a1b2c2f3f7ca93b77617070eb104a` |
-| [contract.md][contract] | `ba9c90ef64213829ef29e8106a7a6e56c4dc78580ba78623e97d5dbdb859dde5` |
-| [adoption.md][adoption] | `450cd689d4ad2411422468ce9dfb0360812159b9d033f3649af4efc98214528f` |
+| [contract.md][contract] | `29ef8376839c98370ae2e7476bc0d2b9937ba8dc984815c927be4790c24d45c8` |
+| [adoption.md][adoption] | `3ebf61e95a84a0db3598adcdee01d71dbb605e214d78f793d4c7b83283ae6c91` |
 
-共通監査はD1〜D5 PASS、D6 FAIL。F01は指定Python検査がUUID/digest/issuecomment URLの末尾LFを受理する言語間不一致で、修正と独立再確認が必要。暗黙trim・Shirube独自schema・文字列の正規化で回避しない。利用方法の検討はできるが、当該候補を採択済み配布物・実装可能な確定契約・実DB適合PASSとして扱わない。
+上記固定版の共通監査はD1〜D6 PASS、必須指摘0、F01解消。UUID/digest/issuecomment URLの末尾LFを受理する言語間不一致の是正を独立確認し、ARC本人が同版をRECEIPT_ACCEPTED / exit 0で受領済み（authorization NONE）。暗黙trim・Shirube独自schema・文字列の正規化で回避しない。これは提供側の固定設計範囲の合格で、本書の利用側監査・配布物の採択・実装/実DB適合の合格には拡張しない。共通提供実装等の未成立条件は§6に保持する。
 [AUNの利用側対応 @3847262][aun-input]も入力とする。AUNの業務grant/配送/gatewayをShirubeに複製せず、共通提供側への関数・配布版・保守席の依頼は既存ARC #57に集約する。
 
 ## 2. 正本の操作をどこで使うか
@@ -91,7 +93,7 @@ restoreは共通と導入済み製品を整合したsnapshotから隔離環境�
 
 | 対象 | 次の担当・成果物 | それまで止める範囲 |
 |---|---|---|
-| 共通F01と本対応の意味照合 | ARCがOnza正本を修正し、独立再監査/機械受領の固定参照、相違と是正先をARC #57へ返す。新旧差分をShirubeで確認する | 共通候補の採用・依存する実装。独立なShirube詳細設計は続けられる |
+| 共通F01と本対応の意味照合 | 提供側F01解消・独立PASS・ARC同版受領は§1の固定参照で確認済み。codex-adfは提供commit/hash/URL/状態の参照差分を反映。本書の提供/利用側の意味照合はARC＋codex-adf、必要な利用側監査は独立担当へ接続する | 利用側照合/監査と以下の未成立条件に依存する採用・実装。提供側F01の再処理は求めない。独立なShirube詳細設計は続けられる |
 | 共通提供実装 | Onza担当の具体席/受諾、検証関数の呼出形（service/human同時検証を含む）、対応PG major、配布manifest/検証CLI/fixtureを既存担当経路で固定 | その関数を推測した実装・実DB接続。実装担当割当とDB操作認可は別 |
 | 失効証拠の合意 | ARC＋codex-adf、AUN実行分はaunが§4の対象範囲・型・検証器/停止管理権限を固定 | 共通交代と実効停止の受入。論理stopの意味は再発明しない |
 | 本人確認とCLI/継続処理 | codex-adfが固定ライブラリ、画面の配備/RP/origin、初回登録/回復、AI実行からの隔離、起動/停止/照会、host終了後の継続方式を比較し、結果を変える未決だけOwnerへ提示 | 方式依存の実装/起動。A方針や通常作業の開始号令は再質問しない |
@@ -99,7 +101,7 @@ restoreは共通と導入済み製品を整合したsnapshotから隔離環境�
 
 共通完成済みDBの提出を文書照合の一律前提にしない。一方で提供側・利用側の契約と必要監査が揃うまでは、その依存実装を開始しない。今回の返却先は既存ARC #57、Shirubeの進行記録は既存Issue #6。追加の別規格・常駐サービス・全製品移行を作業へ加えない。
 
-[architecture]: https://github.com/watchout/onza/blob/c41c9c5712b6f8a7bb87dac2a2f2422742a6aaa9/docs/common/0.2/architecture.md
-[contract]: https://github.com/watchout/onza/blob/c41c9c5712b6f8a7bb87dac2a2f2422742a6aaa9/docs/common/0.2/contract.md
-[adoption]: https://github.com/watchout/onza/blob/c41c9c5712b6f8a7bb87dac2a2f2422742a6aaa9/docs/common/0.2/adoption.md
+[architecture]: https://github.com/watchout/onza/blob/098b7f79435cb7911e873dfd392d59ac62753906/docs/common/0.2/architecture.md
+[contract]: https://github.com/watchout/onza/blob/098b7f79435cb7911e873dfd392d59ac62753906/docs/common/0.2/contract.md
+[adoption]: https://github.com/watchout/onza/blob/098b7f79435cb7911e873dfd392d59ac62753906/docs/common/0.2/adoption.md
 [aun-input]: https://github.com/watchout/aun/blob/38472628f67a753a72c8e1c0ee919d4193b5513d/docs/design/common-contract-request.md
