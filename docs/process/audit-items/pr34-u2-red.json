@@ -1,0 +1,12 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@d34b31e98df522c463d5cafb7c17e0beece33fb2/docs/sds/audit-method.md#3",
+  "scope": "Shirube PR34 の U2 Red 試験（PC-01〜04、npm run test:u2）の試験自体の妥当性。実装・U2 詳細設計・merge は対象外",
+  "items": [
+    {"id": "T1", "criterion": "期待値の出所: 期待値が、契約 docs/design/shirube-v1-progression-contract.md @5be3527682c28982ff3475abc793771dcb091859 の §3・§5・§7（PC-01〜04）の表から取られ、仮置き実装の出力に合わせていないか。"},
+    {"id": "T2", "criterion": "Red の有効性: 9 件中 7 件の失敗が assertion によるものか。今の CI の test job では実行されないため、Node 22 で npm run test:u2 を実行して確かめる。"},
+    {"id": "T3", "criterion": "通過している 2 件の扱い: PC-01 の負例と PC-03 の二重起動なしを Red に数えず、実装後に過剰な開始を防ぐ負例として残す扱いが妥当か。"},
+    {"id": "T4", "criterion": "設計の先取り: 試験が仮定している ports（store・executor・clock、record / tick / recover / status）が、契約の範囲を超えて U2 詳細設計を先取りしていないか。"},
+    {"id": "T5", "criterion": "範囲: 変更が試験と試験用 adapter（mock と明示）に閉じ、製品コードや CI の設定を変えていないか。"}
+  ]
+}
