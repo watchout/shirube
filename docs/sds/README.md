@@ -1,6 +1,11 @@
-# SDS の入口 — AI-DLCを基盤にした開発規格の改訂候補
+# SDS-V2 — 小さな実機能を完成まで導く開発規格
 
-状態: **AI-DLCへの原典・手順改訂は独立監査/採択/配布前。** 前段のF01〜F10改訂（Shirube #19 / arc #55 / org #7）の独立監査と区別する。SDSが「AI開発に必要十分」とは認定していない。
+状態: **SDS-V2への命名・実践の取り込み・適用はOwner指示済み。本改訂本文の独立監査・main統合・利用元の版切替は未完。** 規格があることと、実案件を完成できたことは別に観測する。
+Owner原文「では、これを取り込んでSDS-V2とネーミングして適用しましょう」のcontrol_source_ref: https://github.com/watchout/shirube/issues/6#issuecomment-6027721133 / 本文SHA-256 `d6f826a9e8ff3407b411d4eabcf4a778a55ae015454e69027ef2694484385a05`。
+改訂前のAI-DLC基盤SDSは採択済み: https://github.com/watchout/shirube/issues/6#issuecomment-5927903682 / 本文SHA-256 `0623bba1351ec351c239790e1a76afddc0d04a19f5086b77a2f3eaa8495f53c6`、統合版 `3b9f5c8e8f22a98374f1929ea8bcff8e084dab3b`。旧本文の「候補」は作成時の状態。下記F01〜F10/64項目の処置履歴まで今回の独立PASSに置き換えない。
+
+SDS-V2の最優先は、目的・完了条件に沿って実作業を進め、不足を是正し、統合した実物の利用まで導くこと。記録は判断・継続・復旧を支える。具体例/必要な試作で意味を確認し、実行できる試験を先に用意して実装・修正し、独立監査と実環境受入へつなぐ。[実施手順](../process/ai-dlc.md)§2/4/6〜8が実行方法の正本。
+正本は既存のこの入口・従属文書を更新する。別の`SDS-V2`本文コピーやキットを作らない。名称は規格の世代であり、製品/package版、要求ID、監査JSONのschemaを改名しない。最新の監査・採択・統合済み版はmainで解決し、利用元は公開判断に結ぶcommitを固定する。候補branchを自動追随させない。
 
 更新依頼: https://github.com/watchout/shirube/issues/6#issuecomment-5922221959 / 本文 SHA-256 `860492462b3eb5f990184c0031dbd2229e14a425ca01a67b4150e15f05874fa5`。
 別キットの撤回: https://github.com/watchout/shirube/issues/6#issuecomment-5921805227 / 本文 SHA-256 `7802c88e0b67fabeb20b26985dd67486239b1f1732bbfdefefa859d976f1dc63`。Shirube 本体が入口で、別キットは再作成しない。
@@ -110,7 +115,7 @@
 ## 検証と発効
 
 前段F01〜F10の作者検証: 測定9試験PASS（N1 403/404/429、N2名前のみ、N3空参照/文字列、N4整形のみ、timeout/不正JSON、旧schema、公開本文生成等）。Shirube既存85試験PASS、自前code予算904/1500。今回の原典改訂の監査や全製品での適用試験の代用ではない。今回の対象版と検証は改訂PRから辿る。
-次の順序: 独立監査（作者以外）→ 必要なowner採択と別担当merge → 配布元/利用元の版切替・読戻し → 実案件での適用。機械検査の登録だけで適用完了としない。P1もAI-DLC手順§2の対話から進める候補。PR#18のPR/FAQは補助手順として整理し、新入口を上書きしない。
+今回の順序: 指示されたSDS-V2本文とShirube適用差分を独立監査→作者受領→既存権限内の別担当merge→main/利用元の版切替・読戻し→実案件での一周を実証。命名・取り込み・適用の同じOwner確認を繰り返さず、結果を変える未決の判断や必要な保護認可だけを人へ返す。監査中は旧採択版の保護を維持し、改訂候補の合格/配布を捏造しない。P1は§2の対話から進め、PR#18の旧入口を普遍的手順として再導入しない。
 
 [baseline]: https://github.com/watchout/iyasaka-arc/blob/15f171922038a27ddbcb5ae872776708161dc8a0/cross-cutting/decisions/2026-09-25-established-practice-baseline.md
 [audit]: audit-method.md

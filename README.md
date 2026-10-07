@@ -72,6 +72,6 @@ git failure). Nothing in the workflow hides a failure. An empty scan is distingu
 on this repository. Changes to rules, checkers, configs or thresholds follow SR-01..03 (handover v5 §1 SR): the previous
 adopted baseline and an independent review are the basis, never a threshold loosened in the same PR.
 
-## SDS 規格の改訂
+## SDS-V2
 
-[SDSの入口・64項目の参照](docs/sds/README.md)から、[AI-DLCを主軸とする実施手順](docs/process/ai-dlc.md)と[補完原典の選定根拠](docs/sds/lifecycle-basis.md)へ進む改訂候補。独立監査・採択前。規格の採択、配布、実案件での適用は別に確認する。
+[SDS-V2の正本入口](docs/sds/README.md)から、[AI-DLCを主軸とする実施手順](docs/process/ai-dlc.md)と[原典・適用差分](docs/sds/lifecycle-basis.md)へ進みます。小さな利用場面を具体例/必要な試作で確認し、試験先行・実装/是正・独立監査・統合・実環境受入まで一周します。命名・取り込み・適用はOwner指示済み。具体版の監査・main統合・利用元切替・実案件での効果は入口から別々に確認します。
