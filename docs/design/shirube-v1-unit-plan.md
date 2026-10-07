@@ -1,9 +1,11 @@
 # Shirube初版 — Unitと最初の反復の計画
 
 状態: **Unitの基本方針・U1/U2先行をOwner確認済み / 共通部の横断設計をARCへ依頼 / 必要な独立設計監査・実装前**。作者: codex-adf。2026-10-05。
+適用規格: **SDS-V2**。命名・取り込み・適用のcontrol_source_ref: https://github.com/watchout/shirube/issues/6#issuecomment-6027721133 / 本文SHA-256 `d6f826a9e8ff3407b411d4eabcf4a778a55ae015454e69027ef2694484385a05`。
+固定入力は[規格PR31](https://github.com/watchout/shirube/pull/31) head `f0f8575883bf6b6d15a708f0ccaeab57e5a4d3ab` の[正本入口][sds-v2-entry]と[実施手順][sds-v2-procedure]（file SHA-256 `06ef437c474a50a33069c2cc546764366eeec9ddf107bda987860ea09c203136`）。本headに規格本文を複製せず外部固定参照で適用する。規格/本適用差分の独立監査・main統合・利用元切替は未完。旧採択版の保護を維持し、製品試験はNOT_RUN。
 目的原文: 「開発の高効率化自動化による高速開発化」。第一段階: 「完成できることでいい」。
 最重要機能・最優先は**開発を完成まで導くこと**。工程/承認の記録は、正しい次作業・是正・復旧・人の判断を支える機能であり、記録や照会の成立を利用者価値の達成にしない。
-優先順位の再確認: https://github.com/watchout/shirube/issues/6#issuecomment-6027317565 / 本文SHA-256 `bda82188716ccdb19a8936bf603f40039194a480fee756ebf73488f08f0255a6`。2026-10-07の計画差分は§5。旧版の設計PASSを本差分へ転記せず、差分監査前・製品試験NOT_RUNのまま。
+優先順位の再確認: https://github.com/watchout/shirube/issues/6#issuecomment-6027317565 / 本文SHA-256 `bda82188716ccdb19a8936bf603f40039194a480fee756ebf73488f08f0255a6`。2026-10-07の優先順位差分は§5、SDS-V2の具体的適用は§6。旧版の設計PASSを本差分へ転記せず、差分監査前・製品試験NOT_RUNのまま。
 入力: [要求の入口](../requirements/shirube-v1-p1-current.md) @ `e43f0580dce6bf0782af142df30f012d1b0b6364`と[採択した責任分担](shirube-v1-responsibility-and-data.md) @ `1526db06504fcae34af5d923f935accc79c3508f`。
 責任分担のcontrol_source_ref: https://github.com/watchout/shirube/issues/6#issuecomment-5985239100 / SHA-256 `9a6ac74e861addd4faa62177de95e9fcfa7728724652886c5b64412c7632d08d`。
 最初の実証「要求・承認と作業開始の照合」のcontrol_source_ref: https://github.com/watchout/shirube/issues/6#issuecomment-5963956582 / SHA-256 `450c138946de46ec83df4304c9655d05e3a90b818b89721235ae1943c902941d`。
@@ -16,7 +18,7 @@
 Unitは責任/成果がまとまった開発単位。Boltはその実装・検証を進め、動く結果を確かめる短い反復。内部部品、席、PR、配布物の個数とは別に扱う。
 [AI-02 Units Generation](https://github.com/awslabs/aidlc-workflows/blob/9b8df02231f0230fd6f19846a0df1fb5567e7ece/core/aidlc-common/stages/inception/units-generation.md) Steps 1〜5は、確認した責任と要求からUnit・依存・接続を提案し、人の選択後に確定する。最初のUnitは後続を待たず実接続を通して動く範囲にする。
 [AI-04 Delivery Planning](https://github.com/awslabs/aidlc-workflows/blob/9b8df02231f0230fd6f19846a0df1fb5567e7ece/core/aidlc-common/stages/inception/delivery-planning.md) Steps 2〜5は、依存関係から実施可能な順序を確認し、その中の優先順位・反復の成果・担当を決める。依存がないことだけで経済的な優先順位は決まらない。
-両原典は[source lock](../sds/source-lock.json)のbytes/hashと再照合済み。[採択済みSDS手順§4〜8](../process/ai-dlc.md)に従って以下へ集約する。専用engine、固定席編成、原典実装の帳票一式は導入しない。
+両原典は[source lock](../sds/source-lock.json)のbytes/hashと再照合済みで、SDS-V2でも同じ原典版を保持する。本計画の実施方法を[SDS-V2手順§4〜8][sds-v2-procedure]へ更新する。専用engine、固定席編成、原典実装の帳票一式は導入しない。
 この計画の完了条件は、Unitの範囲・依存・受入・接続・担当・配布案と、最初の反復の実演/残条件を人が判断できること。基本方針の確認後は§6の契約/設計と監査へ進む。下表の割当は実証PASSでも正式契約でもない。
 
 ## 2. Unit — 動く利用範囲で分ける
@@ -132,6 +134,17 @@ Bolt数/日数は未見積。B1で先に使うCLIと具体操作/費用/回数�
 ## 6. B1をコードへ進めるための設計・観測
 
 選んだUnitごとに必要な詳細設計と要求由来の試験を一緒に作る。毎Unitへ固定7工程や別の設計帳票を追加する規定ではない。共通設計/証拠は対象版の有効性を確認して再利用する。
+SDS-V2の最初の適用は、§5の一つの実機能を完走させるU1→U2の反復。次の順序を既存の設計/試験/監査へ組み込み、記録基盤の一括完成や新たな帳票を前提にしない。
+
+| 最初の適用で行う作業 | 実行/確認と既存条件への対応 |
+|---|---|
+| 具体例と必要な試作で意図を確認 | 既存AC/PC/STの期待値は再利用。未決の意味・対象・例外は人へ返す。確認画面/CLIの操作感を確かめる必要がある時だけ仮データの試作を使い、採択した本人確認方針や本番品質の確認を代用しない |
+| 対象範囲の設計・契約と試験を固定 | 下表と論理契約§8の依存を具体化し、必要な独立事前監査を受ける。コマンド/対象版/環境/権限・費用/回数を確定。通常の開始号令を人へ追加せず、結果を変える選択だけ確認する |
+| 実行可能な試験を先に作りRedを確認 | U1はST-01〜08/本人性・拒否・履歴・復旧、U2はPC-01〜04/09/10/14の継続・差戻し・完了を対象にする。対象範囲の未実装/欠陥で失敗することを確認し、runner未導入・試験一覧だけをRedに数えない |
+| 同じ期待値で実装・修正・Green・改善 | 正常な実開始と拒否、成果不足からの是正・再確認、不要な再号令0を試す。継続/差戻しの処理を止めると正例が失敗することも確認。期待値を弱めて緑にせず、権限/予算内で反復し、人待ち/連続非進捗では停止 |
+| 独立監査・統合版・実利用で完走を確認 | devauditorが要求/設計/試験の十分性と成果を確認。必須未達は修正・再確認。suiteの別担当統合と更新版の実試験、Ownerの実環境受入へつなぎ、コミット/CI/記録のみでは完走としない |
+
+上記は実施順への適用で、実行結果ではない。具体的な対象/接続/コマンド等が未確定の製品試験はNOT_RUNを維持する。必要な契約や判断が揃った範囲から進み、未確定の依存を試作やmockで成立扱いにしない。
 
 | B1で具体化するもの | 実装と同時に用意する観測 / 未実施の状態 |
 |---|---|
@@ -177,9 +190,13 @@ suite-leadの既存経路は[公開指示](https://github.com/watchout/shirube/i
 
 担当者がその差分の作者又は監査者なら、同じ席でmergeせず、repo窓口と既存リードが独立した代替席を確定する。席名を変えるだけでは独立性にならない。merge後の失敗は修正担当・解除条件を特定して戻し、健全なmainの試験結果まで取り込み責任を閉じない。
 
-これは[新SDS §1/7](../process/ai-dlc.md)の担当明示と統合の具体化。他repoも導入/案件開始時に窓口・作者・独立監査・merge/統合・利用受入を実名/席IDで決めるが、この表から全repoをsuite-leadへ一括割当しない。共通の役割定義とrepoごとの担当割当を分け、他repoの既存の担当・権限・受諾はそのrepoのcontrol sourceで確認する。
-[監査方法](../sds/audit-method.md)に従い、境界・Unit・対象反復の契約/設計を同じ対象版へ結ぶ。実装前に必要な独立設計監査を受け、実装後は要求/設計との一致と試験の検出力を確認する。固定項目＋機械照合＋独立判断を使い、要求監査PASSを設計/コードへ流用しない。
+これは[SDS-V2 §1/7][sds-v2-procedure]の担当明示と統合の具体化。他repoも導入/案件開始時に窓口・作者・独立監査・merge/統合・利用受入を実名/席IDで決めるが、この表から全repoをsuite-leadへ一括割当しない。共通の役割定義とrepoごとの担当割当を分け、他repoの既存の担当・権限・受諾はそのrepoのcontrol sourceで確認する。
+[SDS-V2監査方法](https://github.com/watchout/shirube/blob/f0f8575883bf6b6d15a708f0ccaeab57e5a4d3ab/docs/sds/audit-method.md)に従い、境界・Unit・対象反復の契約/設計を同じ対象版へ結ぶ。実装前に必要な独立設計監査を受け、実装後は要求/設計との一致と試験の検出力を確認する。固定項目＋機械照合＋独立判断を使い、要求監査PASSを設計/コードへ流用しない。本適用差分自体は旧採択版の無変更checkerと監査方法で独立確認する。
 Unit完了は対象の設計・実装・試験・必要な独立監査・採用配布方式での統合/受入が揃った時。親全体の受入や実運用再現性は別に残る。別担当によるmain統合と、その統合版の実試験を確認する。
+
+[sds-v2-entry]: https://github.com/watchout/shirube/blob/f0f8575883bf6b6d15a708f0ccaeab57e5a4d3ab/docs/sds/README.md
+[sds-v2-procedure]: https://github.com/watchout/shirube/blob/f0f8575883bf6b6d15a708f0ccaeab57e5a4d3ab/docs/process/ai-dlc.md
+
 現在は@59970faの論理設計の[独立再監査PASS](https://github.com/watchout/shirube/issues/6#issuecomment-5992984615)（本文SHA-256 `e9ae3164323c38f28a7d2da0d7d6ade5bd35af0d3c758f9c39aa685438f5502a`）を[機械受領](https://github.com/watchout/shirube/issues/6#issuecomment-5993343336)（`60a69dff6175485c2500e92972097515d806a41bad802419678b5bff77b8d0d8`）済み。共通接続案とCLI/稼働条件の具体化を進めている。この版の追加差分と具体接続の独立監査は未完。Unit/Bolt/全体の実装・実機試験・受入は全件NOT_RUN。CIは文書と既存検査の回帰だけを示す。
 
 ## 8. 比較と今回の選択
