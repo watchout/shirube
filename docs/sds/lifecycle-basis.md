@@ -1,6 +1,6 @@
 # SDS-V2 の開発方法 — AI-DLCを基盤にした実践と適用差分
 
-状態: 既存AI-DLC基盤SDSをSDS-V2へ更新する[Owner指示と旧版の採択根拠](README.md)を受領。本改訂本文の独立監査・統合・利用元切替・実案件での効果確認は未完。
+状態: 既存AI-DLC基盤SDSをSDS-V2へ更新する[Owner指示と旧版の採択根拠](README.md)を受領。本改訂本文の独立監査（LC-01〜07 PASS）とmain統合（`d34b31e9`）は完了。利用元切替・実案件での効果確認は未完。
 依頼原文: 「AI-DLCをベースとして不足する部分をOpenUPで補う形ではどうか？原典の入れ替えと手順書に落とし込み監査に回したい。」
 control_source_ref: https://github.com/watchout/shirube/issues/6#issuecomment-5923186744
 本文 SHA-256: `2a1b68c1cc136df1f9431ad5ecb0a0099c2cb432239ff283939a3d4afe118620`。
