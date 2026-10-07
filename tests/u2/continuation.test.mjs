@@ -20,7 +20,7 @@ test("PC-01: a bare '進みます' still leads to a recorded, sent and observed 
   p.tick();
   assert.equal(startsFor(s, "W2").length, 1, "one start NextAction for W2");
   assert.equal(sentFor(ex, "W2").length, 1, "start request sent to the executor");
-  assert.equal(s.questions.length, 0, "no extra start question to a person");
+  assert.equal(s.questions.filter((q) => q.work === "W2").length, 0, "no extra start question for W2 (W3's own question is PC-04)");
   assert.equal(p.status("W2").state, "START_REQUESTED", "sent is not running");
   const [request] = sentFor(ex, "W2");
   p.record({ type: "observation", issuer: EXECUTOR, request: request.id, kind: "ack" });
