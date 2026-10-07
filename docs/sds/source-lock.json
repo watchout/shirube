@@ -1,7 +1,7 @@
 {
   "format": "sds-source-lock/1",
   "standard": "SDS-V2",
-  "state": "candidate_author_checked_independent_review_pending",
+  "state": "sds_v2_independent_review_passed_integrated_d34b31e9",
   "retrieval": "HTTP GET; Accept-Encoding: identity; SHA-256 over exact response body bytes; no text normalization",
   "interpretation": "lifecycle-basis.md; source identity alone is not evidence of correct interpretation or adoption",
   "sources": [
