@@ -1,9 +1,11 @@
 # Copied by the kit CLI to .github/workflows/sds-gate.yml of a consumer repository.
 # <SHIRUBE_COMMIT> is replaced with the pinned commit from .shirube/sds-pin.json. Owner makes the status `sds-gate`
 # required on the default branch; until then it is report-only.
+# pull_request_target: this definition is read from the default branch, so a PR cannot rewrite the check that judges it.
+# The gate never checks out or runs the PR's code; it only reads the GitHub API (ARC, iyasaka-arc#57 6051365638).
 name: sds-gate
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, reopened, edited, ready_for_review, labeled, unlabeled]
   issue_comment:
     types: [created, edited]
@@ -16,7 +18,7 @@ permissions:
   statuses: write
 jobs:
   sds-gate:
-    if: ${{ github.event_name == 'pull_request' || github.event.issue.pull_request }}
+    if: ${{ github.event_name == 'pull_request_target' || github.event.issue.pull_request }}
     uses: watchout/shirube/.github/workflows/sds-gate.yml@<SHIRUBE_COMMIT>
     with:
       pr: ${{ github.event.pull_request.number || github.event.issue.number }}
