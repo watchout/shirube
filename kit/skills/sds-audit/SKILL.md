@@ -26,6 +26,7 @@ Run the same command with `--review <review url>` instead of `--preflight`. RECE
 
 ## 4. Before integration
 - `sds-gate` status is success on the exact head, and the PR has exactly one `risk:R*` label equal to the block.
+- Read the JSON of the `sds-gate` run behind the status (its target URL), not only the status colour: check `head`, `effective_risk` and `protected_touched`. A PR that adds or changes a workflow is effective R4 even if a success status is shown.
 - R3/R4 or protected paths: an APPROVED owner decision names this repository and the exact head. sds-gate does not check it, and a machine cannot tell who posted it (all seats share one account); the merging seat confirms it is the Owner's decision before merging.
 - Just before merging, the merging seat checks the PR's Evidence scope line and the handoff digest against the diff (`docs/sds/distribution.md` §4.1); if they disagree, it does not merge.
 - The merging seat is neither the maker nor the auditor.
