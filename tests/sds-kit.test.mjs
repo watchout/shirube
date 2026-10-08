@@ -24,7 +24,7 @@ test("apply replaces the V3 managed block in place, keeps repo text, pins the ki
   assert.match(read(dir, ".github/workflows/sds-gate.yml"), new RegExp(`sds-gate.yml@${A}`));
   const pin = JSON.parse(read(dir, ".shirube/sds-pin.json"));
   assert.equal(pin.sds_commit, A); assert.ok(pin.protected_paths.includes(".github/workflows/**"));
-  assert.deepEqual(check({ target: dir }), { command: "check", verdict: "OK", sds_commit: A, findings: [], legacy: [] });
+  assert.deepEqual(check({ target: dir }), { command: "check", verdict: "OK", sds_commit: A, findings: [], legacy: [], stale_refs: [] });
 });
 test("upgrade replaces the SDS-V2 block once and re-pins; re-applying is idempotent", () => {
   const dir = consumer({ "AGENTS.md": "# Agents\n" });
@@ -49,4 +49,11 @@ test("a repo without the kit is DRIFT; an unpinned commit is refused", () => {
 test("legacyParts works over any read source (used by status through the API)", () => {
   const files = { ".framework": "", "AGENTS.md": OLD };
   assert.deepEqual(legacyParts((p) => p in files, (p) => files[p]), [".framework", "AGENTS.md#shirube-v3-runtime"]);
+});
+test("check lists active entries that still call removed parts (PR36 §2.1)", () => {
+  const dir = consumer({ "CLAUDE.md": "x\n", ".claude/settings.json": '{"hooks":{"PreToolUse":[{"command":".claude/hooks/pre-code-gate.sh"}]}}', ".claude/skills/implement/SKILL.md": "check .framework/gates.json", ".claude/hooks/post-task.sh": "bash .claude/hooks/framework-runner.sh" });
+  apply({ target: dir, commit: A });
+  const r = check({ target: dir });
+  assert.equal(r.verdict, "DRIFT");
+  assert.deepEqual(r.stale_refs.sort(), [".claude/hooks/post-task.sh -> framework-runner", ".claude/settings.json -> pre-code-gate", ".claude/skills/implement/SKILL.md -> .framework"].sort());
 });

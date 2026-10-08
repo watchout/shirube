@@ -4,7 +4,7 @@
 //   status                                     read every repo in docs/sds/consumers.json through the GitHub API
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "../hygiene/lib.mjs";
@@ -15,6 +15,8 @@ const KIT_VERSION = "0.1.0";
 const PIN = ".shirube/sds-pin.json";
 const BLOCK = /<!-- (?:sds-v2|shirube-v3-runtime):start -->[\s\S]*?<!-- (?:sds-v2|shirube-v3-runtime):end -->\n?/;
 const LEGACY = [".shirube/runtime", ".github/workflows/merge-authority.yml", ".github/workflows/shirube-rapid-lite-gates-report.yml", ".framework", ".claude/hooks/pre-code-gate.sh"];
+const REMOVED_REFS = [".shirube/runtime", ".framework", "pre-code-gate", "framework-runner", "framework-mode-check", "merge-authority", "rapid-lite"];
+const ENTRIES = [".claude/settings.json", ".claude/skills", ".claude/hooks", ".github/workflows", "CLAUDE.md", "AGENTS.md"];
 const digest = (s) => createHash("sha256").update(s).digest("hex");
 const kit = (p) => readFileSync(join(ROOT, p), "utf8");
 function need(ok, why) { if (!ok) throw new Error(why); }
@@ -53,13 +55,25 @@ function pinFindings(pin, exists, read) {
   for (const p of ["CLAUDE.md", "AGENTS.md"]) if (exists(p) && !read(p).includes(block)) findings.push(`${p} lacks the pinned SDS-V2 block`);
   return findings;
 }
+function walk(root, p) {
+  const full = join(root, p);
+  if (!existsSync(full)) return [];
+  return statSync(full).isDirectory() ? readdirSync(full).flatMap((n) => walk(root, join(p, n))) : [p];
+}
+export function staleRefs(target) {
+  return ENTRIES.flatMap((e) => walk(target, e)).flatMap((p) => {
+    const text = readFileSync(join(target, p), "utf8");
+    return REMOVED_REFS.filter((r) => text.includes(r)).map((r) => `${p} -> ${r}`);
+  });
+}
 export function check({ target }) {
   const exists = (p) => existsSync(join(target, p));
   const read = (p) => readFileSync(join(target, p), "utf8");
   const pin = exists(PIN) ? JSON.parse(read(PIN)) : null;
   const findings = pin ? pinFindings(pin, exists, read) : [`${PIN} missing`];
   const legacy = legacyParts(exists, read);
-  return { command: "check", verdict: findings.length || legacy.length ? "DRIFT" : "OK", sds_commit: pin?.sds_commit ?? null, findings, legacy };
+  const stale = staleRefs(target);
+  return { command: "check", verdict: findings.length || legacy.length || stale.length ? "DRIFT" : "OK", sds_commit: pin?.sds_commit ?? null, findings, legacy, stale_refs: stale };
 }
 function gh(path) { return JSON.parse(execFileSync("gh", ["api", path], { encoding: "utf8", timeout: 20000 })); }
 export function status(api = gh) {
