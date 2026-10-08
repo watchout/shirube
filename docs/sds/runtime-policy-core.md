@@ -25,8 +25,12 @@
 | 用語 `cell`、`control_source`、PR（delivery container） | Glossary（33〜60） | Risk-Tiered Gate Depth、Next Action Contract |
 | 制御の記録 `execution_context`、`control_handoff`、`owner_decision`、`gate_result`、`next_action`、`evidence`、`lifecycle_state` | Control Plane（11〜32） | Function Boundaries、Human Approval Gates、Next Action Contract、Evidence Rules |
 | 役割の名前 `implementation_executor`、`evidence_audit_gate`、`protected_surface_gate`、`orchestration_controller` など | Function Model（92〜120） | Function Boundaries、Next Action Contract |
+| 役割の切替の条件（最も具体的な `execution_context.active_function` が優先、owner directive より広げない、切替で maker-checker の履歴を消さない） | Function Selection And Transition（180〜207） | Function Boundaries の `orchestration_controller` の段落（役割の切替と自己監査の禁止） |
+| Control docs/spec PR を作れる条件と、作ってはならないもの | Control Docs / SPEC Authoring Rule（209〜232） | Function Boundaries の `control_artifact_author` の段落（「explicit `control_handoff` の下でだけ Control docs/spec PR を作れる」） |
+| 止まってよい理由（`stop_reason`）の一覧と、ACK・FYI・進捗報告を待ちにしないこと | Non-Blocking Progress（245〜262） | Next Action Contract の `blocking` と `stop_reason`（「`blocking: true` の時は `stop_reason` が必須」） |
 
 - 本書は、上の節も、5 節以外の節も取り込みません。定義が必要な時は、出典の同じ commit の該当行を読みます。
+- 本書は、上の 6 節の条件に違い（引き継がない条件）を設けていません。出典の条件をそのまま参照します。Function Selection And Transition のうち `revenue_demand_owner`・`revenue_sales_owner` の段落は、本書の 5 節からは参照されていません。
 - 出典の Amendment（334〜782 行目）は、取り込みません。どの Amendment も、5 つの節を節名では参照していません（節名で検索して確認）。ただし、節名を使わずに作業の進め方へ条件を足す Amendment があります（Generation Cap and Verifier Presence、Cell Admission Preconditions、Policy Identity / Enforcement Consistency など）。これらは V3 の cell の運用への追加で、5 節の本文を書き換えるものではありません。SDS-V2 でそれぞれに当たる扱い（たとえば監査の往復の上限）は、SDS-V2 の文書（`docs/process/ai-dlc.md`、`docs/sds/audit-method.md`）が決めます。
 - ローカルの絶対パスは含みません。
 
