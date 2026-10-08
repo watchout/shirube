@@ -84,7 +84,8 @@
 実装上の要求:
 - checker と判定の本体は、PR の head からではなく、固定した Shirube の commit から取得する。PR が検査を書き換えて自分を通す経路を作らない。
 - 保護面の path の一覧は、PR ではなく base ブランチの固定ファイルから読む。
-- 監査の返却はコメントで届くため、`pull_request` に加えて `issue_comment` でも動かし、結果は head SHA への commit status として付ける。head が変わると古い受領は使えない（判定 3 が今の head を要求するため）。
+- 監査の返却はコメントで届くため、`pull_request_target` に加えて `issue_comment` でも動かし、結果は head SHA への commit status として付ける。head が変わると古い受領は使えない（判定 3 が今の head を要求するため）。
+- 差し替えの経路を 2 つの手段で止める（ARC の判断 1、iyasaka-arc#57 6051365638、PR37 への転記 6051376399）。(a) 配布先の呼出し側は `pull_request_target` で起動する。定義は default branch から読まれるので、PR がその PR を判定する検査を書き換えても効かない。gate は PR のコードを checkout も実行もしない。(b) workflow を足す・変える PR は保護面 `.github/workflows/**` に触れるので effective R4 とし、merge 担当は status の色ではなく gate の run の JSON を読む。残る穴は 2 つ。同じ context に後から success を付けられることは、ruleset の required workflow（SHA 固定、Owner への質問 Q-SDS-RULESET-20261008）で閉じる。同じアカウントの席が API で直接 status を付けられることは、Owner 専用アカウント（§7 の案 b）の課題として残す。
 - job log は Actions の中で読む（Actions 外の席では読めない環境がある。PR34・PR35 で観測）。
 
 ### 4.1 機械から外したものの扱い（適用差分）
@@ -106,6 +107,7 @@ ARC の推奨（案 A と 4 点の補強）を採る。
 - Shirube 側の配布先一覧（1 ファイル。repo・採択者・採択の記録・hygiene profile の種類）が「配布先」の正。追加・削除は Owner 承認の PR。
 - `status` は読取り専用の観測。配布先ごとに、固定版・最新の採択版・digest の一致・旧部品の残り・hygiene workflow の `uses: …@<sha>` と固定版の commit の一致・必須検査の実態を出す。自動では更新しない。
 - 更新 PR は Shirube 側の席が出し、各 repo の担当がその repo の gate で統合する。workflow と必須検査を含む更新は保護面なので、repo ごとに Owner の head 単位の承認が要る。文書だけの更新（共通ブロック、skill）は R0〜R1。
+- ただし `.shirube/**`（版の固定ファイルと `hygiene-profile.md`）は保護面なので、文言だけの変更でも R4 として扱う（ARC の指摘 B）。
 
 ## 6. 確定に至った違いの記録
 
@@ -130,7 +132,7 @@ ARC の推奨（案 A と 4 点の補強）を採る。
 1. 本書の確定（独立監査と Owner の承認）。
 2. キット v0 の作成（codex-adf、R3）。§3・§4・§5 の部品。runtime policy は、v0 では必要な節（Risk-Tiered Gate Depth、Human Approval Gates、Evidence Rules、Function Boundaries の作る人≠確かめる人≠統合する人、Next Action Contract）を commit・SHA-256・節名で参照する。
 3. runtime policy の取り込み（別の PR、R2）: 上の節を値を変えずに Shirube の `docs/sds/` の 1 文書へ移す（codex-adf）。組織の権限（Owner、保護面の一覧、収益判断、管理を AI に任せない決定など）は iyasaka-org の短い 1 文書に残し、commit と SHA-256 で引用する（ARC）。V3 policy 本体は、全 repo から旧部品が撤去されるまで履歴として残す。
-4. kodama で試験導入: 追加と撤去を 1 PR で行う（R4）。必須検査の付け替えは Owner。PR84 の head は動かさず、キットの統合後に main に合わせて、`sds-gate` が R2 として受領を読めるかを確かめる。
+4. kodama で試験導入: 追加と撤去を 1 PR で行う（R4）。必須検査の付け替えは Owner。PR84 の head は動かさず、キットの統合後に main に合わせて、`sds-gate` が R2 として受領を読めるかを確かめる。受入には次の負例 2 件を加える（ARC の判断 1）。① PR が呼出し側の `uses: …@<sha>` を別の commit に書き換えても、その PR の `sds-gate` の status は default branch の定義での結果になる（書き換えが効かない）。② PR が `statuses: write` を持つ workflow を足して `sds-gate` の success を付けても、base の定義で動く gate は `protected_touched: true`・effective R4 を出し、merge 担当の手順で止まる。
 5. agent-memory（PR332・PR333 の統合後）、onza・aun（共通ブロックの置換だけ）の順に配る。
 
 範囲外: agent-comms-mcp・ai-dev-framework・misell に残る旧検査（後続で同じ手順）、製品の機能開発（キットを待って止めない）、Shirube 製品の本体（PR34・PR35 は今の計画のまま）。
