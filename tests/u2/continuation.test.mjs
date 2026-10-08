@@ -114,40 +114,111 @@ test("PC-03: stop after the real start never starts twice", () => {
   assert.equal(p.status("W2").state, "RUNNING");
 });
 
-// PC-03 stop points added with Green (U2 design §8/§9): the record says "sending" or "sent",
-// so recover() must query the same request before any send, and must not send again.
-function inFlight(status, { delivered }) {
-  const { s, ex, c } = setup();
+// PC-03 stop points (U2 design §8/§9), taken from the real send path: the store is copied at the
+// moment the core calls executor.send for W2 (before or after the executor accepts it) or after the
+// result is saved, and a new core recovers from that copy.
+function stopDuringSend(point) {
+  const { s, ex, c, p } = setup();
   verifiedW1(s);
-  s.attempts.push({ id: "A-W2-1", work: "W2", state: "START_REQUESTED" });
-  s.nextActions.push({ id: "N-W2-1", work: "W2", attempt: "A-W2-1", kind: "start", status, sentAt: c.now() });
-  if (delivered) ex.requests.push({ id: "R:N-W2-1", work: "W2", attempt: "A-W2-1", kind: "start" });
-  const sendsBefore = sentFor(ex, "W2").length;
-  const p = restart(s, ex, c);
+  let copy;
+  const { send } = ex;
+  ex.send = (r) => {
+    if (r.work === "W2" && point === "before send") copy = structuredClone(s);
+    const result = send(r);
+    if (r.work === "W2" && point === "accepted, before result") copy = structuredClone(s);
+    return result;
+  };
+  p.tick();
+  if (point === "after result") copy = structuredClone(s);
+  const ex2 = executor();
+  if (point !== "before send") ex2.requests.push(...ex.requests.filter((r) => r.work === "W2"));
   const order = [];
-  const { send, query } = ex;
-  ex.send = (r) => { order.push(`send:${r.id}`); return send(r); };
-  ex.query = (id) => { order.push(`query:${id}`); return query(id); };
-  p.recover();
-  p.recover();
-  return { s, ex, p, order, sendsBefore };
+  const { send: send2, query } = ex2;
+  ex2.send = (r) => { order.push(`send:${r.id}`); return send2(r); };
+  ex2.query = (id) => { order.push(`query:${id}`); return query(id); };
+  const before = sentFor(ex2, "W2").length;
+  const p2 = restart(copy, ex2, c);
+  p2.recover();
+  p2.recover();
+  return { copy, ex2, p2, order, before };
 }
 
-for (const [label, status, delivered] of [
-  ["after saving 'sending', before send", "sending", false],
-  ["after send was accepted, before saving the result", "sending", true],
-  ["after saving the send result", "sent", true],
-]) {
-  test(`PC-03: stop ${label} queries first and never sends again`, () => {
-    const { s, ex, p, order, sendsBefore } = inFlight(status, { delivered });
+for (const point of ["before send", "accepted, before result", "after result"]) {
+  test(`PC-03: stop ${point} (taken from the send path) queries first and never sends again`, () => {
+    const { copy, ex2, p2, order, before } = stopDuringSend(point);
     assert.equal(order[0], "query:R:N-W2-1", "the same request is queried first");
-    assert.equal(order.filter((o) => o.startsWith("send:R:N-W2")).length, 0, "no send for W2 after restart");
-    assert.equal(sentFor(ex, "W2").length, sendsBefore, "executor send count unchanged");
-    assert.equal(startsFor(s, "W2").length, 1, "no second NextAction");
-    assert.notEqual(p.status("W2").state, "RUNNING", "not_started is not a start");
-    assert.equal(p.status("W2").unconfirmed, true);
+    assert.equal(order.filter((o) => o === "send:R:N-W2-1").length, 0, "no send for W2 after restart");
+    assert.equal(sentFor(ex2, "W2").length, before, "executor send count unchanged");
+    assert.equal(startsFor(copy, "W2").length, 1, "no second NextAction");
+    assert.equal(p2.status("W2").state, "START_REQUESTED", "not_started is not a start");
+    assert.equal(p2.status("W2").unconfirmed, true);
   });
 }
+
+// F01: a query answer moves W2 to RUNNING only when it names the stored request.
+for (const [label, reply, running] of [
+  ["the same request", (id) => ({ request: id, state: "running" }), true],
+  ["another request", () => ({ request: "R:another", state: "running" }), false],
+  ["no request", () => ({ state: "running" }), false],
+]) {
+  test(`PC-02: a running answer for ${label} ${running ? "is" : "is not"} a start`, () => {
+    const { ex, c, p } = startedRequest();
+    ex.query = (id) => { ex.queries.push(id); return reply(id); };
+    c.advance(60_001);
+    p.tick();
+    assert.equal(p.status("W2").state === "RUNNING", running);
+    assert.equal(p.status("W2").unconfirmed, !running);
+  });
+}
+
+// F02: a recorded, unsent start is re-checked against the current conditions before it is sent.
+for (const [label, change, sends] of [
+  ["conditions unchanged", () => {}, 1],
+  ["W2 now needs a person", (s) => { s.works.get("W2").needsHuman = true; }, 0],
+  ["W2 lost its decision", (s) => { s.works.get("W2").decision = null; }, 0],
+  ["W2 has no start deadline", (s) => { delete s.works.get("W2").startDeadlineMs; }, 0],
+  ["W1 was returned", (s) => { s.attempts[0].state = "RETURNED"; }, 0],
+]) {
+  test(`PC-03: recovering an unsent start with ${label} sends ${sends}`, () => {
+    const { s, ex, c } = setup();
+    verifiedW1(s);
+    s.attempts.push({ id: "A-W2-1", work: "W2", state: "START_REQUESTED" });
+    s.nextActions.push({ id: "N-W2-1", work: "W2", attempt: "A-W2-1", kind: "start", status: "recorded" });
+    change(s);
+    const p = restart(s, ex, c);
+    p.recover();
+    assert.equal(sentFor(ex, "W2").length, sends);
+    assert.equal(p.status("W2").blocked === null, sends === 1, "a held start shows why");
+  });
+}
+
+// F04: unconfirmed answers that change label are still non-progress; the stop survives a restart.
+for (const [label, answers] of [["unknown only", ["unknown"]], ["unknown / not_started", ["unknown", "not_started"]]]) {
+  test(`PC-14: ${label} answers stop the reconcile after 3 queries`, () => {
+    const asked = new Map(); // alternate per request: W4 is reconciled in the same ticks
+    const answer = (id) => { asked.set(id, (asked.get(id) ?? -1) + 1); return answers[asked.get(id) % answers.length]; };
+    const { s, ex, c, p, request } = startedRequest({ answer });
+    c.advance(60_001);
+    for (let i = 0; i < 6; i += 1) p.tick();
+    const w2 = () => ex.queries.filter((id) => id === request.id).length;
+    assert.equal(w2(), 3);
+    assert.equal(p.status("W2").stopped, true);
+    restart(s, ex, c).recover();
+    assert.equal(w2(), 3, "no query after restart once stopped");
+  });
+}
+
+// F05: a Work that does not start says why and what releases it.
+test("status: each reason a Work does not start is kept with its release condition", () => {
+  const { s, p } = setup();
+  s.works.get("W4").decision = null;
+  s.works.set("W5", { id: "W5", dependsOn: [], decision: "D-1", needsHuman: false });
+  p.tick();
+  const reasons = ["W2", "W3", "W4", "W5"].map((w) => p.status(w).blocked);
+  assert.deepEqual(reasons.map((b) => b.reason), ["WAITING", "HUMAN_REQUIRED", "UNRESOLVED", "CONTRACT_MISSING"]);
+  assert.ok(reasons.every((b) => b.owner && b.releaseCondition));
+  assert.equal(p.status("W1").blocked, null);
+});
 
 test("PC-04: one question for the human-gated work, the independent work still starts", () => {
   const { s, ex, p } = setup();

@@ -10,6 +10,13 @@ const EXECUTION_OWNER = "execution-manager"; // 実行管理担当 (contract §4
 
 const requestIdOf = (action) => `R:${action.id}`;
 
+const BLOCK_DETAIL = {
+  WAITING: (w, deps) => ({ owner: "dependency", releaseCondition: `VERIFIED: ${deps.join(", ")}` }),
+  HUMAN_REQUIRED: (w) => ({ owner: "human", releaseCondition: `answer to the question for ${w.id}` }),
+  UNRESOLVED: (w) => ({ owner: "decision-owner", releaseCondition: `a decision that covers ${w.id}` }),
+  CONTRACT_MISSING: (w) => ({ owner: "connection-contract", releaseCondition: `start deadline fixed for ${w.id}` }),
+};
+
 export function createProgression({ store, executor, clock }) {
   const latestAttempt = (work) => store.attempts.findLast((a) => a.work === work);
   const startOf = (attempt) =>
@@ -22,6 +29,16 @@ export function createProgression({ store, executor, clock }) {
     if (!work.decision) return "UNRESOLVED";
     if (!Number.isFinite(work.startDeadlineMs)) return "CONTRACT_MISSING";
     return "ELIGIBLE";
+  }
+
+  // One record per Work, overwritten in place: why it does not start and what releases it (§5.4/§7).
+  function block(work, verdict) {
+    if (verdict === "ELIGIBLE") {
+      store.blocks.delete(work.id);
+      return;
+    }
+    const waitingOn = work.dependsOn.filter((id) => latestAttempt(id)?.state !== "VERIFIED");
+    store.blocks.set(work.id, { work: work.id, reason: verdict, ...BLOCK_DETAIL[verdict](work, waitingOn) });
   }
 
   function ask(work) {
@@ -76,22 +93,22 @@ export function createProgression({ store, executor, clock }) {
     const action = reconcileAction(start);
     let answer;
     try {
-      answer = executor.query(requestIdOf(start)).state;
+      const reply = executor.query(requestIdOf(start));
+      answer = reply?.request === requestIdOf(start) ? reply.state : "unmatched";
     } catch {
       answer = "unreachable";
     }
+    action.lastAnswer = answer;
     if (answer === "running") {
       markStarted(start.attempt);
       action.status = "done";
       return;
     }
-    const unchanged = action.lastAnswer === answer;
-    action.lastAnswer = answer;
     action.unconfirmed = true;
     action.owner = EXECUTION_OWNER;
     action.target = executor.id;
     action.releaseCondition = `${executor.id} answers query(${requestIdOf(start)}) with a definitive state`;
-    action.nonProgress = unchanged ? action.nonProgress + 1 : 1;
+    action.nonProgress += 1;
     if (action.nonProgress >= STOP_AFTER) action.status = "stopped";
   }
 
@@ -108,12 +125,17 @@ export function createProgression({ store, executor, clock }) {
   }
 
   function tick(queried = new Set()) {
+    const verdicts = new Map();
     for (const work of store.works.values()) {
       const verdict = evaluate(work);
+      verdicts.set(work.id, verdict);
+      block(work, verdict);
       if (verdict === "ELIGIBLE") open(work);
       else if (verdict === "HUMAN_REQUIRED") ask(work);
     }
-    for (const action of pendingStarts((n) => n.status === "recorded")) send(action);
+    for (const action of pendingStarts((n) => n.status === "recorded")) {
+      if (verdicts.get(action.work) === "ELIGIBLE") send(action); // else kept unsent; the block says why
+    }
     for (const start of pendingStarts((n) => IN_FLIGHT.has(n.status))) {
       if (!queried.has(start.id) && overdue(start) && !reconcileStopped(start)) query(start);
     }
@@ -156,7 +178,8 @@ export function createProgression({ store, executor, clock }) {
     const actions = store.nextActions.filter((n) => n.work === workId && n.status !== "done");
     const reconcile = actions.find((n) => n.kind === "reconcile");
     const nextAction = reconcile ?? actions.at(-1) ?? null;
-    return { state: attempt?.state ?? "PLANNED", nextAction, unconfirmed: Boolean(reconcile?.unconfirmed) };
+    return { state: attempt?.state ?? "PLANNED", nextAction, unconfirmed: Boolean(reconcile?.unconfirmed),
+      stopped: reconcile?.status === "stopped", blocked: store.blocks.get(workId) ?? null };
   }
 
   return { record, tick: () => tick(), recover, status };
