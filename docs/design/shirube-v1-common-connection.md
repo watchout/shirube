@@ -99,6 +99,24 @@ restoreは共通と導入済み製品を整合したsnapshotから隔離環境�
 | 本人確認とCLI/継続処理 | codex-adfが固定ライブラリ、画面の配備/RP/origin、初回登録/回復、AI実行からの隔離、起動/停止/照会、host終了後の継続方式を比較し、結果を変える未決だけOwnerへ提示 | 方式依存の実装/起動。A方針や通常作業の開始号令は再質問しない |
 | 保存と外部効果・運用条件 | codex-adfと各提供側が確定点/重複・不明時照会を固定。期限/費用/保持/復旧値は根拠・影響を示して必要な判断へ | 未合意条件に依存する実装/受入。無期限や任意の既定値を採用しない |
 
+### 6.1 提供側の物理入口案との追加照合（未採択の差分案）
+
+追記作者: Codex desktopの本チャット作業担当（既存codex-adfの原文を保持）。本節はPR27 head `18e2f638f5576a8f8e58cb1ded567237356cab4f`への利用側差分案。規格・共通型・SQL署名を新しく採択するものではない。共通実装、独立監査、製品試験は未完のまま。
+
+- [service/human同時検証の既回答](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6026554274)は、本人検証側が構築する`human_subject`と保存serviceを別に照合する案。回答待ちという旧表示は、この論理回答については解消した。物理接続の採択・実効拒否は解消していない。
+- [AUN向け物理案](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6028089519)の`subject_bindings`はbinding/世代を持つ対象集合。[席予約の追補](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6032841771)はbinding未割当のseatを同じTXで保護する入力。どちらもhumanの本人回答を保存するための接続を示したものではない。AUN側の案を欠陥と認定せず、Shirubeの対応範囲を明確にする。
+- 提供側へ確認する差分は、humanの現在性検査を、保存service・回答対象・challenge行の検査と消費・回答保存と同じ物理接続/TXへ結ぶ呼出形、信頼した構築元、専用入口/必要権限、返す実値、失効との競合順序。credential/challengeの暗号検証はTXの前に行い、その結果をTX内で検査するchallenge行（識別・対象版）へ結ぶ（ARC追補案 https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6037609071 §4）。共通PrincipalSnapshotの写しだけを本人認証にせず、Shirubeが所有する本人応答の検証責任を保持する。
+- humanをdummy bindingへ変換、service参照で代用、共通表への直接SELECT/DML、一般LLM toolへの任意human ID指定で不足を埋めない。共通の署名/型は提供側正本へ固定参照し、Shirube側で独自に発行しない。
+
+| 既存要求/ケースへの具体入力（新IDは追加しない） | 必要な観測 / 残る依存 |
+|---|---|
+| AH-01/02、ST-01/02、PC-05: 正当な本人回答と偽本人/別対象 | 認証結果・提示版・対象・保存service/humanの対応が全て成立する正例で回答保存。snapshotのみ/別対象/未認証の負例は保存と外部効果0。本人検証と保存の具体接続は未確定 |
+| AH-03/04、ST-05、PC-07/08: human失効と回答保存を両順序で競合 | 失効先行なら旧主体で保存・新規開始0。回答保存先行なら当時の記録を保持し、失効後の実開始を拒否。採択するロック/確定点と実DB観測が必要 |
+| AH-04/05、ST-05/06、PC-08/11: challenge再利用・公開応答喪失・TX失敗 | 回答/challenge消費を一度へ収束。応答不明は元要求へ照会し、別IDの回答/開始を生成しない。GitHub公開をDB TXの原子性に含めない |
+| AH-06/07、ST-04/08、PC-05/12: 保存入口の直接呼出し/閲覧scope違い | 許可された本人検証側と製品保存入口だけが実行できる。一般CLI/LLMからの偽造入力や他scope閲覧の効果・漏えい0。role/GRANT/OS隔離の実体は未実装 |
+
+全件NOT_RUN。対応が確定した提供/利用版と権限・競合条件を同じ詳細設計へ結び、必要な独立確認後に試験先行で実装する。既存CF-AUTH-01 A、ログイン中に独立制御処理が動く方針、初版23要求/親受入を再質問・縮小しない。
+
 共通完成済みDBの提出を文書照合の一律前提にしない。一方で提供側・利用側の契約と必要監査が揃うまでは、その依存実装を開始しない。今回の返却先は既存ARC #57、Shirubeの進行記録は既存Issue #6。追加の別規格・常駐サービス・全製品移行を作業へ加えない。
 
 [architecture]: https://github.com/watchout/onza/blob/098b7f79435cb7911e873dfd392d59ac62753906/docs/common/0.2/architecture.md
