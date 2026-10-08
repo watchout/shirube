@@ -4,6 +4,11 @@
 # The check code is taken from this reusable workflow's own commit (job.workflow_sha), never from the PR head, so a PR
 # cannot rewrite the check that judges it. It reads GitHub only and reports one commit status `sds-gate` on the PR head.
 # Three judgments only (risk label, changed paths, R2+ audit receipt); it never checks Owner approval (§7).
+# Substitution paths (ARC, iyasaka-arc#57 6051365638): (a) the caller runs on pull_request_target, so its definition comes
+# from the default branch and a PR's edits to it do not apply to that PR; (b) a PR that adds or changes a workflow (for
+# example one that posts its own `sds-gate` success) touches .github/workflows/**, so the gate reports it as effective R4
+# and the merging seat reads this run's JSON, not the status colour. Remaining gaps: a ruleset required workflow pinned by
+# SHA (Owner, Q-SDS-RULESET-20261008) and an Owner-only account for approvals.
 name: sds-gate
 
 on:
