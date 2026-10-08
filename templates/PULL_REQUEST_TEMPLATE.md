@@ -34,6 +34,7 @@ Also set exactly one label `risk:R0`..`risk:R4` equal to `risk_class`. Delete `a
 ## Evidence
 
 - commands run and results (exact head):
+- scope result vs the handoff (control_source_ref URL + sha256): paths inside / outside the allowed scope, forbidden paths touched (none or list). The merging seat confirms this before merging (docs/sds/distribution.md §4.1):
 - design_judgments[] (each with a basis ref; write `[]` explicitly when none):
 - deviation_ledger (reason, alternative, valid authority/expiry/compensating protection where an exception is allowed; recording alone is not permission):
 - next_action:
