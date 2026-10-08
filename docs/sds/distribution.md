@@ -50,7 +50,7 @@
 
 ### 2.1 導入 PR の条件（各 repo）
 
-- 撤去した部品（`.shirube/runtime`、`.framework`、撤去した hooks・workflow）への参照が、稼働する入口（`.claude/settings.json`、`.claude/skills/**`、`.claude/hooks/**`、`.github/workflows/**`、CLAUDE.md、AGENTS.md）に残っていないことを、導入 PR の中で検索して示す。キットの `check` は、この参照の有無も一覧にする（PR38 で実装）。
+- 撤去した部品（`.shirube/runtime`、`.framework`、撤去した hooks・workflow）への参照が、稼働する入口（`.claude/settings.json`、`.claude/skills/**`、`.claude/hooks/**`、`.claude/agents/shirube-v3-*`、`.agents/skills/shirube-v3-runtime`、`.codex/*`（kodama の `.codex/instructions.md` の `shirube-v3-codex-runtime` block など）、`.github/workflows/**`、CLAUDE.md、AGENTS.md）に残っていないことを、導入 PR の中で検索して示す。キットの `check` は、この参照の有無も一覧にする（PR38 で実装）。
 - `.shirube/` に残すファイルのうち、製品の試験やコードが読むもの（kodama の action inventory など）は、撤去せずに一覧にして所有者を書く。
 - 旧ランタイム専用の試験は、ランタイムと一緒に廃止する。製品の安全条件を確かめる試験は残し、導入 PR の CI で通ることを示す。
 
