@@ -1,0 +1,27 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@d34b31e98df522c463d5cafb7c17e0beece33fb2/docs/sds/audit-method.md#3",
+  "scope": "Shirube PR43 の docs/sds/audit-method.md §2 の 6（L27）の 1 段落の変更（R2）。対象は head 26de850803fe5a7c2aab7af79e936777957b10f7（base 3126a5ccec77b1341c43b9b61869e03863d90ac1）と、依頼の時点の監査対象 head。要求の出典: [O] https://github.com/watchout/iyasaka-arc/issues/52#issuecomment-6055720316（Owner の回答の suite-lead による転記。OD-GAP-3 の行）、[G] watchout/iyasaka-arc@ebe118fd68b08115c2b8f12bbf4d3d2df3201915/cross-cutting/specs/shirube/SDS-V2-SCALE-GAPS-001.md（ARC の文書。G-03 の節と §6 の OD-GAP-3 の行。file sha256 12e951519dd1d658354c67f8e647111b51d500559c59e4a1b478ca254a87d286）、[A] watchout/shirube@3126a5ccec77b1341c43b9b61869e03863d90ac1/docs/sds/audit-method.md（変更前）、[M] method_ref の文書。他の節の変更、checker（scripts/hygiene/audit-admission.mjs）の変更、OD-GAP-2・OD-GAP-5 の扱い、進行中の個別の監査の判定、Owner の承認、merge は対象外",
+  "items": [
+    {
+      "id": "AM1",
+      "criterion": "Owner の判断との一致。根拠: [O] の OD-GAP-3 の行（b）、[G] の G-03 の (b) の文。見る所: 監査対象 head の audit-method.md L27 と git diff <base>...<head>。PASS: 変更後の文が次の 4 点をすべて満たし、それ以上に緩めていない。(a) 2 回目の指摘が 1 回目の指摘の部分集合で新しい指摘が無いとき、作者と監査席の公開記録だけで 3 回目を行える。(b) 新しい指摘が出たときは Owner に返す。(c) 3 回目でも未解決が残るときは Owner に返す。(d)「回数到達を合格にしない」が残る。4 回目以降の自動の許可、3 回目の結果を待たない合格、Owner に返す条件の削除など、[O]・[G] に無い緩和が 1 つでもあれば FAIL"
+    },
+    {
+      "id": "AM2",
+      "criterion": "部分集合の判定の決め方。根拠: [G] の G-03（今日の 3 件の当てはめ: onza PR16 第 2 回は F02 が同時失効の場合に狭まった＝単調減少、kodama PR86 第 2 回は F01 の一部と F03 が残る＝単調減少、control #217 第 2 回は F03 が新規＝単調でない）。見る所: L27 の判定の文。PASS: (a) 部分集合かどうかを誰がどこに記録するかが書かれ、その記録者が作者ではない（作者が自分で 3 回目の許可を出せない）。(b) 1 回目の指摘が 2 回目で狭まって残る場合（同じ指摘の範囲が小さくなった場合）を部分集合に数えるかが、文から一通りに読める。[G] の 3 件の当てはめを L27 の文に当てると、[G] と同じ結論（2 件は Owner 不要、1 件は Owner）になる。読み方が分かれる場合は FAIL"
+    },
+    {
+      "id": "AM3",
+      "criterion": "変更の範囲と、ほかの記述との整合。根拠: 依頼の範囲（R2、§2 の 6 の 1 段落）、[A]。見る所: git diff --stat <base>...<head>、git grep で audit 往復の回数に触れる記述（例: 「2回」「往復」「回数到達」「3回目」）。PASS: 変更が audit-method.md の L27 の段落だけで、ほかの節・ほかの file・checker・workflow を変えていない。shirube の main の中で、監査の往復の上限に触れるほかの記述があれば、変更後の L27 と矛盾しない（矛盾があれば、同じ PR で直すか、直さない理由と後続が記録されている）"
+    },
+    {
+      "id": "AM4",
+      "criterion": "根拠の参照。根拠: [O]。見る所: L27 が引く Owner 判断の参照。PASS: L27 が引く URL が [O] に解決し、その OD-GAP-3 の行の回答が b で、L27 の内容と一致する。[O] が Owner 自身の投稿ではなく suite-lead による転記であることと矛盾する書き方（例: Owner の投稿と読ませる表現）が無い"
+    },
+    {
+      "id": "AM5",
+      "criterion": "実行の証拠。根拠: [M] §3。見る所: 監査対象 head の CI の test job と hygiene job の log。PASS: 統合した commit（親が監査対象の head と base）で、test と hygiene の job が成功している。文書だけの変更なので件数ではなく、hygiene（lines-baseline・large-files・secret の検査など）が通ったことを log で確かめる"
+    }
+  ]
+}
