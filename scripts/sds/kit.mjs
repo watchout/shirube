@@ -3,7 +3,7 @@
 //          (also upgrade). --protected lists the repo's own protected paths (secrets, DB migrations, authority, deploy) on top
 //          of the defaults; "none" must be said explicitly so a migration path is never left out by omission.
 //   check  --target <consumer checkout>        compare with .shirube/sds-pin.json and list old Shirube parts
-//   status                                     read every repo in docs/sds/consumers.json through the GitHub API
+//   status [--latest <sha>]                    read every repo in docs/sds/consumers.json through the GitHub API
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -127,19 +127,16 @@ function remote(api, repo) {
   return { errors, get, read, list: (p) => (get(p) ?? []).map((f) => f.name) };
 }
 const pinnedDigests = (pin, get, read) => (pin ? Object.entries(pin.files ?? {}).every(([p, sha]) => get(p) && digest(read(p)) === sha) : null);
-// Every shirube reusable workflow a repo calls (any *.yml / *.yaml) must use the pinned commit; a branch or tag ref
-// (e.g. @main) never matches. null when it calls none.
+// Every shirube reusable workflow a repo calls (*.yml / *.yaml) must use the pinned commit (@main or a tag never matches).
 function usesMatch(pin, get, read) {
   const workflows = (get(".github/workflows") ?? []).filter((f) => /\.ya?ml$/.test(f.name)).map((f) => read(f.path)).join("\n");
   const uses = [...workflows.matchAll(/watchout\/shirube\/\.github\/workflows\/[\w.-]+@([^\s"'#]+)/g)].map((m) => m[1]);
   return uses.length ? uses.every((sha) => sha === pin?.sds_commit) : null;
 }
-const latestFields = (pin, latest) => (latest
-  ? { latest_adopted: latest, up_to_date: pin?.sds_commit === latest }
+const latestFields = (pin, latest) => (latest ? { latest_adopted: latest, up_to_date: pin?.sds_commit === latest }
   : { latest_adopted: null, up_to_date: null, latest_adopted_reason: "not given: pass --latest <commit of the latest adoption record>" });
 // Read-only (GET only). A 404 means "absent"; any other failure is reported per repo, never read as "absent".
-// latest: the shirube commit of the latest adoption record (the seat passes --latest from the Owner's adoption record;
-// the kit keeps no registry of adoptions). Without it, latest_adopted is null and the output says so.
+// latest: the commit of the latest adoption record, passed by the seat (--latest); the kit keeps no registry of adoptions.
 export function status(api = gh, consumers = JSON.parse(kit("docs/sds/consumers.json")), latest = undefined) {
   need(latest === undefined || /^[a-f0-9]{40}$/.test(latest), "--latest must be a 40-hex shirube commit");
   return consumers.map(({ repo }) => {

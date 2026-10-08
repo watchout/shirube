@@ -22,6 +22,13 @@ function consumer(files) {
   return dir;
 }
 const read = (dir, p) => readFileSync(join(dir, p), "utf8");
+// A read-only fake of the GitHub contents API over a { path: text } map; anything else is a 404.
+const fakeApi = (files) => (path) => {
+  const p = path.replace(/^repos\/watchout\/x\/contents\//, "");
+  if (p === ".github/workflows") return Object.keys(files).filter((f) => f.startsWith(".github/workflows/")).map((f) => ({ name: f.split("/").pop(), path: f }));
+  if (!(p in files)) throw new Error("gh: Not Found (HTTP 404)");
+  return { content: Buffer.from(files[p]).toString("base64") };
+};
 
 test("apply replaces the V3 managed block in place, keeps repo text, pins the kit, and check is OK", () => {
   const dir = consumer({ "CLAUDE.md": `# Repo rules\n\n${OLD}\nlocal note\n` });
@@ -84,14 +91,15 @@ test("status reads every workflow for the pinned shirube sha and reports drift r
     ".github/workflows/ci.yml": `uses: watchout/shirube/.github/workflows/hygiene.yml@${A}`,
     ".github/workflows/sds-gate.yml": `uses: watchout/shirube/.github/workflows/sds-gate.yml@${B}`,
   };
-  const api = (path) => {
-    const p = path.replace(/^repos\/watchout\/x\/contents\//, "");
-    if (p === ".github/workflows") return Object.keys(files).filter((f) => f.startsWith(".github/workflows/")).map((f) => ({ name: f.split("/").pop(), path: f }));
-    if (!(p in files)) throw new Error("404");
-    return { content: Buffer.from(files[p]).toString("base64") };
-  };
-  const [r] = status(api, [{ repo: "watchout/x" }]);
+  const [r] = status(fakeApi(files), [{ repo: "watchout/x" }]);
   assert.equal(r.sds_commit, A); assert.equal(r.hygiene_pin_match, false); assert.deepEqual(r.legacy, []);
+  // F03: a branch or tag ref (@main, @v1) is not a match.
+  const run = (refs) => {
+    const files = { ".shirube/sds-pin.json": JSON.stringify({ sds_commit: A, files: {} }) };
+    refs.forEach((r, i) => { files[`.github/workflows/w${i}.yaml`] = `uses: watchout/shirube/.github/workflows/hygiene.yml@${r}`; });
+    return status(fakeApi(files), [{ repo: "watchout/x" }])[0].hygiene_pin_match;
+  };
+  assert.deepEqual([run([A, A]), run([A, "main"]), run([A, "v1"]), run([])], [true, false, false, null]);
 });
 
 test("kit parts come from the pinned commit itself; a commit that is not in the shirube history is refused", () => {
@@ -118,6 +126,10 @@ test("an adoption needs its body SHA-256 and an ISO time; without one the pin sa
   assert.throws(() => apply({ target: consumer({}), commit: A, protected: "none", adoption: ref }), /--adoption-sha256/);
   assert.throws(() => apply({ target: consumer({}), commit: A, protected: "none", adoption: ref, "adoption-sha256": "f".repeat(64), "adopted-at": "yesterday" }), /ISO 8601/);
   assert.equal(apply({ target: consumer({}), commit: A, protected: "none" }).adoption, "NOT_RECORDED");
+  const dir = consumer({}), before = Date.now(); // F05: an omitted --adopted-at records the apply time
+  apply({ target: dir, commit: A, protected: "none", adoption: ref, "adoption-sha256": "f".repeat(64) });
+  const at = Date.parse(JSON.parse(read(dir, ".shirube/sds-pin.json")).adoption.adopted_at);
+  assert.ok(at >= before - 1000 && at <= Date.now() + 1000, "adopted_at is the apply time");
 });
 test("check finds the V3 state files, profiles/, old hooks, the shirube_v3 profile section and the Pre-Code Gate section", () => {
   const dir = consumer({ "CLAUDE.md": "## Pre-Code Gate\nx\n", ".shirube/execution-context.json": "{}", ".shirube/route-policy.yaml": "", ".shirube/profiles/a.json": "",
@@ -132,11 +144,15 @@ test("status reports the pinned files' digests and adoption, and an API failure 
   assert.equal(bad.verdict, "UNKNOWN"); assert.ok(bad.errors.length > 0);
   const sha = (t) => createHash("sha256").update(t).digest("hex");
   const files = { ".shirube/sds-pin.json": JSON.stringify({ sds_commit: A, files: { "a.md": sha("kit") }, adoption: { ref: "r" } }), "a.md": "edited" };
-  const api = (path) => { const f = files[path.replace(/^repos\/watchout\/x\/contents\//, "")]; if (f === undefined) throw new Error("(HTTP 404)"); return { content: Buffer.from(f).toString("base64") }; };
+  const api = fakeApi(files);
   const r = status(api, [{ repo: "watchout/x" }])[0];
   assert.equal(r.digest_match, false); assert.deepEqual(r.adoption, { ref: "r" });
   files["a.md"] = "kit";
   assert.equal(status(api, [{ repo: "watchout/x" }])[0].digest_match, true);
+  // F04: the latest adopted version, or why it is not known.
+  assert.equal(r.latest_adopted, null); assert.match(r.latest_adopted_reason, /--latest/);
+  assert.deepEqual([B, A].map((l) => status(api, [{ repo: "watchout/x" }], l)[0].up_to_date), [false, true]);
+  assert.throws(() => status(api, [], "main"), /40-hex/);
 });
 
 // Audit 6055476241 F01-F05.
@@ -144,50 +160,14 @@ test("F01/F05: a missing instruction file or a removed block is DRIFT", () => {
   const dir = consumer({ "AGENTS.md": "# A\n" });
   apply({ target: dir, commit: A, protected: "none" });
   assert.deepEqual(JSON.parse(read(dir, ".shirube/sds-pin.json")).instructions, ["AGENTS.md"]);
-  writeFileSync(join(dir, "AGENTS.md"), "# A\n");
-  assert.deepEqual(check({ target: dir }).findings, ["AGENTS.md lacks the pinned SDS-V2 block"]);
-  rmSync(join(dir, "AGENTS.md"));
-  assert.deepEqual(check({ target: dir }).findings, ["AGENTS.md (instruction file written by the kit) is missing"]);
+  const after = (change) => { change(); return check({ target: dir }).findings; };
+  assert.deepEqual(after(() => writeFileSync(join(dir, "AGENTS.md"), "# A\n")), ["AGENTS.md lacks the pinned SDS-V2 block"]);
+  assert.deepEqual(after(() => rmSync(join(dir, "AGENTS.md"))), ["AGENTS.md (instruction file written by the kit) is missing"]);
 });
 test("F02: calls to removed hooks and the shirube- prefixed V3 state files are found", () => {
   const dir = consumer({ "CLAUDE.md": "x\n", ".claude/settings.json": '{"hooks":[{"command":"bash .claude/hooks/skill-tracker.sh"},{"command":".claude/hooks/gate-quality.sh"}]}',
     ".shirube/shirube-framework-lock.yaml": "", ".github/workflows/sds-gate.yml": "uses: x/sds-gate.yml@y" });
   apply({ target: dir, commit: A, protected: "none" });
-  const r = check({ target: dir });
-  assert.deepEqual(r.stale_refs.sort(), [".claude/settings.json -> hooks/gate-", ".claude/settings.json -> skill-tracker"]);
-  assert.ok(r.legacy.includes(".shirube/shirube-framework-lock.yaml"));
-});
-test("F03: a branch or tag ref to a shirube workflow is not a match", () => {
-  const sha = "1".repeat(40);
-  const run = (refs) => {
-    const files = { ".shirube/sds-pin.json": JSON.stringify({ sds_commit: sha, files: {} }) };
-    refs.forEach((r, i) => { files[`.github/workflows/w${i}.yaml`] = `uses: watchout/shirube/.github/workflows/hygiene.yml@${r}`; });
-    const api = (path) => {
-      const p = path.replace(/^repos\/watchout\/x\/contents\//, "");
-      if (p === ".github/workflows") return Object.keys(files).filter((f) => f.startsWith(".github/workflows/")).map((f) => ({ name: f.split("/").pop(), path: f }));
-      if (!(p in files)) throw new Error("(HTTP 404)");
-      return { content: Buffer.from(files[p]).toString("base64") };
-    };
-    return status(api, [{ repo: "watchout/x" }])[0].hygiene_pin_match;
-  };
-  assert.equal(run([sha, sha]), true);
-  assert.equal(run([sha, "main"]), false);
-  assert.equal(run([sha, "v1"]), false);
-  assert.equal(run([]), null);
-});
-test("F04: status reports the latest adopted version when given, and says why when not", () => {
-  const files = { ".shirube/sds-pin.json": JSON.stringify({ sds_commit: A, files: {} }) };
-  const api = (path) => { const f = files[path.replace(/^repos\/watchout\/x\/contents\//, "")]; if (f === undefined) throw new Error("(HTTP 404)"); return { content: Buffer.from(f).toString("base64") }; };
-  const none = status(api, [{ repo: "watchout/x" }])[0];
-  assert.equal(none.latest_adopted, null); assert.match(none.latest_adopted_reason, /--latest/);
-  assert.equal(status(api, [{ repo: "watchout/x" }], B)[0].up_to_date, false);
-  assert.equal(status(api, [{ repo: "watchout/x" }], A)[0].up_to_date, true);
-  assert.throws(() => status(api, [], "main"), /40-hex/);
-});
-test("F05: an omitted --adopted-at records the time of apply", () => {
-  const dir = consumer({});
-  const before = Date.now();
-  apply({ target: dir, commit: A, protected: "none", adoption: "https://github.com/watchout/x/issues/1#issuecomment-2", "adoption-sha256": "f".repeat(64) });
-  const at = Date.parse(JSON.parse(read(dir, ".shirube/sds-pin.json")).adoption.adopted_at);
-  assert.ok(at >= before - 1000 && at <= Date.now() + 1000, "adopted_at is the apply time");
+  const { stale_refs: refs, legacy } = check({ target: dir });
+  assert.deepEqual(refs.sort(), [".claude/settings.json -> hooks/gate-", ".claude/settings.json -> skill-tracker"]); assert.ok(legacy.includes(".shirube/shirube-framework-lock.yaml"));
 });
