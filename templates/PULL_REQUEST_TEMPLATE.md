@@ -17,7 +17,7 @@
 {
   "schema": "sds-pr/1",
   "risk_class": "R1",
-  "changed_paths": ["<every path in the diff>"],
+  "changed_paths": ["<every path in the diff; for a rename, both the old and the new path>"],
   "audit": { "request": "<R2+: request comment URL>", "request_sha256": "<request body sha256>", "review": "<review comment URL>" }
 }
 ```
