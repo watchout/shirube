@@ -82,11 +82,16 @@ export function createProgression({ store, executor, clock }) {
     return action;
   }
 
+  // Every accepted start (query answer or executor observation) also closes that start's reconcile; its query
+  // history (lastAnswer, nonProgress) is kept.
   function markStarted(attemptId) {
     const attempt = store.attempts.find((a) => a.id === attemptId);
     if (attempt.state === "START_REQUESTED") attempt.state = "RUNNING";
     const start = startOf(attempt);
-    if (start) start.status = "started";
+    if (!start) return;
+    start.status = "started";
+    const reconcile = store.nextActions.find((n) => n.key === `${start.id}:reconcile`);
+    if (reconcile) reconcile.status = "done";
   }
 
   function query(start) {
@@ -101,7 +106,6 @@ export function createProgression({ store, executor, clock }) {
     action.lastAnswer = answer;
     if (answer === "running") {
       markStarted(start.attempt);
-      action.status = "done";
       return;
     }
     action.unconfirmed = true;

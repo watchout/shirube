@@ -220,6 +220,27 @@ test("status: each reason a Work does not start is kept with its release conditi
   assert.equal(p.status("W1").blocked, null);
 });
 
+// F06: a valid started observation after unconfirmed reconciles closes the reconcile, also after a restart.
+for (const [label, ticks, issuer, running] of [
+  ["after one unconfirmed query", 1, EXECUTOR, true],
+  ["after the reconcile stopped", 3, EXECUTOR, true],
+  ["from another issuer", 1, "llm:self-report", false],
+]) {
+  test(`PC-02: a started observation ${label} ${running ? "closes the reconcile" : "leaves it unconfirmed"}`, () => {
+    const { s, ex, c, p, request } = startedRequest();
+    c.advance(60_001);
+    for (let i = 0; i < ticks; i += 1) p.tick();
+    p.record({ type: "observation", issuer, request: request.id, kind: "started", report: "valid-start-1" });
+    const p2 = restart(structuredClone(s), ex, c);
+    p2.recover();
+    p2.tick();
+    const st = p2.status("W2");
+    assert.equal(st.state === "RUNNING", running);
+    assert.equal(st.unconfirmed, !running);
+    if (running) assert.equal(st.stopped, false);
+  });
+}
+
 test("PC-04: one question for the human-gated work, the independent work still starts", () => {
   const { s, ex, p } = setup();
   p.tick();
