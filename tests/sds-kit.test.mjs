@@ -17,11 +17,11 @@ const read = (dir, p) => readFileSync(join(dir, p), "utf8");
 test("apply replaces the V3 managed block in place, keeps repo text, pins the kit, and check is OK", () => {
   const dir = consumer({ "CLAUDE.md": `# Repo rules\n\n${OLD}\nlocal note\n` });
   const out = apply({ target: dir, commit: A });
-  assert.deepEqual(out.written.sort(), [".claude/skills/sds-audit/SKILL.md", ".github/workflows/sds-preflight.yml", ".shirube/sds-pin.json", "CLAUDE.md"].sort());
+  assert.deepEqual(out.written.sort(), [".claude/skills/sds-audit/SKILL.md", ".github/workflows/sds-gate.yml", ".shirube/sds-pin.json", "CLAUDE.md"].sort());
   const claude = read(dir, "CLAUDE.md");
   assert.match(claude, /^# Repo rules/); assert.match(claude, /local note/);
   assert.doesNotMatch(claude, /shirube-v3-runtime/); assert.match(claude, new RegExp(`watchout/shirube@${A}`));
-  assert.match(read(dir, ".github/workflows/sds-preflight.yml"), new RegExp(`sds-preflight.yml@${A}`));
+  assert.match(read(dir, ".github/workflows/sds-gate.yml"), new RegExp(`sds-gate.yml@${A}`));
   const pin = JSON.parse(read(dir, ".shirube/sds-pin.json"));
   assert.equal(pin.sds_commit, A); assert.ok(pin.protected_paths.includes(".github/workflows/**"));
   assert.deepEqual(check({ target: dir }), { command: "check", verdict: "OK", sds_commit: A, findings: [], legacy: [] });

@@ -8,7 +8,7 @@ description: Prepare an SDS-V2 independent audit request (sds-audit-request/1) f
 Pinned standard: the commit in `.shirube/sds-pin.json` (`sds_commit`). Read `docs/sds/audit-method.md` at that commit.
 
 ## 1. Fill the PR block
-Put exactly one fenced block with info string `json sds-pr` in the PR body: `schema: "sds-pr/1"`, `risk_class`, `control_source_ref {url, sha256}` (sha256 of the exact comment body), `changed_paths` (every path in the diff), `forbidden_paths`, and when required `audit {request, request_sha256, review}` and `owner_decision`.
+Put exactly one fenced block with info string `json sds-pr` in the PR body: `schema: "sds-pr/1"`, `risk_class`, `changed_paths` (every path in the diff), and at R2 and above `audit {request, request_sha256, review}`. Add exactly one label `risk:R0`..`risk:R4` equal to `risk_class`. A protected path (listed in `.shirube/sds-pin.json` on the base branch) makes the change R4.
 
 ## 2. Request the audit (R2 and above)
 1. Wait for the PR's CI to finish on the exact head.
@@ -22,6 +22,6 @@ Put exactly one fenced block with info string `json sds-pr` in the PR body: `sch
 Run the same command with `--review <review url>` instead of `--preflight`. RECEIPT_ACCEPTED is admission only (`authorization: NONE`). Record it as the author's receipt, then fill `audit` in the PR block.
 
 ## 4. Before integration
-- `sds-preflight` status is success on the exact head.
-- R3/R4 or protected paths: an APPROVED owner decision names this repository and the exact head. A machine cannot tell who posted it (all seats share one account); the merging seat confirms it is the Owner's decision before merging.
+- `sds-gate` status is success on the exact head, and the PR has exactly one `risk:R*` label equal to the block.
+- R3/R4 or protected paths: an APPROVED owner decision names this repository and the exact head. sds-gate does not check it, and a machine cannot tell who posted it (all seats share one account); the merging seat confirms it is the Owner's decision before merging.
 - The merging seat is neither the maker nor the auditor.

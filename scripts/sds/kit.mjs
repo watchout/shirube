@@ -8,7 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "../hygiene/lib.mjs";
-import { DEFAULT_PROTECTED } from "./preflight.mjs";
+import { DEFAULT_PROTECTED } from "./gate.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const KIT_VERSION = "0.1.0";
@@ -23,7 +23,7 @@ export function render(commit) {
   need(/^[a-f0-9]{40}$/.test(commit ?? ""), "--commit must be a 40-hex shirube commit");
   const sub = (s) => s.replaceAll("<SHIRUBE_COMMIT>", commit);
   return {
-    files: { ".github/workflows/sds-preflight.yml": sub(kit("kit/sds-preflight-caller.yml")), ".claude/skills/sds-audit/SKILL.md": kit("kit/skills/sds-audit/SKILL.md") },
+    files: { ".github/workflows/sds-gate.yml": sub(kit("kit/sds-gate-caller.yml")), ".claude/skills/sds-audit/SKILL.md": kit("kit/skills/sds-audit/SKILL.md") },
     block: sub(kit("kit/instructions-block.md")),
   };
 }
@@ -67,7 +67,9 @@ export function status(api = gh) {
     const get = (p) => { try { return api(`repos/${repo}/contents/${p}`); } catch { return null; } };
     const read = (p) => Buffer.from(get(p)?.content ?? "", "base64").toString("utf8");
     const pin = get(PIN) ? JSON.parse(read(PIN)) : null;
-    return { repo, sds_commit: pin?.sds_commit ?? null, kit_version: pin?.kit_version ?? null, legacy: legacyParts((p) => get(p) !== null, read) };
+    const uses = [...read(".github/workflows/ci.yml").matchAll(/watchout\/shirube\/\.github\/workflows\/[\w.-]+@([a-f0-9]{40})/g)].map((m) => m[1]);
+    const hygiene_pin_match = uses.length ? uses.every((sha) => sha === pin?.sds_commit) : null;
+    return { repo, sds_commit: pin?.sds_commit ?? null, kit_version: pin?.kit_version ?? null, hygiene_pin_match, legacy: legacyParts((p) => get(p) !== null, read) };
   });
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
