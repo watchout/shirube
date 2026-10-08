@@ -1,6 +1,6 @@
 # SDS-V2 — 小さな実機能を完成まで導く開発規格
 
-状態: **SDS-V2への命名・実践の取り込み・適用はOwner指示済み。本改訂本文の独立監査・main統合・利用元の版切替は未完。** 規格があることと、実案件を完成できたことは別に観測する。
+状態: **SDS-V2への命名・実践の取り込み・適用はOwner指示済み。本改訂本文は独立監査LC-01〜07 PASS（https://github.com/watchout/shirube/issues/6#issuecomment-6027927736 ）・作者受領を経て、Owner exact-head承認によりmain統合済み（merge `d34b31e98df522c463d5cafb7c17e0beece33fb2`、記録 https://github.com/watchout/shirube/issues/6#issuecomment-6034414632 ）。各利用元の版切替・読戻しと実案件での効果確認は未完。** 規格があることと、実案件を完成できたことは別に観測する。
 Owner原文「では、これを取り込んでSDS-V2とネーミングして適用しましょう」のcontrol_source_ref: https://github.com/watchout/shirube/issues/6#issuecomment-6027721133 / 本文SHA-256 `d6f826a9e8ff3407b411d4eabcf4a778a55ae015454e69027ef2694484385a05`。
 改訂前のAI-DLC基盤SDSは採択済み: https://github.com/watchout/shirube/issues/6#issuecomment-5927903682 / 本文SHA-256 `0623bba1351ec351c239790e1a76afddc0d04a19f5086b77a2f3eaa8495f53c6`、統合版 `3b9f5c8e8f22a98374f1929ea8bcff8e084dab3b`。旧本文の「候補」は作成時の状態。下記F01〜F10/64項目の処置履歴まで今回の独立PASSに置き換えない。
 
