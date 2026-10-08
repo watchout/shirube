@@ -54,7 +54,9 @@ test("PC-02: ACK without a real start past the deadline goes to reconcile, not R
   p.tick();
   assert.notEqual(p.status("W2").state, "RUNNING");
   assert.equal(s.nextActions.filter((n) => n.work === "W2" && n.kind === "reconcile").length, 1);
-  assert.deepEqual(ex.queries, [request.id], "the same request is queried, not re-issued");
+  // W4 (independent, also started in this fixture) is reconciled too; check W2's own query.
+  assert.deepEqual(ex.queries.filter((id) => id === request.id), [request.id], "W2's request is queried once");
+  assert.ok(ex.queries.every((id) => ex.requests.some((r) => r.id === id)), "only already-sent requests are queried");
   assert.equal(sentFor(ex, "W2").length, 1, "no new start id");
 });
 
@@ -111,6 +113,41 @@ test("PC-03: stop after the real start never starts twice", () => {
   assert.equal(startsFor(s, "W2").length, 1);
   assert.equal(p.status("W2").state, "RUNNING");
 });
+
+// PC-03 stop points added with Green (U2 design §8/§9): the record says "sending" or "sent",
+// so recover() must query the same request before any send, and must not send again.
+function inFlight(status, { delivered }) {
+  const { s, ex, c } = setup();
+  verifiedW1(s);
+  s.attempts.push({ id: "A-W2-1", work: "W2", state: "START_REQUESTED" });
+  s.nextActions.push({ id: "N-W2-1", work: "W2", attempt: "A-W2-1", kind: "start", status, sentAt: c.now() });
+  if (delivered) ex.requests.push({ id: "R:N-W2-1", work: "W2", attempt: "A-W2-1", kind: "start" });
+  const sendsBefore = sentFor(ex, "W2").length;
+  const p = restart(s, ex, c);
+  const order = [];
+  const { send, query } = ex;
+  ex.send = (r) => { order.push(`send:${r.id}`); return send(r); };
+  ex.query = (id) => { order.push(`query:${id}`); return query(id); };
+  p.recover();
+  p.recover();
+  return { s, ex, p, order, sendsBefore };
+}
+
+for (const [label, status, delivered] of [
+  ["after saving 'sending', before send", "sending", false],
+  ["after send was accepted, before saving the result", "sending", true],
+  ["after saving the send result", "sent", true],
+]) {
+  test(`PC-03: stop ${label} queries first and never sends again`, () => {
+    const { s, ex, p, order, sendsBefore } = inFlight(status, { delivered });
+    assert.equal(order[0], "query:R:N-W2-1", "the same request is queried first");
+    assert.equal(order.filter((o) => o.startsWith("send:R:N-W2")).length, 0, "no send for W2 after restart");
+    assert.equal(sentFor(ex, "W2").length, sendsBefore, "executor send count unchanged");
+    assert.equal(startsFor(s, "W2").length, 1, "no second NextAction");
+    assert.notEqual(p.status("W2").state, "RUNNING", "not_started is not a start");
+    assert.equal(p.status("W2").unconfirmed, true);
+  });
+}
 
 test("PC-04: one question for the human-gated work, the independent work still starts", () => {
   const { s, ex, p } = setup();
