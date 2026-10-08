@@ -85,7 +85,7 @@
 - checker と判定の本体は、PR の head からではなく、固定した Shirube の commit から取得する。PR が検査を書き換えて自分を通す経路を作らない。
 - 保護面の path の一覧は、PR ではなく base ブランチの固定ファイルから読む。
 - 監査の返却はコメントで届くため、`pull_request_target` に加えて `issue_comment` でも動かし、結果は head SHA への commit status として付ける。head が変わると古い受領は使えない（判定 3 が今の head を要求するため）。
-- 差し替えの経路を 2 つの手段で止める（ARC の判断 1、iyasaka-arc#57 6051365638、PR37 への転記 6051376399）。(a) 配布先の呼出し側は `pull_request_target` で起動する。定義は default branch から読まれるので、PR がその PR を判定する検査を書き換えても効かない。gate は PR のコードを checkout も実行もしない。(b) workflow を足す・変える PR は保護面 `.github/workflows/**` に触れるので effective R4 とし、merge 担当は status の色ではなく gate の run の JSON を読む。残る穴は 2 つ。同じ context に後から success を付けられることは、ruleset の required workflow（SHA 固定、Owner への質問 Q-SDS-RULESET-20261008）で閉じる。同じアカウントの席が API で直接 status を付けられることは、Owner 専用アカウント（§7 の案 b）の課題として残す。
+- 差し替えの経路を 2 つの手段で止める（ARC の判断 1、iyasaka-arc#57 6051365638、PR37 への転記 6051376399）。(a) 配布先の呼出し側は `pull_request_target` で起動する。定義は default branch から読まれるので、PR がその PR を判定する検査を書き換えても効かない。gate は PR のコードを checkout も実行もしない。(b) workflow を足す・変える PR は保護面 `.github/workflows/**` に触れるので effective R4 とし、merge 担当は status の色ではなく gate の run の JSON を読む。残る穴は 2 つ。同じ context に後から success を付けられることは、必須化（段階 3 以降）の時に Owner が各 repo で ruleset の required workflow（SHA 固定）が使えるかを確かめ、使えれば閉じる（Owner 回答 Q-SDS-RULESET-20261008、iyasaka-arc#52 6052355440）。同じアカウントの席が API で直接 status を付けられることは、Owner 専用アカウント（§7 の案 b）の課題として残す。
 - job log は Actions の中で読む（Actions 外の席では読めない環境がある。PR34・PR35 で観測）。
 
 ### 4.1 機械から外したものの扱い（適用差分）
