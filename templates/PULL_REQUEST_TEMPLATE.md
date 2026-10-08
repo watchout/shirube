@@ -11,6 +11,19 @@
 - 採用版: <!-- policy commit + declaration reference the repository adopts -->
 - lifecycle_ref: <!-- adopted procedure commit + applicable sections/reused evidence; candidate: https://github.com/watchout/shirube/blob/7fa597393d32738a548d9d882b6b930689b96a60/docs/process/ai-dlc.md (requires audit/adoption) -->
 
+## Machine-readable facts (sds-gate reads exactly one block like this; docs/sds/distribution.md §4)
+
+```json sds-pr
+{
+  "schema": "sds-pr/1",
+  "risk_class": "R1",
+  "changed_paths": ["<every path in the diff; for a rename, both the old and the new path>"],
+  "audit": { "request": "<R2+: request comment URL>", "request_sha256": "<request body sha256>", "review": "<review comment URL>" }
+}
+```
+
+Also set exactly one label `risk:R0`..`risk:R4` equal to `risk_class`. Delete `audit` below R2. A change to a protected path (`.shirube/sds-pin.json` on the base branch) counts as R4. sds-gate does not check Owner approval: for R3/R4 the merging seat confirms the owner decision for the exact head before merging.
+
 ## The four questions (anti-bloat v5 §9)
 
 - Q1 追加・変更・削除する各動作は受入条件（Issue）のどれを満たすか。既存で足りないか。繰り返しはないか。削減なら維持する受入 ID と影響する既存試験（正常・異常・回復）はどれか:
@@ -21,6 +34,7 @@
 ## Evidence
 
 - commands run and results (exact head):
+- scope result vs the handoff (control_source_ref URL + sha256): paths inside / outside the allowed scope, forbidden paths touched (none or list). The merging seat confirms this before merging (docs/sds/distribution.md §4.1):
 - design_judgments[] (each with a basis ref; write `[]` explicitly when none):
 - deviation_ledger (reason, alternative, valid authority/expiry/compensating protection where an exception is allowed; recording alone is not permission):
 - next_action:
