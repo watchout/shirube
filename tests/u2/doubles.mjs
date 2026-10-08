@@ -14,10 +14,11 @@ export function store(works) {
     observations: [],
     replies: [],
     holds: [],
+    blocks: new Map(), // one entry per Work that does not start, overwritten in place
   };
 }
 
-export function executor({ queryFails = false } = {}) {
+export function executor({ queryFails = false, answer = () => "not_started" } = {}) {
   const requests = [];
   const queries = [];
   return {
@@ -31,7 +32,7 @@ export function executor({ queryFails = false } = {}) {
     query(requestId) {
       queries.push(requestId);
       if (queryFails) throw new Error("executor unreachable (mock)");
-      return { request: requestId, state: "not_started" };
+      return { request: requestId, state: answer(requestId) };
     },
   };
 }
