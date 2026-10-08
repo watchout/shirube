@@ -101,3 +101,31 @@ test("API unavailable and edits during verification cannot pass", () => {
   const api = (path) => { if (path.endsWith("/pulls/21") && ++reads === 2) f.pr.head.sha = base; return f.api(path); };
   assert.throws(() => verifyAudit(f.args, api, f.now));
 });
+// OD-GAP-5 (G-07): a request may opt in with `base_moved`, so a base that moved on after the request stays accepted only while the move is provably unrelated.
+function moved(change = () => {}) {
+  const f = fixture(), now = "9".repeat(40), pages = { move: { status: "ahead", files: [{ filename: "docs/other.md" }] }, own: { files: [{ filename: "design.md" }] } };
+  f.request.targets[0].base_moved = { ref: "main" };
+  f.pr.base = { sha: now, ref: "main" };
+  change(f.request.targets[0], f.pr, pages);
+  f.origin.body = json(f.request); f.args.sha256 = hash(f.origin.body); f.record.request_digest = f.args.sha256; f.review.body = json(f.record);
+  const api = (path) => (path.includes(`/compare/${base}...${now}`) ? pages.move : path.includes(`/compare/${base}...${head}`) ? pages.own : f.api(path));
+  return () => verifyAudit(f.args, api, f.now);
+}
+test("a moved base is accepted only on request and the receipt records where it moved", () => {
+  const r = moved()();
+  assert.equal(r.verdict, "RECEIPT_ACCEPTED"); assert.deepEqual(r.base_moved, [{ target: "s", from: base, to: "9".repeat(40), moved_files: 1 }]);
+});
+const refused = [
+  ["PR files overlap the moved files", (t, pr, p) => p.move.files.push({ filename: "design.md" })],
+  ["a rename in the move hits a PR file", (t, pr, p) => p.move.files.push({ filename: "x.md", previous_filename: "design.md" })],
+  ["the move touched the CI definition", (t, pr, p) => p.move.files.push({ filename: ".github/workflows/ci.yml" })],
+  ["the move touched the checker", (t, pr, p) => p.move.files.push({ filename: "scripts/hygiene/audit-admission.mjs" })],
+  ["the move touched the dependencies", (t, pr, p) => p.move.files.push({ filename: "package-lock.json" })],
+  ["the requested base is not an ancestor", (t, pr, p) => { p.move.status = "diverged"; }],
+  ["the PR was retargeted to another branch", (t, pr) => { pr.base.ref = "release"; }],
+  ["the moved file list is truncated", (t, pr, p) => { p.move.files = Array.from({ length: 300 }, (_, i) => ({ filename: `f${i}` })); }],
+  ["the PR file list is truncated", (t, pr, p) => { p.own.files = Array.from({ length: 300 }, (_, i) => ({ filename: `g${i}` })); }],
+  ["opt-in without a branch", (t) => { t.base_moved = {}; }],
+  ["no opt-in in the request", (t) => { delete t.base_moved; }],
+];
+for (const [name, change] of refused) test(`moved base refused: ${name}`, () => assert.throws(moved(change), /base_moved|base changed/));

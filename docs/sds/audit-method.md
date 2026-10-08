@@ -52,6 +52,7 @@ node scripts/hygiene/audit-admission.mjs --request "$SDS_AUDIT_REQUEST" --sha256
 ```
 依頼/返却は同じcontrol sourceのissuecommentで、JSON.stringify(value, null, 2)相当のJSONを1個のjsonコードブロックで掲載する。重複キー/複数ブロック/曖昧な書式は拒否する。返却schemaは`sds-audit-review/1`、`request_digest`、`reviewer`、`targets:[{id,head}]`、`blocking_findings:[]`、`items:[{id,result,reason,counterexample,evidence:[{target,path,line,quote}]}]`。空欄を作者が代筆しない。
 scriptはGitHubを読み取るだけでmerge/認可を行わない。アカウントの区別だけでは席の作者履歴を証明できないため、独立監査担当の配置と履歴も確認する。引用一致は論拠の妥当性や試験の検出力の証明ではなく、そこは独立判断の責任。LLMの全tool操作のsandboxやGitHub必須checkへの自動強制は今回導入しておらず、「運用上迂回不能」とは主張しない。
+依頼後にPRのbaseが進んだ場合（G-07、OD-GAP-5 a）: 依頼のtargetに`base_moved:{ref}`を書いた時だけ、検査は現在のbaseが依頼のbaseの子孫であり、その間の変更ファイル（改名前を含む）がPRの変更ファイル・CIのworkflow・`.github/`・`scripts/hygiene/`・package.json/lockと重ならないことを機械で確かめ、受領に`base_moved`を記録する。書かない依頼、重なり、子孫でない、ブランチ違い、ファイル一覧が300件以上は従来どおり拒否。CIの統合commitの親は依頼のbaseのまま照合する。checkerを変えるとsha256が変わる。旧shaを書いた依頼は、そのshaのcheckerで検査し、新しい依頼は新しいshaを書く。
 旧ADF `audit-bridge` @`04e13647`は形式の受理に使う道具で、全FAILや証拠空のPASSでも受理する反例を実測した。終了code/受理PASSを品質判定として流用せず、今回の狭い受領検査に限定する。専用AI-DLC engineも導入しない。
 
 ## 5. 品質と負担の観測

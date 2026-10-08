@@ -45,11 +45,26 @@ function requestChecks(r, c, now) {
   need(unique(r.targets.map((t) => t.id)), "Duplicate or empty targets");
   need(unique(r.targets.map((t) => `${t.repo}#${t.pr}`)), "Repeated target PR");
 }
-function targetCheck(t, api) {
+// A request may opt in with `base_moved: {ref}`: the PR base moved on after the request, which stays acceptable only while the move
+// is provably unrelated (docs/sds/audit-method.md §4). The CI proof below still binds the requested base, so the audited bytes are unchanged.
+const MOVED_GUARD = [".github/", "scripts/hygiene/", "package.json", "package-lock.json"];
+function baseMoved(t, p, api) {
+  need(nonempty(t.base_moved?.ref) && t.base_moved.ref === p.base.ref, "PR base changed and base_moved is not requested for this base branch");
+  const since = api(`repos/${t.repo}/compare/${t.base}...${p.base.sha}`), own = api(`repos/${t.repo}/compare/${t.base}...${t.head}`);
+  need(["ahead", "identical"].includes(since.status), "base_moved: the requested base is not an ancestor of the current base");
+  need([since, own].every((c) => Array.isArray(c.files) && c.files.length < 300), "base_moved: incomplete file list");
+  const names = (c) => c.files.flatMap((f) => [f.filename, f.previous_filename]).filter(Boolean), mine = new Set(names(own));
+  const hits = names(since).filter((f) => mine.has(f) || MOVED_GUARD.some((g) => f.startsWith(g)));
+  need(hits.length === 0, `base_moved: the move touched files this audit depends on: ${hits.slice(0, 3).join(", ")}`);
+  return { target: t.id, from: t.base, to: p.base.sha, moved_files: since.files.length };
+}
+const movedNote = (notes) => (notes.length ? { base_moved: notes } : {});
+function targetCheck(t, api, notes = []) {
   need(/^watchout\/[\w.-]+$/.test(t.repo) && Number.isSafeInteger(t.pr) && t.pr > 0, "Invalid target PR");
   need(/^[a-f0-9]{40}$/.test(t.head) && /^[a-f0-9]{40}$/.test(t.base), "Unpinned target");
   const p = api(`repos/${t.repo}/pulls/${t.pr}`);
-  need(p.state === "open" && p.head.sha === t.head && p.base.sha === t.base, "PR head/base/state changed");
+  need(p.state === "open" && p.head.sha === t.head, "PR head/base/state changed");
+  if (p.base.sha !== t.base) notes.push(baseMoved(t, p, api));
   const observed = [];
   need(Array.isArray(t.checks), "Required checks must be explicit");
   if (t.checks.length === 0) return observed;
@@ -122,14 +137,15 @@ export function verifyAudit(args, api = github, now = Date.now()) {
   need(/^[a-f0-9]{64}$/.test(args.sha256) && requestDigest === args.sha256, "Request digest changed");
   const r = payload(c.body);
   requestChecks(r, c, now);
-  const checks = r.targets.map((t) => ({ target: t.id, runs: targetCheck(t, api) }));
+  const notes = [];
+  const checks = r.targets.map((t) => ({ target: t.id, runs: targetCheck(t, api, notes) }));
   const setTarget = r.targets.find((t) => t.id === r.item_set.target);
   need(setTarget, "Item set target absent");
   const setText = file(setTarget, r.item_set.path, api);
   need(digest(setText) === r.item_set.sha256, "Item set digest changed");
   const set = JSON.parse(setText);
   need(set.schema === "sds-audit-items/1" && unique(set.items.map((x) => x.id)), "Invalid item set");
-  const receipt = { request: args.request, request_digest: requestDigest, observed_at: new Date(now).toISOString(), checks };
+  const receipt = { request: args.request, request_digest: requestDigest, observed_at: new Date(now).toISOString(), checks, ...movedNote(notes) };
   if (args.preflight) {
     need(!args.review, "Preflight cannot accept a review");
     return { ...receipt, verdict: "READY_FOR_REVIEW", semantic_audit: "NOT_RUN" };
