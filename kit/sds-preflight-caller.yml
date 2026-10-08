@@ -1,0 +1,22 @@
+# Copied by the kit CLI to .github/workflows/sds-preflight.yml of a consumer repository.
+# <SHIRUBE_COMMIT> is replaced with the pinned commit from .shirube/sds-pin.json. Owner makes the status `sds-preflight`
+# required on the default branch; until then it is report-only.
+name: sds-preflight
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, ready_for_review]
+  issue_comment:
+    types: [created, edited]
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  actions: read
+  checks: read
+  statuses: write
+jobs:
+  sds-preflight:
+    if: ${{ github.event_name == 'pull_request' || github.event.issue.pull_request }}
+    uses: watchout/shirube/.github/workflows/sds-preflight.yml@<SHIRUBE_COMMIT>
+    with:
+      pr: ${{ github.event.pull_request.number || github.event.issue.number }}

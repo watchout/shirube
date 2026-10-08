@@ -1,0 +1,59 @@
+# sds-preflight — the single required check of the SDS-V2 kit (docs/sds/distribution.md §4).
+# Called from a consumer repository (see kit/sds-preflight-caller.yml) as:
+#   uses: watchout/shirube/.github/workflows/sds-preflight.yml@<pinned commit sha>
+# The check code is taken from this reusable workflow's own commit (job.workflow_sha), never from the PR head, so a PR
+# cannot rewrite the check that judges it. It reads GitHub only and reports one commit status `sds-preflight` on the
+# PR head. Structural facts only; it does not verify who posted an owner decision (all seats share one account).
+name: sds-preflight
+
+on:
+  workflow_call:
+    inputs:
+      pr:
+        description: pull request number in the calling repository
+        type: number
+        required: true
+    secrets:
+      SHIRUBE_READ_TOKEN:
+        required: false
+
+env:
+  SHIRUBE_TOOLS: .shirube-tools
+
+jobs:
+  sds-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout shirube at the reusable workflow's own commit (callee identity)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: ${{ env.SHIRUBE_TOOLS }}
+          token: ${{ secrets.SHIRUBE_READ_TOKEN || github.token }}
+
+      - name: Verify tools identity
+        run: |
+          set -euo pipefail
+          test "${{ job.workflow_repository }}" = "watchout/shirube"
+          test "$(git -C "$SHIRUBE_TOOLS" rev-parse HEAD)" = "${{ job.workflow_sha }}"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run sds-preflight and report a commit status on the PR head
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ inputs.pr }}
+        run: |
+          set -uo pipefail
+          head="$(gh api "repos/$REPO/pulls/$PR" --jq .head.sha)"
+          result="$(node "$SHIRUBE_TOOLS/scripts/sds/preflight.mjs" --repo "$REPO" --pr "$PR")"; code=$?
+          echo "$result"
+          state=success; [ "$code" -eq 0 ] || state=failure
+          desc="$(printf '%s' "$result" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const r=JSON.parse(s);process.stdout.write((r.reason||`PASS ${r.risk_class}`).slice(0,140))})')"
+          gh api "repos/$REPO/statuses/$head" -f state="$state" -f context=sds-preflight -f description="$desc" \
+            -f target_url="${{ github.server_url }}/$REPO/actions/runs/${{ github.run_id }}" > /dev/null
+          exit "$code"
