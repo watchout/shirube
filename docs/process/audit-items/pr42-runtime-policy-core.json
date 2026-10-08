@@ -1,0 +1,31 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@d34b31e98df522c463d5cafb7c17e0beece33fb2/docs/sds/audit-method.md#3",
+  "scope": "Shirube PR42 の docs/sds/runtime-policy-core.md（distribution.md §8 の 3「runtime policy の取り込み」、R2）。対象は head 127d3c6b28d74117ac81d361fdb5cf9b31f6ec42（base 3126a5ccec77b1341c43b9b61869e03863d90ac1）と、依頼の時点の監査対象 head。要求の出典: [D] watchout/shirube@3126a5ccec77b1341c43b9b61869e03863d90ac1/docs/sds/distribution.md L133-134（§8 の 2・3）、[R] watchout/shirube@3126a5ccec77b1341c43b9b61869e03863d90ac1/docs/sds/README.md（L8 正本と写しの扱い、L22、L31 F01、L33 F03、L35 F05、L123 [policy] の固定 iyasaka-org@d3f1a1e90499f77772d48fba33532c68ed4cb1fa）、[S1] watchout/iyasaka-org@3573f80aa4ce37f69365b9910608703d6bb70032/docs/shirube/shirube-v3-runtime-policy.md（file sha256 31944ed5df221a13737599da823fb3840316cb05d69876d9148d9915a97a54a0、PR42 が出典にした版、iyasaka-org main）、[S2] watchout/iyasaka-org@d3f1a1e90499f77772d48fba33532c68ed4cb1fa/docs/shirube/shirube-v3-runtime-policy.md（file sha256 85e1b0a5c5443aaf9e48454115a726bac1d57939056422900e5aa763e5839d45、[R] L123 が固定する版、branch codex-adf/sds-audit-remediation-20261001、main には未統合）、[M] method_ref の文書。V3 policy 本体の変更、組織の権限の文書（ARC の担当）、役割ごとのエージェント設定（iyasaka-arc#60 B）、配布先への適用、Owner の承認、merge は対象外。監査対象 head が 127d3c6b と違う場合は、file:line を git diff で引き直し、PASS の条件は監査対象 head で判定する",
+  "items": [
+    {
+      "id": "RP1",
+      "criterion": "出典の版の選択。根拠: [R] L123（SDS-V2 が固定する policy の版は [S2]）、[R] L31・L33・L35（F01・F03・F05 の反映先に policy を含む）、[D] L134（値を変えずに移す）。見る所: PR42 の docs/sds/runtime-policy-core.md §0、[S1] と [S2] の 5 節の差（suite-lead の事前の観察: Risk-Tiered Gate Depth・Evidence Rules・Next Action Contract の 3 節で [S1] と [S2] の本文が違い、Human Approval Gates・Function Boundaries は同じ）。PASS: 出典が [S2]（SDS-V2 が固定した版）であるか、[S1] を採るなら、その理由と、[S2] にあって [S1] に無い文（F01 の必須未達・UNKNOWN の扱い、F05 の R0/R1 の比例、F03 の信頼境界など）を SDS-V2 がどう保つかが、ARC か Owner の判断の参照つきで本文に記録されている。理由の記録なしに [S1] を写して「値を変えない」と書いていれば FAIL"
+    },
+    {
+      "id": "RP2",
+      "criterion": "取り込む範囲。根拠: [D] L133（Risk-Tiered Gate Depth、Human Approval Gates、Evidence Rules、Function Boundaries、Next Action Contract）・L134（組織の権限は iyasaka-org の 1 文書に残す）。見る所: runtime-policy-core.md の見出しの一覧、git diff --stat <base>...<head>。PASS: 取り込んだ節が [D] L133 の 5 節とちょうど一致し、ほかの節・Amendment・組織の権限（Owner、保護面の一覧、収益判断、管理を AI に任せない決定など）の本文を含まない。PR の変更が docs/sds/runtime-policy-core.md（と項目集合の file）だけに閉じる"
+    },
+    {
+      "id": "RP3",
+      "criterion": "値の不変と照合の再現性。根拠: [D] L134、runtime-policy-core.md §0 の表と照合方法の文。見る所: 各節の本文と、RP1 で選んだ出典の同じ節。PASS: (a) 5 節のそれぞれが出典と byte 単位で一致する（監査者が出典の file から取り出して比べる）。(b) §0 の表の「出典の行」と「本文の SHA-256」が、§0 に書かれた方法（範囲・改行のつなぎ方・末尾の改行）でそのまま再現できる。suite-lead の事前の観察: 127d3c6b の表の範囲（例 59〜80）は末尾の空行を含むが、表の SHA-256 は末尾の空行を除いた範囲（例 59〜79）でしか再現しない。範囲・方法・値のどれかが食い違えば FAIL"
+    },
+    {
+      "id": "RP4",
+      "criterion": "参照の閉包。根拠: [R] L22（arc/org の既存正本を commit に固定する）、[D] L134（commit と SHA-256 で引用する）。見る所: 取り込んだ 5 節の本文が参照する外部の語・節・file（Glossary の用語、Function Model・Function Selection などの節名、function-bindings、Amendment、Control Docs、ローカルの絶対パス）、runtime-policy-core.md §0。PASS: 5 節の本文が依存する外部の定義と節が一覧になり、それぞれ固定 commit で辿れる。ローカルの絶対パス（/Users/ など）を新しく持ち込んでいない。「Amendment は節名でこの 5 節を参照しない」の主張を監査者が出典で確かめ、節名を使わずに 5 節の意味を変える Amendment の文（例: enforcement consistency、Cell Admission の前提）が無いか、あれば扱いが書かれている"
+    },
+    {
+      "id": "RP5",
+      "criterion": "正本の関係。根拠: [R] L8（正本は既存の入口・従属文書を更新し、別の SDS-V2 本文の写しを作らない）、[D] L134（docs/sds/ の 1 文書へ移す。V3 policy 本体は履歴として残す）、[R] L123。見る所: runtime-policy-core.md の状態の行と §0、docs/sds/README.md（変更の有無）。PASS: 統合の後に、この 5 節について、どちらが規範の正本か（shirube の本書か、[R] L123 が指す iyasaka-org の版か）が本文に書かれ、二重の正本にならない。[R] L123 の参照を本書へ切り替えるかどうかと、その時期（本 PR か後続の PR か）が記録されている。本書が独立監査・Owner の採択を経ていない段階で「採択済み」と読ませる記述が無い"
+    },
+    {
+      "id": "RP6",
+      "criterion": "実行の証拠。根拠: [M] §3。見る所: 監査対象 head の CI の test job と hygiene job の log。PASS: 統合した commit（親が監査対象の head と base）で、test と hygiene の job が成功している。文書だけの変更なので、試験の件数ではなく、hygiene（lines-baseline・large-files・secret の検査など）が本書を対象に含めて通ったことを log で確かめる"
+    }
+  ]
+}
