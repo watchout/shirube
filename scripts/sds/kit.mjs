@@ -21,7 +21,8 @@ const LEGACY = [".shirube/runtime", ".github/workflows/merge-authority.yml", ".g
 const V3_STATE = /^(execution-context|lifecycle-state|control-state-completeness|enforcement-policy|route-policy|repo-spec|framework-lock|adoption-intake|existing-state-scan|v3-normalization|open-pr-inventory|pr-body-refs)(\.|$)/;
 const OLD_HOOK = /^(pre-code-gate|framework-runner|framework-mode-check|gate-[\w-]+|skill-tracker)\.sh$/;
 const REMOVED_REFS = [".shirube/runtime", ".framework", "pre-code-gate", "framework-runner", "framework-mode-check", "merge-authority", "rapid-lite"];
-const ENTRIES = [".claude/settings.json", ".claude/skills", ".claude/hooks", ".github/workflows", "CLAUDE.md", "AGENTS.md"];
+// Active entry points (docs/sds/distribution.md §2.1); directories are walked recursively.
+const ENTRIES = [".claude/settings.json", ".claude/skills", ".claude/hooks", ".claude/agents", ".agents/skills/shirube-v3-runtime", ".codex", ".github/workflows", "CLAUDE.md", "AGENTS.md"];
 const digest = (s) => createHash("sha256").update(s).digest("hex");
 const kit = (p) => readFileSync(join(ROOT, p), "utf8");
 // Kit parts are read from the pinned commit itself, so the pin and the written parts always come from one version.

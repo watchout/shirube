@@ -61,11 +61,14 @@ test("legacyParts works over any read source (used by status through the API)", 
   assert.deepEqual(legacyParts((p) => p in files, (p) => files[p], none), [".framework", "AGENTS.md#shirube-v3-runtime"]);
 });
 test("check lists active entries that still call removed parts (PR36 §2.1)", () => {
-  const dir = consumer({ "CLAUDE.md": "x\n", ".claude/settings.json": '{"hooks":{"PreToolUse":[{"command":".claude/hooks/pre-code-gate.sh"}]}}', ".claude/skills/implement/SKILL.md": "check .framework/gates.json", ".claude/hooks/post-task.sh": "bash .claude/hooks/framework-runner.sh" });
+  const dir = consumer({ "CLAUDE.md": "x\n", ".claude/settings.json": '{"hooks":{"PreToolUse":[{"command":".claude/hooks/pre-code-gate.sh"}]}}', ".claude/skills/implement/SKILL.md": "check .framework/gates.json", ".claude/hooks/post-task.sh": "bash .claude/hooks/framework-runner.sh",
+    ".codex/instructions.md": "read .framework/gates.json", ".agents/skills/shirube-v3-runtime/SKILL.md": "run .shirube/runtime/rapid-lite", ".claude/agents/shirube-v3-check.md": "merge-authority" });
   apply({ target: dir, commit: A, protected: "none" });
   const r = check({ target: dir });
   assert.equal(r.verdict, "DRIFT");
-  assert.deepEqual(r.stale_refs.sort(), [".claude/hooks/post-task.sh -> framework-runner", ".claude/settings.json -> pre-code-gate", ".claude/skills/implement/SKILL.md -> .framework"].sort());
+  assert.deepEqual(r.stale_refs.sort(), [".claude/hooks/post-task.sh -> framework-runner", ".claude/settings.json -> pre-code-gate", ".claude/skills/implement/SKILL.md -> .framework",
+    ".codex/instructions.md -> .framework", ".agents/skills/shirube-v3-runtime/SKILL.md -> .shirube/runtime", ".agents/skills/shirube-v3-runtime/SKILL.md -> rapid-lite",
+    ".claude/agents/shirube-v3-check.md -> merge-authority"].sort());
 });
 test("apply needs the repo's protected paths explicitly and records adoption time (ARC A, C)", () => {
   assert.throws(() => apply({ target: consumer({}), commit: A }), /--protected is required/);
