@@ -9,6 +9,9 @@
 # example one that posts its own `sds-gate` success) touches .github/workflows/**, so the gate reports it as effective R4
 # and the merging seat reads this run's JSON, not the status colour. Remaining gaps: a ruleset required workflow pinned by
 # SHA (Owner, Q-SDS-RULESET-20261008) and an Owner-only account for approvals.
+# A receipt can lapse without a new head (review deleted, base moved, request or review on another issue). The caller
+# re-runs on PR comment deletion; for the other cases the merging seat re-runs the latest sds-gate run immediately before
+# merging and uses only a result that started after the last change to the request, the review and the base.
 name: sds-gate
 
 on:
@@ -57,12 +60,16 @@ jobs:
           REPO: ${{ github.repository }}
           PR: ${{ inputs.pr }}
         run: |
-          set -uo pipefail
+          # Runs under the runner's bash -e: a FAIL from the gate is captured, never ends the step before the status.
+          set -euo pipefail
           head="$(gh api "repos/$REPO/pulls/$PR" --jq .head.sha)"
-          result="$(node "$SHIRUBE_TOOLS/scripts/sds/gate.mjs" --repo "$REPO" --pr "$PR" --head "$head")"; code=$?
+          test -n "$head"
+          code=0
+          result="$(node "$SHIRUBE_TOOLS/scripts/sds/gate.mjs" --repo "$REPO" --pr "$PR" --head "$head")" || code=$?
           echo "$result"
           state=success; [ "$code" -eq 0 ] || state=failure
-          desc="$(printf '%s' "$result" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const r=JSON.parse(s);process.stdout.write((r.reason||`PASS ${r.risk_class}`).slice(0,140))})')"
+          desc="$(printf '%s' "$result" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const r=JSON.parse(s);process.stdout.write((r.reason||`PASS ${r.risk_class}`).slice(0,140))})')" \
+            || { state=failure; code=1; desc="sds-gate printed no readable result"; }
           gh api "repos/$REPO/statuses/$head" -f state="$state" -f context=sds-gate -f description="$desc" \
             -f target_url="${{ github.server_url }}/$REPO/actions/runs/${{ github.run_id }}" > /dev/null
           exit "$code"

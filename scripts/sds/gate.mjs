@@ -4,12 +4,14 @@
 //   3 R2 and above: the pinned audit-admission checker accepts the audit at the current head
 // Read-only. Run from a pinned shirube commit, never from the PR head. It does not check Owner approval (§7).
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { matchesAny, parseArgs } from "../hygiene/lib.mjs";
 import { verifyAudit } from "../hygiene/audit-admission.mjs";
 
 const RISKS = ["R0", "R1", "R2", "R3", "R4"];
-export const DEFAULT_PROTECTED = [".github/workflows/**", ".shirube/**", "CODEOWNERS", ".github/CODEOWNERS"];
+// Every location GitHub reads CODEOWNERS from (root, .github/, docs/) is protected.
+export const DEFAULT_PROTECTED = [".github/workflows/**", ".shirube/**", "CODEOWNERS", ".github/CODEOWNERS", "docs/CODEOWNERS"];
 function github(path) {
   const body = execFileSync("gh", ["api", path], { encoding: "utf8", timeout: 20000, maxBuffer: 8000000 });
   return path.endsWith("/logs") ? body : JSON.parse(body);
@@ -55,7 +57,10 @@ function audited(pr, ctx, api, now, verify) {
   need(a.request && a.request_sha256 && a.review, "3 audit: R2+ needs audit.request, audit.request_sha256 and audit.review");
   const receipt = verify({ request: a.request, sha256: a.request_sha256, review: a.review }, api, now);
   const m = /^https:\/\/github\.com\/(watchout\/[\w.-]+)\/(?:issues|pull)\/\d+#issuecomment-(\d+)$/.exec(a.request);
-  const request = JSON.parse(api(`repos/${m[1]}/issues/comments/${m[2]}`).body.match(/^```json\r?\n([\s\S]*?)^```/m)[1]);
+  // The binding is read only from a body whose SHA-256 is the digest the checker accepted.
+  const body = api(`repos/${m[1]}/issues/comments/${m[2]}`).body;
+  need(createHash("sha256").update(body).digest("hex") === a.request_sha256, "3 audit: the request changed after the receipt was accepted");
+  const request = JSON.parse(body.match(/^```json\r?\n([\s\S]*?)^```/m)[1]);
   const bound = request.targets.some((t) => t.repo === ctx.repo && t.pr === ctx.pr && t.head === ctx.head);
   need(receipt.verdict === "RECEIPT_ACCEPTED" && bound, "3 audit: the accepted audit does not name this PR at this head");
 }
@@ -66,7 +71,7 @@ export function gate({ repo, pr: number, head }, api = github, now = Date.now(),
   const pr = block(p.body);
   const declared = risk(p, pr);
   const actual = files(repo, ctx.pr, api);
-  const paths = actual.map((f) => f.path);
+  const paths = [...new Set(actual.flatMap((f) => (f.from ? [f.from, f.path] : [f.path])))]; // a rename declares both paths
   need(JSON.stringify([...paths].sort()) === JSON.stringify([...pr.changed_paths].sort()), "2 changed paths: the block differs from the PR diff");
   const guarded = protectedPaths(ctx, api);
   const protectedTouched = actual.some((f) => [f.path, f.from].some((x) => x && matchesAny(x, guarded))); // renames count both sides
