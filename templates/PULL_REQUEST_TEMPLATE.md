@@ -11,21 +11,18 @@
 - 採用版: <!-- policy commit + declaration reference the repository adopts -->
 - lifecycle_ref: <!-- adopted procedure commit + applicable sections/reused evidence; candidate: https://github.com/watchout/shirube/blob/7fa597393d32738a548d9d882b6b930689b96a60/docs/process/ai-dlc.md (requires audit/adoption) -->
 
-## Machine-readable facts (sds-preflight reads exactly one block like this; docs/sds/distribution.md §4)
+## Machine-readable facts (sds-gate reads exactly one block like this; docs/sds/distribution.md §4)
 
 ```json sds-pr
 {
   "schema": "sds-pr/1",
   "risk_class": "R1",
-  "control_source_ref": { "url": "https://github.com/watchout/<repo>/issues/<n>#issuecomment-<id>", "sha256": "<sha256 of that comment body>" },
   "changed_paths": ["<every path in the diff>"],
-  "forbidden_paths": ["<globs this change must not touch>"],
-  "audit": { "request": "<R2+: request comment URL>", "request_sha256": "<request body sha256>", "review": "<review comment URL>" },
-  "owner_decision": "<R3/R4 or protected path: owner decision comment URL with exact_head>"
+  "audit": { "request": "<R2+: request comment URL>", "request_sha256": "<request body sha256>", "review": "<review comment URL>" }
 }
 ```
 
-Delete `audit` below R2 and `owner_decision` when not required. Protected paths come from `.shirube/sds-pin.json` on the base branch, not from this block.
+Also set exactly one label `risk:R0`..`risk:R4` equal to `risk_class`. Delete `audit` below R2. A change to a protected path (`.shirube/sds-pin.json` on the base branch) counts as R4. sds-gate does not check Owner approval: for R3/R4 the merging seat confirms the owner decision for the exact head before merging.
 
 ## The four questions (anti-bloat v5 §9)
 
