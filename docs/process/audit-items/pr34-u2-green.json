@@ -1,0 +1,13 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@d34b31e98df522c463d5cafb7c17e0beece33fb2/docs/sds/audit-method.md#3",
+  "scope": "Shirube PR34 の U2 継続処理の実装（MOCK の ports に対する Green）。設計は PR35 head 207d426f31f1ef76a7ce8294e32c72ca20bb5da1 の §3〜§9。実 DB・CLI・LaunchAgent への接続、実利用の受入、merge は対象外",
+  "items": [
+    {"id": "G1", "criterion": "設計への適合: src/progression/continuation.mjs が、契約 docs/design/shirube-v1-progression-contract.md @5be3527682c28982ff3475abc793771dcb091859 の PC-01〜04 と、設計 PR35 @207d426f §3〜§9 の状態の遷移・保存の順序・照会の順序のとおりに動き、設計に無い振る舞い（推測での開始、照会なしの再送、進行宣言だけでの開始扱いなど）を足していないか。"},
+    {"id": "G2", "criterion": "Red から Green の有効性: Red で assertion により失敗していた試験が、実装の追加によって通っていて、期待値を緩めて通していないか。監査済みの PC-02 の assertion を変えた箇所は、設計の根拠があり、検出力を下げていないか（変更前後で、誤った実装がそれぞれ落ちるかを示す）。"},
+    {"id": "G3", "criterion": "停止位置ごとの回復: 設計 §9 の停止位置（送付の前、送付が受理された後で結果を保存する前、など）ごとに、回復が送り直しの前に必ず照会することを試験が確かめ、照会せずに再送する実装や送付中を保存しない実装で、その試験が落ちるか。"},
+    {"id": "G4", "criterion": "MOCK の境界: store・executor・clock が MOCK であることが試験と文書で明示され、MOCK での成功を実 DB・実 CLI・実利用での成功として扱っていないか。実接続の段階が別に残っていることが示されているか。"},
+    {"id": "G5", "criterion": "範囲: 変更が src/progression/、tests/u2/、package.json の test の行、監査項目の文書に閉じ、CI の workflow・保護面・依存を変えていないか。"},
+    {"id": "G6", "criterion": "実行の証拠: CI の test job が、統合した commit で U2 の試験を含む npm test を実行して通っていることを、job log の該当行で示せるか。件数は job log の実測で確かめ、文書に書かれた数を前提にしない。"}
+  ]
+}
