@@ -1,0 +1,21 @@
+{
+  "schema": "sds-audit-items/1",
+  "items": [
+    {
+      "id": "T1",
+      "criterion": "期待値の出所: PC-01〜04の各試験の期待値が、論理契約 docs/design/shirube-v1-progression-contract.md @5be3527682c28982ff3475abc793771dcb091859 の§3・§5・§7の表から取られているか。仮置き実装の出力・作者の推測・fixtureの都合に合わせた期待値、契約にない条件の追加、契約の条件の省略がないか。"
+    },
+    {
+      "id": "T2",
+      "criterion": "Redの検出力: Node 22で npm run test:u2 を実行し、9件中7件がassertion（前提assertionを含む）で失敗し、失敗理由がPCの描く欠陥（次行動の記録・送付・照会・回復がない）に対応しているか。import失敗・runner未導入・環境不備・試験一覧だけをRedとして数えていないか。継続処理を壊すと正例が失敗する作りか。"
+    },
+    {
+      "id": "T3",
+      "criterion": "通過する2件の扱い: PC-01の負例とPC-03の二重起動なしが、何もしない仮置きで通ることを理由にRedへ数えない扱いが妥当か。過剰な開始・二重起動を検出する負例として、実装後に意味のある失敗条件を持っているか。"
+    },
+    {
+      "id": "T4",
+      "criterion": "範囲と表示: 試験が仮定するports（store・executor・clock、record/tick/recover/status）とfixture値が契約の範囲を超えて詳細設計を先取り・確定扱いしていないか。MOCKの結果を実PostgreSQL・共通契約・CLI/AUN実行の受入として扱っていないか。Green前に必要な詳細設計監査と実接続契約がPR本文で明示されているか。"
+    }
+  ]
+}
