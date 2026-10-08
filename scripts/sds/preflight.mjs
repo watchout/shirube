@@ -9,7 +9,7 @@ import { verifyAudit } from "../hygiene/audit-admission.mjs";
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const digest = (s) => createHash("sha256").update(s).digest("hex");
 const RISKS = ["R0", "R1", "R2", "R3", "R4"];
-const DEFAULT_PROTECTED = [".github/workflows/**", ".shirube/**", "CODEOWNERS", ".github/CODEOWNERS"];
+export const DEFAULT_PROTECTED = [".github/workflows/**", ".shirube/**", "CODEOWNERS", ".github/CODEOWNERS"];
 const COMMENT = /^https:\/\/github\.com\/(watchout\/[\w.-]+)\/(?:issues|pull)\/\d+#issuecomment-(\d+)$/;
 function github(path) {
   const body = execFileSync("gh", ["api", path], { encoding: "utf8", timeout: 20000, maxBuffer: 8000000 });
