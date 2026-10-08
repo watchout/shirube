@@ -18,9 +18,9 @@ const PIN = ".shirube/sds-pin.json";
 const BLOCK = /<!-- (?:sds-v2|shirube-v3-runtime):start -->[\s\S]*?<!-- (?:sds-v2|shirube-v3-runtime):end -->\n?/g;
 // Removed parts (docs/sds/distribution.md §2): fixed paths, V3 state files under .shirube/ by name, and old hooks.
 const LEGACY = [".shirube/runtime", ".github/workflows/merge-authority.yml", ".github/workflows/shirube-rapid-lite-gates-report.yml", ".framework", ".shirube/profiles"];
-const V3_STATE = /^(execution-context|lifecycle-state|control-state-completeness|enforcement-policy|route-policy|repo-spec|framework-lock|adoption-intake|existing-state-scan|v3-normalization|open-pr-inventory|pr-body-refs)(\.|$)/;
+const V3_STATE = /^(?:shirube-)?(execution-context|lifecycle-state|control-state-completeness|enforcement-policy|route-policy|repo-spec|framework-lock|adoption-intake|existing-state-scan|v3-normalization|open-pr-inventory|pr-body-refs)(\.|$)/;
 const OLD_HOOK = /^(pre-code-gate|framework-runner|framework-mode-check|gate-[\w-]+|skill-tracker)\.sh$/;
-const REMOVED_REFS = [".shirube/runtime", ".framework", "pre-code-gate", "framework-runner", "framework-mode-check", "merge-authority", "rapid-lite"];
+const REMOVED_REFS = [".shirube/runtime", ".framework", "pre-code-gate", "framework-runner", "framework-mode-check", "skill-tracker", "hooks/gate-", "merge-authority", "rapid-lite"];
 // Active entry points (docs/sds/distribution.md §2.1); directories are walked recursively.
 const ENTRIES = [".claude/settings.json", ".claude/skills", ".claude/hooks", ".claude/agents", ".agents/skills/shirube-v3-runtime", ".codex", ".github/workflows", "CLAUDE.md", "AGENTS.md"];
 const digest = (s) => createHash("sha256").update(s).digest("hex");
@@ -67,8 +67,10 @@ export function apply({ target, commit, protected: prot, adoption, "adoption-sha
   const write = (p, s) => { mkdirSync(dirname(join(target, p)), { recursive: true }); writeFileSync(join(target, p), s); written.push(p); };
   for (const [p, s] of Object.entries(files)) write(p, s);
   const docs = ["CLAUDE.md", "AGENTS.md"].filter((p) => existsSync(join(target, p)));
-  for (const p of docs.length ? docs : ["AGENTS.md"]) write(p, withBlock(existsSync(join(target, p)) ? readFileSync(join(target, p), "utf8") : "", block));
-  const pin = { schema: "sds-pin/1", sds_commit: commit, kit_version: KIT_VERSION, files: Object.fromEntries(Object.entries(files).map(([p, s]) => [p, digest(s)])), protected_paths: protectedPaths, adoption: adopted };
+  const instructions = docs.length ? docs : ["AGENTS.md"];
+  for (const p of instructions) write(p, withBlock(existsSync(join(target, p)) ? readFileSync(join(target, p), "utf8") : "", block));
+  const pin = { schema: "sds-pin/1", sds_commit: commit, kit_version: KIT_VERSION, files: Object.fromEntries(Object.entries(files).map(([p, s]) => [p, digest(s)])),
+    instructions, protected_paths: protectedPaths, adoption: adopted };
   write(PIN, `${JSON.stringify(pin, null, 2)}\n`);
   return { command: "apply", sds_commit: commit, written, adoption: adopted ? "RECORDED" : "NOT_RECORDED" };
 }
@@ -86,7 +88,11 @@ export function legacyParts(exists, read, list) {
 function pinFindings(pin, exists, read, source) {
   const findings = Object.entries(pin.files).filter(([p, sha]) => !exists(p) || digest(read(p)) !== sha).map(([p]) => `${p} differs from the pin`);
   const { block } = render(pin.sds_commit, source);
-  for (const p of ["CLAUDE.md", "AGENTS.md"]) if (exists(p) && !read(p).includes(block)) findings.push(`${p} lacks the pinned SDS-V2 block`);
+  // The instruction files the kit wrote must still exist and carry the block (older pins: whichever exist).
+  for (const p of pin.instructions ?? ["CLAUDE.md", "AGENTS.md"].filter(exists)) {
+    if (!exists(p)) findings.push(`${p} (instruction file written by the kit) is missing`);
+    else if (!read(p).includes(block)) findings.push(`${p} lacks the pinned SDS-V2 block`);
+  }
   return findings;
 }
 function walk(root, p) {
@@ -121,14 +127,21 @@ function remote(api, repo) {
   return { errors, get, read, list: (p) => (get(p) ?? []).map((f) => f.name) };
 }
 const pinnedDigests = (pin, get, read) => (pin ? Object.entries(pin.files ?? {}).every(([p, sha]) => get(p) && digest(read(p)) === sha) : null);
-// Every shirube reusable workflow a repo calls (any *.yml / *.yaml) must use the pinned commit; null when it calls none.
+// Every shirube reusable workflow a repo calls (any *.yml / *.yaml) must use the pinned commit; a branch or tag ref
+// (e.g. @main) never matches. null when it calls none.
 function usesMatch(pin, get, read) {
   const workflows = (get(".github/workflows") ?? []).filter((f) => /\.ya?ml$/.test(f.name)).map((f) => read(f.path)).join("\n");
-  const uses = [...workflows.matchAll(/watchout\/shirube\/\.github\/workflows\/[\w.-]+@([a-f0-9]{40})/g)].map((m) => m[1]);
+  const uses = [...workflows.matchAll(/watchout\/shirube\/\.github\/workflows\/[\w.-]+@([^\s"'#]+)/g)].map((m) => m[1]);
   return uses.length ? uses.every((sha) => sha === pin?.sds_commit) : null;
 }
+const latestFields = (pin, latest) => (latest
+  ? { latest_adopted: latest, up_to_date: pin?.sds_commit === latest }
+  : { latest_adopted: null, up_to_date: null, latest_adopted_reason: "not given: pass --latest <commit of the latest adoption record>" });
 // Read-only (GET only). A 404 means "absent"; any other failure is reported per repo, never read as "absent".
-export function status(api = gh, consumers = JSON.parse(kit("docs/sds/consumers.json"))) {
+// latest: the shirube commit of the latest adoption record (the seat passes --latest from the Owner's adoption record;
+// the kit keeps no registry of adoptions). Without it, latest_adopted is null and the output says so.
+export function status(api = gh, consumers = JSON.parse(kit("docs/sds/consumers.json")), latest = undefined) {
+  need(latest === undefined || /^[a-f0-9]{40}$/.test(latest), "--latest must be a 40-hex shirube commit");
   return consumers.map(({ repo }) => {
     const { errors, get, read, list } = remote(api, repo);
     const pin = get(PIN) ? JSON.parse(read(PIN)) : null;
@@ -136,13 +149,13 @@ export function status(api = gh, consumers = JSON.parse(kit("docs/sds/consumers.
     const digest_match = pinnedDigests(pin, get, read);
     const legacy = legacyParts((p) => get(p) !== null, read, list);
     return { repo, verdict: errors.length ? "UNKNOWN" : "READ", sds_commit: pin?.sds_commit ?? null, kit_version: pin?.kit_version ?? null,
-      adoption: pin?.adoption ?? null, digest_match, hygiene_pin_match, legacy, errors };
+      adoption: pin?.adoption ?? null, ...latestFields(pin, latest), digest_match, hygiene_pin_match, legacy, errors };
   });
 }
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const [command, ...rest] = process.argv.slice(2);
   const args = parseArgs(rest);
-  const run = { apply: () => apply(args), upgrade: () => apply(args), check: () => check(args), status: () => status() }[command];
+  const run = { apply: () => apply(args), upgrade: () => apply(args), check: () => check(args), status: () => status(gh, undefined, args.latest) }[command];
   try {
     need(run, "usage: kit.mjs apply|upgrade|check|status ...");
     const out = run();

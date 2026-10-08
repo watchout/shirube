@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -137,4 +137,57 @@ test("status reports the pinned files' digests and adoption, and an API failure 
   assert.equal(r.digest_match, false); assert.deepEqual(r.adoption, { ref: "r" });
   files["a.md"] = "kit";
   assert.equal(status(api, [{ repo: "watchout/x" }])[0].digest_match, true);
+});
+
+// Audit 6055476241 F01-F05.
+test("F01/F05: a missing instruction file or a removed block is DRIFT", () => {
+  const dir = consumer({ "AGENTS.md": "# A\n" });
+  apply({ target: dir, commit: A, protected: "none" });
+  assert.deepEqual(JSON.parse(read(dir, ".shirube/sds-pin.json")).instructions, ["AGENTS.md"]);
+  writeFileSync(join(dir, "AGENTS.md"), "# A\n");
+  assert.deepEqual(check({ target: dir }).findings, ["AGENTS.md lacks the pinned SDS-V2 block"]);
+  rmSync(join(dir, "AGENTS.md"));
+  assert.deepEqual(check({ target: dir }).findings, ["AGENTS.md (instruction file written by the kit) is missing"]);
+});
+test("F02: calls to removed hooks and the shirube- prefixed V3 state files are found", () => {
+  const dir = consumer({ "CLAUDE.md": "x\n", ".claude/settings.json": '{"hooks":[{"command":"bash .claude/hooks/skill-tracker.sh"},{"command":".claude/hooks/gate-quality.sh"}]}',
+    ".shirube/shirube-framework-lock.yaml": "", ".github/workflows/sds-gate.yml": "uses: x/sds-gate.yml@y" });
+  apply({ target: dir, commit: A, protected: "none" });
+  const r = check({ target: dir });
+  assert.deepEqual(r.stale_refs.sort(), [".claude/settings.json -> hooks/gate-", ".claude/settings.json -> skill-tracker"]);
+  assert.ok(r.legacy.includes(".shirube/shirube-framework-lock.yaml"));
+});
+test("F03: a branch or tag ref to a shirube workflow is not a match", () => {
+  const sha = "1".repeat(40);
+  const run = (refs) => {
+    const files = { ".shirube/sds-pin.json": JSON.stringify({ sds_commit: sha, files: {} }) };
+    refs.forEach((r, i) => { files[`.github/workflows/w${i}.yaml`] = `uses: watchout/shirube/.github/workflows/hygiene.yml@${r}`; });
+    const api = (path) => {
+      const p = path.replace(/^repos\/watchout\/x\/contents\//, "");
+      if (p === ".github/workflows") return Object.keys(files).filter((f) => f.startsWith(".github/workflows/")).map((f) => ({ name: f.split("/").pop(), path: f }));
+      if (!(p in files)) throw new Error("(HTTP 404)");
+      return { content: Buffer.from(files[p]).toString("base64") };
+    };
+    return status(api, [{ repo: "watchout/x" }])[0].hygiene_pin_match;
+  };
+  assert.equal(run([sha, sha]), true);
+  assert.equal(run([sha, "main"]), false);
+  assert.equal(run([sha, "v1"]), false);
+  assert.equal(run([]), null);
+});
+test("F04: status reports the latest adopted version when given, and says why when not", () => {
+  const files = { ".shirube/sds-pin.json": JSON.stringify({ sds_commit: A, files: {} }) };
+  const api = (path) => { const f = files[path.replace(/^repos\/watchout\/x\/contents\//, "")]; if (f === undefined) throw new Error("(HTTP 404)"); return { content: Buffer.from(f).toString("base64") }; };
+  const none = status(api, [{ repo: "watchout/x" }])[0];
+  assert.equal(none.latest_adopted, null); assert.match(none.latest_adopted_reason, /--latest/);
+  assert.equal(status(api, [{ repo: "watchout/x" }], B)[0].up_to_date, false);
+  assert.equal(status(api, [{ repo: "watchout/x" }], A)[0].up_to_date, true);
+  assert.throws(() => status(api, [], "main"), /40-hex/);
+});
+test("F05: an omitted --adopted-at records the time of apply", () => {
+  const dir = consumer({});
+  const before = Date.now();
+  apply({ target: dir, commit: A, protected: "none", adoption: "https://github.com/watchout/x/issues/1#issuecomment-2", "adoption-sha256": "f".repeat(64) });
+  const at = Date.parse(JSON.parse(read(dir, ".shirube/sds-pin.json")).adoption.adopted_at);
+  assert.ok(at >= before - 1000 && at <= Date.now() + 1000, "adopted_at is the apply time");
 });
