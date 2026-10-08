@@ -26,13 +26,22 @@ function files(repo, pr, api) {
   const out = [];
   for (let page = 1; ; page += 1) {
     const batch = api(`repos/${repo}/pulls/${pr}/files?per_page=100&page=${page}`);
-    out.push(...batch.map((f) => f.filename));
+    out.push(...batch.map((f) => ({ path: f.filename, from: f.previous_filename })));
     if (batch.length < 100) return out;
   }
 }
+// The kit's own paths always stay protected; the base pin can only add to them. Only a missing pin
+// (HTTP 404) falls back to the defaults; any other read or parse failure fails closed.
 function protectedPaths(ctx, api) {
-  try { return JSON.parse(Buffer.from(api(`repos/${ctx.repo}/contents/.shirube/sds-pin.json?ref=${ctx.base}`).content, "base64").toString("utf8")).protected_paths ?? DEFAULT_PROTECTED; }
-  catch { return DEFAULT_PROTECTED; } // trusted base only, never the PR
+  let pin;
+  try { pin = api(`repos/${ctx.repo}/contents/.shirube/sds-pin.json?ref=${ctx.base}`); } // trusted base only
+  catch (error) {
+    need(/\(HTTP 404\)|\b404\b/.test(error.message), `protected paths: the base pin could not be read (${error.message})`);
+    return DEFAULT_PROTECTED;
+  }
+  const extra = JSON.parse(Buffer.from(pin.content, "base64").toString("utf8")).protected_paths ?? [];
+  need(Array.isArray(extra), "protected paths: the base pin's protected_paths must be a list");
+  return [...DEFAULT_PROTECTED, ...extra];
 }
 function risk(p, pr) {
   const labels = (p.labels ?? []).map((l) => l.name).filter((n) => /^risk:R[0-4]$/.test(n));
@@ -41,29 +50,34 @@ function risk(p, pr) {
   need(pr.risk_class === label, `1 risk_class: label ${label} differs from the block's ${pr.risk_class}`);
   return label;
 }
-function audited(pr, ctx, api, now) {
+function audited(pr, ctx, api, now, verify) {
   const a = pr.audit ?? {};
   need(a.request && a.request_sha256 && a.review, "3 audit: R2+ needs audit.request, audit.request_sha256 and audit.review");
-  const receipt = verifyAudit({ request: a.request, sha256: a.request_sha256, review: a.review }, api, now);
+  const receipt = verify({ request: a.request, sha256: a.request_sha256, review: a.review }, api, now);
   const m = /^https:\/\/github\.com\/(watchout\/[\w.-]+)\/(?:issues|pull)\/\d+#issuecomment-(\d+)$/.exec(a.request);
   const request = JSON.parse(api(`repos/${m[1]}/issues/comments/${m[2]}`).body.match(/^```json\r?\n([\s\S]*?)^```/m)[1]);
   const bound = request.targets.some((t) => t.repo === ctx.repo && t.pr === ctx.pr && t.head === ctx.head);
   need(receipt.verdict === "RECEIPT_ACCEPTED" && bound, "3 audit: the accepted audit does not name this PR at this head");
 }
-export function gate({ repo, pr: number }, api = github, now = Date.now()) {
+export function gate({ repo, pr: number, head }, api = github, now = Date.now(), verify = verifyAudit) {
   const p = api(`repos/${repo}/pulls/${number}`);
+  need(!head || p.head.sha === head, `the PR head moved from ${head} to ${p.head.sha}; the newer run reports it`);
   const ctx = { repo, pr: Number(number), head: p.head.sha, base: p.base.sha };
   const pr = block(p.body);
   const declared = risk(p, pr);
   const actual = files(repo, ctx.pr, api);
-  need(JSON.stringify([...actual].sort()) === JSON.stringify([...pr.changed_paths].sort()), "2 changed paths: the block differs from the PR diff");
-  const protectedTouched = actual.some((f) => matchesAny(f, protectedPaths(ctx, api)));
+  const paths = actual.map((f) => f.path);
+  need(JSON.stringify([...paths].sort()) === JSON.stringify([...pr.changed_paths].sort()), "2 changed paths: the block differs from the PR diff");
+  const guarded = protectedPaths(ctx, api);
+  const protectedTouched = actual.some((f) => [f.path, f.from].some((x) => x && matchesAny(x, guarded))); // renames count both sides
   const effective = protectedTouched ? "R4" : declared;
-  if (RISKS.indexOf(effective) >= 2) audited(pr, ctx, api, now);
+  if (RISKS.indexOf(effective) >= 2) audited(pr, ctx, api, now, verify);
   return { check: "sds-gate", verdict: "PASS", head: ctx.head, risk_class: declared, effective_risk: effective, protected_touched: protectedTouched, owner_approval: "NOT_CHECKED_BY_MACHINE", authorization: "NONE" };
 }
+export const failure = (error, args) =>
+  ({ check: "sds-gate", verdict: "FAIL", head: args.head ?? null, reason: error.message, owner_approval: "NOT_CHECKED_BY_MACHINE", authorization: "NONE" });
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const args = parseArgs(process.argv.slice(2));
   try { process.stdout.write(`${JSON.stringify(gate(args))}\n`); }
-  catch (error) { process.stdout.write(`${JSON.stringify({ check: "sds-gate", verdict: "FAIL", reason: error.message, authorization: "NONE" })}\n`); process.exitCode = 1; }
+  catch (error) { process.stdout.write(`${JSON.stringify(failure(error, args))}\n`); process.exitCode = 1; }
 }

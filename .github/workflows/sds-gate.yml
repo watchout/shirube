@@ -23,9 +23,13 @@ env:
 jobs:
   sds-gate:
     runs-on: ubuntu-latest
+    # One run per PR: a newer event cancels the older run, so an old PASS cannot land after a newer FAIL.
+    concurrency:
+      group: sds-gate-${{ github.repository }}-${{ inputs.pr }}
+      cancel-in-progress: true
     steps:
       - name: Checkout shirube at the reusable workflow's own commit (callee identity)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: ${{ job.workflow_repository }}
           ref: ${{ job.workflow_sha }}
@@ -38,7 +42,7 @@ jobs:
           test "${{ job.workflow_repository }}" = "watchout/shirube"
           test "$(git -C "$SHIRUBE_TOOLS" rev-parse HEAD)" = "${{ job.workflow_sha }}"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
 
@@ -50,7 +54,7 @@ jobs:
         run: |
           set -uo pipefail
           head="$(gh api "repos/$REPO/pulls/$PR" --jq .head.sha)"
-          result="$(node "$SHIRUBE_TOOLS/scripts/sds/gate.mjs" --repo "$REPO" --pr "$PR")"; code=$?
+          result="$(node "$SHIRUBE_TOOLS/scripts/sds/gate.mjs" --repo "$REPO" --pr "$PR" --head "$head")"; code=$?
           echo "$result"
           state=success; [ "$code" -eq 0 ] || state=failure
           desc="$(printf '%s' "$result" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{const r=JSON.parse(s);process.stdout.write((r.reason||`PASS ${r.risk_class}`).slice(0,140))})')"
