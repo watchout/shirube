@@ -105,7 +105,7 @@ restoreは共通と導入済み製品を整合したsnapshotから隔離環境�
 
 - [service/human同時検証の既回答](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6026554274)は、本人検証側が構築する`human_subject`と保存serviceを別に照合する案。回答待ちという旧表示は、この論理回答については解消した。物理接続の採択・実効拒否は解消していない。
 - [AUN向け物理案](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6028089519)の`subject_bindings`はbinding/世代を持つ対象集合。[席予約の追補](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6032841771)はbinding未割当のseatを同じTXで保護する入力。どちらもhumanの本人回答を保存するための接続を示したものではない。AUN側の案を欠陥と認定せず、Shirubeの対応範囲を明確にする。
-- 提供側へ確認する差分は、humanの現在性検査を、保存service・回答対象・credential/challenge検証・回答保存と同じ物理接続/TXへ結ぶ呼出形、信頼した構築元、専用入口/必要権限、返す実値、失効との競合順序。共通PrincipalSnapshotの写しだけを本人認証にせず、Shirubeが所有する本人応答の検証責任を保持する。
+- 提供側へ確認する差分は、humanの現在性検査を、保存service・回答対象・challenge行の検査と消費・回答保存と同じ物理接続/TXへ結ぶ呼出形、信頼した構築元、専用入口/必要権限、返す実値、失効との競合順序。credential/challengeの暗号検証はTXの前に行い、その結果をTX内で検査するchallenge行（識別・対象版）へ結ぶ（ARC追補案 https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6037609071 §4）。共通PrincipalSnapshotの写しだけを本人認証にせず、Shirubeが所有する本人応答の検証責任を保持する。
 - humanをdummy bindingへ変換、service参照で代用、共通表への直接SELECT/DML、一般LLM toolへの任意human ID指定で不足を埋めない。共通の署名/型は提供側正本へ固定参照し、Shirube側で独自に発行しない。
 
 | 既存要求/ケースへの具体入力（新IDは追加しない） | 必要な観測 / 残る依存 |
