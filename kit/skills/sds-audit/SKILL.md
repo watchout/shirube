@@ -10,6 +10,9 @@ Pinned standard: the commit in `.shirube/sds-pin.json` (`sds_commit`). Read `doc
 ## 1. Fill the PR block
 Put exactly one fenced block with info string `json sds-pr` in the PR body: `schema: "sds-pr/1"`, `risk_class`, `changed_paths` (every path in the diff), and at R2 and above `audit {request, request_sha256, review}`. Add exactly one label `risk:R0`..`risk:R4` equal to `risk_class`. A protected path (listed in `.shirube/sds-pin.json` on the base branch) makes the change R4.
 
+## 1.1 Kit and pin changes
+Every change under `.shirube/` (the pin, `hygiene-profile.md`) and every workflow change is a protected path, so `sds-gate` treats it as R4: independent audit and the Owner's decision for the exact head. This includes wording-only edits to `hygiene-profile.md`. When applying the kit, pass the repo's own protected paths (`--protected`, e.g. `migrations/**`) — secrets, DB migrations, authority and deploy paths differ per repo and are not in the defaults.
+
 ## 2. Request the audit (R2 and above)
 1. Wait for the PR's CI to finish on the exact head.
 2. Post one comment on the PR with a single canonical JSON block (`JSON.stringify(value, null, 2)`):

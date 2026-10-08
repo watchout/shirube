@@ -1,5 +1,7 @@
 // SDS-V2 kit v0 CLI (docs/sds/distribution.md §3/§5). It never commits, pushes or merges: a seat opens the PR.
-//   apply  --target <consumer checkout> --commit <shirube sha> [--adoption <url> --adoption-sha256 <hex>]  (also upgrade)
+//   apply  --target <checkout> --commit <shirube sha> --protected <comma globs|none> [--adoption <url> --adoption-sha256 <hex> --adopted-at <ISO>]
+//          (also upgrade). --protected lists the repo's own protected paths (secrets, DB migrations, authority, deploy) on top
+//          of the defaults; "none" must be said explicitly so a migration path is never left out by omission.
 //   check  --target <consumer checkout>        compare with .shirube/sds-pin.json and list old Shirube parts
 //   status                                     read every repo in docs/sds/consumers.json through the GitHub API
 import { execFileSync } from "node:child_process";
@@ -33,14 +35,20 @@ function withBlock(text, block) {
   if (BLOCK.test(text)) return text.replace(BLOCK, block);
   return `${text.replace(/\n*$/, "\n\n")}${block}`;
 }
-export function apply({ target, commit, adoption, "adoption-sha256": adoptionSha }) {
+function protectedList(arg) {
+  need(typeof arg === "string" && arg.length > 0, "--protected is required: the repo's protected path globs, comma separated, or none");
+  const extra = arg === "none" ? [] : arg.split(",").map((g) => g.trim()).filter(Boolean);
+  return [...new Set([...DEFAULT_PROTECTED, ...extra])];
+}
+export function apply({ target, commit, protected: prot, adoption, "adoption-sha256": adoptionSha, "adopted-at": adoptedAt }) {
   const { files, block } = render(commit);
+  const protectedPaths = protectedList(prot);
   const written = [];
   const write = (p, s) => { mkdirSync(dirname(join(target, p)), { recursive: true }); writeFileSync(join(target, p), s); written.push(p); };
   for (const [p, s] of Object.entries(files)) write(p, s);
   const docs = ["CLAUDE.md", "AGENTS.md"].filter((p) => existsSync(join(target, p)));
   for (const p of docs.length ? docs : ["AGENTS.md"]) write(p, withBlock(existsSync(join(target, p)) ? readFileSync(join(target, p), "utf8") : "", block));
-  const pin = { schema: "sds-pin/1", sds_commit: commit, kit_version: KIT_VERSION, files: Object.fromEntries(Object.entries(files).map(([p, s]) => [p, digest(s)])), protected_paths: DEFAULT_PROTECTED, adoption: adoption ? { ref: adoption, sha256: adoptionSha ?? null } : null };
+  const pin = { schema: "sds-pin/1", sds_commit: commit, kit_version: KIT_VERSION, files: Object.fromEntries(Object.entries(files).map(([p, s]) => [p, digest(s)])), protected_paths: protectedPaths, adoption: adoption ? { ref: adoption, sha256: adoptionSha ?? null, adopted_at: adoptedAt ?? new Date().toISOString() } : null };
   write(PIN, `${JSON.stringify(pin, null, 2)}\n`);
   return { command: "apply", sds_commit: commit, written };
 }
@@ -76,12 +84,13 @@ export function check({ target }) {
   return { command: "check", verdict: findings.length || legacy.length || stale.length ? "DRIFT" : "OK", sds_commit: pin?.sds_commit ?? null, findings, legacy, stale_refs: stale };
 }
 function gh(path) { return JSON.parse(execFileSync("gh", ["api", path], { encoding: "utf8", timeout: 20000 })); }
-export function status(api = gh) {
-  return JSON.parse(kit("docs/sds/consumers.json")).map(({ repo }) => {
+export function status(api = gh, consumers = JSON.parse(kit("docs/sds/consumers.json"))) {
+  return consumers.map(({ repo }) => {
     const get = (p) => { try { return api(`repos/${repo}/contents/${p}`); } catch { return null; } };
     const read = (p) => Buffer.from(get(p)?.content ?? "", "base64").toString("utf8");
     const pin = get(PIN) ? JSON.parse(read(PIN)) : null;
-    const uses = [...read(".github/workflows/ci.yml").matchAll(/watchout\/shirube\/\.github\/workflows\/[\w.-]+@([a-f0-9]{40})/g)].map((m) => m[1]);
+    const workflows = (get(".github/workflows") ?? []).filter((f) => /\.ya?ml$/.test(f.name)).map((f) => read(f.path)).join("\n");
+    const uses = [...workflows.matchAll(/watchout\/shirube\/\.github\/workflows\/[\w.-]+@([a-f0-9]{40})/g)].map((m) => m[1]);
     const hygiene_pin_match = uses.length ? uses.every((sha) => sha === pin?.sds_commit) : null;
     return { repo, sds_commit: pin?.sds_commit ?? null, kit_version: pin?.kit_version ?? null, hygiene_pin_match, legacy: legacyParts((p) => get(p) !== null, read) };
   });
