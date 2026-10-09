@@ -1,0 +1,35 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@d34b31e98df522c463d5cafb7c17e0beece33fb2/docs/sds/audit-method.md#3",
+  "scope": "Shirube PR44 の監査の受付 checker（scripts/hygiene/audit-admission.mjs）の受理条件の拡張（依頼の後に PR の base が進んだ場合、R2）と、それを説明する docs/sds/audit-method.md §4 の 1 段落、tests/audit-admission.test.mjs の追加分。対象は head af6d2850fd7ef252ba56ea60653c8541e137f304（base 5239fa3b21b3a125ab95542c44bba317a2d5ab0b）と、依頼の時点の監査対象 head。各項目の行番号は af6d2850 での位置として読み、監査対象 head での位置は git diff で引く。要求の出典: [O] https://github.com/watchout/iyasaka-arc/issues/52#issuecomment-6070325816（Owner 判断ボード #94 の回答の suite-lead による転記。OD-GAP-5 の a を始める）、[G] watchout/iyasaka-arc@ebe118fd68b08115c2b8f12bbf4d3d2df3201915/cross-cutting/specs/shirube/SDS-V2-SCALE-GAPS-001.md（ARC の文書。G-07 の節〈L117-124〉と §6 の OD-GAP-5 の行、file sha256 12e951519dd1d658354c67f8e647111b51d500559c59e4a1b478ca254a87d286）、[A] watchout/shirube@5239fa3b21b3a125ab95542c44bba317a2d5ab0b の scripts/hygiene/audit-admission.mjs と docs/sds/audit-method.md（変更前）、[M] method_ref の文書。対象外: branch protection・required checks・workflow の権限、Owner の Mac 上の audit-relay の設定の変更そのもの、進行中の個別の監査の判定、Owner の承認、merge。",
+  "items": [
+    {
+      "id": "BM1",
+      "criterion": "Owner の判断と ARC の推奨との一致。根拠: [O]、[G] の G-07 の「代替案 (a)」と「変える場所」（SDS 本文 §2-2 の意味は変えない）。見る所: git diff 5239fa3b21b3a125ab95542c44bba317a2d5ab0b...af6d2850fd7ef252ba56ea60653c8541e137f304、audit-admission.mjs の targetCheck・baseMoved（af6d2850 の L48-67）。PASS: 次の 4 点をすべて満たす。(a) 受理が広がるのは、依頼の base が PR の現在の base の祖先である場合だけ。(b) CI の試験 merge commit の両親の照合は、依頼の base と head のまま（L111 の照合を緩めていない）。(c) head の一致、PR が open であること、依頼の digest・期限・項目集合の digest など、ほかの受理条件は一つも緩めていない。(d) [G] の (a) より広く受理する経路がない（狭いのは可）。1 つでも欠けると FAIL。"
+    },
+    {
+      "id": "BM2",
+      "criterion": "依頼による明示（opt-in）と、base の branch への束縛。見る所: baseMoved の 1 行目（base_moved.ref の検査）、targetCheck で base が違うときだけ baseMoved を呼ぶ所、試験の「no opt-in in the request」「opt-in without a branch」「the PR was retargeted to another branch」。PASS: (a) 依頼の target に base_moved.ref が無ければ、base が違う依頼は従来どおり拒否される。(b) base_moved.ref が、PR の現在の base の branch 名と一致しないと拒否される（別の branch に付け替えた PR を通さない）。(c) base_moved は依頼の本文（digest で固定される JSON）の中にあり、依頼の後から足せない。反例として、依頼の後に PR の base の branch を付け替えた場合、base_moved を書いていない古い依頼、を探す。"
+    },
+    {
+      "id": "BM3",
+      "criterion": "祖先関係と、変更ファイルの重なりの判定の正しさ。見る所: baseMoved の compare の向き（`${t.base}...${p.base.sha}` と `${t.base}...${t.head}`）と status の判定、previous_filename の扱い、MOVED_GUARD、件数の上限。PASS: (a) compare の向きと status の判定で、依頼の base が現在の base の祖先であることを正しく確かめている（diverged・behind を通さない）。(b) 進んだ側の変更ファイルと PR の変更ファイルの重なりを、改名の前後の名前の両方で見ている。(c) GitHub の compare が返すファイル一覧が切れる場合（300 件）を、通さずに拒否している。(d) MOVED_GUARD が、監査済みの bytes の意味を変えうる変更（CI の定義、checker、依存の定義）を、この repo の実際の配置で覆っている。覆わないもの（例: 下の階層の package.json、別の形式の lockfile、PR の変更ファイルが読み込む別のファイルの変更）が残るなら、audit-method.md の追加段落か PR 本文に、その残りと扱い（例: 統合後の main の CI で見る）が書かれている。書かれていない残りで、監査済みの変更の意味が黙って変わる現実的な経路があれば FAIL。"
+    },
+    {
+      "id": "BM4",
+      "criterion": "受領の記録と、preflight・review の両方の経路。見る所: verifyAudit の notes と movedNote、receipt の組み立て、preflight と review の分岐、試験「a moved base is accepted only on request and the receipt records where it moved」。PASS: (a) base が進んだ依頼を通したときは、preflight でも review（受領）でも、その結果に base_moved（target、from、to、件数）が残る。(b) base が進んでいない依頼の結果の形は、変更前と同じ（base_moved を出さない）。(c) baseMoved が使う読み取りは、ほかの読み取りと同じ api の関数を通る（偽物に差し替えて試験できる。GitHub 以外へ出ない）。(d) 進んだ後の base を使って CI の照合を済ませる、などの抜け道がない。"
+    },
+    {
+      "id": "BM5",
+      "criterion": "試験の検出力。見る所: tests/audit-admission.test.mjs の追加分（moved() と refused の 11 件）、npm test の結果。PASS: (a) 監査席の手で npm test が全件成功する。(b) baseMoved と targetCheck の条件を 1 つずつ壊すと（opt-in の検査、branch 名の一致、status の判定、PR 側の名前、改名前の名前、MOVED_GUARD の各要素、2 つの件数の上限、receipt への記録）、少なくとも 1 件の試験が assertion で落ちる。落ちない条件が 1 つでもあれば、その条件と、足すべき試験を示して FAIL。とくに MOVED_GUARD の package.json（lockfile ではない方）と .github/ の workflow 以外のファイルが試験されているかを見る。(c) 拒否の試験が、意図した理由（base_moved か base changed）で落ちていることを確かめている。"
+    },
+    {
+      "id": "BM6",
+      "criterion": "checker の sha が変わることの扱い。見る所: audit-method.md の追加段落の最後の 2 文、PR 本文の旧/新 sha の説明。PASS: (a) 旧 sha（efed976315b41045d88ea5f9c9841e033d59080eb4ac1fbe9840c08a3bea5b20）を書いた進行中の依頼を、どう検査するか（どの commit の checker の bytes を使うか）が、実行できる形で書かれている。(b) 新しい依頼が新しい sha を書く手順が書かれている。(c) Owner の Mac の audit-relay は checker の sha を固定して照合するので、統合後に設定の更新が要る（更新しないと中継が止まるか、旧 sha の依頼しか通らない）ことが、PR 本文か文書に開示されている。設定の更新そのものは対象外。開示がなければ FAIL。"
+    },
+    {
+      "id": "BM7",
+      "criterion": "範囲・区分・文書と実装の一致。見る所: git diff --stat 5239fa3b21b3a125ab95542c44bba317a2d5ab0b...af6d2850fd7ef252ba56ea60653c8541e137f304、audit-method.md の追加段落と baseMoved の実装。PASS: (a) 変更は scripts/hygiene/audit-admission.mjs・docs/sds/audit-method.md・tests/audit-admission.test.mjs の 3 つだけで、workflow・保護設定・秘密・依存の追加はない。(b) 区分 R2 の宣言と一致する（保護面に触れていない）。(c) 追加段落に書かれた条件（opt-in、祖先、重なりの対象、300 件、拒否の場合、受領への記録、CI の照合の相手）が、実装と 1 つずつ一致し、文書だけにある条件・実装だけにある条件がない。"
+    }
+  ]
+}
