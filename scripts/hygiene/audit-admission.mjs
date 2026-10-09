@@ -49,14 +49,20 @@ function requestChecks(r, c, now) {
 // is provably unrelated (docs/sds/audit-method.md §4). The CI proof below still binds the requested base, so the audited bytes are unchanged.
 const MOVED_GUARD = /^(\.github\/|scripts\/hygiene\/)|(^|\/)(package(-lock)?\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml)$/;
 function baseMoved(t, p, api) {
-  need(nonempty(t.base_moved?.ref) && t.base_moved.ref === p.base.ref, "PR base changed and base_moved is not requested for this base branch");
   const since = api(`repos/${t.repo}/compare/${t.base}...${p.base.sha}`), own = api(`repos/${t.repo}/compare/${t.base}...${t.head}`);
   need(["ahead", "identical"].includes(since.status), "base_moved: the requested base is not an ancestor of the current base");
+  need(["ahead", "identical"].includes(own.status), "base_moved: the PR head does not contain the requested base");
   need([since, own].every((c) => Array.isArray(c.files) && c.files.length < 300), "base_moved: incomplete file list");
   const names = (c) => c.files.flatMap((f) => [f.filename, f.previous_filename]).filter(Boolean), mine = new Set(names(own));
   const hits = names(since).filter((f) => mine.has(f) || MOVED_GUARD.test(f));
   need(hits.length === 0, `base_moved: the move touched files this audit depends on: ${hits.slice(0, 3).join(", ")}`);
   return { target: t.id, from: t.base, to: p.base.sha, moved_files: since.files.length };
+}
+// With base_moved declared, the branch must match whether or not the SHA moved: a same-SHA retarget is still a different base.
+function baseCheck(t, p, api, notes) {
+  const asked = t.base_moved && nonempty(t.base_moved.ref) && t.base_moved.ref === p.base.ref;
+  need(asked || (!t.base_moved && p.base.sha === t.base), "PR base changed and base_moved is not requested for this base branch");
+  if (p.base.sha !== t.base) notes.push(baseMoved(t, p, api));
 }
 const movedNote = (notes) => (notes.length ? { base_moved: notes } : {});
 function targetCheck(t, api, notes = []) {
@@ -64,7 +70,7 @@ function targetCheck(t, api, notes = []) {
   need(/^[a-f0-9]{40}$/.test(t.head) && /^[a-f0-9]{40}$/.test(t.base), "Unpinned target");
   const p = api(`repos/${t.repo}/pulls/${t.pr}`);
   need(p.state === "open" && p.head.sha === t.head, "PR head/base/state changed");
-  if (p.base.sha !== t.base) notes.push(baseMoved(t, p, api));
+  baseCheck(t, p, api, notes);
   const observed = [];
   need(Array.isArray(t.checks), "Required checks must be explicit");
   if (t.checks.length === 0) return observed;
@@ -161,7 +167,9 @@ export function verifyAudit(args, api = github, now = Date.now()) {
   need(Array.isArray(record.blocking_findings) && record.blocking_findings.length === 0, "Open or unspecified blocking findings");
   need(same(record.targets.map((t) => `${t.id}:${t.head}`), r.targets.map((t) => `${t.id}:${t.head}`)), "Reviewed targets differ");
   const refs = itemResults(record, set.items, r.targets, api);
-  for (const t of r.targets) targetCheck(t, api); // Re-observe after reading evidence; later edits require another run.
+  const last = [];
+  for (const t of r.targets) targetCheck(t, api, last); // Re-observe after reading evidence; later edits require another run.
+  need(JSON.stringify(last) === JSON.stringify(notes), "base_moved: the base moved while the review was verified");
   need(digest(comment(args.request, api).body) === requestDigest, "Request edited during verification");
   need(digest(comment(args.review, api).body) === digest(review.body), "Review edited during verification");
   return { ...receipt, verdict: "RECEIPT_ACCEPTED", review: args.review, review_digest: digest(review.body), evidence: refs, authorization: "NONE" };

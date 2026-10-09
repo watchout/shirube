@@ -102,14 +102,14 @@ test("API unavailable and edits during verification cannot pass", () => {
   assert.throws(() => verifyAudit(f.args, api, f.now));
 });
 // OD-GAP-5 (G-07): a request may opt in with `base_moved`, so a base that moved on after the request stays accepted only while the move is provably unrelated.
-function moved(change = () => {}) {
-  const f = fixture(), now = "9".repeat(40), pages = { move: { status: "ahead", files: [{ filename: "docs/other.md" }] }, own: { files: [{ filename: "design.md" }] } };
+function moved(change = () => {}, hook = (api) => api) {
+  const f = fixture(), now = "9".repeat(40), pages = { move: { status: "ahead", files: [{ filename: "docs/other.md" }] }, own: { status: "ahead", files: [{ filename: "design.md" }] } };
   f.request.targets[0].base_moved = { ref: "main" };
   f.pr.base = { sha: now, ref: "main" };
   change(f.request.targets[0], f.pr, pages);
   f.origin.body = json(f.request); f.args.sha256 = hash(f.origin.body); f.record.request_digest = f.args.sha256; f.review.body = json(f.record);
-  const api = (path) => (path.includes(`/compare/${base}...${now}`) ? pages.move : path.includes(`/compare/${base}...${head}`) ? pages.own : f.api(path));
-  return () => verifyAudit(f.args, api, f.now);
+  const api = hook((path) => (path.includes(`/compare/${base}...${head}`) ? pages.own : path.includes(`/compare/${base}...`) ? pages.move : f.api(path)), f);
+  return (extra) => verifyAudit({ ...f.args, ...extra }, api, f.now);
 }
 test("a moved base is accepted only on request and the receipt records where it moved", () => {
   const r = moved()();
@@ -128,6 +128,12 @@ const refused = [
   ["the move touched npm-shrinkwrap.json", (t, pr, p) => p.move.files.push({ filename: "npm-shrinkwrap.json" })],
   ["the move touched a non-workflow file under .github", (t, pr, p) => p.move.files.push({ filename: ".github/CODEOWNERS" })],
   ["the requested base is not an ancestor", (t, pr, p) => { p.move.status = "diverged"; }],
+  ["the requested base is behind the current base's history", (t, pr, p) => { p.move.status = "behind"; }],
+  ["the PR head does not contain the requested base", (t, pr, p) => { p.own.status = "diverged"; }],
+  ["the PR head is behind the requested base", (t, pr, p) => { p.own.status = "behind"; }],
+  ["the PR head's relation to the base is unknown", (t, pr, p) => { delete p.own.status; }],
+  ["the PR renamed a file the move touched", (t, pr, p) => { p.own.files = [{ filename: "new.md", previous_filename: "design.md" }]; p.move.files.push({ filename: "design.md" }); }],
+  ["the PR was retargeted to another branch with the same SHA", (t, pr) => { pr.base = { sha: base, ref: "release" }; }],
   ["the PR was retargeted to another branch", (t, pr) => { pr.base.ref = "release"; }],
   ["the moved file list is truncated", (t, pr, p) => { p.move.files = Array.from({ length: 300 }, (_, i) => ({ filename: `f${i}` })); }],
   ["the PR file list is truncated", (t, pr, p) => { p.own.files = Array.from({ length: 300 }, (_, i) => ({ filename: `g${i}` })); }],
@@ -135,3 +141,16 @@ const refused = [
   ["no opt-in in the request", (t) => { delete t.base_moved; }],
 ];
 for (const [name, change] of refused) test(`moved base refused: ${name}`, () => assert.throws(moved(change), /base_moved|base changed/));
+test("a moved base is recorded in the preflight receipt as well", () => {
+  const r = moved()({ review: undefined, preflight: true });
+  assert.equal(r.verdict, "READY_FOR_REVIEW"); assert.deepEqual(r.base_moved, [{ target: "s", from: base, to: "9".repeat(40), moved_files: 1 }]);
+  assert.equal("base_moved" in verifyAudit({ ...fixture().args, review: undefined, preflight: true }, fixture().api, Date.parse("2026-10-01T02:00:00Z")), false);
+});
+// The last observation decides the receipt: a base that moves while the review is verified is refused, not left out of the record.
+const changesAt = (read, sha) => (api, f) => { let reads = 0; return (path) => { if (path.endsWith("/pulls/21") && ++reads === read) f.pr.base = { sha, ref: "main" }; return api(path); }; };
+test("a base that moves only during the final re-observation is refused", () => {
+  assert.throws(moved((t, pr) => { pr.base = { sha: base, ref: "main" }; }, changesAt(2, "9".repeat(40))), /base_moved|base changed/);
+});
+test("a base that moves again during the final re-observation is refused", () => {
+  assert.throws(moved(() => {}, changesAt(2, "8".repeat(40))), /base_moved|base changed/);
+});
