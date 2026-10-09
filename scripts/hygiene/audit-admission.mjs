@@ -47,14 +47,14 @@ function requestChecks(r, c, now) {
 }
 // A request may opt in with `base_moved: {ref}`: the PR base moved on after the request, which stays acceptable only while the move
 // is provably unrelated (docs/sds/audit-method.md §4). The CI proof below still binds the requested base, so the audited bytes are unchanged.
-const MOVED_GUARD = [".github/", "scripts/hygiene/", "package.json", "package-lock.json"];
+const MOVED_GUARD = /^(\.github\/|scripts\/hygiene\/)|(^|\/)(package(-lock)?\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml)$/;
 function baseMoved(t, p, api) {
   need(nonempty(t.base_moved?.ref) && t.base_moved.ref === p.base.ref, "PR base changed and base_moved is not requested for this base branch");
   const since = api(`repos/${t.repo}/compare/${t.base}...${p.base.sha}`), own = api(`repos/${t.repo}/compare/${t.base}...${t.head}`);
   need(["ahead", "identical"].includes(since.status), "base_moved: the requested base is not an ancestor of the current base");
   need([since, own].every((c) => Array.isArray(c.files) && c.files.length < 300), "base_moved: incomplete file list");
   const names = (c) => c.files.flatMap((f) => [f.filename, f.previous_filename]).filter(Boolean), mine = new Set(names(own));
-  const hits = names(since).filter((f) => mine.has(f) || MOVED_GUARD.some((g) => f.startsWith(g)));
+  const hits = names(since).filter((f) => mine.has(f) || MOVED_GUARD.test(f));
   need(hits.length === 0, `base_moved: the move touched files this audit depends on: ${hits.slice(0, 3).join(", ")}`);
   return { target: t.id, from: t.base, to: p.base.sha, moved_files: since.files.length };
 }
