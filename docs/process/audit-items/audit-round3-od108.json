@@ -1,0 +1,27 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@c0c99481c59aa3eb1a4bc31cce43133e2b800656/docs/sds/audit-method.md#3",
+  "scope": "Shirube の docs/sds/audit-method.md §2 の 6（L27）の 1 段落の変更（R2）と、この項目集合の file の追加。対象は依頼の時点の監査対象 head（base は main c0c99481c59aa3eb1a4bc31cce43133e2b800656）。要求の出典: [O] https://github.com/watchout/iyasaka-arc/issues/52#issuecomment-6074051742（Owner 判断ボード #108 の回答 a の suite-lead による転記。suite も監査の 3 回目までは Owner の個別の許可なし）、[P] https://github.com/watchout/iyasaka-arc/issues/52#issuecomment-6055720316（置き換えられる前の決まり OD-GAP-3 b の転記）、[H] https://github.com/watchout/shirube/issues/6#issuecomment-6074059474（suite-lead の control_handoff。範囲・合格の条件・止まる条件）、[A] watchout/shirube@c0c99481c59aa3eb1a4bc31cce43133e2b800656/docs/sds/audit-method.md（変更前。file sha256 d66d8c23c4e16937945ac0f26105b828eb52b1b3ae2c31852b2561e55386291d）、[M] method_ref の文書。参考: Control 側の同じ決まり Q-AUDIT-ROUNDS-20261008 の記録 https://github.com/watchout/omotenasuai-control/pull/223#issuecomment-6072439730（読めない場合は [O] の前提の段落で足りる）。対象外: 4 回目以降の扱いの変更、ほかの節、checker（scripts/hygiene/audit-admission.mjs）・tests・workflow・.shirube/・kit の変更、進行中の個別の監査の判定、Owner の承認、merge。",
+  "items": [
+    {
+      "id": "AM1",
+      "criterion": "Owner の判断との一致。根拠: [O] の回答 a と「これで決まること」の段落、[H] の Acceptance 1・2。見る所: 監査対象 head の audit-method.md の §2 の 6 の段落と git diff c0c99481c59aa3eb1a4bc31cce43133e2b800656...<head>。PASS: 変更後の文が次の 4 点をすべて満たし、それ以上に緩めていない。(a) 3 回目までは、2 回目に新しい指摘が出た場合も含めて、Owner の個別の許可なしで行える（部分集合であることを 3 回目の条件にしていない）。(b) 3 回目でも未解決が残るときは、論点と次担当を示して停止し Owner に返す。(c)「回数到達を合格にしない」が残る。(d) 各回の独立監査・受領・統合の条件を外していない。4 回目以降の自動の許可、3 回目の結果を待たない合格、Owner に返す条件の削除など、[O] に無い緩和が 1 つでもあれば FAIL。逆に、[O] より厳しい条件（例: 新しい指摘なら 3 回目の前に Owner に返す）が残っていても FAIL"
+    },
+    {
+      "id": "AM2",
+      "criterion": "決まりの置き換えの記録。根拠: [O]、[P]。見る所: §2 の 6 の段落が引く Owner 判断の参照。PASS: (a) 段落が [O]（#108 = a、転記 6074051742）を根拠として引き、その URL が [O] に解決する。(b) 前の決まり OD-GAP-3 b（[P]）を黙って消さず、#108 で置き換えたことが段落の中で読める。(c) [O]・[P] が Owner 本人の GitHub 投稿ではなく suite-lead による転記であることと矛盾する書き方（Owner の投稿と読ませる表現）が無い。(d) Control の Q-AUDIT-ROUNDS-20261008 に触れる場合、それが Control 側の記録であり、suite の根拠は [O] であることが読める。1 つでも欠けると FAIL"
+    },
+    {
+      "id": "AM3",
+      "criterion": "2 回目の返却での部分集合の記録の扱い。根拠: [H] の non-scope（記録の義務は残してよい）、[A] の L27。見る所: 変更後の段落の「部分集合」に触れる文と、git grep -n '部分集合' の結果。PASS: 次のどちらかで、文から一通りに読める。(a) 監査席が 2 回目の返却に部分集合かどうかを記録する決まりを残し、それが 3 回目の可否の条件ではなく記録であることが明示されている。(b) 記録の決まりを外し、shirube の main の中にそれを前提にした記述（部分集合の定義・記録者の指定など）が残っていない。記録が 3 回目の条件のように読める文が残る場合、または外したのに前提の記述が残る場合は FAIL"
+    },
+    {
+      "id": "AM4",
+      "criterion": "変更の範囲と、ほかの記述との整合。根拠: [H] の Allowed paths と Acceptance 4、[A]。見る所: git diff --stat c0c99481c59aa3eb1a4bc31cce43133e2b800656...<head>、git grep で監査の往復の回数に触れる記述（例:「2回」「往復」「回数到達」「3回目」「3 回目」「OD-GAP-3」）。PASS: 変更が docs/sds/audit-method.md の §2 の 6 の段落と、docs/process/audit-items/ の項目集合 1 file の追加だけで、ほかの節・ほかの file・checker・tests・workflow・.shirube/・kit を変えていない。shirube の main の中で、監査の往復の上限に触れるほかの記述があれば、変更後の段落と矛盾しない（矛盾があれば、同じ PR で直すか、直さない理由と後続が記録されている）"
+    },
+    {
+      "id": "AM5",
+      "criterion": "実行の証拠。根拠: [M] §3。見る所: 監査対象 head の CI の test job と hygiene job の log。PASS: 統合した commit（親が監査対象の head と base）で、test と hygiene の job が成功している。文書だけの変更なので件数ではなく、hygiene（lines-baseline・large-files・secret の検査など）が通ったことを log で確かめる"
+    }
+  ]
+}
