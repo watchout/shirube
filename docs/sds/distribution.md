@@ -71,15 +71,16 @@
 
 ## 4. 必須検査 1 本 `sds-gate`
 
-読取り専用。最初は report-only で入れ、required にするのは Owner が各 repo で行う。判定は次の 3 つだけで、増やさない（ARC の確定 §3）。
+読取り専用。最初は report-only で入れ、required にするのは Owner が各 repo で行う。判定は次の 4 つ。**判定 4（plan binding）は 2026-10-14 の追加**で、ARC の確定 §3「3 つだけで、増やさない」の撤回を明示する（根拠: Owner #205 = a「1 本の流れ・suite 全体の地図 1 枚・必須の検査の 4 つ目」、iyasaka-arc#52 6159281995。設計: iyasaka-arc#57 の流れの案 v1.5 §4・§7）。原則は変えない: 4 つの判定はどれも構造の事実（digest・id・status・path の照合）だけを見て、意味は監査に残す。判定 4 は、まず結果の JSON に `plan_binding: NOT_CHECKED` の欄を足し、次に report-only（判定の結果と理由を JSON に書くが verdict は変えない）、最後に Owner が repo ごとに blocking へ上げる（Cell Admission Preconditions と同じ enforcement graduation）。
 
 | 判定 | 見ること |
 |---|---|
 | 1 risk_class | PR の label `risk:R0`〜`risk:R4` を正とする。label がない、複数ある、または PR の機械向けブロックの `risk_class` と違えば FAIL。保護面の path（固定ファイルの一覧）に触れていれば、label に関わらず R4 として扱う |
 | 2 変更 path | 実際の diff のファイル一覧が、ブロックの `changed_paths` と一致する。違えば FAIL |
 | 3 監査の受領 | R2 以上: その PR の監査依頼と返却について、固定した checker（`scripts/hygiene/audit-admission.mjs`）の `--review` が、今の head で RECEIPT_ACCEPTED になる。R0・R1 は監査不要 |
+| 4 plan binding | 全 risk: PR の機械向けブロックの `delivery_plan_binding`（`comment_ref`・`comment_sha256`・`plan_id`・`generation`・`node_id`）と `control_handoff`（`ref`・`sha256`）を読む。(a) `comment_ref` の comment の本文 SHA-256 が `comment_sha256` と一致し、その本文の `shirube-delivery-plan/v1` の `plan_id`・`generation` が一致して `status: ADMITTED`。(b) `node_id` が `delivery_graph.nodes[].id` にあり、その `repository` が PR の repo と一致し、`depends_on` の全 node が `lifecycle_status: COMPLETE`。(c) `control_handoff.sha256` が作業指示の comment の本文 SHA-256 と一致し、本文の `shirube-v3/control_handoff/v1` の block（marker つき）の `plan_binding.{plan_id, generation, node_id}` が (a)(b) と一致し、`plan_binding.changes_predicates` が空でなく全部が node の `changes_predicates` にあり、`allowed_paths` が判定 2 の変更 path を覆う。参照の形は `^https://github.com/(watchout/[\w.-]+)/(issues\|pull)/(\d+)#issuecomment-(\d+)$` だけ。1 つでも欠ければ FAIL（docs だけ・R0/R1 の PR は、その製品の運用の node と、取りまとめ席が 1 回出す運用の control_handoff を名指しする） |
 
-見ないもの: 設計規則の意味、lifecycle、引渡しの digest、許可・禁止の範囲、Owner の承認（§7）、固定ファイルとのずれ（§5 の `status` で見る）。機械から外したものの扱いは §4.1。
+見ないもの: 設計規則の意味、lifecycle、禁止 path（判定 4 は `allowed_paths` の包含だけを見る）、predicate の意味（段の条件が満たされたか）、Owner の承認（§7。採択 `ADMITTED` の本人確認も機械で見ない）、固定ファイルとのずれ（§5 の `status` で見る）。引渡しの digest と許可 path の包含は、判定 4 が引き継いだ。機械から外したものの扱いは §4.1。
 
 実装上の要求:
 - checker と判定の本体は、PR の head からではなく、固定した Shirube の commit から取得する。PR が検査を書き換えて自分を通す経路を作らない。
@@ -95,8 +96,8 @@
 | 旧の機械判定 | キットでの扱い | 誰が・いつ | 残す証拠 | 合わない時 |
 |---|---|---|---|---|
 | 宣言 head の不一致（RL-PR-004） | `sds-gate` の結果は head SHA ごとの commit status なので、別の head の結果は使えない（構造で保たれる）。R2 以上は、監査依頼が head と base を固定し、checker が照合する | 機械（status）＋ checker | commit status、監査依頼の JSON | head が変われば status は付け直し、R2 以上は依頼を出し直す |
-| 許可外・禁止 path（RL-PR-002/003） | 引渡し（control source）の許可・禁止の範囲と、PR の変更 path を照合する | R2 以上は独立監査担当（監査の中で）。全 risk で、merge 担当が merge の直前に | PR 本文の Evidence 節に「範囲の照合結果（範囲内／範囲外の path）」を作者が書き、merge 担当が確認したことを merge の記録に書く（policy Evidence Rules の allowed/forbidden scope result） | merge しない。作者に戻し、範囲を直すか、範囲の変更を引渡しの側で決める |
-| 引渡しの digest | PR が引く引渡しコメントの本文 SHA-256 と、作業時の版の一致 | R2 以上は監査依頼に固定。全 risk で、merge 担当が merge の直前に | 同上 | 本文が変わっていれば merge しない。作者が新しい版で照合し直す |
+| 許可外・禁止 path（RL-PR-002/003） | 許可 path の包含は判定 4 が機械で見る（作業指示の `allowed_paths` が PR の変更 path を覆う。report-only の間は所見）。禁止 path と範囲の意味は、引き続き引渡しの許可・禁止の範囲と PR の変更 path を人が照合する | R2 以上は独立監査担当（監査の中で）。全 risk で、merge 担当が merge の直前に | PR 本文の Evidence 節に「範囲の照合結果（範囲内／範囲外の path）」を作者が書き、merge 担当が確認したことを merge の記録に書く（policy Evidence Rules の allowed/forbidden scope result） | merge しない。作者に戻し、範囲を直すか、範囲の変更を引渡しの側で決める |
+| 引渡しの digest | 判定 4 が機械で見る（`control_handoff.sha256` と作業指示の comment の本文 SHA-256 の一致。report-only の間は所見）。merge 担当は gate の JSON の `plan_binding` を読む | R2 以上は監査依頼に固定。全 risk で、merge 担当が merge の直前に gate の JSON で確かめる | 同上 | 本文が変わっていれば merge しない。作者が新しい版で照合し直す |
 
 R0・R1 は独立監査がないため、上の確認は merge 担当だけが行う。merge 担当は作者・監査担当と別の席（SDS-V2 の分離）。
 
@@ -113,7 +114,7 @@ ARC の推奨（案 A と 4 点の補強）を採る。
 
 | 点 | 確定 | 出所 |
 |---|---|---|
-| 必須検査の判定 | 3 つ（§4）。推奨の (a)〜(f) のうち、引渡しの digest・禁止 path・Owner の承認・固定ファイルのずれは機械の判定に入れない | ARC の確定 §3 |
+| 必須検査の判定 | 4 つ（§4）。2026-10-14 に判定 4（plan binding）を足し、ARC の確定 §3「3 つだけ、増やさない」を撤回した。引渡しの digest と許可 path の包含は判定 4 が見る。禁止 path・Owner の承認・固定ファイルのずれ・predicate の意味は機械の判定に入れない | ARC の確定 §3 → 撤回: iyasaka-arc#57 流れの案 v1.5 §4・§7、Owner #205 = a |
 | risk_class の取り方 | label を正とし、機械向けブロックと照合する | ARC の確定 §3（codex-adf 案の label と推奨の雛形を両方使う） |
 | 履歴の扱い | review-plans・audit-checklists・source-mirrors も撤去せず履歴として残す | ARC の確定 §1（codex-adf 案） |
 | 版の固定ファイル | `.shirube/sds-pin.json` | codex-adf（置き場の選択は任されている） |
@@ -134,5 +135,6 @@ ARC の推奨（案 A と 4 点の補強）を採る。
 3. runtime policy の取り込み（別の PR、R2）: 上の節を値を変えずに Shirube の `docs/sds/` の 1 文書へ移す（codex-adf）。組織の権限（Owner、保護面の一覧、収益判断、管理を AI に任せない決定など）は iyasaka-org の短い 1 文書に残し、commit と SHA-256 で引用する（ARC）。V3 policy 本体は、全 repo から旧部品が撤去されるまで履歴として残す。
 4. kodama で試験導入: 追加と撤去を 1 PR で行う（R4）。必須検査の付け替えは Owner。PR84 の head は動かさず、キットの統合後に main に合わせて、`sds-gate` が R2 として受領を読めるかを確かめる。受入には次の負例 2 件を加える（ARC の判断 1）。① PR が呼出し側の `uses: …@<sha>` を別の commit に書き換えても、その PR の `sds-gate` の status は default branch の定義での結果になる（書き換えが効かない）。② PR が `statuses: write` を持つ workflow を足して `sds-gate` の success を付けても、base の定義で動く gate は `protected_touched: true`・effective R4 を出し、merge 担当の手順で止まる。
 5. agent-memory（PR332・PR333 の統合後）、onza・aun（共通ブロックの置換だけ）の順に配る。
+6. 判定 4（plan binding、2026-10-14 追加）: 本書 §4 の改版（R3、Owner の版の確認）→ `scripts/sds/gate.mjs` と試験（R2、5-section の指示書で）→ `kit/instructions-block.md` の文（4 つの構造の事実）→ 各 repo の `.shirube/sds-pin.json` の `sds_commit` 更新（R4、repo ごとに Owner の exact-head）。段階は §4（NOT_CHECKED → report-only → Owner が repo ごとに blocking）。道筋の記録の検査の道具（ai-dev-framework 1.3.0 の validator・template・handoff の読み手）を kit に写すかは、地図の採択の項目で Owner に伺う Q-G（流れの案 v1.5 §6）の答えで決める（§2 の案）。
 
 範囲外: agent-comms-mcp・ai-dev-framework・misell に残る旧検査（後続で同じ手順）、製品の機能開発（キットを待って止めない）、Shirube 製品の本体（PR34・PR35 は今の計画のまま）。

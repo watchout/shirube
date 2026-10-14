@@ -2,9 +2,12 @@
 
 状態: **写し。独立監査と Owner の採択の前**。`docs/sds/distribution.md` §8 の 3 の作業です。SDS-V2 が固定している V3 runtime policy の版から、§8 の 2 が挙げる 5 つの節を、**本文を変えずに**ここへ写しました。各節の本文は出典と 1 byte も違いません（§0 の方法で照合できます）。
 
+**版 2（2026-10-14）**: 6 つ目の節 **Goal Stages (Amendment 2026-10-14)** を、出典 2（§0）から同じ方法で写しました。これは「Owner のゴール → 段の条件 → 道筋の記録 → 一つ一つの作業」の流れの元の決まりで、`docs/process/ai-dlc.md` §4 の段落と `docs/sds/distribution.md` §4 の判定 4 がこの節を参照します。節の本文は出典 2 と 1 byte も違いません。
+
 ## 0. 出典と照合の方法
 
 - 出典: `watchout/iyasaka-org` @ `d3f1a1e90499f77772d48fba33532c68ed4cb1fa` の `docs/shirube/shirube-v3-runtime-policy.md`（file SHA-256 `85e1b0a5c5443aaf9e48454115a726bac1d57939056422900e5aa763e5839d45`、800 行）。これは、統合済みの `docs/sds/README.md` の 123 行目が固定している版です。
+- 出典 2（Goal Stages の節だけ）: `watchout/iyasaka-org` @ `d91a4d79ba4f7926c9a6d16ee6068001804858d5` の同じ file（file SHA-256 `217eedf831462a1e03bd5a023128e6235b8f0902bc84f34f1346445908d80ed4`、987 行。2026-10-14 時点の iyasaka-org main と同じ内容）。出典 1（README 123 行目が固定する版）は 2026-10-01 の版で、Amendment 2026-10-14 を含まないため、この節だけ出典 2 から写します。本書は節ごとに出典を記し、2 つの出典を混ぜて 1 つの節を作りません。
 - 範囲: 各節の見出しの行から、その節の最後の空でない行までです（次の `## ` 見出しの前にある空行は含みません）。
 - SHA-256: 範囲の行を改行（LF）でつなぎ、末尾に改行を 1 つ付けた UTF-8 のバイト列の値です。
 
@@ -15,6 +18,7 @@
 | Evidence Rules | 297〜319 | `2a26f07ef6126cf66340a4d4ac18458a58030cc0ebdc1047f9a7931ee684c8cc` |
 | Function Boundaries | 121〜178 | `ed4bc26ed1e4b853fa9ccb721e09c360da1989d4f991eab89586c292669e4c1f` |
 | Next Action Contract | 264〜287 | `b9d408141e3b94ca8be91fe20d2040753ece1966d05118ed936e4e8d9c1f04f5` |
+| Goal Stages (Amendment 2026-10-14) | 出典 2 の 846〜975 | `014b24e27cb0bdf2924d3d7080d8811552a44596c65cddb4570197a121ec82a4` |
 
 - iyasaka-org の main（`3573f80aa4ce37f69365b9910608703d6bb70032`）との違い: Risk-Tiered Gate Depth・Evidence Rules・Next Action Contract の 3 節で本文が違います。出典の版には、SDS の補正（F01・F03・F05 など。出典 794 行目以降の「SDS sufficiency remediation」節が「F01/F02/F03/F05/F06/F09 are reflected above」と記録）が入っており、main には入っていません。本書は SDS-V2 が固定した版に合わせ、main の版は使いません。Human Approval Gates と Function Boundaries は、両方の版で同じです。
 
@@ -28,19 +32,23 @@
 | 役割の切替の条件（最も具体的な `execution_context.active_function` が優先、owner directive より広げない、切替で maker-checker の履歴を消さない） | Function Selection And Transition（180〜207） | Function Boundaries の `orchestration_controller` の段落（役割の切替と自己監査の禁止） |
 | Control docs/spec PR を作れる条件と、作ってはならないもの | Control Docs / SPEC Authoring Rule（209〜232） | Function Boundaries の `control_artifact_author` の段落（「explicit `control_handoff` の下でだけ Control docs/spec PR を作れる」） |
 | 止まってよい理由（`stop_reason`）の一覧と、ACK・FYI・進捗報告を待ちにしないこと | Non-Blocking Progress（245〜262） | Next Action Contract の `blocking` と `stop_reason`（「`blocking: true` の時は `stop_reason` が必須」） |
+| Cell Admission Preconditions の 3（Owner への問いは既定つき）と enforcement graduation（report-only → Owner が repo ごとに blocking） | 出典 2 の Cell Admission Preconditions（518〜546） | Goal Stages の 3・5（段の条件の採択の問い、機械の検査の段階） |
+| Program layer（program step と cell は predicate を進めるが、段を開け閉めしない） | 出典 2 の 2026-09-24 Amendment の §3（547〜845 の中） | Goal Stages の冒頭の段落 |
+| 道筋の記録の契約 `shirube-delivery-plan/v1`、`DP0`〜`DP7`、検査の信号（`DELIVERY_GRAPH_INCOMPLETE`・`INVALID_DELIVERY_PLAN`・`CRITICAL_PATH_INVALID`） | ai-dev-framework `templates/shirube/delivery-plan.yaml`・`scripts/shirube/validate-delivery-plan.mjs`（本書が読んだ版: `watchout/ai-dev-framework` @ `561baebe980f0ae0c275b730bb5dc09cfb66b781` = package 1.3.0。template SHA-256 `d3b6373cd4142ed9ae2533e343dda4f3ba615ef80994ac28b095985b267f76e3`、validator `c34340db19a757fa617b6c32e4d35a0cef762eb52c50e924ffa2172972523b0e`） | Goal Stages の 2・4・5（出典は commit を書かずに file 名で参照している。本書は読んだ版を記す） |
+| 監査依頼の採択条件（audit-method §2 の 1） | 本 repo `docs/sds/audit-method.md` §2 の 1 | Goal Stages の 4（監査依頼が進める predicate の id を採択条件に書く） |
 
-- 本書は、上の節も、5 節以外の節も取り込みません。定義が必要な時は、出典の同じ commit の該当行を読みます。
+- 本書は、上の節も、6 節以外の節も取り込みません。定義が必要な時は、出典の同じ commit の該当行を読みます。
 - 本書は、上の 6 節の条件に違い（引き継がない条件）を設けていません。出典の条件をそのまま参照します。Function Selection And Transition のうち `revenue_demand_owner`・`revenue_sales_owner` の段落は、本書の 5 節からは参照されていません。
-- 出典の Amendment（334〜782 行目）は、取り込みません。どの Amendment も、5 つの節を節名では参照していません（節名で検索して確認）。ただし、節名を使わずに作業の進め方へ条件を足す Amendment があります（Generation Cap and Verifier Presence、Cell Admission Preconditions、Policy Identity / Enforcement Consistency など）。これらは V3 の cell の運用への追加で、5 節の本文を書き換えるものではありません。SDS-V2 でそれぞれに当たる扱い（たとえば監査の往復の上限）は、SDS-V2 の文書（`docs/process/ai-dlc.md`、`docs/sds/audit-method.md`）が決めます。
+- 出典の Amendment（334〜782 行目）は、取り込みません。どの Amendment も、5 つの節を節名では参照していません（節名で検索して確認）。ただし、節名を使わずに作業の進め方へ条件を足す Amendment があります（Generation Cap and Verifier Presence、Cell Admission Preconditions、Policy Identity / Enforcement Consistency など）。これらは V3 の cell の運用への追加で、5 節の本文を書き換えるものではありません。版 2 で写した Goal Stages も Amendment ですが、流れ（ai-dlc §4・distribution §4 の判定 4）の元の決まりなので取り込みます。他の Amendment は引き続き取り込みません。SDS-V2 でそれぞれに当たる扱い（たとえば監査の往復の上限）は、SDS-V2 の文書（`docs/process/ai-dlc.md`、`docs/sds/audit-method.md`）が決めます。
 - ローカルの絶対パスは含みません。
 
 ### 0.2 取り込まないものと、正本の関係
 
 - 組織の権限（Owner、保護面の一覧、収益の判断、「管理を AI に任せない」決定など）は取り込みません。iyasaka-org の短い 1 文書に残し、その文書は ARC が書きます。
 - 役割ごとのエージェント設定は ARC が設計中です（iyasaka-arc#60 B）。本書はそこに踏み込まず、節を写すだけです。
-- 正本: この 5 節の規範の正本は、本書の採択（独立監査と Owner の承認）までは、`docs/sds/README.md` 123 行目が固定する出典の版のままです。本書は、その版と同じ本文の写しです。README 123 行目の参照を本書へ切り替えるのは、本書の採択の後の別の PR で行います。それまでは二重の正本にはしません。
+- 正本: この 5 節の規範の正本は、本書の採択（独立監査と Owner の承認）までは、`docs/sds/README.md` 123 行目が固定する出典の版のままです。Goal Stages の正本は、版 2 の採択までは出典 2（iyasaka-org main）です。本書は、その版と同じ本文の写しです。README 123 行目の参照を本書へ切り替えるのは、本書の採択の後の別の PR で行います。それまでは二重の正本にはしません。
 - V3 policy の本体は変えません。全 repo から旧部品が撤去されるまで、履歴として残します（distribution.md §8 の 3）。
-- 本書の 5 節の本文を変える時は、出典との違いを明示する別の PR で行います。値を変えない取り込みの範囲を超えるためです。
+- 本書の 6 節の本文を変える時は、出典との違いを明示する別の PR で行います。値を変えない取り込みの範囲を超えるためです。
 
 ---
 
@@ -186,3 +194,134 @@ When no external action is required, write `next_action: none` and continue
 inside the current function's approved scope.
 
 A complete handoff is required when responsibility transfers. During the same authorized work, reference the existing context and update only changed information; do not manufacture a second queue, execution context or approval for each status report.
+
+## Goal Stages (Amendment 2026-10-14)
+
+> Origin: owner decision 判断ボード #168 = a / a / a / a / a (question
+> Q-SHIRUBE-GOAL-STAGES-20261012, answered 2026-10-13T01:28:33Z), transcribed by
+> suite-lead at https://github.com/watchout/iyasaka-arc/issues/52#issuecomment-6136093531
+> (body SHA-256 `b3454bbeac4ebe8a7440133de065f83add8821f7c952a6d6896bc6d7b1c082c3`).
+> Premises: OmotenasuAI board #74 = A (goal shown in four stages,
+> omotenasuai-control#212 comment 6122498827) and iyasaka-arc#52 6122622208
+> (board v18 stage display). Owner #182 answer 4 and its supplement
+> (iyasaka-arc#52 6156883404, body SHA-256
+> `3d23c06fdf278c70b18015876344b9a5b628e40d06c7fdd06bdc4e1502dae3df`) fix where
+> the stage record lives. Trigger for writing it now: OmotenasuAI #85
+> (2026-10-14T00:03Z 「ここってSDS-V2の進め方の問題だと思っていて…一度フィードバック
+> してしっかり決めないといけない」, omotenasuai-control#212 comments 6157841236 and
+> 6157948701): three products were shown in stage 2 with no adopted stage-2
+> done-conditions. Authored by arc (`control_artifact_author`). Every rule below
+> names its machine check; enforcement graduation applies (report-only until the
+> owner activates it per repository). Nothing here changes risk tiers, human
+> approval gates, or the owner decisions already recorded.
+
+`goal_stage` [new_term: one of four ordered segments of a product goal, the same
+four for every product, each entered only after the owner adopts its
+done-conditions and closed only by owner-accepted evidence]. This section sits
+above the Program layer (§3 of the 2026-09-24 amendment): a stage groups the
+terminal predicates of a product's delivery plan; a program step or a cell
+advances predicates; neither opens or closes a stage. DP3 and DP7 below are steps
+of the delivery-plan contract (ai-dev-framework `templates/shirube/delivery-plan.yaml`
+`procedure_coverage`; `scripts/shirube/validate-delivery-plan.mjs` `DP_STEPS`), not terms
+of this policy.
+
+1. **Four stages, same for every product.** S1 最初の完成 (first completion),
+   S2 現場の実機での受入 (acceptance on the real machines in the field),
+   S3 現場での運用 (operation in the field), S4 効果の確認 (confirmation of
+   effect). The done-conditions of each stage are written per product. For AUN,
+   Onza, Kusabi and Shirube, 「現場」 is where the company's own seats (the Mac
+   mini and the cloud seats) actually use the product (owner answer 1).
+
+2. **Source of truth = the product's delivery plan, in one place.** The stages
+   and their conditions live in a 道筋の記録 (`shirube-delivery-plan/v1`,
+   ai-dev-framework `templates/shirube/delivery-plan.yaml`) and are amended by
+   append, never edited in place. Where the record lives follows owner #182
+   answer 4 「github連携時はgithub、なければ台帳。2重管理しない」: work bound to a
+   GitHub repository keeps its record as a comment on the product's
+   control_source (aun#3, onza#2, …); work not bound to GitHub keeps it in
+   Onza's ledger once the ledger runs; a record is never held in both. This
+   narrows owner #168 answer 2 「Onza の台帳ができたら台帳に移す」 to the work that
+   is not bound to GitHub. Boards (`progress/goal.stages`, row `stages`) are
+   projections and carry no stage of their own; a board that disagrees with the
+   record is drift (`STAGE_BOARD_DRIFT`). Stage encoding within
+   `shirube-delivery-plan/v1` (no schema change):
+   - every `owner_outcome.terminal_predicates[].id` starts with `S1-`, `S2-`,
+     `S3-` or `S4-`; its `description` names the stage and the observable
+     condition (what is observed, how it is measured, by whom); its
+     `evidence_required` names the verification form (録画 recording / 実演 live
+     demonstration / 実際の記録 actual record);
+   - a stage's predicate set is the predicates with that prefix; a predicate of
+     stage k+1 is never listed in `satisfied_predicates` while a predicate of
+     stage k is unsatisfied (`STAGE_ORDER_VIOLATION`, see 5);
+   - `delivery_graph.nodes[].changes_predicates` is the only place a piece of
+     work states which stage it advances.
+
+3. **A stage is entered by adoption and closed by acceptance (owner answer 3).**
+   Before the first cell of stage k is dispatched, and before any board or
+   status shows a product as being in stage k, the owner adopts that stage's
+   done-conditions and their verification form as an `owner_decision` on the
+   control_source (request with recommended defaults, Cell Admission
+   Preconditions item 3); the delivery plan cites the decision id and body
+   SHA-256 in `control_source`. A product shown in stage k without that
+   decision is `STAGE_ENTRY_WITHOUT_CONDITIONS`: the stage display reverts to
+   「条件未採択」 and cells already run toward stage k count as preparation, not
+   as stage progress, until the conditions are adopted. A stage is done only
+   when the owner has accepted the evidence for every predicate of the stage,
+   recorded as an `owner_decision` whose subject names the plan_id, generation
+   and stage. Machine-observed `satisfied_predicates` are an expectation, not
+   the closure (DP7). From stage 2 on, every operation that places the product
+   in its real location is a protected operation and takes its own published
+   owner decision each time (existing protected-surface rule; no blanket grant).
+   Done-conditions are requirements: drafting them is `control_source_author`
+   work; the coordinator asks the owner and transcribes the answer; a seat that
+   designs screens supplies the measured values for screen conditions when one
+   exists; `control_artifact_author` reviews the form (observable, measurable,
+   bound to a stage) and never writes a product's values.
+
+4. **How the next work is chosen (owner answer 4).** Every cell names, in its
+   control_handoff, the plan_id, generation, node id and the predicate ids of
+   the current stage it advances (`changes_predicates` of that node), and its
+   audit request lists those predicate ids among the 採択条件 of audit-method §2
+   item 1. The next cell is the frontmost node on the shortest dependency-closed
+   path to the stage's remaining predicates (`critical_path`, DP3). A cell that
+   advances no unmet predicate of the current stage is not created
+   (`anti_work`); a cell for a later stage is not dispatched while the current
+   stage is open.
+
+5. **Machine check, graduated (owner answer 5).**
+   - Step 0 (now, report-only): `validate-delivery-plan.mjs` runs inside the
+     Rapid/Lite gates report for a PR whose body carries `delivery_plan_ref:`;
+     it already blocks a node whose `changes_predicates` names a predicate that
+     is not in `owner_outcome.terminal_predicates` (`DELIVERY_GRAPH_INCOMPLETE`,
+     validator L322–L324), a node whose `changes_predicates` is missing or empty
+     (`INVALID_DELIVERY_PLAN`, L244 via L1122), and a `next_action` not bound to
+     the frontmost node (`CRITICAL_PATH_INVALID`). The stage prefix, the stage
+     order, the entry-by-adoption rule and board drift are checked by reading
+     until a checker exists; the reader records the result in the audit return.
+   - Step 1 (after the owner raises it, per repository): the audit-request
+     preflight (shirube `scripts/hygiene/audit-admission.mjs`) refuses an audit
+     request whose cell names no predicate of the current plan generation, names
+     a predicate of a stage that is not the current one, or targets a stage
+     whose done-conditions carry no adoption decision
+     (`PLAN_PREDICATE_MISSING`, `STAGE_ORDER_VIOLATION`,
+     `STAGE_ENTRY_WITHOUT_CONDITIONS`). Adding these checks is a shirube cell
+     (R2) with the read-only checker's own tests; raising them to blocking is an
+     owner decision per repository (enforcement graduation, as in Cell Admission
+     Preconditions).
+   - First subject: AUN (DP-AUN-ROUTE-001 on aun#3, stage 1 conditions adopted
+     by owner #177). Products that showed a stage without adopted conditions
+     (OmotenasuAI #85) apply rule 3 before their next stage-2 cell.
+
+6. **Boundary.** This section fixes the four stage names, where the stage
+   record lives, what opens and closes a stage, how a cell binds to a stage, and
+   who drafts the conditions. The conditions themselves, their order of work and
+   the verification form stay with the owner per product. Risk tiers are
+   unchanged.
+
+| rule | signal | check | fixture | enforcement today |
+|---|---|---|---|---|
+| 2 board vs record | `STAGE_BOARD_DRIFT` | reading of board `stages` against the plan (checker to be added) | board stage ≠ plan stage | report-only (reading) |
+| 2 / 4 stage order | `STAGE_ORDER_VIOLATION` | `audit-admission.mjs` (to be added, R2 cell) | S2 predicate satisfied while an S1 predicate is unsatisfied | not enforced today; report-only once implemented |
+| 3 entry by adoption | `STAGE_ENTRY_WITHOUT_CONDITIONS` | `audit-admission.mjs` (to be added) + reading | stage-k cell or display with no adoption decision for stage k | not enforced today; report-only once implemented |
+| 4 cell binds to a known predicate | `DELIVERY_GRAPH_INCOMPLETE` | `validate-delivery-plan.mjs` L322–L324 (exists) | node whose `changes_predicates` names a predicate not in `terminal_predicates` | validator: report-only in Rapid/Lite today |
+| 4 cell names at least one predicate | `INVALID_DELIVERY_PLAN` (plan) / `PLAN_PREDICATE_MISSING` (audit request, to be added) | `validate-delivery-plan.mjs` L244 (exists) / `audit-admission.mjs` (to be added) | node with missing or empty `changes_predicates`; audit request naming no predicate of the current generation | validator: report-only today; preflight: not enforced today |
