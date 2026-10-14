@@ -1,0 +1,35 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@3b9f5c8e8f22a98374f1929ea8bcff8e084dab3b/docs/sds/audit-method.md#3",
+  "scope": "shirube PR <N>（docs だけ、R3 = Owner の版の確認）: docs/sds/runtime-policy-core.md 版 2（Goal Stages の節の写し）、docs/process/ai-dlc.md §4 の 1 段落、docs/sds/lifecycle-basis.md §5 の P2 の行、docs/sds/distribution.md §4・§4.1・§6・§8 の判定 4、kit/instructions-block.md の 1 文。ARC の案 iyasaka-arc#57（marker arc:shirube-flow-drafts:v1）。gate.mjs の実装（R2、別 PR、5-section 指示書）と §2 の ADF の写し（Q-G の後）は含まない。原典: [GS] watchout/iyasaka-org@d91a4d79ba4f7926c9a6d16ee6068001804858d5 docs/shirube/shirube-v3-runtime-policy.md L846-975（節の SHA-256 014b24e27cb0bdf2924d3d7080d8811552a44596c65cddb4570197a121ec82a4、方法は runtime-policy-core §0）、[O205] Owner #205 = a https://github.com/watchout/iyasaka-arc/issues/52#issuecomment-6159281995 、[QG] Q-G（流れの案 v1.5 §6。地図の採択の項目で伺う。答えの転記の置き場は取りまとめ席が足す）、[F15] 流れの案 v1.5 iyasaka-arc#57 6160263181 以降の版（§2 (i)(ii)、§4、§5 行 4〜6、§7 の撤回）、[D] shirube@a1156dfd docs/sds/distribution.md、[RPC] shirube@a1156dfd docs/sds/runtime-policy-core.md §0 の方法、[ADF] ai-dev-framework@561baebe980f0ae0c275b730bb5dc09cfb66b781（1.3.0）。",
+  "items": [
+    {
+      "id": "SF-1",
+      "criterion": "写しの正確さ。PASS: runtime-policy-core.md の Goal Stages の節が [GS] の L846〜L975 と 1 byte も違わない（§0 の方法: 見出し行から最後の空でない行まで + 改行 1 つ、SHA-256 014b24e2…）。§0 の表に出典 2 の commit・行・SHA-256 があり、出典 1（README L123 の版）に節が無い理由（Amendment 2026-10-14 の前の版）が書かれている。既存 5 節の本文と表の値は変わっていない（diff が §0 と末尾の追加だけ）"
+    },
+    {
+      "id": "SF-2",
+      "criterion": "2 つの出典の扱い。PASS: 節ごとに出典を記し、2 つの出典を混ぜて 1 つの節を作っていない。Goal Stages の正本が版 2 の採択までは出典 2 であること、README L123 の固定を切り替えないこと、他の Amendment を取り込まないことが §0.1・§0.2 に書かれている。§0.1 の依存の表に Goal Stages が参照する定義（Cell Admission 3・Program layer・delivery-plan の契約・audit-method §2 の 1）が出典の行つきで足されている"
+    },
+    {
+      "id": "SF-3",
+      "criterion": "手順の文（ai-dlc §4、lifecycle-basis §5）。PASS: (a) 足した段落が §4 の出力の行の直後にあり、Unit=node・§8 の受入=predicate・名指しできない作業は始めない（R0/R1 は運用の node）・段の条件は最初の作業の前に Owner が採択・地図は配らない、の 5 点だけで、Goal Stages 2〜4 と矛盾しない。(b) 既存の §4 の文を変えていない。(c) lifecycle-basis P2 の行が node の置き場を足し AI-04 を加えただけで、他の行は不変。(d) 文体（半角スペースなし）が周りと同じ"
+    },
+    {
+      "id": "SF-4",
+      "criterion": "判定 4 の文（distribution §4）。PASS: (a) 「3 つだけ、増やさない」の撤回が明示され、根拠（[O205]、[F15] §4・§7）が URL か ID で引ける。(b) 判定 4 の行が構造の照合だけ（digest・id・status・path）で、意味の判定（predicate が満たされたか・critical_path）を含まない。(c) 段階（NOT_CHECKED → report-only → Owner が repo ごとに blocking）が Cell Admission Preconditions の enforcement graduation と同じ形。(d) 参照の形が判定 3 の限定形と同じ。(e) 「見ないもの」が判定 4 の引き継ぎ（digest・許可 path の包含）と残るもの（禁止 path・Owner の承認・意味）で矛盾しない"
+    },
+    {
+      "id": "SF-5",
+      "criterion": "§4.1・§6・§8・kit の文の整合。PASS: §4.1 の 2 行（許可外 path・引渡しの digest）が判定 4 に引き継いだ分と人に残す分を分けて書き、§6 の確定の行が撤回を記録し、§8 に 6 の順序（R3 → R2 → kit の文 → R4）があり、kit/instructions-block.md の 1 文が four structural facts で §4 と同じ 4 つを挙げる。§3 の「YAML の解析器を持ち込まない」と判定 4 の YAML の読み（5-section 1.2: ruby の 1 行、npm 依存なし）が矛盾として残るなら所見に書く"
+    },
+    {
+      "id": "SF-6",
+      "criterion": "範囲と区分。PASS: 変更が 5 file（runtime-policy-core.md・ai-dlc.md・lifecycle-basis.md・distribution.md・kit/instructions-block.md）だけで、gate.mjs・workflow・.shirube・package.json に触れない。R3 の根拠（決まりの文の変更 = Owner の版の確認、[O205] の (4)）が PR 本文にあり、Owner の exact-head の記録が merge の条件に書かれている。§2 の ADF の写しが本 PR に入っていない（[QG] の後）"
+    },
+    {
+      "id": "SF-7",
+      "criterion": "印。PASS: [推測]（ubuntu runner の ruby、Q-G の最終の文、validator の import の一覧、PR #337 の中身）が案の §に列挙され、PR 本文に写されている。本文の断定に根拠（URL・commit・SHA-256・行）が隣にある"
+    }
+  ]
+}
