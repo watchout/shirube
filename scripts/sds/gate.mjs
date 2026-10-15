@@ -46,7 +46,7 @@ function protectedPaths(ctx, api) {
   }
   const read = JSON.parse(Buffer.from(pin.content, "base64").toString("utf8")), extra = read.protected_paths ?? [];
   need(Array.isArray(extra), "protected paths: the base pin's protected_paths must be a list");
-  return { guarded: [...DEFAULT_PROTECTED, ...extra], mode: read.plan_binding_mode ?? "report-only" };
+  return { guarded: [...DEFAULT_PROTECTED, ...extra], mode: read.plan_binding_mode === undefined ? "report-only" : read.plan_binding_mode }; // only a missing field defaults
 }
 function risk(p, pr) {
   const labels = (p.labels ?? []).map((l) => l.name).filter((n) => /^risk:R[0-4]$/.test(n));

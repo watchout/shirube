@@ -194,10 +194,8 @@ const run4 = (o, parse) => { const f = bound(o); return { ...gate({ repo: REPO, 
 const fail4 = (o, parse) => { try { run4(o, parse); } catch (error) { return failure(error, {}); } return assert.fail("the gate passed"); };
 const fetched = (r) => r.calls.filter((c) => /comments\/1[12]$/.test(c));
 const PB = { plan_id: "DP-AUN-ROUTE-001", generation: 2, node_id: A9, changes_predicates: ["S1-EXCHANGE-LOOP"] };
-const r2 = (pb) => {
-  const request = { targets: [{ repo: REPO, pr: 7, head }], ...(pb && { plan_binding: pb }) };
-  return { labels: ["risk:R2"], request, block: { risk_class: "R2", audit: audit(request) } };
-};
+const r2 = (pb, request = { targets: [{ repo: REPO, pr: 7, head }], ...(pb && { plan_binding: pb }) }) =>
+  ({ labels: ["risk:R2"], request, block: { risk_class: "R2", audit: audit(request) } });
 
 test("T4-01 everything binds, report-only: PASS, and plan_id, generation and node_id are copied", () => {
   const r = run4();
@@ -298,3 +296,5 @@ test("parseYaml: ruby reads YAML here; without ruby it is unavailable; a YAML er
 test("a plan_binding_mode the pin does not define FAILs closed", () => {
   assert.match(fail4({ mode: "strict" }).reason, /^4 plan binding: plan_binding_mode must be/);
 });
+for (const [name, block] of [["a binding that matches", {}], ["no delivery_plan_binding", { delivery_plan_binding: undefined }]])
+  test(`F01: plan_binding_mode null in the pin, with ${name}, FAILs closed (not report-only)`, () => assert.match(fail4({ basePin: JSON.stringify({ plan_binding_mode: null }), block }).reason, /^4 plan binding: plan_binding_mode must be off, report-only or blocking, not null$/));
