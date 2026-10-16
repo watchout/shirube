@@ -1,0 +1,12 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@e4df6ebd68369bee826d5efab29e935eacb9f966/docs/sds/audit-method.md#3",
+  "scope": "Shirube PR #48（R3、文書先行）: docs/sds/distribution.md §2・§3・§8 と、この受付用項目集合。根拠: iyasaka-arc#57 comment 6206265148 §0-1、同 issue comment 6164214587 §3、iyasaka-arc#49 comment 6207776639、shirube#9 comment 6207791855。KADF-01〜07、kit/adf/ 本体、KA-01〜12、consumer導入、Owner exact-head承認、merge は対象外。対象head/baseは公開監査依頼が固定する。",
+  "items": [
+    {"id":"KD48-1","criterion":"§2 の対象と境界。PASS: PLAN_ADMISSION に必要な ADF 固定版の7ファイルを相対path/bytesを保って kit/adf/ に写し、Shirube checkoutから参照し、consumerへ配らない記述である。旧案の handoff reader 2ファイルを除いた理由が ARC §1.1 の import 閉包と判定4の境界に合う。実装済みとは記さない。"},
+    {"id":"KD48-2","criterion":"§3 の部品と不変。PASS: 7ファイル、manifest の出所・sha256・bytes・self_application_pin を ARC §1.1〜1.2 に結び、既存 kit v0 の render と配布先への書込み集合を変えない条件を保持する。文書と後続 R2 指示に矛盾がない。"},
+    {"id":"KD48-3","criterion":"§8 の順序と状態。PASS: R3文書の独立監査→Owner exact-head版確認→作者以外の統合→g3 ADMITTED の固定後続handoff→R2本体PRの順である。g3 DRAFTを ADMITTED、copy/fixture準備をKA試験PASSと扱わない。"},
+    {"id":"KD48-4","criterion":"差分・出所・リスク。PASS: 変更は distribution.md と本項目集合だけで、kit code・workflow・profile・pin・credential・保護面に差分0。risk:R3 と PR block の changed_paths が実差分に一致する。Owner Q-G=a、ARC a-1文案、確定7ファイル表への対応と旧案からの2ファイル除外が追える。"},
+    {"id":"KD48-5","criterion":"証拠と分離。PASS: head/base、CI test/hygiene の結果、7/7 bytes と fixture 2/2 の準備証拠が版付きで記録され、本体受入とは区別される。作者≠監査者≠統合担当が保たれ、Owner exact-headは監査後の独立条件として残る。未実施の監査やKA試験をPASSと報告しない。"}
+  ]
+}
