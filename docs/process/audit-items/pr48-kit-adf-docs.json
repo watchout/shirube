@@ -1,12 +1,27 @@
 {
   "schema": "sds-audit-items/1",
   "method_ref": "watchout/shirube@e4df6ebd68369bee826d5efab29e935eacb9f966/docs/sds/audit-method.md#3",
-  "scope": "Shirube PR #48（R3、文書先行）: docs/sds/distribution.md §2・§3・§8 と、この受付用項目集合。根拠: iyasaka-arc#57 comment 6206265148 §0-1、同 issue comment 6164214587 §3、iyasaka-arc#49 comment 6207776639、shirube#9 comment 6207791855。KADF-01〜07、kit/adf/ 本体、KA-01〜12、consumer導入、Owner exact-head承認、merge は対象外。対象head/baseは公開監査依頼が固定する。",
+  "scope": "shirube PR #48（順番 1、R3 の文書 PR）: docs/sds/distribution.md の 1 file だけ（base main e4df6ebd68369bee826d5efab29e935eacb9f966、監査対象の head は前検査の要求に固定した 40 桁）。事前監査の項目集合（文書差分だけ）。原典: [O221] Owner #221 問い 6 = a（Q-G、a-1） https://github.com/watchout/iyasaka-arc/issues/52#issuecomment-6176042564 、[A1] ARC a-1 文案 iyasaka-arc#57 6164214587 §3、[K] KIT-ADF 指示書 iyasaka-arc#57 6206265148（本文 SHA-256 改行なし ef0d179e8b6e7d92b85be6802f9ed6b218ae574286dba5bfcffde5d406ac4e8b）§0-2・§1.1・§1.2、[H] SHIRUBE-KIT-ADF-001 handoff shirube#9 6207791855、[ADF] ai-dev-framework 561baebe980f0ae0c275b730bb5dc09cfb66b781（package 1.3.0）。適用外: [K] §2 の KADF-01〜07（順番 2 の kit 本体 PR の実装後監査用）と KA-01〜12 は本 PR に当てない。本 PR では未実装・NOT_RUN が正しい状態で、BLOCK の理由にも PASS の数にもしない。",
   "items": [
-    {"id":"KD48-1","criterion":"§2 の対象と境界。PASS: PLAN_ADMISSION に必要な ADF 固定版の7ファイルを相対path/bytesを保って kit/adf/ に写し、Shirube checkoutから参照し、consumerへ配らない記述である。旧案の handoff reader 2ファイルを除いた理由が ARC §1.1 の import 閉包と判定4の境界に合う。実装済みとは記さない。"},
-    {"id":"KD48-2","criterion":"§3 の部品と不変。PASS: 7ファイル、manifest の出所・sha256・bytes・self_application_pin を ARC §1.1〜1.2 に結び、既存 kit v0 の render と配布先への書込み集合を変えない条件を保持する。文書と後続 R2 指示に矛盾がない。"},
-    {"id":"KD48-3","criterion":"§8 の順序と状態。PASS: R3文書の独立監査→Owner exact-head版確認→作者以外の統合→g3 ADMITTED の固定後続handoff→R2本体PRの順である。g3 DRAFTを ADMITTED、copy/fixture準備をKA試験PASSと扱わない。"},
-    {"id":"KD48-4","criterion":"差分・出所・リスク。PASS: 変更は distribution.md と本項目集合だけで、kit code・workflow・profile・pin・credential・保護面に差分0。risk:R3 と PR block の changed_paths が実差分に一致する。Owner Q-G=a、ARC a-1文案、確定7ファイル表への対応と旧案からの2ファイル除外が追える。"},
-    {"id":"KD48-5","criterion":"証拠と分離。PASS: head/base、CI test/hygiene の結果、7/7 bytes と fixture 2/2 の準備証拠が版付きで記録され、本体受入とは区別される。作者≠監査者≠統合担当が保たれ、Owner exact-headは監査後の独立条件として残る。未実施の監査やKA試験をPASSと報告しない。"}
+    {
+      "id": "D48-1",
+      "criterion": "§2 の a-1 の文。PASS: §2 の表の 1 行目と「移し先」の追加 1 行が、(a) 写す対象を PLAN_ADMISSION に要る 7 file に限る、(b) 出所を ADF の固定 commit 561baebe（1.3.0）とし相対 path と bytes を保つ、(c) Shirube の固定 commit の checkout から使う、(d) 各 repo に配らない、(e) 判定 4 は validator を呼ばず構造の照合を自前で行う、の 5 点を言い、[A1] の意味と矛盾しない。旧文案の 2 file（resolve-control-handoff-ref.mjs・normalize-control-handoff.mjs）を外す理由が「PLAN_ADMISSION の import 閉包に入らず、判定 4 も使わない」と [K] §1.1 と同じ根拠で書かれている。§2.1（各 repo の導入 PR が旧部品を撤去する条件）と食い違う文が無い。BLOCK: 7 file 以外を写す・各 repo に配る・判定 4 が validator を呼ぶ、と読める文がある。"
+    },
+    {
+      "id": "D48-2",
+      "criterion": "§3 の表の追加行。PASS: kit/adf/ の 7 file と kit/adf/manifest.json（source repo・commit・version、各 file の path・source_path・SHA-256・bytes、self_application_pin）を、形と固定値の正本として [K] §1.2 を参照する形で書き、値を本文に写していない（写す場合は [K] §1.1・§1.2 と 1 字も違わない）。self_application_pin の framework_version を 1.3.0 と書いていない（[K] §1.2 では 1.2.1 のまま。package の版 1.3.0 と取り違えない）。既存 kit v0 の render() と配布先への書込み集合を変えないと明記している。文書が kit/adf の実装済み・試験済みを主張していない。BLOCK: manifest の形・pin の値が [K] と矛盾する、または実装済みと読める。"
+    },
+    {
+      "id": "D48-3",
+      "criterion": "§8 の 6 の順序。PASS: 順序が「本文書差分（R3）の独立監査 → Owner の exact-head 版確認 → 作者と別の席による統合 → suite-lead が g3 の ADMITTED 版の comment URL と本文 digest を後続 handoff に固定 → 統合後の main を base に kit 本体 PR（R2）」で、[K] §0-2 と [H] に一致する。DP-SUITE-001 g3 を DRAFT のまま ADMITTED と扱う文、KA 試験を PASS と数える文が無い。同じ a-1 判断を Owner に再び伺わないと書いている（[O221] の既決）。BLOCK: kit 本体 PR を本 PR の統合前、または g3 ADMITTED の前に出せると読める。"
+    },
+    {
+      "id": "D48-4",
+      "criterion": "差分の範囲と根拠の一致。PASS: base..head の変更が docs/sds/distribution.md の 1 file だけで、禁止 path・code・workflow・kit・pin・credential・.shirube の変更が 0（git diff --stat と名前の一覧で確かめる）。追加した参照の URL と SHA-256 が実在の本文と一致する（[K] の改行なし SHA-256 ef0d179e… を監査席が読み戻して確かめる。[H] の SHA-256 も同じ）。[O221] Q-G = a、[A1] §3、[K] §1.1 の 7 file 表の三者の意味が一致し、[A1] から外した 2 file の差が本文に明示されている。BLOCK: 1 file 以外の変更、または引用の digest の不一致。"
+    },
+    {
+      "id": "D48-5",
+      "criterion": "証拠と独立性。PASS: CI の test と hygiene が監査対象の head で成功し、run の URL か check の ID が版付きで示されている。作者の返却にある 7/7 bytes 照合と fixture 2/2 は順番 2 の準備の証拠として扱い、本 PR の受入の証拠に数えていない。作者・監査者・統合担当が別の席で、R3 の Owner exact-head 確認が統合の前に残っている。PR 本文に秘密・IP・絶対 path・model 名が無い。BLOCK: 準備の証拠を本体の受入と混ぜる、作者が監査か統合を兼ねる、Owner の版確認を省く。"
+    }
   ]
 }
