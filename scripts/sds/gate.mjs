@@ -1,13 +1,16 @@
-// sds-gate (docs/sds/distribution.md §4): the single required check of the SDS-V2 kit. Three judgments only:
+// sds-gate (docs/sds/distribution.md §4): the single required check of the SDS-V2 kit. Four judgments only:
 //   1 risk_class: exactly one `risk:R0`..`risk:R4` label, equal to the PR block; a protected path makes it R4
 //   2 changed paths: the PR block lists exactly the files in the diff
 //   3 R2 and above: the pinned audit-admission checker accepts the audit at the current head
+//   4 plan binding (plan-binding.mjs), after 1-3: its stage is the base pin's plan_binding_mode (default report-only)
 // Read-only. Run from a pinned shirube commit, never from the PR head. It does not check Owner approval (§7).
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { matchesAny, parseArgs } from "../hygiene/lib.mjs";
 import { verifyAudit } from "../hygiene/audit-admission.mjs";
+import { planBinding } from "./plan-binding.mjs";
+import { parseYaml } from "./yaml.mjs";
 
 const RISKS = ["R0", "R1", "R2", "R3", "R4"];
 // Every location GitHub reads CODEOWNERS from (root, .github/, docs/) is protected.
@@ -39,11 +42,11 @@ function protectedPaths(ctx, api) {
   try { pin = api(`repos/${ctx.repo}/contents/.shirube/sds-pin.json?ref=${ctx.base}`); } // trusted base only
   catch (error) {
     need(/\(HTTP 404\)|\b404\b/.test(error.message), `protected paths: the base pin could not be read (${error.message})`);
-    return DEFAULT_PROTECTED;
+    return { guarded: DEFAULT_PROTECTED, mode: "report-only" };
   }
-  const extra = JSON.parse(Buffer.from(pin.content, "base64").toString("utf8")).protected_paths ?? [];
+  const read = JSON.parse(Buffer.from(pin.content, "base64").toString("utf8")), extra = read.protected_paths ?? [];
   need(Array.isArray(extra), "protected paths: the base pin's protected_paths must be a list");
-  return [...DEFAULT_PROTECTED, ...extra];
+  return { guarded: [...DEFAULT_PROTECTED, ...extra], mode: read.plan_binding_mode === undefined ? "report-only" : read.plan_binding_mode }; // only a missing field defaults
 }
 function risk(p, pr) {
   const labels = (p.labels ?? []).map((l) => l.name).filter((n) => /^risk:R[0-4]$/.test(n));
@@ -63,8 +66,9 @@ function audited(pr, ctx, api, now, verify) {
   const request = JSON.parse(body.match(/^```json\r?\n([\s\S]*?)^```/m)[1]);
   const bound = request.targets.some((t) => t.repo === ctx.repo && t.pr === ctx.pr && t.head === ctx.head);
   need(receipt.verdict === "RECEIPT_ACCEPTED" && bound, "3 audit: the accepted audit does not name this PR at this head");
+  return request; // judgment 4 reads its plan_binding
 }
-export function gate({ repo, pr: number, head }, api = github, now = Date.now(), verify = verifyAudit) {
+export function gate({ repo, pr: number, head }, api = github, now = Date.now(), verify = verifyAudit, parse = parseYaml) {
   const p = api(`repos/${repo}/pulls/${number}`);
   need(!head || p.head.sha === head, `the PR head moved from ${head} to ${p.head.sha}; the newer run reports it`);
   const ctx = { repo, pr: Number(number), head: p.head.sha, base: p.base.sha };
@@ -73,14 +77,16 @@ export function gate({ repo, pr: number, head }, api = github, now = Date.now(),
   const actual = files(repo, ctx.pr, api);
   const paths = [...new Set(actual.flatMap((f) => (f.from ? [f.from, f.path] : [f.path])))]; // a rename declares both paths
   need(JSON.stringify([...paths].sort()) === JSON.stringify([...pr.changed_paths].sort()), "2 changed paths: the block differs from the PR diff");
-  const guarded = protectedPaths(ctx, api);
+  const { guarded, mode } = protectedPaths(ctx, api);
   const protectedTouched = actual.some((f) => [f.path, f.from].some((x) => x && matchesAny(x, guarded))); // renames count both sides
   const effective = protectedTouched ? "R4" : declared;
-  if (RISKS.indexOf(effective) >= 2) audited(pr, ctx, api, now, verify);
-  return { check: "sds-gate", verdict: "PASS", head: ctx.head, risk_class: declared, effective_risk: effective, protected_touched: protectedTouched, owner_approval: "NOT_CHECKED_BY_MACHINE", authorization: "NONE" };
+  const request = RISKS.indexOf(effective) >= 2 ? audited(pr, ctx, api, now, verify) : null;
+  const binding = planBinding(mode, { pr, ctx, paths, request }, { api, parse });
+  if (binding.result === "FAIL" && mode !== "report-only") throw Object.assign(new Error(`4 plan binding: ${binding.reason}`), { binding });
+  return { check: "sds-gate", verdict: "PASS", head: ctx.head, risk_class: declared, effective_risk: effective, protected_touched: protectedTouched, owner_approval: "NOT_CHECKED_BY_MACHINE", authorization: "NONE", plan_binding: binding };
 }
 export const failure = (error, args) =>
-  ({ check: "sds-gate", verdict: "FAIL", head: args.head ?? null, reason: error.message, owner_approval: "NOT_CHECKED_BY_MACHINE", authorization: "NONE" });
+  ({ check: "sds-gate", verdict: "FAIL", head: args.head ?? null, reason: error.message, owner_approval: "NOT_CHECKED_BY_MACHINE", authorization: "NONE", plan_binding: error.binding ?? { mode: null, result: "NOT_CHECKED", reason: "an earlier judgment failed" } });
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const args = parseArgs(process.argv.slice(2));
   try { process.stdout.write(`${JSON.stringify(gate(args))}\n`); }
