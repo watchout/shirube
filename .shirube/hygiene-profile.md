@@ -11,7 +11,7 @@ This page is the one place where this repository declares what the hygiene check
   `--ignore-gitleaks-allow`), so no exception is needed; an exception is required only when a real finding is suppressed.
 - large files: only `package-lock.json` (lockfile, built-in exemption). Nothing else is allowed over 100KB.
 - mode: blocking from the first PR (this repository has no report-only period).
-- limits that are internal budgets, not upstream recommendations: new file 300 lines, function 50 lines, complexity 10, PR +400 / 20 files, own code 1,500 lines.
+- limits that are internal budgets, not upstream recommendations: new file 300 lines, function 50 lines, complexity 10, PR +400 / 20 files, own code 2,000 lines.
 
 ```json
 {
@@ -27,7 +27,7 @@ This page is the one place where this repository declares what the hygiene check
     "pr_changed_files": 20,
     "large_file_bytes": 102400,
     "baseline_max_entries": 0,
-    "own_code_lines": 1500
+    "own_code_lines": 2000
   },
   "mode": "blocking",
   "enforce_by": "2026-09-26"

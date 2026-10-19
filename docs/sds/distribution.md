@@ -28,7 +28,7 @@
 
 | 部品 | 処置 | 代わり |
 |---|---|---|
-| `.shirube/runtime/rapid-lite/**`、`.github/workflows/shirube-rapid-lite-gates-report.yml` | 撤去。ただし、道筋の記録の検査に必要な部品は kit が持つ | §4 の必須検査（判定 4 を含む）、監査方法、hygiene。道筋の記録の検査は、ai-dev-framework 1.3.0 の固定 commit `561baebe980f0ae0c275b730bb5dc09cfb66b781` から相対 path と bytes を保って写した `kit/adf/` を、Shirube の固定 commit の checkout から使う。写す 7 file と各 SHA-256・bytes の正本は [KIT-ADF 指示書 §1.1](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6206265148)。各 repo には配らない |
+| `.shirube/runtime/rapid-lite/**`、`.github/workflows/shirube-rapid-lite-gates-report.yml` | 撤去。ただし、計画の受付（PLAN_ADMISSION）の判定は Shirube が持つ | §4 の必須検査（判定 4 を含む）、監査方法、hygiene。計画の受付に要る判定だけを Shirube の中で小さく書き直す（下記 E 方針）。Shirube の固定 commit の checkout から使い、各 repo には配らない |
 | `.shirube/runtime/merge-authority/**`、`.github/workflows/merge-authority.yml` | 撤去 | §4 の必須検査 1 本と、統合担当による確認（§7） |
 | V3 の状態ファイル（execution-context、lifecycle-state、control-state-completeness、enforcement-policy、route-policy、repo-spec、profile.json の `shirube_v3` 節、framework-lock、adoption-intake、existing-state-scan、v3-normalization、open-pr-inventory、pr-body-refs、`profiles/`） | 撤去 | Issue と PR の記録。項目集合は Shirube の固定版を引用 |
 | `.framework/**` と、それを呼ぶ hooks（pre-code-gate、framework-runner、framework-mode-check、gate-*、skill-tracker） | 撤去 | ai-dlc §1 の開始記録と §6 の試験先行。hook では止めない |
@@ -46,10 +46,18 @@
 - flow-safety、review-plan、audit-checklist → 監査依頼（`sds-audit-request/1`）と項目集合。
 - merge-authority → §4 の必須検査 1 本と、統合担当による確認（§7）。
 - gate-contract が機械で拒否していたもの（宣言 head の不一致 RL-PR-004、許可外・禁止 path RL-PR-002/003、引渡しの digest）→ §4.1 の適用差分のとおり。判定 2 が引き継ぐのは、変更 path の集合が実際の diff と一致することだけ。
-- 道筋の記録の検査（`delivery_plan_ref:` を持つ PR への validator、Rapid/Lite report の中で report-only）→ `kit/adf/scripts/shirube/validate-delivery-plan.mjs`（ADF 1.3.0 の写し）を skill `sds-audit` の前検査と監査の項目から参照する。判定 4（§4）は validator を呼ばず、構造の照合だけを自前で行う。ADF は開発の場として残し、版を上げる時は kit の PR で写し直す（manifest に commit と SHA-256）。
+- 道筋の記録の検査（`delivery_plan_ref:` を持つ PR への validator、Rapid/Lite report の中で report-only）→ 計画の受付だけを `scripts/sds/plan-admission.mjs` に書き直し、必要なら形の検査を `scripts/sds/plan-admission-shape.mjs` に分ける。判定 4（§4）は構造の照合だけを自前で行い、この関数にはまだ接続しない。
 - technical_owner_review は必須にしない。
 
-上の a-1 方針は [ARC 文案 §3](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6164214587)を、[KIT-ADF 指示書 §1.1](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6206265148)で確定した 7 file と相対 path に合わせたもの。後者の本文 SHA-256 は `ef0d179e8b6e7d92b85be6802f9ed6b218ae574286dba5bfcffde5d406ac4e8b`。旧文案の `resolve-control-handoff-ref.mjs` と `normalize-control-handoff.mjs` は PLAN_ADMISSION の import 閉包に入らず、判定 4 も利用しないため、写す対象から外す（同指示書 §1.1）。
+計画の受付は [Owner 判断 E（6229043506）](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6229043506)（本文 SHA-256 `05236574dc3ee489f76ab8ef180880344218c040bd329b72062938c78d0f51ba`）と [KIT-ADF 順番 2 の E 版指示書](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6230190519)（本文 SHA-256 `9d1f358bb63cc869dc68c81f415ce53cc823d88ba426aac47635e2cb2884e5fe`）に従う。#48 の「7 file を `kit/adf/` に写す」方針を、次の E に置き換える。
+
+- 範囲: PLAN_ADMISSION の形と判定だけを書き直す。ADF の validator は部分的にも写さない。TERMINAL_ADMISSION、TEST_ADMISSION、REPLAN、加速、ordinary binding、`resolve-*-ref.mjs` は入れない。公開関数は `planAdmission(document, { actualSelfPin })` とし、`decision`（PLAN_ADMISSION）、`verdict`（PASS または BLOCK）、`reason`、`findings`（reason・path・message）を返す。import は Node の組込み機能、`scripts/hygiene/lib.mjs`、`scripts/sds/` の中に限り、npm の依存は足さない。
+- 等価の定義: 同じ `document` と `actualSelfPin` に対し、ADF 1.3.0 の固定 commit `561baebe980f0ae0c275b730bb5dc09cfb66b781` の `buildDeliveryPlanValidationReport(document, { actualSelfPin }).decisions.PLAN_ADMISSION` と、verdict・reason が完全一致し、findings の `(reason, path)` の組の集合が一致すること。message の文言は自由。
+- 等価の確認: 後続 PR の `tests/plan-admission-equivalence.mjs` が引数で ADF checkout を受け取り、HEAD が上の固定 commit と違えば fail-closed で止まる。E 版指示書 §2 の入力集合で、ADF の PLAN_ADMISSION を出す `block()` の全呼出し位置を網羅し、漏れ 0 を門にする。監査席が固定 ADF で実行して出力を返す。ADF が無い CI は明示的に skip し、CI に token を置かない。ADF の場所は環境変数で選ばない。
+- 正本と凍結: 道筋の検査の正本は Shirube に移り、以後の変更は Shirube で行う。ADF の同じ道具は凍結し、以後は直さない。`actualSelfPin` は呼出側から渡し、pin の正本の選択は g3 の後に ARC が別途裁定する。今回の E への改版で pin の値は決めない。
+- 予算: `own_code_lines` は PR-1 で 1,500 から 2,000 へ 1 回だけ上げる。PR-2 と PR-3 の `scripts/**` 合計は 450 行まで。残り 50 行は未割当で、使用には ARC の裁定が要る。450 行に収まらなければ実装席が停止して ARC に返し、上限を再び上げない。各 file 300 行、各 PR 追加 400 行、関数 50 行、複雑さ 10 の上限を守り、exceptions は追加しない。
+
+この改版は E の文書と予算の変更であり、PLAN_ADMISSION の実装・等価試験の完了を示さない。
 
 ### 2.1 導入 PR の条件（各 repo）
 
@@ -69,7 +77,7 @@
 | 版の固定ファイル | 各 repo の `.shirube/sds-pin.json`。`sds_commit`、`kit_version`、配った各ファイルの SHA-256、保護面の path の一覧、採択の記録（Owner decision の URL＋本文 SHA-256）、採択日時。置き場は `.shirube/` の 1 か所にまとめる（ARC の確定では例として `.sds/lock.json` も挙がったが、置き場の選択は codex-adf に任されている） |
 | CLI | `apply`（固定ファイルと部品を入れる PR を作る）、`upgrade`（版を上げる PR を作る）、`check`（固定ファイルと実ファイルの一致を見る）。どれも各 repo へ直接 push しない |
 | 配布先の一覧と `status` | §5 |
-| 道筋の記録の部品（ADF 1.3.0 の写し） | `kit/adf/` に validator・依存する resolver 2 file・lib・template・schema・skill の計 7 file を、相対 path と bytes を保って置く。`kit/adf/manifest.json` に source repo・commit・version、7 file の path・source_path・SHA-256・bytes と self_application_pin を記録する（形と固定値は KIT-ADF 指示書 §1.2）。本文を変えず、変更時は ADF で版を上げてから写し直す。skill と監査の項目は Shirube checkout の写しを参照し、各 repo の `.shirube/runtime` は使わない。既存 kit v0 の `render()` と配布先への書込み集合は変えない |
+| 計画の受付の部品（KIT-ADF、E） | §2 の PLAN_ADMISSION を Shirube 本体の `scripts/sds/` に書き直す。schema と SKILL.md は後続の PR-4 で `docs/sds/delivery-plan/` に置き、ADF の固定 commit `561baebe980f0ae0c275b730bb5dc09cfb66b781` と同じ bytes とし、出所の commit と SHA-256 を README に 1 行書く（E 版指示書 §4）。docs は own code の計数外だが、102,400 bytes の上限を守る。skill と監査の項目は Shirube checkout を参照し、各 repo の `.shirube/runtime` は使わない。既存 kit v0 の `render()` と配布先への書込み集合は変えない |
 
 配るものはこれだけにする。案件ごとの状態ファイル、席ごとの設定、常駐する実行部品は配らない。
 
@@ -139,6 +147,6 @@ ARC の推奨（案 A と 4 点の補強）を採る。
 3. runtime policy の取り込み（別の PR、R2）: 上の節を値を変えずに Shirube の `docs/sds/` の 1 文書へ移す（codex-adf）。組織の権限（Owner、保護面の一覧、収益判断、管理を AI に任せない決定など）は iyasaka-org の短い 1 文書に残し、commit と SHA-256 で引用する（ARC）。V3 policy 本体は、全 repo から旧部品が撤去されるまで履歴として残す。
 4. kodama で試験導入: 追加と撤去を 1 PR で行う（R4）。必須検査の付け替えは Owner。PR84 の head は動かさず、キットの統合後に main に合わせて、`sds-gate` が R2 として受領を読めるかを確かめる。受入には次の負例 2 件を加える（ARC の判断 1）。① PR が呼出し側の `uses: …@<sha>` を別の commit に書き換えても、その PR の `sds-gate` の status は default branch の定義での結果になる（書き換えが効かない）。② PR が `statuses: write` を持つ workflow を足して `sds-gate` の success を付けても、base の定義で動く gate は `protected_touched: true`・effective R4 を出し、merge 担当の手順で止まる。
 5. agent-memory（PR332・PR333 の統合後）、onza・aun（共通ブロックの置換だけ）の順に配る。
-6. 判定 4（plan binding、2026-10-14 追加）: 本書 §4 の改版（R3、Owner の版の確認）→ `scripts/sds/gate.mjs` と試験（R2、5-section の指示書で）→ `kit/instructions-block.md` の文（4 つの構造の事実）→ 各 repo の `.shirube/sds-pin.json` の `sds_commit` 更新（R4、repo ごとに Owner の exact-head）。段階は §4（NOT_CHECKED → report-only → Owner が repo ごとに blocking）。道筋の記録の検査の道具は、Owner #221 の問い 6 = a（Q-G、a-1 = PLAN_ADMISSION に要る部分だけ。iyasaka-arc#52 6176042564）により kit の `kit/adf/` に写す（§2・§3、別の写しの PR、R2）。先に本書の a-1 文書差分（R3）を独立監査・Owner の exact-head 版確認・統合へ通す。kit 本体の PR はその統合後の main を base とし、suite-lead が g3 の ADMITTED 版の comment URL と本文 digest を後続 handoff に固定してから出す。それまでは文書差分と copy/fixture の準備まで（[SHIRUBE-KIT-ADF-001](https://github.com/watchout/shirube/issues/9#issuecomment-6207791855)、本文 SHA-256 `ed1ae18cc0aa7f085212151083ac1693f53afa7c7bd32571189ed9ed5847cb36`）。その後、各 repo の Rapid/Lite の写しを撤去する導入 PR は §2.1 のまま。同じ a-1 方針の判断を Owner に再び伺わない。
+6. 判定 4（plan binding、2026-10-14 追加）: 本書 §4 の改版（R3、Owner の版の確認）→ `scripts/sds/gate.mjs` と試験（R2、5-section の指示書で）→ `kit/instructions-block.md` の文（4 つの構造の事実）→ 各 repo の `.shirube/sds-pin.json` の `sds_commit` 更新（R4、repo ごとに Owner の exact-head）。段階は §4（NOT_CHECKED → report-only → Owner が repo ごとに blocking）。計画の受付の道具は §2・§3 の E 方針に従う。KIT-ADF 順番 2 は #48 の統合後の main を base とし、PR-1（R3）で profile の own-code 予算と本書を改める。後続を PR-2（形の検査と単体試験、R2）、PR-3（意味の検査・公開関数・等価比較の道具と fixtures、R2）、PR-4（schema と SKILL.md、docs のみ、R2）に分ける。PR ごとに ARC が監査項目の集合を出し、独立監査を行う。R3 の PR-1 は Owner の exact-head 確認を統合前に要する。統合は作者・監査者と別の席が行う。E 版指示書 §6 により g3 の採択はこの作業と並べて進めてよく、pin の正本は g3 の後に ARC が裁定する。これが旧 handoff の g3 ADMITTED 前提を置き換える。各 repo の Rapid/Lite の写しを撤去する導入 PR の条件は §2.1 のまま。
 
 範囲外: agent-comms-mcp・ai-dev-framework・misell に残る旧検査（後続で同じ手順）、製品の機能開発（キットを待って止めない）、Shirube 製品の本体（PR34・PR35 は今の計画のまま）。
