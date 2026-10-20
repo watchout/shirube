@@ -1,0 +1,27 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@0b00f1270f80fc9969c1aacf9801a8591516773d/docs/sds/audit-method.md#3",
+  "scope": "shirube の予算の改め（R3）: .shirube/hygiene-profile.md、docs/sds/distribution.md、本項目集合の file docs/process/audit-items/budget-2300.json の 3 file だけ（base main 0b00f1270f80fc9969c1aacf9801a8591516773d）。記法: [OD] = Owner の決定 OD-SHIRUBE-OWN-CODE-BUDGET-2300-20261020-001（iyasaka-arc#49 6285364300）、[W] = E 版指示書 iyasaka-arc#57 6230190519 §4、[CH] = 本作業指示（同じコメント）。全 4 項目必須。",
+  "items": [
+    {
+      "id": "BUD-1",
+      "criterion": "値の改め。PASS: .shirube/hygiene-profile.md の機械が読む json の limits.own_code_lines が 2000 から 2300 に変わり、本文の limits の文の own code の値も 2,300 で一致する。ほかの上限（new file 300、function 50、complexity 10、PR +400 / 20 files、large file 102400、baseline）の値と、lines・own_code の include / exclude は 1 文字も変わらない。exceptions に記載を足していない。",
+      "basis": "[OD] 1、[W] §3 の「上限に例外を足さない」"
+    },
+    {
+      "id": "BUD-2",
+      "criterion": "内訳の文。PASS: docs/sds/distribution.md の予算の行（main 0b00f127 の 58 行目付近、「own_code_lines は PR-1 で 1,500 から 2,000 へ 1 回だけ上げる…上限を再び上げない」）が [OD] の内訳（既存 1,500、KIT-ADF 450、判定 5 ≤ 150、席側の hook ≤ 150、未割当 50 = 2,300）と、各枠を超える実装は止めて ARC に返すこと、[OD] への参照を言う。E 版の「1 回だけ」「再び上げない」は [OD] で置き換えたと読める。§8 の順序の文と他の節は変えない。",
+      "basis": "[OD] 1・2"
+    },
+    {
+      "id": "BUD-3",
+      "criterion": "差分の範囲。PASS: base..head の変更が scope の 3 file だけ。scripts/**、tests/**、.github/**、package.json、configs/** に触れていない。own-code-budget の出力（監査対象の head）が total 1500 以下・limit 2300 を示す。",
+      "basis": "[CH] allowed_paths"
+    },
+    {
+      "id": "BUD-4",
+      "criterion": "証拠と独立性。PASS: CI の test と hygiene が監査対象の head で成功し、run の URL か check の ID が版付きで示されている。PR 本文の sds-pr/1 block（risk_class R3、changed_paths が diff と一致、delivery_plan_binding と control_handoff = 本作業指示の ref と sha256）がある。作者（shirube）・監査者（devauditor）・統合担当（suite-lead）が別の席で、統合の前に Owner の exact-head の記録が要ることが本文に書かれている。",
+      "basis": "distribution §4・§7、[OD] 3"
+    }
+  ]
+}
