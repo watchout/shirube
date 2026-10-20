@@ -7,12 +7,12 @@ const str = (x) => typeof x === "string", hex = (x) => str(x) && /^[0-9a-f]{64}$
 const same = (a, b) => ["plan_id", "generation", "node_id"].every((k) => a[k] === b[k]), within = (xs, set) => Array.isArray(xs) && xs.length > 0 && xs.every((x) => str(x) && list(set).includes(x));
 const stable = (v) => (Array.isArray(v) ? `[${v.map(stable)}]` : v && typeof v === "object" ? `{${Object.keys(v).sort().map((k) => `${JSON.stringify(k)}:${stable(v[k])}`)}}` : JSON.stringify(v));
 function need(ok, why) { if (!ok) throw new Error(why); }
-function comment(ref, digest, step, api) {
+export function comment(ref, digest, step, api) {
   const [, repo, , , id] = REF.exec(ref), body = api(`repos/${repo}/issues/comments/${id}`).body;
   need(createHash("sha256").update(body).digest("hex") === digest, `${step} the body of ${ref} does not have SHA-256 ${digest}`);
   return body;
 }
-function blocks(body, schema, parse) {
+export function blocks(body, schema, parse) {
   const all = [...body.matchAll(/```ya?ml[ \t]*\r?\n([\s\S]*?)\r?\n```/gi)].map((m) => m[1]);
   const read = all.map((yaml) => { try { return parse(yaml); } catch (error) { need(error instanceof SyntaxError, "yaml reader unavailable"); return SCHEMA.test(yaml) ? BROKEN : null; } });
   return { found: read.filter((v) => v?.schema_version === schema), broken: read.includes(BROKEN), other: all.some((y) => SCHEMA.test(y)) };
