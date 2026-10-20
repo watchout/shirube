@@ -81,15 +81,15 @@ function fields(node, value, path, out) {
 // A blocking action names its node; a non-blocking (terminal) plan sets node_id to null.
 function nodeId(next, out) {
   if (next?.blocking === true) walk(NODE_ID, next.node_id, "next_action.node_id", out);
-  else if (next?.node_id !== null) flag(out, "CRITICAL_PATH_INVALID", "next_action.node_id", "A non-blocking terminal plan must set next_action.node_id to null.");
+  else if (next?.node_id !== null) flag(out, REASON.CRITICAL_PATH_INVALID, "next_action.node_id", "A non-blocking terminal plan must set next_action.node_id to null.");
 }
 
 export function checkPlanShape(document) {
   if (!record(document)) return [{ reason: INVALID, path: "$", message: "Delivery plan must be an object." }];
   const out = [];
-  for (const key of Object.keys(document)) if (!TOP.includes(key)) flag(out, "UNKNOWN_FIELD", `$.${key}`, `Unknown field $.${key}.`);
+  for (const key of Object.keys(document)) if (!TOP.includes(key)) flag(out, REASON.UNKNOWN_FIELD, `$.${key}`, `Unknown field $.${key}.`);
   fields(PLAN, document, "", out);
-  if (record(document.live_baseline) && document.live_baseline.freshness !== "FRESH") flag(out, "STALE_BASELINE", "live_baseline.freshness", "The live baseline must be FRESH.");
+  if (record(document.live_baseline) && document.live_baseline.freshness !== "FRESH") flag(out, REASON.STALE_BASELINE, "live_baseline.freshness", "The live baseline must be FRESH.");
   nodeId(document.next_action, out);
   return out;
 }

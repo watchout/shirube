@@ -1,0 +1,27 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@01ecc1a6b3da9ff809e3283f0d3e24c68d5fadf6/docs/sds/audit-method.md#3",
+  "scope": "shirube の KIT-ADF 順番 2 の PR-3b（R2）: scripts/sds/plan-admission-shape.mjs の reason の名前 3 つを REASON の参照に置き換えるだけ、と本項目集合の file docs/process/audit-items/kit-adf-order2-pr3b.json。記法: [CH] = 本作業指示 CH-SHIRUBE-KIT-ADF-PR3B-PR4-20261020、[A] = ARC の答え iyasaka-arc#57 6290848975 の 1。全 4 項目必須。",
+  "items": [
+    {
+      "id": "KA3B-1",
+      "criterion": "範囲: base..head の変更が scope の 2 file だけ。plan-admission-shape.mjs の変更は、flag(out, ...) の第 2 引数の文字列 \"UNKNOWN_FIELD\"・\"STALE_BASELINE\"・\"CRITICAL_PATH_INVALID\" の 3 か所を REASON.UNKNOWN_FIELD・REASON.STALE_BASELINE・REASON.CRITICAL_PATH_INVALID に置き換える 3 行だけで、ほかの行（REASON の表を含む）を変えていない。tests/**、plan-admission.mjs、.github/**、package.json に触れていない。",
+      "basis": "[A]、[CH] §2.1"
+    },
+    {
+      "id": "KA3B-2",
+      "criterion": "挙動が変わらない: 既存の試験が無変更で全部通る（ADF との等価の比較試験を含む）。置き換えた 3 つの reason の値が、置き換え前の文字列と同じ（REASON の表の値）。own-code-budget の行数が base と同じ。",
+      "basis": "[A]、[CH] §2.1"
+    },
+    {
+      "id": "KA3B-3",
+      "criterion": "知識は 1 か所（S3）: head の plan-admission-shape.mjs で、この 3 つの reason の名前の文字列が REASON の表の 1 か所にだけ現れる。",
+      "basis": "[A]、SDS S3"
+    },
+    {
+      "id": "KA3B-4",
+      "criterion": "証拠と独立性: CI の test と hygiene が監査対象の head で成功し、run が版付きで示されている。PR 本文の sds-pr/1 block（risk_class R2、changed_paths が diff と一致、delivery_plan_binding と control_handoff = [CH] の ref と sha256、audit の依頼と受領）がある。作者（shirube）・監査者（devauditor）・統合担当（suite-lead）が別の席。",
+      "basis": "[CH] §3"
+    }
+  ]
+}
