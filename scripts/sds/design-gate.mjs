@@ -2,13 +2,14 @@
 // meaning of a design. Time, randomness, the environment and the network are not read; the caller passes everything (S4).
 import { createHash } from "node:crypto";
 
-const REF = /^https:\/\/github\.com\/watchout\/[\w.-]+\/issues\/\d+#issuecomment-\d+$/;
+const REF = /^https:\/\/github\.com\/(watchout\/[\w.-]+)\/issues\/\d+#issuecomment-(\d+)$/;
 const NOTES = new WeakSet();
 const text = (x) => typeof x === "string" && x.trim() !== "";
 // Fields come from JSON, so they can be any type: only a string is tested or printed as one (no implicit conversion).
-const ref = (x) => typeof x === "string" && REF.test(x);
-const hex = (x) => typeof x === "string" && /^[0-9a-f]{64}$/.test(x);
-const show = (x) => (typeof x === "string" ? x : JSON.stringify(x));
+export const refOf = (x) => (typeof x === "string" ? REF.exec(x) : null); // a decision ref's [_, repo, comment id], or null: the one place that knows its shape
+const ref = (x) => refOf(x) !== null;
+export const hex = (x) => typeof x === "string" && /^[0-9a-f]{64}$/.test(x);
+export const show = (x) => (typeof x === "string" ? x : JSON.stringify(x));
 const object = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
 const bad = (reason, why, id) => ({ reason, ...(typeof id === "string" && { id }), message: `${reason} ${why}` });
 const note = (reason, status, why) => { const n = { reason, message: `${reason} ${status}: ${why}` }; NOTES.add(n); return n; };
@@ -52,7 +53,8 @@ function connected(b, plan, bound, risk) { // 5.5, 5.6, 5.7
   if (!Array.isArray(nodes)) return [bad("5.5", "the plan has no delivery_graph.nodes")];
   return [...(ready(nodes, first) ? [] : [bad("5.5", `first_node ${first} is not a node that can start now`)]), ...bounded(first, nodes, bound, risk)];
 }
-const result = (findings) => ({ verdict: findings.every((f) => NOTES.has(f)) ? "PASS" : "FAIL", findings });
+export const failed = (findings) => findings.filter((f) => !NOTES.has(f)); // the findings that are failures, not notes
+const result = (findings) => ({ verdict: failed(findings).length === 0 ? "PASS" : "FAIL", findings });
 
 export function designGate(block, input) {
   const { approvalBody, plan, boundNodeId, riskIndex } = input ?? {};

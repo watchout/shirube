@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { designGate } from "../scripts/sds/design-gate.mjs";
+import { failure, gate } from "../scripts/sds/gate.mjs";
 
 const sha = (s) => createHash("sha256").update(s).digest("hex");
 const REF = "https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6285512379";
@@ -136,4 +137,161 @@ test("designGate reads no clock, random source, environment or network: its only
   const source = readFileSync(new URL("../scripts/sds/design-gate.mjs", import.meta.url), "utf8");
   assert.deepEqual([...source.matchAll(/from "([^"]+)"/g)].map((m) => m[1]), ["node:crypto"]);
   assert.doesNotMatch(source, /\bDate\b|Math\.random|randomUUID|randomBytes|process\.|fetch\(|import\(|setTimeout|performance/);
+});
+
+// Judgment 5 in gate.mjs: T5-10..T5-14 of iyasaka-arc#57 6285014153 §4 with the answers of work order v4. Stub api as in sds-gate.test.mjs;
+// the yaml reader is replaced by JSON.parse (JSON is YAML), so the plan and the handoff are JSON in yaml fences.
+const REPO = "watchout/kodama", HEAD = "a".repeat(40), BASE = "b".repeat(40), SRC = "c".repeat(40);
+const DESIGN_REF = `https://github.com/watchout/iyasaka-arc/blob/${SRC}/docs/design.md`;
+const fence = (kind, text) => `\`\`\`${kind}\n${text}\n\`\`\`\n`;
+const designFile = (b) => `# design\n\n${fence("json sds-design", JSON.stringify(b, null, 2))}`;
+const DESIGN = designFile(block());
+const b64 = (s) => ({ encoding: "base64", content: Buffer.from(s).toString("base64") });
+const PLAN_REF = `https://github.com/${REPO}/issues/1#issuecomment-11`, HANDOFF_REF = `https://github.com/${REPO}/issues/1#issuecomment-12`;
+const PLAN_BODY = fence("yaml", JSON.stringify({ schema_version: "shirube-delivery-plan/v1", plan_id: "DP-X", generation: 1, status: "ADMITTED", owner_outcome: { terminal_predicates: [{ id: "P1" }] },
+  delivery_graph: { nodes: [{ id: "N1", repository: REPO, depends_on: [], lifecycle_status: "COMPLETE", changes_predicates: ["P1"] }, { id: "N2", repository: REPO, depends_on: ["N1"], lifecycle_status: "PLANNED", changes_predicates: ["P1"] },
+    { id: "N3", repository: REPO, depends_on: ["N1"], lifecycle_status: "PLANNED", changes_predicates: ["P1"] }] } }));
+const HANDOFF_BODY = `<!-- shirube-v3:control-handoff:X -->\n${fence("yaml", JSON.stringify({ schema_version: "shirube-v3/control_handoff/v1", cell: { id: "X" },
+  plan_binding: { plan_id: "DP-X", generation: 1, node_id: "N2", changes_predicates: ["P1"], plan_comment_ref: PLAN_REF, plan_comment_sha256: sha(PLAN_BODY) }, allowed_paths: ["src/**"] }))}`;
+const PLANNED = { pin: { plan_binding_mode: "report-only", design_binding_mode: "report-only" }, prBlock: {
+  delivery_plan_binding: { comment_ref: PLAN_REF, comment_sha256: sha(PLAN_BODY), plan_id: "DP-X", generation: 1, node_id: "N2" }, control_handoff: { ref: HANDOFF_REF, sha256: sha(HANDOFF_BODY) } } };
+const REQUEST_BODY = fence("json", JSON.stringify({ targets: [{ repo: REPO, pr: 7, head: HEAD }], plan_binding: { plan_id: "DP-X", generation: 1, node_id: "N2", changes_predicates: ["P1"] } }));
+const R2 = { ...PLANNED, labels: ["risk:R2"], prBlock: { ...PLANNED.prBlock, risk_class: "R2", audit: { request: `https://github.com/${REPO}/pull/7#issuecomment-1`, request_sha256: sha(REQUEST_BODY), review: "r" } } };
+const serve = (v) => { if (v instanceof Error) throw v; return v; };
+// o: labels (the risk label), dbind (the PR's design_binding), design (the served bytes), designReply / approval (served instead), pin (null = no pin file), prBlock (extra block fields)
+function scene(o = {}) {
+  const served = o.design ?? DESIGN, pin = "pin" in o ? o.pin : { plan_binding_mode: "off", design_binding_mode: "report-only" };
+  const dbind = "dbind" in o ? o.dbind : { design_ref: DESIGN_REF, design_sha256: sha(served), design_id: "aun-product-design", version: 1 };
+  const prBlock = { schema: "sds-pr/1", risk_class: "R1", changed_paths: ["src/a.ts"], ...(dbind && { design_binding: dbind }), ...o.prBlock };
+  return (path) => {
+    if (path === `repos/${REPO}/pulls/7`) return { head: { sha: HEAD }, base: { sha: BASE }, body: fence("json sds-pr", JSON.stringify(prBlock)), labels: (o.labels ?? ["risk:R1"]).map((name) => ({ name })) };
+    if (path.startsWith(`repos/${REPO}/pulls/7/files`)) return [{ filename: "src/a.ts" }];
+    if (path === `repos/${REPO}/contents/.shirube/sds-pin.json?ref=${BASE}`) { if (!pin) throw new Error("gh: Not Found (HTTP 404)"); return b64(JSON.stringify(pin)); }
+    if (path === `repos/watchout/iyasaka-arc/contents/docs/design.md?ref=${SRC}`) return serve(o.designReply ?? b64(served));
+    if (path === "repos/watchout/iyasaka-arc/issues/comments/6285512379") return { body: serve(o.approval ?? BODY) };
+    if (path === `repos/${REPO}/issues/comments/1`) return { body: REQUEST_BODY };
+    if (path === `repos/${REPO}/issues/comments/11`) return { body: PLAN_BODY };
+    if (path === `repos/${REPO}/issues/comments/12`) return { body: HANDOFF_BODY };
+    throw new Error(`unexpected ${path}`);
+  };
+}
+const run5 = (o, verify) => gate({ repo: REPO, pr: 7 }, scene(o), 0, verify, JSON.parse);
+const blocking = { pin: { plan_binding_mode: "off", design_binding_mode: "blocking" } };
+const EMPTY_ANSWER = designFile(block({ open_decisions: [{ id: "D1", question: "q", options: ["A"], default: "A", answer: "", decided_ref: REF }] }));
+
+test("through the gate everything binds, so design_binding PASSes and copies design_id and version", () => {
+  const r = run5(PLANNED);
+  assert.deepEqual([r.verdict, r.design_binding?.result, r.design_binding?.design_id, r.design_binding?.version], ["PASS", "PASS", "aun-product-design", 1]);
+  assert.deepEqual(r.design_binding?.findings?.map((f) => f.reason), ["5.6"]); // 5.6 N/A at R1
+});
+test("T5-10 no design_binding, report-only: the verdict stays PASS and design_binding FAILs 5.0", () => {
+  const r = run5({ dbind: undefined });
+  assert.equal(r.verdict, "PASS"); assert.equal(r.design_binding?.result, "FAIL"); assert.equal(r.design_binding?.mode, "report-only");
+  assert.match(r.design_binding?.reason ?? "", /^5\.0 /);
+});
+test("T5-11 design_ref bytes with another SHA-256 FAIL 5.0b; the verdict stays PASS in report-only", () => {
+  const r = run5({ design: `${DESIGN} `, dbind: { design_ref: DESIGN_REF, design_sha256: sha(DESIGN), design_id: "aun-product-design", version: 1 } });
+  assert.equal(r.verdict, "PASS"); assert.equal(r.design_binding?.result, "FAIL"); assert.match(r.design_binding?.reason ?? "", /^5\.0b /);
+});
+test("T5-12 the base pin has no design_binding_mode (or no pin at all): NOT_CHECKED, and no other field", () => {
+  for (const pin of [{ plan_binding_mode: "off" }, null]) {
+    const r = run5({ pin });
+    assert.equal(r.verdict, "PASS"); assert.deepEqual(Object.keys(r.design_binding ?? {}), ["mode", "result", "reason"]);
+    assert.deepEqual([r.design_binding?.mode, r.design_binding?.result], [null, "NOT_CHECKED"]);
+  }
+});
+test("design_binding_mode off is NOT_CHECKED with the reason; any other value FAILs the verdict (fail-closed)", () => {
+  const off = run5({ pin: { plan_binding_mode: "off", design_binding_mode: "off" } });
+  assert.deepEqual([off.design_binding?.mode, off.design_binding?.result], ["off", "NOT_CHECKED"]); assert.match(off.design_binding?.reason ?? "", /off/);
+  assert.throws(() => run5({ pin: { plan_binding_mode: "off", design_binding_mode: "enforce" } }), /^Error: 5 design binding: design_binding_mode must be off, report-only or blocking, not enforce/);
+});
+test("T5-13 an empty answer: report-only keeps the verdict PASS, blocking FAILs it with `5 design binding: 5.2`", () => {
+  const soft = run5({ design: EMPTY_ANSWER });
+  assert.equal(soft.verdict, "PASS"); assert.equal(soft.design_binding?.result, "FAIL");
+  assert.deepEqual(failed(soft.design_binding ?? { findings: [] }), ["5.2"]);
+  let error;
+  try { run5({ ...blocking, design: EMPTY_ANSWER }); } catch (e) { error = e; }
+  assert.match(error?.message ?? "", /^5 design binding: 5\.2 /);
+  const out = failure(error ?? new Error("the gate passed"), { head: HEAD });
+  assert.deepEqual([out.verdict, out.design_binding?.result, out.plan_binding.mode], ["FAIL", "FAIL", "off"]);
+});
+
+// T5-14: without the design_binding field the output is byte for byte what main's gate printed before judgment 5 (captured from 77b91ef5 for these scenes).
+const BEFORE = {
+  off: `{"check":"sds-gate","verdict":"PASS","head":"${HEAD}","risk_class":"R1","effective_risk":"R1","protected_touched":false,"owner_approval":"NOT_CHECKED_BY_MACHINE","authorization":"NONE","plan_binding":{"mode":"off","result":"NOT_CHECKED","reason":"plan_binding_mode is off"}}`,
+  fail: `{"check":"sds-gate","verdict":"FAIL","head":"${HEAD}","reason":"1 risk_class: exactly one risk:R0..risk:R4 label is required","owner_approval":"NOT_CHECKED_BY_MACHINE","authorization":"NONE","plan_binding":{"mode":null,"result":"NOT_CHECKED","reason":"an earlier judgment failed"}}`,
+  blocked: `{"check":"sds-gate","verdict":"FAIL","head":"${HEAD}","reason":"4 plan binding: 4.1 x","owner_approval":"NOT_CHECKED_BY_MACHINE","authorization":"NONE","plan_binding":{"mode":"blocking","result":"FAIL","reason":"4.1 x"}}`,
+};
+const without = ({ design_binding: _, ...rest }) => JSON.stringify(rest);
+test("T5-14 without the design_binding field the gate output is byte for byte what it was before judgment 5", () => {
+  assert.equal(without(run5({ dbind: undefined })), BEFORE.off);
+  assert.equal(Object.keys(run5()).at(-1), "design_binding");
+  assert.equal(without(failure(new Error("1 risk_class: exactly one risk:R0..risk:R4 label is required"), { head: HEAD })), BEFORE.fail);
+  const blocked = failure(Object.assign(new Error("4 plan binding: 4.1 x"), { binding: { mode: "blocking", result: "FAIL", reason: "4.1 x" } }), { head: HEAD });
+  assert.equal(without(blocked), BEFORE.blocked);
+  assert.equal(Object.keys(blocked).at(-1), "design_binding");
+});
+
+test("the plan reaches designGate only when judgment 4 passed", () => {
+  const onN1 = designFile(block({ main_connection: { id: "MC1", statement: "s", first_node: "N1" } })); // N1 is COMPLETE, so it cannot start
+  const withPlan = run5({ ...PLANNED, design: onN1 });
+  assert.equal(withPlan.plan_binding.result, "PASS"); assert.deepEqual(failed(withPlan.design_binding ?? { findings: [] }), ["5.5"]);
+  const off = run5({ design: onN1 }); // plan_binding_mode off: no plan
+  assert.deepEqual([off.design_binding?.result, off.design_binding?.findings?.map((f) => f.reason)], ["PASS", ["5.5", "5.6"]]);
+  const broken = run5({ ...PLANNED, design: onN1, prBlock: { ...PLANNED.prBlock, control_handoff: { ref: HANDOFF_REF, sha256: "0".repeat(64) } } }); // judgment 4 FAILs
+  assert.equal(broken.plan_binding.result, "FAIL");
+  assert.deepEqual([broken.design_binding?.result, broken.design_binding?.findings?.map((f) => f.reason)], ["PASS", ["5.5", "5.6"]]);
+});
+
+const SAME = { design_ref: DESIGN_REF, design_sha256: sha(DESIGN), design_id: "aun-product-design", version: 1 };
+for (const [name, o, reason] of [
+  ["5.0 a design_binding that is not a commit-pinned .md file", { dbind: { ...SAME, design_ref: "https://github.com/watchout/iyasaka-arc/blob/main/docs/design.md" } }, /^5\.0 /],
+  ["5.0 a design_binding without a SHA-256", { dbind: { ...SAME, design_sha256: "x" } }, /^5\.0 /],
+  ...[["design_ref", { toString: null }], ["design_ref", [DESIGN_REF]], ["design_sha256", [sha(DESIGN)]], ["design_id", ["aun-product-design"]], ["version", [1]]]
+    .map(([key, wrong]) => [`5.0 a ${key} of the wrong JSON type ${JSON.stringify(wrong).slice(0, 14)} (F01)`, { dbind: { ...SAME, [key]: wrong } }, /^5\.0 /]),
+  ["5.0a a design file the token cannot read", { designReply: new Error("gh: Not Found (HTTP 404)") }, /^5\.0a .*design file/],
+  ["5.0a a design file that is too large to read", { designReply: { encoding: "none", content: "" } }, /^5\.0a /],
+  ["5.0a an approval comment the token cannot read", { approval: new Error("gh: Not Found (HTTP 404)") }, /^5\.0a .*approval comment/],
+  ["5.0c a file with no sds-design block", { design: "# design\n" }, /^5\.0c /],
+  ["5.0c a file with two sds-design blocks", { design: DESIGN + DESIGN }, /^5\.0c /],
+]) {
+  test(`${name} FAILs design_binding, and the verdict only in blocking`, () => {
+    const soft = run5(o);
+    assert.equal(soft.verdict, "PASS"); assert.equal(soft.design_binding?.result, "FAIL"); assert.match(soft.design_binding?.reason ?? "", reason);
+    assert.throws(() => run5({ ...o, ...blocking }), /^Error: 5 design binding: /);
+  });
+}
+test("5.8 a PR that names another design_id or version than the block FAILs with a 5.8 finding", () => {
+  for (const dbind of [{ ...SAME, version: 2 }, { ...SAME, design_id: "other" }]) {
+    const r = run5({ dbind, design: DESIGN });
+    assert.deepEqual([r.design_binding?.result, failed(r.design_binding ?? { findings: [] })], ["FAIL", ["5.8"]]);
+  }
+});
+test("a broken sds-design block FAILs 5.1 and nothing else", () => {
+  const r = run5({ design: `# design\n\n${fence("json sds-design", "{broken")}` });
+  assert.deepEqual([r.design_binding?.result, failed(r.design_binding ?? { findings: [] })], ["FAIL", ["5.1"]]);
+});
+
+test("designGate gets the effective risk and the bound node: from R2 the bound node must be first_node or depend on it", () => {
+  const first = (id) => designFile(block({ main_connection: { id: "MC1", statement: "s", first_node: id } }));
+  const accepted = () => ({ verdict: "RECEIPT_ACCEPTED" });
+  const at = (o, id) => run5({ ...o, design: first(id) }, accepted).design_binding;
+  assert.deepEqual(failed(at(R2, "N3")), ["5.6"]); // the PR is bound to N2; N3 is not an ancestor of it
+  assert.equal(at(R2, "N2").result, "PASS"); // bound to first_node itself
+  assert.deepEqual([at(PLANNED, "N3").result, at(PLANNED, "N3").findings.map((f) => f.reason)], ["PASS", ["5.6"]]); // R1: 5.6 N/A
+});
+
+// F01 of the first audit, through the gate: what the gate reads from JSON (the PR's design_binding, the design block's refs, the pin) is a string or it is nothing.
+const WRONG_REF = [{ toString: null }, [DESIGN_REF]];
+test("F01 through the gate: an approval ref of the wrong JSON type in the design block FAILs 5.3 as a finding, not as an exception text", () => {
+  for (const ref of WRONG_REF.map((x) => (Array.isArray(x) ? [REF] : x))) {
+    const r = run5({ design: designFile(block({ approval: { ref, sha256: sha(BODY) } })) });
+    assert.deepEqual([r.design_binding?.result, failed({ findings: r.design_binding?.findings ?? [] })], ["FAIL", ["5.3"]], JSON.stringify(ref));
+    assert.doesNotMatch(r.design_binding?.reason ?? "", /primitive|TypeError/);
+  }
+});
+test("F01 through the gate: a design_binding_mode of the wrong JSON type FAILs the verdict with a readable reason", () => {
+  for (const [mode, shown] of [[{ toString: null }, '{"toString":null}'], [["blocking"], '["blocking"]'], [7, "7"]]) {
+    assert.throws(() => run5({ pin: { plan_binding_mode: "off", design_binding_mode: mode } }), new RegExp(`^Error: 5 design binding: design_binding_mode must be off, report-only or blocking, not ${shown.replace(/[[\]{}.]/g, "\\$&")}$`));
+  }
 });
