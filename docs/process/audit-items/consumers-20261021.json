@@ -1,0 +1,22 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@c05e8ed03d9ac91b218a4fea9084cfef476b8181/docs/sds/audit-method.md#3",
+  "scope": "shirube の配布先一覧 docs/sds/consumers.json に kodama と OmotenasuAI の 6 repo を足す PR（R3、Owner の承認 = distribution.md §5）と、本項目集合の file docs/process/audit-items/consumers-20261021.json。記法: [OD] = Owner の決定 T161 = A iyasaka-arc#49 6303458175、[D] = docs/sds/distribution.md §5 @ c05e8ed0、[CH] = 作業指示 CH-SHIRUBE-CONSUMERS-20261021。全 3 項目必須。",
+  "items": [
+    {
+      "id": "CS-1",
+      "criterion": "範囲と形: 変更が scope の 2 file だけ。consumers.json は JSON の配列で、各要素が repo（watchout/<name>）・adopter（席）・adoption（ref = 採択の記録の URL、sha256 = その本文の SHA-256）・hygiene_profile（種類）を持つ。kodama の adoption = kodama PR #87 の Owner の統合（R4）、6 repo の adoption = [OD]。`node scripts/sds/kit.mjs status` がこの一覧を読んで落ちない（出力が各 repo の行になる）。",
+      "basis": "[D] §5、[CH] §1"
+    },
+    {
+      "id": "CS-2",
+      "criterion": "中身の一致: repo 名が実在し（watchout/kodama・omotenasuai-control・omotenasuai-common-api・totonoe・omotenasuai-motenashi・omotenasuai-yagokoro・omotenasuai-matakuru）、adoption の URL と sha256 が実物と一致する。導入の状態（kodama = 導入済み、6 repo = 未導入・report-only で導入予定）が区別して書かれている。",
+      "basis": "[OD]、[CH] §1"
+    },
+    {
+      "id": "CS-3",
+      "criterion": "証拠と独立性: CI の test と hygiene が監査対象の head で成功。PR 本文の sds-pr/1 block（risk_class R3、changed_paths、delivery_plan_binding と control_handoff = [CH] の ref と sha256、audit）がある。作者（shirube）・監査者（devauditor）・統合担当（suite-lead）が別の席。R3 なので統合の前に Owner の exact-head がある。",
+      "basis": "[CH] §3、[D] §5"
+    }
+  ]
+}
