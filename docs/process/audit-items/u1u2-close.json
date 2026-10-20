@@ -1,0 +1,22 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@c05e8ed03d9ac91b218a4fea9084cfef476b8181/docs/sds/audit-method.md#3",
+  "scope": "shirube の U1〜U4 を薄片に置き換える注記（docs だけ、R1 + 明示の監査）: docs/design/shirube-v1-unit-plan.md の末尾の注記と、本項目集合の file docs/process/audit-items/u1u2-close.json。記法: [OD] = Owner の決定 T158 = A iyasaka-arc#49 6302033481（本文 SHA-256 d334bdb7ea615f854d0d088afb85d01d122a77d62dfc7a2d689f580c53e2c571）、[CH] = 作業指示 CH-SHIRUBE-U1U2-CLOSE-20261021 iyasaka-arc#57 6302444634 と追補 1。全 3 項目必須。",
+  "items": [
+    {
+      "id": "UC-1",
+      "criterion": "範囲: base..head の変更が scope の 2 file だけで、unit-plan の既存の節を消したり書き換えたりしていない（追記だけ）。scripts/**・tests/**・templates/**・kit/**・.github/**・.shirube/** に触れていない。",
+      "basis": "[CH] §1.1・§2"
+    },
+    {
+      "id": "UC-2",
+      "criterion": "中身の一致: 注記の振り分け表が [CH] §3（U1 = 席の hook と判定 5 / Onza、U2 = 判定 1〜5・KIT-ADF・受領の checker / Onza の台帳、U3 = 薄片 3 の検査 / AUN、U4 = Kusabi）と、PR の対応表（#27・#28・#29・#30・#32 の引き継ぎ先）が [CH] §1.2 の表と、[OD] の決定 2・3・6 と食い違わない。決定の URL と本文 SHA-256 が注記に書かれている。",
+      "basis": "[OD]、[CH] §1.2・§3"
+    },
+    {
+      "id": "UC-3",
+      "criterion": "証拠と独立性: CI の test と hygiene が監査対象の head で成功している。PR 本文の sds-pr/1 block（risk_class R1、changed_paths が diff と一致、delivery_plan_binding と control_handoff = [CH] の ref と sha256）がある。作者（shirube）・監査者（devauditor）・統合担当（suite-lead）が別の席。",
+      "basis": "[CH] §4、distribution §4"
+    }
+  ]
+}
