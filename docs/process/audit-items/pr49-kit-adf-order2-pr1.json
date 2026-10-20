@@ -1,0 +1,27 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@4dd354e5fba6eb7254b0b07386982d7a7cad58ca/docs/sds/audit-method.md#3",
+  "scope": "shirube PR #49（KIT-ADF 順番 2 の PR-1、R3）: .shirube/hygiene-profile.md、docs/sds/distribution.md、本項目集合の file docs/process/audit-items/pr49-kit-adf-order2-pr1.json（v1 の bytes）の 3 file だけ（base main 4dd354e5fba6eb7254b0b07386982d7a7cad58ca、監査対象の head は前検査の要求に固定した 40 桁）。原典: [E] Owner 判断 E iyasaka-arc#57 6229043506（本文 SHA-256 05236574dc3ee489f76ab8ef180880344218c040bd329b72062938c78d0f51ba）、[W] KIT-ADF 順番 2 の E 版指示書 iyasaka-arc#57 6230190519（本文 SHA-256 9d1f358bb63cc869dc68c81f415ce53cc823d88ba426aac47635e2cb2884e5fe） §1〜§4・§6、[ADF] ai-dev-framework 561baebe980f0ae0c275b730bb5dc09cfb66b781（package 1.3.0）。適用外: [W] §2 の等価の確認（PR-3 の比較の道具と fixtures）、PLAN_ADMISSION の実装、KADF-01〜07 と KA-01〜12。本 PR では未実装・NOT_RUN が正しい状態で、BLOCK の理由にも PASS の数にもしない。",
+  "items": [
+    {
+      "id": "P49-1",
+      "criterion": "予算の変更（[W] §4 PR-1 の 1 点目）。PASS: .shirube/hygiene-profile.md の機械が読む json の limits.own_code_lines が 1500 から 2000 に変わり、本文の limits の文の own code の値も 2,000 で一致する。ほかの上限（new file 300、function 50、complexity 10、PR +400 / 20 files、large_file_bytes 102400、baseline_max_entries 0）、計数の対象、mode、enforce_by、exceptions は 1 字も変わっていない（[W] §3「上限に例外を足すこと」の禁止）。own-code-budget の検査が監査対象の head で PASS し、total が 2000 以下である。BLOCK: own_code_lines 以外の値・exceptions の変更、本文と json の値の不一致、2000 以外の値。"
+    },
+    {
+      "id": "P49-2",
+      "criterion": "配布方針の E への置き換え（[W] §4 PR-1 の 2 点目）。PASS: docs/sds/distribution.md が、#48 の「7 file を kit/adf/ に写す」方針を E に置き換え、次の 5 点を言う。(a) 範囲: PLAN_ADMISSION の形と判定だけを Shirube の scripts/sds/ に書き直し、ADF の validator を部分的にも写さない。TERMINAL_ADMISSION・TEST_ADMISSION・REPLAN・加速・ordinary binding・resolve-*-ref.mjs を入れない（[W] §1・§3）。(b) 等価の定義: 同じ document と actualSelfPin に対し、[ADF] の buildDeliveryPlanValidationReport(...).decisions.PLAN_ADMISSION と verdict・reason が完全に一致し、findings の (reason, path) の組の集合が一致する。message は自由（[W] §2）。(c) ADF は凍結し、直さない（[W] §3）。(d) actualSelfPin は呼出し側が渡し、pin の正本の選択は g3 の後に ARC が裁定する。判定 4（gate.mjs）にはまだ接続しない（[W] §1・§6）。(e) [E] と [W] への参照があり、本文 SHA-256 が上の値と一致する。§2.1（各 repo の導入 PR が旧部品を撤去する条件）と、kit v0 の render() と配布先への書込み集合を変えないことが保たれている。BLOCK: validator を写す・各 repo に配る・判定 4 に接続する・pin の値を決める、と読める文。(b) の等価の定義が [W] §2 と食い違う。"
+    },
+    {
+      "id": "P49-3",
+      "criterion": "旧方針の残りと順序の文（[W] §4・§6）。PASS: distribution.md の全体に、#48 の旧方針（kit/adf/ への 7 file の写し、manifest.json、ADF で版を上げて写し直す）を今も有効と読める文が残っていない。§8 の 6 の順序が [W] §4 の PR の分け方（PR-1 R3 → PR-2 R2 → PR-3 R2 → PR-4 docs R2）と、[W] §6（g3 の採択は並べて進めてよく、pin の正本は g3 の後）と一致する。予算の文が [W] §4（PR-2 と PR-3 の scripts/** の合計 450 行、残り 50 行は未割当で ARC の裁定が要る、収まらなければ止めて ARC に返し、上限を再び上げない）と一致する。本文が PLAN_ADMISSION の実装済み・等価試験済みを主張していない。BLOCK: 旧方針と E が両方とも有効と読める、順序か予算の文が [W] と食い違う、実装済みと読める。他の文書に旧方針が残っている場合は、BLOCK にせず findings に記す（本 PR の範囲外）。"
+    },
+    {
+      "id": "P49-4",
+      "criterion": "差分の範囲と根拠の一致。PASS: base..head の変更が次の 3 file だけ: (1) .shirube/hygiene-profile.md、(2) docs/sds/distribution.md、(3) docs/process/audit-items/pr49-kit-adf-order2-pr1.json（本項目集合。bytes の SHA-256 が sds-audit-request/1 の item_set の値、すなわち ARC が iyasaka-arc#57 で示した v1 の値と一致）。code・workflow・kit・pin・credential・scripts の変更が 0（git diff --stat と名前の一覧で確かめる）。(3) は監査の基準そのものであり、文書の内容の監査対象にしない。PR 本文の機械が読む事実（sds-pr/1 の changed_paths）が実際の diff の 3 file と一致する。追加した参照の URL と SHA-256 が実在の本文と一致する（[E]・[W] を監査席が読み戻して確かめる）。BLOCK: 上の 3 file 以外の変更、(3) の bytes が v1 と違う、changed_paths と diff の不一致、引用の digest の不一致。"
+    },
+    {
+      "id": "P49-5",
+      "criterion": "証拠と独立性。PASS: CI の test と hygiene が監査対象の head で成功し、run の URL か check の ID が版付きで示されている。pr-size と own-code-budget の結果が監査対象の head で示されている。作者（codex-adf）・監査者（devauditor）・統合担当（suite-lead）が別の席で、R3 の統合前の確認（Owner の exact-head）が残っている。PR 本文に秘密・IP・絶対 path・model 名が無い。BLOCK: 監査対象の head で CI が成功していない、作者が監査か統合を兼ねる、統合前の確認を省く。"
+    }
+  ]
+}
