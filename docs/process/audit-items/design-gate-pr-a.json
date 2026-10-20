@@ -1,0 +1,42 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@0b00f1270f80fc9969c1aacf9801a8591516773d/docs/sds/audit-method.md#3",
+  "scope": "shirube の sds-gate 判定 5（design binding）PR-A（R2）: scripts/sds/design-gate.mjs、scripts/sds/gate.mjs（判定 5 の追記と、下の 01 に書いた最小の変更だけ）、scripts/sds/plan-binding.mjs（blocks と comment に export を付けるだけ）、tests/design-gate.test.mjs、tests/fixtures/design-gate/**、templates/PULL_REQUEST_TEMPLATE.md、本項目集合の file docs/process/audit-items/design-gate-pr-a.json。PR-A は A1（design-gate.mjs と T5-01〜09・15）と A2（gate.mjs・plan-binding.mjs・template と T5-10〜14）の 2 本に分けてよい。各 PR に無い file と試験の項目は N/A と書く。記法: [I] = 作業指示 S1-1 v1 iyasaka-arc#57 6285014153、[D] = 設計 v1 iyasaka-arc#57 6284740098 §3、[CH] = 本作業指示 CH-SHIRUBE-GATE5-PR-A-20261020 の v3、[B] = 予算 OD iyasaka-arc#49 6285364300（判定 5 ≤ 150 行）。全 7 項目必須。",
+  "items": [
+    {
+      "id": "SHIRUBE-GATE5-01",
+      "criterion": "範囲: base..head の変更が scope の file だけ。.github/**、package.json、scripts/hygiene/**、scripts/sds/plan-admission*（KIT-ADF の席の仕事）に触れていない。plan-binding.mjs の変更は、blocks と comment の 2 つの関数に export を付けるだけで、中身と planBinding の戻り値を変えていない。gate.mjs の既存の行の変更は、protectedPaths() の戻り値に design_binding_mode を足すこと、gate() と failure() の戻り値に design_binding の欄を足すことだけで、判定 1〜4 の挙動を変えていない。",
+      "basis": "[I] §3、[CH] §0 の答え 1・4、allowed_paths"
+    },
+    {
+      "id": "SHIRUBE-GATE5-02",
+      "criterion": "判定 5.1〜5.7 が [D] §3.1 と [I] §1.1 のとおりで、意味の判定（問いの妥当性・答えの反映）を含まない。reason の番号は、5.0（design_binding が無い）・5.0a（取得の失敗）・5.0b（sha256 の不一致）・5.0c（sds-design の block が 1 個でない）・5.8（PR の design_binding の design_id・version と block の不一致）で、5.9 は使わない。owner_approval: NOT_CHECKED_BY_MACHINE が不変。",
+      "basis": "[D] §3.1、[I] §1.1、[CH] §0 の答え 3"
+    },
+    {
+      "id": "SHIRUBE-GATE5-03",
+      "criterion": "S4/S5: designGate が時計・乱数・環境変数・ネットワークを読まない。design_sha256・approval.sha256 を取得した bytes から再計算して照合している（宣言値を信じない）。plan は判定 4 が PASS の時だけ、plan-binding.mjs の export した関数で同じ comment から読み、plan の block の解析を design-gate.mjs と gate.mjs に書き直していない（S3）。",
+      "basis": "[I] §2・§3、SDS S3・S4・S5、[CH] §0 の答え 1"
+    },
+    {
+      "id": "SHIRUBE-GATE5-04",
+      "criterion": "S8: 取得の失敗は FAIL（5.0a）。NOT_CHECKED は、pin に design_binding_mode が無い時、design_binding_mode が off の時、plan が無い時（5.5・5.6 だけ）の 3 つだけ。pin のそれ以外の値は FAIL。report-only で verdict が変わらず、blocking で変わる試験がある（T5-10・T5-13）。",
+      "basis": "[I] §1.2・§2、SDS S8、[CH] §0 の前提の確認"
+    },
+    {
+      "id": "SHIRUBE-GATE5-05",
+      "criterion": "負例の実効: T5-02〜T5-06・T5-09・T5-11・T5-13 が FAIL になる。監査席が手元で負例の期待値を 1 つ反転させ、試験が落ちる出力を監査結果に貼る。",
+      "basis": "[I] §4、audit-method §3"
+    },
+    {
+      "id": "SHIRUBE-GATE5-06",
+      "criterion": "既存の挙動と予算: T4-01〜27 と判定 1〜3 の試験が無変更で通る。T5-14 は、出力の JSON から design_binding の欄を除いた残りが、変更前と bytes で同じことを示す。own-code-budget の出力（監査対象の head）で、判定 5 の scripts/** の追加が A1 と A2 の合計で 150 行以内、合計がその head の profile の上限以内。",
+      "basis": "[I] §2・§4、[B]、[CH] §0 の答え 4"
+    },
+    {
+      "id": "SHIRUBE-GATE5-07",
+      "criterion": "証拠と独立性: CI の test と hygiene が監査対象の head で成功し run が版付きで示されている。PR 本文の sds-pr/1 block（risk_class R2、changed_paths、delivery_plan_binding と control_handoff = [CH] の ref と sha256、audit）と Evidence（commands と結果、範囲の照合、design_judgments、deviation_ledger）がある。mock の成功を実接続の証拠にしていない。private の repo の comment を読めずに 5.0a になる実際の挙動を [未確認] か実測で書いている。作者（spe-dev）・監査者（devauditor）・統合担当（suite-lead）が別の席。",
+      "basis": "[I] §7、distribution §4、[CH] §0 の答え 2"
+    }
+  ]
+}
