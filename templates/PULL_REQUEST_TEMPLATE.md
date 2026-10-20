@@ -18,11 +18,12 @@
   "schema": "sds-pr/1",
   "risk_class": "R1",
   "changed_paths": ["<every path in the diff; for a rename, both the old and the new path>"],
-  "audit": { "request": "<R2+: request comment URL>", "request_sha256": "<request body sha256>", "review": "<review comment URL>" }
+  "audit": { "request": "<R2+: request comment URL>", "request_sha256": "<request body sha256>", "review": "<review comment URL>" },
+  "design_binding": { "design_ref": "<https://github.com/watchout/REPO/blob/40-HEX-COMMIT/PATH.md>", "design_sha256": "<sha256 of that file's bytes>", "design_id": "<design_id>", "version": 1 }
 }
 ```
 
-Also set exactly one label `risk:R0`..`risk:R4` equal to `risk_class`. Delete `audit` below R2. A change to a protected path (`.shirube/sds-pin.json` on the base branch) counts as R4. sds-gate does not check Owner approval: for R3/R4 the merging seat confirms the owner decision for the exact head before merging.
+Also set exactly one label `risk:R0`..`risk:R4` equal to `risk_class`. Delete `audit` below R2. Delete `design_binding` unless this R2+ PR depends on a design version (judgment 5; its stage is the base pin's `design_binding_mode`). A change to a protected path (`.shirube/sds-pin.json` on the base branch) counts as R4. sds-gate does not check Owner approval: for R3/R4 the merging seat confirms the owner decision for the exact head before merging.
 
 ## The four questions (anti-bloat v5 §9)
 
