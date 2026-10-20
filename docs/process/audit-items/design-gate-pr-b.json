@@ -1,0 +1,37 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@4362ee1ee5552a29f4a247170acc50105371133a/docs/sds/audit-method.md#3",
+  "scope": "shirube の sds-gate 判定 5 の PR-B（R3）: docs/sds/distribution.md（§4・§4.1・§6・§8 の判定 5 の追記）、kit/instructions-block.md（判定 5 の 1 文）、本項目集合の file docs/process/audit-items/design-gate-pr-b.json。code は変えない。判定 5 の code（PR-A = shirube #51・#54）は main 4362ee1e に統合済みの前提。記法: [I] = 作業指示 S1-1 v1 iyasaka-arc#57 6285014153、[D] = 設計 v1 iyasaka-arc#57 6284740098 §3、[CH] = 本作業指示 CH-SHIRUBE-GATE5-PR-B-20261020、[M] = shirube main 4362ee1e の scripts/sds/gate.mjs と scripts/sds/design-gate.mjs。全 6 項目必須。",
+  "items": [
+    {
+      "id": "SHIRUBE-GATE5-B-01",
+      "criterion": "範囲: base..head の変更が scope の 3 file だけ。scripts/**、tests/**、templates/**、.github/**、.shirube/**、package.json に触れていない。distribution.md の変更は §4・§4.1・§6・§8 の判定 5 の追記と、判定の数を 4 から 5 にする語の直しだけで、判定 1〜4 の行と他の節の意味を変えていない。",
+      "basis": "[CH] §2・§3"
+    },
+    {
+      "id": "SHIRUBE-GATE5-B-02",
+      "criterion": "§4: 導入の文が判定を 5 つとし、判定 5 を 2026-10-20 の追加として根拠（[CH] §2.1 の 3 件）を書く。段階は base の pin の design_binding_mode（無し・off = NOT_CHECKED、report-only = 結果を JSON に書くが verdict は変えない、blocking = FAIL で止める、ほかの値 = FAIL）で、blocking へ上げるのは repo ごとに Owner。表の判定 5 の行が、読むもの（PR の機械向けブロックの design_binding の 4 欄、commit 固定の設計 file の sds-design の block 1 個、承認の comment）と見ること（未決の答え、承認の記録と digest、主要な接続の最初の node、risk の範囲、PR が名指す版と block の一致）を書き、[M] の挙動と食い違わない。「見ないもの」に、設計の中身の良し悪しを足している。",
+      "basis": "[I] §1.2、[D] §3.1・§3.3、[M]"
+    },
+    {
+      "id": "SHIRUBE-GATE5-B-03",
+      "criterion": "§4.1: 判定 5 が blocking になるまでの人の確認の行がある。design_binding を持つ R2 以上の PR で、merge 担当が merge の直前に、名指す設計の版の承認の記録（comment と本文 SHA-256）と、未決の答えに空欄が無いことを確かめ、gate の JSON に判定 5 の結果があれば読み合わせる。合わない時は merge しない。あわせて、blocking にする前に決める未決 2 点を、決める人（ARC が案を出し、Owner が決める）とともに書く: (a) design_binding を持たない PR（R0・R1 と、設計の版に依らない R2 以上）の扱い（[CH] §2.3）、(b) private の repo の comment を sds-gate の workflow の token で読めるか（未確認）。",
+      "basis": "[I] §3、[CH] §2.3"
+    },
+    {
+      "id": "SHIRUBE-GATE5-B-04",
+      "criterion": "§6 と §8: §6 の「必須検査の判定」の行が 5 つになり、判定 5 の追加と出所（[CH] §2.1 の 3 件）を書く（判定 4 の撤回の記録は残す）。§8 に判定 5 の順序の項目がある: 本書 §4 の改版（R3、本 PR）→ code と試験（R2、shirube #51・#54、統合済み）→ kit の文（本 PR）→ 各 repo の .shirube/sds-pin.json に design_binding_mode を置く（R4、repo ごとに Owner の exact-head。blocking の前に §4.1 の未決 2 点を決める）。",
+      "basis": "[I] §3、[CH] §2.4"
+    },
+    {
+      "id": "SHIRUBE-GATE5-B-05",
+      "criterion": "kit: kit/instructions-block.md の sds-gate の文に、判定 5 を 1 か所で足す（英語、既存の文の書き方に合わせる）。内容は、設計の版に結ぶ R2 以上の PR が名指す版に未決の空欄・承認の記録の欠けや不一致・主要な接続の順の乱れが無いこと、段階は base の pin の design_binding_mode で、blocking になるまでは merge 担当が手で確かめる（§4.1）こと。marker（sds-v2:start と sds-v2:end）と他の行は変えない。§4 の文と食い違わない。",
+      "basis": "[I] §3、[CH] §2.2"
+    },
+    {
+      "id": "SHIRUBE-GATE5-B-06",
+      "criterion": "証拠と独立性: CI の test と hygiene が監査対象の head で成功し、run が版付きで示されている。own-code-budget の数が base と同じ（docs だけ）。PR 本文の sds-pr/1 block（risk_class R3、changed_paths が diff と一致、delivery_plan_binding = [CH] の plan_binding、control_handoff = [CH] の ref と sha256、audit の依頼と受領）がある。design_binding は置かない（[CH] §3）。作者（spe-dev）・監査者（devauditor）・統合担当（suite-lead）が別の席。R3 なので、統合の前に Owner の exact-head が要る。",
+      "basis": "[CH] §4、distribution.md §4 判定 1〜4"
+    }
+  ]
+}
