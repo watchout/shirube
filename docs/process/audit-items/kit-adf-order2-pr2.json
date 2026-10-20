@@ -1,0 +1,37 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@0b00f1270f80fc9969c1aacf9801a8591516773d/docs/sds/audit-method.md#3",
+  "scope": "shirube の KIT-ADF 順番 2 の PR-2（R2）: scripts/sds/plan-admission-shape.mjs、その単体試験 tests/plan-admission-shape.test.mjs、本項目集合の file docs/process/audit-items/kit-adf-order2-pr2.json の 3 file だけ（base main 0b00f1270f80fc9969c1aacf9801a8591516773d）。記法: [W] = E 版指示書 iyasaka-arc#57 6230190519（本文 SHA-256 9d1f358bb63cc869dc68c81f415ce53cc823d88ba426aac47635e2cb2884e5fe）、[G4] = Suite 道筋 g4 の案 v2 iyasaka-arc#57 6285162862（GATE5 と並行、path を分ける）、[B] = 予算の判断 Suite 指示ボード T108。等価の比較（PR-3）・plan-admission.mjs・PR-4 の docs は適用外。全 6 項目必須。",
+  "items": [
+    {
+      "id": "KA2-1",
+      "criterion": "差分の範囲。PASS: base..head の変更が scope の 3 file だけで、追加は 400 行以内（pr-size の出力）、新しい file はそれぞれ 300 行以内。scripts/sds/gate.mjs・plan-binding.mjs・design-gate.mjs（判定 5、別の席の仕事）、scripts/hygiene/**、.github/**、package.json、ADF の側に触れていない。",
+      "basis": "[W] §1・§3・§4 PR-2、[G4]"
+    },
+    {
+      "id": "KA2-2",
+      "criterion": "形の検査だけであること。PASS: plan-admission-shape.mjs が ADF 561baebe の validatePlanShape が見る形の検査に当たる判定だけを持ち、意味の検査（validatePlanSemantics）・TERMINAL_ADMISSION・TEST_ADMISSION・REPLAN・加速・ordinary binding・resolve-*-ref を含まない。ADF の code の写し（部分を含む）ではなく書き直しで、1 関数 50 行・複雑さ 10 の上限内（hygiene の出力）。",
+      "basis": "[W] §1・§3"
+    },
+    {
+      "id": "KA2-3",
+      "criterion": "依存と決定性。PASS: import は Node の組込み・scripts/hygiene/lib.mjs・scripts/sds/ の中だけ。npm の依存を足していない。環境変数・時計・乱数・ネットワークを読まない（S4）。同じ入力で同じ出力になる試験がある。",
+      "basis": "[W] §1・§3、SDS S4"
+    },
+    {
+      "id": "KA2-4",
+      "criterion": "試験の実効。PASS: 通る形 1 つと、形の検査の各 reason を少なくとも 1 回出す負例がある。監査席が手元で負例の期待値を 1 つ反転させ、試験が落ちることを確かめた出力を監査結果に貼る。試験が通るだけでは PASS にしない。",
+      "basis": "audit-method §3 の負例、SDS S5"
+    },
+    {
+      "id": "KA2-5",
+      "criterion": "予算。PASS: 監査対象の head での own-code-budget の出力が示され、PR-2 の scripts/** の追加行が [W] §4 の KIT-ADF の 450 行の内で数えられている（PR-3 の残りを本文に書く）。head での自前のコード合計がその head の profile の上限以内。上限を超えるなら FAIL（[B] の予算の改めが先に統合されている必要がある）。",
+      "basis": "[W] §4、[B]"
+    },
+    {
+      "id": "KA2-6",
+      "criterion": "証拠と独立性。PASS: CI の test と hygiene が監査対象の head で成功し、run の URL か check の ID が版付きで示されている。PR 本文の sds-pr/1 block（risk_class R2、changed_paths が diff と一致、audit の依頼と受領）がある。gate.mjs の判定 4 にこの関数をつないでいない。作者（Shirube 実装席 shirube）・監査者（devauditor）・統合担当（suite-lead）が別の席。",
+      "basis": "[W] §1・§6、distribution §4"
+    }
+  ]
+}
