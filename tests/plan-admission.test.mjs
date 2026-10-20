@@ -16,8 +16,11 @@ test("a plan that is well formed and consistent passes", () => {
   assert.deepEqual(planAdmission(plan(), { actualSelfPin: pin }), { decision: "PLAN_ADMISSION", verdict: "PASS", reason: "PLAN_ADMITTED", findings: [] });
 });
 
-test("a malformed source_refs or next_action.changes_predicates is a BLOCK, not an exception (ADF throws on both)", () => {
-  for (const mutate of [(d) => { d.owner_outcome.source_refs = { a: 1 }; }, (d) => { d.next_action.changes_predicates = "P1"; }]) {
+test("a malformed source_refs, next_action.changes_predicates or dependency is a BLOCK, not an exception (ADF throws on all)", () => {
+  const refs = (value) => (d) => { d.owner_outcome.source_refs = value; };
+  const malformed = [{ a: 1 }, { includes: 1 }, { includes: "x" }, { includes: {} }, { includes: [] }, { includes: null }, 5].map(refs);
+  const others = [(d) => { d.next_action.changes_predicates = "P1"; }, (d) => { d.delivery_graph.nodes[0].depends_on = [{ toString: null }]; }];
+  for (const mutate of [...malformed, ...others]) {
     const result = planAdmission(plan(mutate), { actualSelfPin: pin });
     assert.equal(result.verdict, "BLOCK");
     assert.ok(result.findings.length > 0);

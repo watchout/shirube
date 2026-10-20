@@ -30,8 +30,9 @@ function cyclic(nodes) {
 function sourceRef(doc, out) {
   const url = doc.control_source?.url;
   if (typeof url !== "string") return;
-  // `includes?.` keeps a malformed source_refs a finding: ADF throws there, and no input may make this function throw.
-  if (!doc.owner_outcome?.source_refs?.includes?.(url)) add(out, REASON.OWNER_OUTCOME_INCOMPLETE, "owner_outcome.source_refs", "The exact control source must be an owner-outcome source ref.");
+  // Only a real `includes` is called, so a malformed source_refs is a finding: ADF throws on any non-function, and no input may make this function throw.
+  const refs = doc.owner_outcome?.source_refs;
+  if (!(typeof refs?.includes === "function" && refs.includes(url))) add(out, REASON.OWNER_OUTCOME_INCOMPLETE, "owner_outcome.source_refs", "The exact control source must be an owner-outcome source ref.");
   if (doc.self_application?.control_source_ref !== url) add(out, DRIFT, "self_application.control_source_ref", "Self-application must bind the exact control source.");
 }
 

@@ -37,7 +37,14 @@
     {"id":"freshness-stale","ops":[["set","live_baseline.freshness","STALE"]]},
     {"id":"unknown-top-level-field","ops":[["set","extra",1]]},
     {"id":"malformed-source-refs-object (ADF throws)","ops":[["set","owner_outcome.source_refs",{"a":1}]]},
-    {"id":"malformed-next-action-predicates-string (ADF throws)","ops":[["set","next_action.changes_predicates","P1"]]}
+    {"id":"malformed-source-refs-includes-number (ADF throws)","ops":[["set","owner_outcome.source_refs",{"includes":1}]]},
+    {"id":"malformed-source-refs-includes-string (ADF throws)","ops":[["set","owner_outcome.source_refs",{"includes":"x"}]]},
+    {"id":"malformed-source-refs-includes-object (ADF throws)","ops":[["set","owner_outcome.source_refs",{"includes":{}}]]},
+    {"id":"malformed-source-refs-includes-array (ADF throws)","ops":[["set","owner_outcome.source_refs",{"includes":[]}]]},
+    {"id":"malformed-source-refs-includes-null (ADF throws)","ops":[["set","owner_outcome.source_refs",{"includes":null}]]},
+    {"id":"malformed-source-refs-number (ADF throws)","ops":[["set","owner_outcome.source_refs",5]]},
+    {"id":"malformed-next-action-predicates-string (ADF throws)","ops":[["set","next_action.changes_predicates","P1"]]},
+    {"id":"malformed-dependency-object (ADF throws)","ops":[["set","delivery_graph.nodes[0].depends_on",[{"toString":null}]]]}
   ],
   "triggers": {
     "SELF_APPLICATION_DRIFT": [["set","self_application.expected.framework_version","9"]],

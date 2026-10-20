@@ -3,7 +3,7 @@
 // usage: node tests/plan-admission-equivalence.mjs --adf <ADF checkout> [--table]      exit 0 PASS / 1 FAIL / 2 cannot observe
 import { createHash } from "node:crypto";
 import inspector from "node:inspector";
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { git, parseArgs, report } from "../scripts/hygiene/lib.mjs";
@@ -54,7 +54,7 @@ function pinned(adf) {
     if (!ok) throw new Error(`the position list does not match ${file} at ${g.id}; regenerate it`);
     if (g.kind === "literal") offsets[g.id] = starts[g.line - 1] + lines[g.line - 1].indexOf('block("PLAN_ADMISSION"');
   }
-  return { href: pathToFileURL(join(adf, file)).href, offsets };
+  return { href: pathToFileURL(realpathSync(join(adf, file))).href, offsets }; // V8 names the module by its real path, so a symlinked --adf must be resolved
 }
 
 async function load(href) {
@@ -65,7 +65,7 @@ async function load(href) {
   await post("Profiler.startPreciseCoverage", { callCount: true, detailed: true });
   const adf = await import(href);
   const take = async () => (await post("Profiler.takePreciseCoverage")).result.find((r) => r.url === href)?.functions.flatMap((f) => f.ranges) ?? [];
-  await take(); // what loading the module counted is not an input
+  if ((await take()).length === 0) throw new Error("V8 reported no coverage for the ADF module"); // what loading it counted is not an input
   return { adf, take, close: () => s.disconnect() };
 }
 
