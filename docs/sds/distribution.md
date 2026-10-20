@@ -55,7 +55,7 @@
 - 等価の定義: 同じ `document` と `actualSelfPin` に対し、ADF 1.3.0 の固定 commit `561baebe980f0ae0c275b730bb5dc09cfb66b781` の `buildDeliveryPlanValidationReport(document, { actualSelfPin }).decisions.PLAN_ADMISSION` と、verdict・reason が完全一致し、findings の `(reason, path)` の組の集合が一致すること。message の文言は自由。
 - 等価の確認: 後続 PR の `tests/plan-admission-equivalence.mjs` が引数で ADF checkout を受け取り、HEAD が上の固定 commit と違えば fail-closed で止まる。E 版指示書 §2 の入力集合で、ADF の PLAN_ADMISSION を出す `block()` の全呼出し位置を網羅し、漏れ 0 を門にする。監査席が固定 ADF で実行して出力を返す。ADF が無い CI は明示的に skip し、CI に token を置かない。ADF の場所は環境変数で選ばない。
 - 正本と凍結: 道筋の検査の正本は Shirube に移り、以後の変更は Shirube で行う。ADF の同じ道具は凍結し、以後は直さない。`actualSelfPin` は呼出側から渡し、pin の正本の選択は g3 の後に ARC が別途裁定する。今回の E への改版で pin の値は決めない。
-- 予算: `own_code_lines` は PR-1 で 1,500 から 2,000 へ 1 回だけ上げる。PR-2 と PR-3 の `scripts/**` 合計は 450 行まで。残り 50 行は未割当で、使用には ARC の裁定が要る。450 行に収まらなければ実装席が停止して ARC に返し、上限を再び上げない。各 file 300 行、各 PR 追加 400 行、関数 50 行、複雑さ 10 の上限を守り、exceptions は追加しない。
+- 予算: `own_code_lines` は 2,300 行。[Owner の決定 OD-SHIRUBE-OWN-CODE-BUDGET-2300-20261020-001](https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6285364300)（本文 SHA-256 `6698fb37f9b4c5f5fe3b2eab1d27600b09312afb36e70809493501bc47992154`）による。内訳は固定で、既存 1,500、KIT-ADF 450（PR-2 と PR-3 の `scripts/**` 合計、E 版のまま）、判定 5 は 150 以下、席側の hook は 150 以下、未割当 50（使用には ARC の裁定が要る）の合計 2,300 行。各枠を超える実装は実装席が停止して ARC に返し、枠の中での調整も ARC の裁定とする。E 版指示書の「1 回だけ上げる」「上限を再び上げない」は、この決定で置き換えた。各 file 300 行、各 PR 追加 400 行、関数 50 行、複雑さ 10 の上限を守り、exceptions は追加しない。
 
 この改版は E の文書と予算の変更であり、PLAN_ADMISSION の実装・等価試験の完了を示さない。
 
