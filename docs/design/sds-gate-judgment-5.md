@@ -1,0 +1,129 @@
+<!-- sds-gate judgment 5: the design record. Source of truth = arc's design v1 §3 and work order S1-1; written after the implementation (PR #51, #54 on main), for the design audit (audit-method §3 D1-D6, Owner decision T154). -->
+# sds-gate 判定 5（design binding）— 設計の記録
+
+状態: 設計 v1 を Owner が承認（T103）し、実装（A1 = PR #51、A2 = PR #54）と文書（PR #55）が先に出た。audit-method §2 は R3 に事前監査を求めるが、作業指示がこれを抜かした。Owner の決定 T154 に従い、この記録を後から書いて設計の監査を受ける。
+正本は設計 v1 [V1] と作業指示 S1-1 [S1-1]（§10）。この記録は意味を足さない。実装が設計 v1 と食い違う所は §5 に「差」として書き、実装は直さない（直すなら別の PR を ARC が指示する）。
+範囲: main `c05e8ed0` の `scripts/sds/design-gate.mjs`（63 行）、`scripts/sds/gate.mjs` の判定 5、`scripts/sds/plan-binding.mjs`（`export` の 2 語）、`tests/design-gate.test.mjs`。文書側（distribution.md §4・§4.1・§6・§8、kit の 1 文）は PR #55 で、ここでは繰り返さない。
+監査項目との対応: DGD-1 = §1〜§3、DGD-2 = §6、DGD-3 = §5・§7、DGD-4 = §8、DGD-5 = §9、DGD-6 = §10。
+
+## 1. Owner の原文と決定 ID
+
+| ID と場所 | Owner の原文（verbatim）と、決まったこと |
+|---|---|
+| T102 = A（OD-SHIRUBE-CONTROL-FIRST-THIN-SLICE-20261020-001、#49 6284653618） | 「…本当はSDS-V2をshirubeに落とし、shirubeの制御がSDS-V2を適用させる＋LLMの制御までやる。というものを作って開発をした方がいいのではないか？と思いますがどうですか？並行でできると言われてやってきましたが、今回のように形骸化したSDS-V2の適用度しかえられていない」→ 入力 A。最初の薄片は設計の段の門（空欄の答えが残る／承認の記録が無い／道筋の最初の node が主要な接続を通さない、のどれかを機械が止める） |
+| T103 = A（OD-SHIRUBE-CONTROL-SLICE1-DESIGN-V1-APPROVED-20261020-001、#49 6284872857） | 入力 A。設計 v1 を承認し、Q1〜Q5 は全部既定。Q5 = A「PR 側の判定 5 は report-only から」 |
+| T108 = A（OD-SHIRUBE-OWN-CODE-BUDGET-2300-20261020-001、#49 6285364300） | 「2000以内には確実に収まらないということか？」→ 入力 A。own_code を 2,300 行に広げ、内訳を固定: 判定 5 ≤ 150、席側の hook ≤ 150、KIT-ADF 450、未割当 50 |
+| T154（OD-R3-MISSED-PREAUDIT-RUN-AUDITS-20261020-001、#49 6301299856） | 「とりあえず監査を通しましょう。そもそも監査なしでマージできてしまう仕組みがおかしいよね？」→ 判定 5 の設計の監査を後から行う（この記録が対象） |
+
+## 2. 目的と対象外
+
+目的: 設計の版に、**空欄の答え・承認の記録の欠け・主要な接続の順の乱れ**がある PR を、構造の事実だけで見つける。[V1] §1 の失敗 3 種のうち、A 未決の持ち越し = 5.2、B 順番の誤り = 5.5・5.6 に当たる。承認の欠け（5.3・5.4）は [V1] §3.1 の条件。
+対象外（機械で見ない）:
+- 設計の意味（問いが妥当か、答えが設計に反映されたか）。C 作者の誤り（採択済みの値と違う設計）も判定 5 は見ない（[V1] §3.1「意味は見ない」）。[V1] §1 は 3 種を「機械が止める」と書くので、C は設計 v1 の中で食い違う。C は独立監査（D1〜D6 と採択済み決定との照合）に残る。
+- Owner の本人確認。`owner_approval: NOT_CHECKED_BY_MACHINE` は不変。
+- 席側の hook（[V1] §3.2、DP-N-SHIRUBE-SEAT-HOOK）。未実装。設置は席の設定で、設計・独立監査・Owner の承認を経る別の工程。
+- 判定 1〜4 の挙動の変更。T5-14 が、`design_binding` を除いた出力が変更前の bytes と一致することを保つ。
+
+## 3. 門が読む契約 `sds-design/1` と 3 条件（[V1] §3.1 の写し）
+
+製品設計 1 枚の中に、```` ```json sds-design ```` の block を 1 個置く: `schema`（`sds-design/1`）、`design_id`、`version`（整数）、`open_decisions[]`（`id`・`question`・`options`・`default`・`answer`・`decided_ref`）、`approval`（`ref`・`sha256`）、`main_connection`（`id`・`statement`・`first_node`）。
+1. 未決あり（5.2）: `answer` が空（空白だけを含む）、または `decided_ref` が `https://github.com/watchout/<repo>/issues/<n>#issuecomment-<id>` の形でない未決が 1 つでもある。findings に未決の `id` を書く。
+2. 承認なし（5.3・5.4）: `approval.ref` が同じ形でない、`approval.sha256` が取得した本文の SHA-256 と一致しない、本文に marker `shirube-owner-decision/v1` と `design_id@version`（前後が `[\w.-]` でない 1 語）が無い。
+3. 主要な接続が最初でない（5.5・5.6）: `first_node` が plan に無い、COMPLETE である、`depends_on` に COMPLETE でないものがある（今すぐ着手できない）。R2 以上では、PR の node が `first_node` そのものか、`first_node` を `depends_on` の推移閉包に持つもの以外は FAIL。
+
+## 4. PR 側の判定 5 の流れ（[V1] §3.3）と判定の本体（[V1] §3.4）
+
+`gate.mjs` の `judgment5`。判定 1〜4 の後で、読取りだけ。
+1. base の pin（`.shirube/sds-pin.json`）の `design_binding_mode` を読む。欄が無い、pin が無い（404）、`off` は NOT_CHECKED（欄 `{mode, result, reason}` だけ）。
+2. PR の `sds-pr/1` の任意の欄 `design_binding`（`design_ref`・`design_sha256`・`design_id`・`version`）が無い、または型が違う → 5.0。
+3. `design_ref`（commit 固定の `.md`）を contents の GET で取り、取得した bytes の SHA-256 を `design_sha256` と比べる（5.0a 読めない、5.0b 不一致）。file の `json sds-design` block がちょうど 1 個（5.0c）。
+4. block の `approval.ref` の comment 本文を GET で取る。判定 4 の結果が PASS の時だけ、判定 4 と同じ読み手で plan を読み直して渡す。
+5. `designGate(block, { approvalBody, plan, boundNodeId, riskIndex })` を呼ぶ。PR が名指す `design_id`・`version` と block が違えば 5.8 を足す。
+6. 結果 `{mode, result, design_id, version, reason?, findings}` を、出力 JSON の最後の欄 `design_binding` に付ける。`report-only` は verdict を変えない。`blocking` は `5 design binding: <reason>` を投げ、verdict が FAIL。上記以外の値は FAIL（fail-closed）。
+
+判定の本体は `scripts/sds/design-gate.mjs` の `designGate` 1 関数（S3）。純粋で（S4）、時計・乱数・環境・ネットワークを読まず、import は `node:crypto` だけ（試験が source を検査）。digest は渡された bytes から計算する（S5）。壊れた入力は例外でなく FAIL と reason（S8）。findings は失敗と注記（`N/A`・`NOT_CHECKED`）を同じ形で持ち、verdict は失敗だけで決まる。
+
+## 5. 実装での具体化と、設計 v1 からの差（main `c05e8ed0`）
+
+| 項目 | 設計 v1 / S1-1 | 実装 | 扱い |
+|---|---|---|---|
+| reason の集合 | 5.1〜5.9（[S1-1] §1.1）、`gate.mjs` 側の 5.0・5.0b・5.0c（§1.2） | 5.1〜5.7 は `designGate`、5.0・5.0a・5.0b・5.0c・5.8 は `gate.mjs`。5.9 は使わない | 5.0a（読めない）は S8 の具体化、5.8 は下 |
+| 5.8 | [V1]・[S1-1] に無い | PR が名指す `design_id`・`version` が block と違えば FAIL。block が 5.1 に合わない時は足さない | 宣言した版と実際に読んだ版が別でも通る穴（S5）を塞ぐ。作業指示 v3 §0 の答え 3 |
+| plan を渡す条件 | 判定 4 が解決した plan（[S1-1] §1.1） | 判定 4 の結果が PASS の時だけ読み直す。他は plan = null で 5.5・5.6 が NOT_CHECKED | 判定 4 が通さなかった bytes を根拠にしない。読み手は判定 4 のもの（S3）。作業指示 v3 §0 の答え 1 |
+| plan が無い時（5.7） | [S1-1] T5-08「verdict は 5.1〜5.4 で決まる」 | `designGate` 単体は T5-08 のとおり。gate 全体では 5.0〜5.4 と 5.8 が続く（5.8 は block が 5.1 に合う時） | 文書側の誤りは PR #55 の監査 1 回目の F01 で直した。S1-1 の文言は直さない |
+| 段階 | [S1-1] §1.2 は「無し = NOT_CHECKED」、`off`・`report-only`・`blocking`。§2 は「NOT_CHECKED は 2 つだけ」 | 欄無し・pin 無し・`off` が NOT_CHECKED（reason は違う）。それ以外の値は型違いも FAIL で、stage が report-only でないので verdict も FAIL | `off` が 3 つ目の NOT_CHECKED（判定 4 の `off` と同じ。作業指示 v3 §0）。S1-1 §2 の文言との差 |
+| 取得の失敗 | S8: NOT_CHECKED でなく FAIL | 5.0a。base64 でない内容（大きな file）も 5.0a。digest はデコードした bytes から計算 | 一致 |
+| `decided_ref` の形 | [V1] §3.1 は「`#49` の comment の URL」 | [S1-1] §1.1 5.2 の正規表現: `watchout` の repo の issue の comment なら何でも | 実装は S1-1。#49 に限るかは設計 v1 と S1-1 で違い、未決として ARC に残す |
+| control_handoff との一致 | [V1] §3.3 (c) にある | **実装していない**。[S1-1] §1.2 の流れ (a)〜(e) に (c) が無い。`gate.mjs`・`plan-binding.mjs` に control_handoff の `design_binding` を読む code は無い（判定 4 は `plan_binding` だけを照合） | 未実装の差。handoff が名指す設計の版と PR が名指す版が違っても、判定 5 は気づかない。足すかは ARC の指示（§7 (d)） |
+| FAIL の結果 | 欄は `{mode, result, design_id, version, findings}`（[S1-1] §1.2 (e)） | `reason`（最初の失敗の message）を足す | blocking の `5 design binding: <reason>` を作るため。判定 4 の `{mode, result, reason}` と同形 |
+| 出力の欄の位置 | 指定なし | `design_binding` は `gate()`・`failure()` の最後の欄 | T5-14 が、欄を除いた出力を変更前の bytes と比べるため |
+
+## 6. 検証計画と実測
+
+| 受入 | 試験（`tests/design-gate.test.mjs`） |
+|---|---|
+| 正例 1 | T5-01（findings = []）、gate 経由の「everything binds」（R1 なので 5.6 N/A） |
+| 負例 1 空欄の答え | T5-02（空・空白・文字列でない・`decided_ref` 無し・別の形の 5 通り、`id` を名指す）、T5-13（report-only は verdict PASS、blocking は `5 design binding: 5.2`） |
+| 負例 2 承認なし | T5-03（SHA-256 不一致・本文に 1 字足す・ref の形・digest の形・本文 null）、T5-04（marker だけ・語だけ・`@12`・`my-` 接頭の 4 通りは FAIL、括弧つきの語は PASS） |
+| 負例 3 最初の node が違う | T5-05（plan の 8 形）、T5-06（R2 で `first_node` でも先でもない 3 通り、先は PASS、循環、`riskIndex` 不正 5 通り）、T5-07（R1 は 5.6 N/A）、gate 経由の「effective risk と bound node」 |
+| 壊れた block・入力 | T5-09（block 14 形と入力 4 形で例外なし・5.1）、F01 の 3 件と gate 経由 2 件（型違いは FAIL か NOT_CHECKED で、例外にも文字列変換での PASS にもならない）、壊れた JSON の block は 5.1 だけ |
+| 壊れた plan | T5-05 と F01 の plan 形（5.5 FAIL）、判定 4 が FAIL なら plan を渡さない（「plan reaches designGate only when judgment 4 passed」） |
+| 各 reason | 5.0（`design_binding` 無し = T5-10、commit 固定でない、SHA-256 無し、型違い 5 欄）、5.0a（3 形）、5.0b（T5-11）、5.0c（0 個・2 個）、5.1〜5.6 は上、5.8（design_id・version の 2 通り）。表駆動の 12 行は soft と blocking の両方を見る |
+| `design_binding_mode` の 5 通り | 無し・pin 無し（T5-12）、`off`、`report-only`（T5-10・11・13 で verdict 不変）、`blocking`（T5-13 と表駆動で FAIL）、不正な値（`enforce` と型違い 3 通り） |
+| 決定性・純粋・既存の保持 | T5-15、import 検査（`node:crypto` だけ）、T5-14（main `77b91ef5` の gate の出力 3 場面と bytes 比較） |
+
+実測（作者が main `c05e8ed0`、Node v26.9.0 で実行）: `node --test tests/design-gate.test.mjs` = 43 件中 43 通過。全体 `node --test tests/*.test.mjs tests/u2/*.test.mjs` = 373 件中 373 通過。
+PR 本文の記録: A1（PR #51）は Red = 15 件中 12 失敗 → Green 15/15。変異 10 個は初め 2 個が生き残り、試験を足して 10/10 検出。監査 1 回目の F01 の是正は Red = 18 件中 3 失敗 → 18/18、元に戻す変異 6/6 検出。A2（PR #54）は Red = 32 件中 17 失敗、追加の Red 3、Green 43/43、変異 24/24 検出。
+独立監査（devauditor）: A1 は 1 回目 BLOCK（F01）、2 回目 PASS（6 項目、6290045511）。A2 は PASS（7 項目、6291237236）。PR #55 は 1 回目 BLOCK（F01）、2 回目 PASS（6 項目、6293586996）。PASS の 3 件は固定 checker の `--review` で `RECEIPT_ACCEPTED`。
+**未測定**:
+- 変異の script は成果物に含めていないので、変異の結果は repo から再現できない。PR 本文と監査の返却の記録に頼る。
+- 判定 5 の本体が実際の PR で動くところ。PR #54 の統合後に main の gate を実際の `gh` 経路で #53・#54 に実行したが、どちらも判定 3 以前で FAIL し、`design_binding: NOT_CHECKED`（`an earlier judgment failed`）の欄を見ただけ。pin に `design_binding_mode` を置いた consumer はまだ無く、全ての consumer で NOT_CHECKED になる。
+- private の repo の comment を workflow の `github.token` で読めるか（§8）。
+- plan の comment の読み直しの失敗（`planOf` の 5.0a）を直接起こす試験は無い（stub が同じ comment を返し続ける）。
+
+## 7. 採った案と採らなかった案
+
+- (a) 判定の本体を 1 関数にし、`gate.mjs` と将来の hook がそれだけを呼ぶ。採らなかった案: hook と `gate.mjs` がそれぞれ規則を書く。同じ判断が 2 か所で下せる状態になる（S3）。
+- (b) 段階は base の pin の `design_binding_mode`（判定 4 の `plan_binding_mode` と同じ enforcement graduation、[V1] Q5 = A）。採らなかった案: 最初から blocking（[V1] Q5 の B。`design_binding` を持たない PR が全て FAIL になる、§8 (a)）、workflow の入力で決める（workflow は保護面 R4）、PR が自分の段階を宣言する（宣言は証拠でない、S5）。pin は信頼できる base から読む。
+- (c) 5.8 を足し、plan は判定 4 が PASS の時だけ渡す。採らなかった案: 5.8 無し（PR が宣言した版と読んだ版が別でも PASS になる）、plan を常に読む（判定 4 が通さなかった bytes を 5.5・5.6 の根拠にする）、判定 5 が plan を別に取得して検証する（判定 4 の読み手と二重になる、S3）。
+- (d) [V1] §3.3 (c)「control_handoff の `design_binding` との一致」は、[S1-1] §1.2 に無く、実装していない。採った判断: S1-1 の流れに従い入れない。採らなかった案: 入れる。入れない理由は S1-1 に書かれておらず [未確認]。入れるなら別の PR で、予算は残り 28 行（§9）の中か ARC の裁定。それまでは handoff と PR の設計の版の食い違いを、判定 5 は見ない。
+
+## 8. 権限と秘密、blocking の前の未決
+
+- 判定 5 の読取りはすべて `gh api <path>` の GET で、timeout 20 秒。contents と comments だけ。書く操作は無い。sds-gate の workflow が最後に commit status を 1 つ書く（caller の `statuses: write`）のは判定とは別の step で、判定 5 はそこに関わらない。
+- 資格情報は `GH_TOKEN` = `github.token`（caller の permissions: contents・pull-requests・issues・actions・checks は read）。`SHIRUBE_READ_TOKEN`（任意の secret）は、tools の checkout にだけ使う。
+- PR の code を checkout も実行もしない。tools は reusable workflow 自身の commit（`job.workflow_sha`）から取り、caller は `pull_request_target` なので、PR は判定する check を書き換えられない。
+- FAIL の理由に載るのは、符号（5.x）、PR・設計の欄の値（型を問わず `JSON.stringify`）、読めなかった時の `gh` の error message。token の値を組み立てる code は無い。`gh` の error message に token が出ないことは実測していない [未測定]。
+- blocking にする前の未決 2 点（決めるのは Owner、ARC が案を出す。解けるまで blocking にしない）:
+  - (a) `design_binding` を持たない PR の扱い。blocking は R0・R1 を含む全ての PR を 5.0 で FAIL にする（PR #54 の design_judgment 10、distribution.md §4.1）。設計の版に依らない PR を除く扱いが要る。
+  - (b) private の repo の comment を `github.token` で読めるか [未確認]。測ったのは認証なしの GET（private は 404、public は 200）だけ。読めない時は 5.0a で FAIL。読取り用 token の追加は workflow と secret の変更（R4）。
+- pin への `design_binding_mode` の追加も保護面（`.shirube/**`、R4）で、Owner の exact-head が要る。どの pin にも無い。
+
+## 9. 予算
+
+T108（§1）の内訳（own_code 2,300 行）: 判定 5（`design-gate.mjs` と `gate.mjs` の追記）≤ 150、席側の hook ≤ 150（別枠。判定 5 の残りとは合算しない）、KIT-ADF 450、未割当 50。
+使用: A1 の `scripts/**` の追加 61 行（`design-gate.mjs`）+ A2 の 61 行（`design-gate.mjs` 7、`gate.mjs` 52、`plan-binding.mjs` 2）= 122 行、残り 28 行（PR #54 本文の数え方）。最終の木では `git diff --numstat 77b91ef5 c05e8ed0` の追加が 63 + 52 + 2 = 117 行（A2 が A1 の 5 行を書き換えた分、PR ごとの合計より 5 少ない）。どちらの数え方でも 150 以内。`own-code-budget` の全体は main で 1,820 / 2,300（他の作業の分を含む）。
+A1・A2 の分割そのものは ARC の作業指示 v3・v4 による。数字から読めること: hygiene の上限は PR の追加 400 行・20 file、新規 file 300 行。A1 = 追加 237 行、A2 = 追加 245 行（削除 32 行）で、1 本にすると約 480 行になる。試験 file も 297 行で上限に近い。固定 checker は全項目が PASS でなければ受領せず（N/A が無い）、v4 は純粋関数（A1、6 項目）と配線（A2、7 項目）を別の項目集合にした。
+
+## 10. 参照の一覧（comment の本文の SHA-256 は、取得した bytes から計算）
+
+| 名 | URL | SHA-256 |
+|---|---|---|
+| 作業指示（この記録）CH-SHIRUBE-GATE5-DESIGN-AUDIT-20261021 | https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6301860279 | `9ef06cfdf7ab75c93f18f21dbb6b950e0e7a5fb7fbfa4697d982ffca8b5a1fba` |
+| T154（Owner の決定） | https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6301299856 | `9eac9f4d6d9a52e9538ce63a20fabf3f9ac0b09ff9b6f2235a75283e05cec02c` |
+| T102 | https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6284653618 | `f87958eba3e7fbed02d317a58927642ad900772cfb4ce078a1f43957037be659` |
+| T103 | https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6284872857 | `9c1a7ac0fd1c5d95eebfb7dc710672e7de1adda50b2360e4219dde843b2f5af4` |
+| T108 | https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6285364300 | `6698fb37f9b4c5f5fe3b2eab1d27600b09312afb36e70809493501bc47992154` |
+| [V1] 設計 v1 | https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6284740098 | `4db1d8efb614f2893f00bb56d174da55519501963b9e3acde37a17de3cd8d72e`（T103 が引く `f64c2f25…` は、本文に改行を 1 つ足した値。訂正 https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6285591709） |
+| [S1-1] 作業指示 | https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6285014153 | `70edaaa05102fb8f3c1d5f4d20f04b9b161366eab1368acd0e0b8f2b96c974c3` |
+| 道筋 DP-SUITE-001 generation 6 | https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6290585968 | `8c89e9d81736189caf8878b9cb5bb43e828cae3d982c6532b42597caa6773231` |
+| A1 / A2 の作業指示 v4 | https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6288911560 | `1256938635ef0c1e747826de70547c7b15f230a9ea4184b91d48b463ab68a8c8` |
+| PR-B の作業指示 | https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6292122024 | `108a331d480554cf3ee3aea39b4ec0023e208c2e84809db5eae60e858cf1d594` |
+
+PR（`watchout/shirube`）: #51（head `acc76dae`、統合 `7f50460c`）、#54（head `541af1c3`、統合 `4362ee1e`）、#55（head `1144d08c`、2 回目の PASS で受領済み）。基準: main `c05e8ed0`、`docs/sds/audit-method.md` §3。
+
+| 監査の返却（PASS） | URL | SHA-256 |
+|---|---|---|
+| A1（PR #51、6 項目） | https://github.com/watchout/shirube/pull/51#issuecomment-6290045511 | `bb8d8d378c906e3ceaecb8dab5415e54daa8ed5f61f3f519a1739fc6eb098556` |
+| A2（PR #54、7 項目） | https://github.com/watchout/shirube/pull/54#issuecomment-6291237236 | `e1dea6c2108a59a68b18767cc431f3bcda4b31bbcfc51663e82d2fd28ee1c7c4` |
+| 文書（PR #55、6 項目） | https://github.com/watchout/shirube/pull/55#issuecomment-6293586996 | `454aace857338fa8755516a9995ea193656a9d37f9edd2b2d1ebe00cd2211d98` |

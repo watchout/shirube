@@ -1,0 +1,37 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@c05e8ed03d9ac91b218a4fea9084cfef476b8181/docs/sds/audit-method.md#3",
+  "scope": "shirube の sds-gate 判定 5（design binding）の設計の監査（D1〜D6、後から行う = Owner の決定 T154）: docs/design/sds-gate-judgment-5.md（設計の記録、新しい file）と、本項目集合の file docs/process/audit-items/design-gate-design-audit-items.json。監査の対象は設計で、code（scripts/sds/design-gate.mjs・gate.mjs、main c05e8ed0 に統合済み）は設計との一致を見る材料。記法: [V1] = 設計 v1 iyasaka-arc#57 6284740098 §3（本文 SHA-256 4db1d8efb614f2893f00bb56d174da55519501963b9e3acde37a17de3cd8d72e）、[S1-1] = 作業指示 iyasaka-arc#57 6285014153（70edaaa05102fb8f3c1d5f4d20f04b9b161366eab1368acd0e0b8f2b96c974c3）、[OD] = T154 iyasaka-arc#49 6301299856、[CH] = 作業指示 CH-SHIRUBE-GATE5-DESIGN-AUDIT-20261021、[M] = shirube main c05e8ed0。全 6 項目必須。",
+  "items": [
+    {
+      "id": "DGD-1",
+      "criterion": "目的と対象外: 設計の記録が、Owner の原文と決定 ID（T102 = A iyasaka-arc#49 6284653618、T103 = A 6284872857、予算 T108 = A 6285364300）を引き、判定 5 の目的（設計の版に空欄の答え・承認の記録の欠け・主要な接続の順の乱れがある PR を、構造の事実だけで見つける）と対象外（設計の意味の良し悪し、Owner の本人確認、席側の hook = SEAT-HOOK、判定 4 以下の挙動の変更）を書いている。[V1] §3.1・§3.3・§3.4 と食い違わない。",
+      "basis": "audit-method §3 D1、[V1] §3"
+    },
+    {
+      "id": "DGD-2",
+      "criterion": "全受入の検証計画: 記録が、判定 5 の受入（正例 1・負例 3 = 空欄の答え／承認なし／最初の node が違う、壊れた block・壊れた plan、5.0〜5.0c・5.8 の各 reason、design_binding_mode の無し・off・report-only・blocking・不正な値の 5 通り）のそれぞれを、どの試験（T5-01〜14、PR #51・#54 の Evidence）が示すかに対応づけ、実測の結果（変異の試験を含む）を [M] の試験名で引いている。未測定があれば未測定と書いている。",
+      "basis": "audit-method §3 D2、[S1-1] §4"
+    },
+    {
+      "id": "DGD-3",
+      "criterion": "代替案と設計 v1 からの差: 記録が、少なくとも次を、採った案と採らなかった案と理由つきで書いている。(a) 判定の本体を 1 関数（designGate）にし hook と gate.mjs がそれだけを呼ぶ（S3）。(b) 段階を base の pin の design_binding_mode で決める（判定 4 と同じ enforcement graduation）。(c) 実装で足した 5.8（PR が名指す design_id・version と block の一致）と、plan を渡すのは判定 4 が PASS の時だけという条件。(d) 設計 v1 の「control_handoff の design_binding と一致」(c) を今の実装がどう扱っているか（扱っていなければ、未実装として明記）。",
+      "basis": "audit-method §3 D3、[V1] §3.3・§3.4"
+    },
+    {
+      "id": "DGD-4",
+      "criterion": "秘密・権限・観測・復旧・データ: 記録が、sds-gate の workflow が読む資格情報（github.token、読取りだけ。private の repo の comment を読めるかは未確認 = 未決 (b)）、読取り専用で PR の code を checkout も実行もしないこと、FAIL の理由を JSON に書き秘密を含めないこと、blocking にする前の未決 2 点（design_binding を持たない PR の扱い、private の comment の読取り）と、決める人（ARC が案、Owner が決める）を書いている。",
+      "basis": "audit-method §3 D4、distribution.md §4.1、SDS S9"
+    },
+    {
+      "id": "DGD-5",
+      "criterion": "予算と範囲: 記録が、判定 5 の予算 150 行（T108 = A の内訳）と実際の使用（A1 61 行 + A2 61 行 = 122 行、PR #54 本文）、残り 28 行、および席側の hook の予算 150 行が別枠であることを書いている。各 file 300 行・PR 400 行の上限の中で A1・A2 に分けた理由も書いている。",
+      "basis": "audit-method §3 D5、[OD] T108 iyasaka-arc#49 6285364300"
+    },
+    {
+      "id": "DGD-6",
+      "criterion": "検証可能性と独立性: PR の変更が scope の 2 file だけ（code・試験・.github/**・.shirube/** に触れていない）。CI が成功している。PR 本文の sds-pr/1 block（risk_class R1、changed_paths、delivery_plan_binding と control_handoff = [CH] の ref と sha256）がある。記録が引く設計 v1・S1-1・PR #51・#54・#55 の参照に、comment の URL と本文の SHA-256（または PR の head）が付いている。作者（spe-dev）と監査者（devauditor）が別の席。この監査の受領が、PR #55（judgment 5 の文書）の統合の条件（[OD]）。",
+      "basis": "audit-method §2・§3 D6、[CH] §3"
+    }
+  ]
+}
