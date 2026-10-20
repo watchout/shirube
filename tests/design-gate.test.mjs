@@ -90,6 +90,43 @@ test("T5-09 a wrong schema or a broken block FAILs 5.1 and never throws", () => 
   for (const i of [undefined, null, {}, { plan: 5, boundNodeId: {}, riskIndex: NaN }]) assert.doesNotThrow(() => designGate(block(), i));
 });
 
+// F01 of the first audit (iyasaka-ai, PR #51): a reference or a digest is a string or it is nothing. JSON also says objects and arrays; those must FAIL
+// with a finding, never throw (S1-1 §1.1) and never pass through an implicit string conversion.
+const WRONG = (original) => [null, true, 7.5, "", [], {}, { toString: null }, [original]].filter((x) => !(Array.isArray(x) && x.length === 0 && Array.isArray(original)));
+const place = (path) => { const doc = JSON.parse(JSON.stringify(block())); return [doc, path.slice(0, -1).reduce((x, k) => x[k], doc), path.at(-1)]; };
+const CRITICAL = [["schema"], ["design_id"], ["version"], ["open_decisions"], ["approval"], ["approval", "ref"], ["approval", "sha256"], ["main_connection"], ["main_connection", "first_node"],
+  ["open_decisions", 0, "answer"], ["open_decisions", 0, "decided_ref"]];
+const MINOR = [["open_decisions", 0, "id"], ["open_decisions", 0, "question"], ["open_decisions", 0, "options"], ["open_decisions", 0, "default"], ["main_connection", "id"], ["main_connection", "statement"]];
+test("F01 a field of the wrong JSON type FAILs with a finding: no exception and no PASS through a string conversion", () => {
+  for (const path of CRITICAL) {
+    const [, holder, key] = place(path);
+    for (const wrong of WRONG(holder[key])) {
+      const [doc, at, k] = place(path); at[k] = wrong;
+      let r; assert.doesNotThrow(() => { r = designGate(doc, input()); }, `${path.join(".")} = ${JSON.stringify(wrong)}`);
+      assert.deepEqual([r?.verdict, r?.findings.length > 0], ["FAIL", true], `${path.join(".")} = ${JSON.stringify(wrong)}`);
+    }
+  }
+});
+test("F01 a field that no judgment reads may have any JSON type, and an unreadable decision id is still named", () => {
+  for (const path of MINOR) for (const wrong of [null, 7.5, [], {}, { toString: null }]) {
+    const [doc, at, k] = place(path); at[k] = wrong;
+    assert.doesNotThrow(() => designGate(doc, input()), `${path.join(".")} = ${JSON.stringify(wrong)}`);
+  }
+  const [doc, at] = place(["open_decisions", 0, "id"]); at.id = { toString: null }; at.answer = "";
+  assert.doesNotThrow(() => designGate(doc, input()));
+  assert.equal(designGate(doc, input()).findings[0].reason, "5.2");
+});
+test("F01 inputs of the wrong JSON type FAIL or are NOT_CHECKED and never throw", () => {
+  const odd = [undefined, null, 5, "x", [], {}, { toString: null }];
+  for (const approvalBody of [...odd, [BODY]].filter((x) => x !== "x")) assert.deepEqual(failed(designGate(block(), input({ approvalBody }))), ["5.3"], JSON.stringify(approvalBody)); // a string is read as a body (T5-03, T5-04)
+  for (const boundNodeId of [...odd, ["N2"]]) assert.deepEqual(failed(designGate(block(), input({ boundNodeId }))), ["5.6"], JSON.stringify(boundNodeId));
+  const sick = { id: { toString: null }, depends_on: [{ toString: null }, null], lifecycle_status: { toString: null } };
+  for (const p of [5, "x", [], { delivery_graph: 5 }, { delivery_graph: { nodes: {} } }, plan(null, 5, "x", [], sick), plan(sick, node("N2", "PLANNED", [null, {}]))]) {
+    assert.doesNotThrow(() => designGate(block(), input({ plan: p })), JSON.stringify(p));
+    assert.deepEqual(failed(designGate(block(), input({ plan: p }))), ["5.5"], JSON.stringify(p));
+  }
+});
+
 test("T5-15 the same input gives the same output, and the inputs are not changed", () => {
   const cases = [[block(), input()], [block({ schema: "x" }), input()], [block({ open_decisions: [{ id: "D1" }] }), input({ plan: null })], [block(), input({ boundNodeId: "N4" })]];
   for (const [b, i] of cases) assert.equal(JSON.stringify(designGate(b, i)), JSON.stringify(designGate(b, i)));

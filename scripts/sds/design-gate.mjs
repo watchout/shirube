@@ -5,6 +5,10 @@ import { createHash } from "node:crypto";
 const REF = /^https:\/\/github\.com\/watchout\/[\w.-]+\/issues\/\d+#issuecomment-\d+$/;
 const NOTES = new WeakSet();
 const text = (x) => typeof x === "string" && x.trim() !== "";
+// Fields come from JSON, so they can be any type: only a string is tested or printed as one (no implicit conversion).
+const ref = (x) => typeof x === "string" && REF.test(x);
+const hex = (x) => typeof x === "string" && /^[0-9a-f]{64}$/.test(x);
+const show = (x) => (typeof x === "string" ? x : JSON.stringify(x));
 const object = (x) => x !== null && typeof x === "object" && !Array.isArray(x);
 const bad = (reason, why, id) => ({ reason, ...(typeof id === "string" && { id }), message: `${reason} ${why}` });
 const note = (reason, status, why) => { const n = { reason, message: `${reason} ${status}: ${why}` }; NOTES.add(n); return n; };
@@ -24,13 +28,13 @@ function shaped(b) { // 5.1
     && object(b.approval) && object(b.main_connection) && text(b.main_connection.first_node);
 }
 function answered(b) { // 5.2
-  const open = (d) => !(text(d?.answer) && REF.test(d?.decided_ref));
-  return b.open_decisions.filter(open).map((d) => bad("5.2", `open decision ${d?.id} needs an answer and a decided_ref`, d?.id));
+  const open = (d) => !(text(d?.answer) && ref(d?.decided_ref));
+  return b.open_decisions.filter(open).map((d) => bad("5.2", `open decision ${show(d?.id)} needs an answer and a decided_ref`, d?.id));
 }
 function approved(b, body) { // 5.3, 5.4: the digest is recomputed from the fetched body, never taken from the block
   if (typeof body !== "string") return [bad("5.3", "there is no approval body to check")];
   const found = [], token = `${b.design_id}@${b.version}`;
-  if (!REF.test(b.approval.ref) || !/^[0-9a-f]{64}$/.test(b.approval.sha256) || createHash("sha256").update(body).digest("hex") !== b.approval.sha256) {
+  if (!ref(b.approval.ref) || !hex(b.approval.sha256) || createHash("sha256").update(body).digest("hex") !== b.approval.sha256) {
     found.push(bad("5.3", "approval.ref or approval.sha256 does not match the approval body"));
   }
   const whole = new RegExp(`(?<![\\w.-])${token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w.-])`);
@@ -40,7 +44,7 @@ function approved(b, body) { // 5.3, 5.4: the digest is recomputed from the fetc
 function bounded(first, nodes, bound, risk) { // 5.6: from R2 up, nothing else is built before the main connection
   if (!Number.isInteger(risk) || risk < 0 || risk > 4) return [bad("5.6", "riskIndex must be an integer from 0 to 4")];
   if (risk < 2) return [note("5.6", "N/A", `risk index ${risk} is below 2`)];
-  return bound === first || ancestors(nodes, bound).has(first) ? [] : [bad("5.6", `${bound} is not first_node ${first} and does not depend on it`)];
+  return bound === first || ancestors(nodes, bound).has(first) ? [] : [bad("5.6", `${show(bound)} is not first_node ${first} and does not depend on it`)];
 }
 function connected(b, plan, bound, risk) { // 5.5, 5.6, 5.7
   const first = b.main_connection.first_node, nodes = plan?.delivery_graph?.nodes;
