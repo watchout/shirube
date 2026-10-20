@@ -1,0 +1,37 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@0b00f1270f80fc9969c1aacf9801a8591516773d/docs/sds/audit-method.md#3",
+  "scope": "shirube の sds-gate 判定 5 の PR-A1（R2）: scripts/sds/design-gate.mjs、tests/design-gate.test.mjs（T5-01〜09・15）、tests/fixtures/design-gate/**、本項目集合の file docs/process/audit-items/design-gate-pr-a.json（A1 用の bytes）。gate.mjs・plan-binding.mjs・template と T5-10〜14 は A2 の項目集合で判定する。記法: [I] = 作業指示 S1-1 v1 iyasaka-arc#57 6285014153、[D] = 設計 v1 iyasaka-arc#57 6284740098 §3、[CH] = 本作業指示 CH-SHIRUBE-GATE5-PR-A-20261020 の v4、[B] = 予算 OD iyasaka-arc#49 6285364300（判定 5 ≤ 150 行）。全 6 項目必須。",
+  "items": [
+    {
+      "id": "SHIRUBE-GATE5-A1-01",
+      "criterion": "範囲: base..head の変更が scope の file だけ。scripts/sds/gate.mjs・plan-binding.mjs・plan-admission*、templates/**、.github/**、package.json、scripts/hygiene/** に触れていない。",
+      "basis": "[I] §3、[CH] allowed_paths・§0 の答え 5"
+    },
+    {
+      "id": "SHIRUBE-GATE5-A1-02",
+      "criterion": "判定: designGate(block, { approvalBody, plan, boundNodeId, riskIndex }) が [I] §1.1 の形で、判定 5.1〜5.7 が [D] §3.1 と [I] §1.1 のとおり。plan が null の時は 5.5・5.6 が NOT_CHECKED で、verdict は 5.1〜5.4 で決まる。意味の判定（問いの妥当性・答えの反映）を含まない。壊れた入力でも例外を投げず FAIL と reason を返す。",
+      "basis": "[D] §3.1、[I] §1.1"
+    },
+    {
+      "id": "SHIRUBE-GATE5-A1-03",
+      "criterion": "S4/S5: designGate が時計・乱数・環境変数・ネットワークを読まない。approval.sha256 を approvalBody の bytes から再計算して照合している（宣言値を信じない）。同じ入力で同じ出力になる試験がある。",
+      "basis": "[I] §2・§3、SDS S4・S5"
+    },
+    {
+      "id": "SHIRUBE-GATE5-A1-04",
+      "criterion": "負例の実効: A1 の負例（T5-02〜T5-06・T5-09）が FAIL になる。監査席が手元で負例の期待値を 1 つ反転させ、試験が落ちる出力を監査結果に貼る。",
+      "basis": "[I] §4、audit-method §3"
+    },
+    {
+      "id": "SHIRUBE-GATE5-A1-05",
+      "criterion": "予算: own-code-budget の出力（監査対象の head）で、A1 の scripts/** の追加行が示され、合計がその head の profile の上限以内。PR 本文に、判定 5 の 150 行のうち A1 が使った行数と A2 に残る行数が書かれている。",
+      "basis": "[B]、[CH] §0 の答え 5"
+    },
+    {
+      "id": "SHIRUBE-GATE5-A1-06",
+      "criterion": "証拠と独立性: CI の test と hygiene が監査対象の head で成功し run が版付きで示されている。既存の試験が無変更で通る。PR 本文の sds-pr/1 block（risk_class R2、changed_paths、delivery_plan_binding と control_handoff = [CH] の ref と sha256、audit）と Evidence がある。作者（spe-dev）・監査者（devauditor）・統合担当（suite-lead）が別の席。",
+      "basis": "[I] §7、distribution §4"
+    }
+  ]
+}
