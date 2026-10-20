@@ -1,0 +1,27 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@01ecc1a6b3da9ff809e3283f0d3e24c68d5fadf6/docs/sds/audit-method.md#3",
+  "scope": "shirube の KIT-ADF 順番 2 の PR-4（R2、docs だけ）、追補 1 の形: docs/sds/delivery-plan/README.md（新しい file）と、本項目集合の file docs/process/audit-items/kit-adf-order2-pr4.json。schema と SKILL.md の写しは置かない。記法: [CH] = 作業指示 CH-SHIRUBE-KIT-ADF-PR3B-PR4-20261020 と追補 1、[E] = E 版指示書 iyasaka-arc#57 6230190519 §4 の PR-4、[ADF] = watchout/ai-dev-framework 561baebe980f0ae0c275b730bb5dc09cfb66b781。全 4 項目必須。",
+  "items": [
+    {
+      "id": "KA4-1",
+      "criterion": "範囲: base..head の変更が scope の 2 file だけ（どちらも新しい file）。docs/sds/delivery-plan/ に README.md 以外の file を置いていない。scripts/**、tests/**、templates/**、kit/**、.github/**、.shirube/**、package.json に触れていない。",
+      "basis": "[CH] 追補 1"
+    },
+    {
+      "id": "KA4-2",
+      "criterion": "README の参照: 次の 2 file について、出所（repo watchout/ai-dev-framework・commit 561baebe980f0ae0c275b730bb5dc09cfb66b781・path）、bytes、SHA-256 を 1 file 1 行で書き、値が [ADF] の実物と一致する（監査者が取得して照合する）。(1) schemas/shirube/delivery-plan.v1.schema.json、35699 bytes、e7714b11e4f9c96ef437045dc8d0ed8de5dc780ba0d935ff6bb672eff43f5ccb。(2) templates/skills/applying-delivery-planning/SKILL.md、8714 bytes、eaf654b3c75de52280ac07ffea6cb08cd94067fa5bf12d285431fb393089167c。",
+      "basis": "[E]、[CH] 追補 1"
+    },
+    {
+      "id": "KA4-3",
+      "criterion": "README の説明と知識の 1 か所（S3）: README が次を書く。delivery plan の形と書き方の正本は上の 2 file で、ADF の同じ道具は凍結（[E]）。Shirube は計画の受付（PLAN_ADMISSION）に要る判定だけを scripts/sds/plan-admission-shape.mjs と scripts/sds/plan-admission.mjs に自前で持つ。道筋の self_application の schema_digest と skill_digest は上の SHA-256 と同じ値。README は schema の規則や SKILL の手順を書き写していない（参照だけ）。",
+      "basis": "[E]、SDS S3、[CH] 追補 1"
+    },
+    {
+      "id": "KA4-4",
+      "criterion": "証拠と独立性: CI の test と hygiene（pr-size を含む）が監査対象の head で成功し、run が版付きで示されている。own-code-budget の行数が base と同じ。PR 本文の sds-pr/1 block（risk_class R2、changed_paths が diff と一致、delivery_plan_binding と control_handoff = [CH] の元の作業指示の ref と sha256、audit の依頼と受領）があり、Evidence に追補 1 の ref と sha256 を書く。作者（shirube）・監査者（devauditor）・統合担当（suite-lead）が別の席。",
+      "basis": "[CH] §3 と追補 1"
+    }
+  ]
+}
