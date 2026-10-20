@@ -163,3 +163,32 @@ Unit完了は対象の設計・実装・試験・必要な独立監査・採用�
 
 Ownerは4 Unitの基本方針とU1/U2先行を確認し、共通部＋製品別最小アダプタのARC判断/設計と監査後着手を求めた。最初の実証対象や二つの内部責任、U1/U2の開始方針を再質問しない。未選定の技術を比較・契約化して独立監査へ進む。
 新しい結果を変える判断が生じない通常の具体化には、工程ごとの開始指示を追加しない。未合意の接続方式・認可・範囲を、この計画の採択だけで決定しない。
+
+## 2026-10-21 の注記: U1〜U4 は薄片に置き換える（T158 = A）
+
+上の§1〜§8は、書いた時点の記録として変えない。Ownerの決定で、Shirubeの段1は「制御系の薄片1〜3がAUNで1周する」ことに置き換わった。このため、U1〜U4をUnitとして順に作る案は薄片に置き換える。U1〜U4の要求は捨てず、下の振り分け表のとおり、止める・検査する所はShirube、始める・進捗を持つ所はOnza、配達はAUNに分ける。
+
+- Ownerの決定: T158 = A（[iyasaka-arc#49 6302033481](https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6302033481)、本文SHA-256 `d334bdb7ea615f854d0d088afb85d01d122a77d62dfc7a2d689f580c53e2c571`）の2・3・6。
+- 道筋: DP-SUITE-001 generation 7（[iyasaka-arc#57 6302366240](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6302366240)、本文SHA-256 `22c30200d18ea7fabfb62c887546d59d090fa8ae9a569dfa079c81eb18913776`）のnode DP-N-SHIRUBE-U1U2。
+- 作業指示: CH-SHIRUBE-U1U2-CLOSE-20261021（[iyasaka-arc#57 6302444634](https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6302444634)、本文SHA-256 `58ae9f729dea7052db6134b00f57178e83f6145d63bb5c22556eeab40bd0b02b`）。
+
+### 振り分け表
+
+| 要求 | 止める・検査する（Shirube） | 回す・持つ（ほか） |
+|---|---|---|
+| U1 承認に沿った作業開始 | 承認の無い開始を席の側で止める = 席の hook（SEAT-HOOK、第1層の1b）。承認の記録と設計の版の結び = 判定5 | 作業の開始そのもの = Onza（薄片3） |
+| U2 完了条件と進捗 | 完了条件 = 判定1〜5、計画の受付（KIT-ADF）、監査の受領のchecker | 進捗の状態 = Onzaの台帳。U2の進行の核（PR #34・#39）はOnzaの台帳の設計の入力 |
+| U3 AUNによる引継ぎ | 定義どおりに渡したかの検査（薄片3） | 配達 = AUN |
+| U4 Kusabiによる再開 | — | Kusabi（後の段） |
+
+### 止まっていたU1・U2の文書のPR 5本の対応表
+
+5本はmergeせずにcloseする。branchは消さない。
+
+| PR | 中身 | 引き継ぎ先 |
+|---|---|---|
+| [#27](https://github.com/watchout/shirube/pull/27) | U1/U2の共通契約の利用と保存・停止の接続 | 共通基盤0.2・0.3（onza）とOnzaの台帳。席の在否は0.3のregister_session |
+| [#28](https://github.com/watchout/shirube/pull/28) | 初版のログイン中稼働とmerge・統合担当 | 統合担当 = suite-leadのstanding（T129 = A、[iyasaka-arc#49 6288848200](https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6288848200)）。稼働の形はOnza（薄片3） |
+| [#29](https://github.com/watchout/shirube/pull/29) | 工程完了を条件別の成果・証拠照合に結ぶ | 判定1〜5（sds-gate）と監査の項目集合・受領のchecker。道筋のterminal_acceptance |
+| [#30](https://github.com/watchout/shirube/pull/30) | SDS-V2で完走を優先するUnit計画と試験先行 | T102 = Aの薄片の順（Suite g7）。試験先行は[監査方法](../sds/audit-method.md)§3のまま |
+| [#32](https://github.com/watchout/shirube/pull/32) | 共通物理接続案とShirubeの本人回答検証の差分 | 共通基盤0.3（在否・自己登録）とAUN N14（配送の届け先）。本人の確かめはcommon.verify_current_tx |
