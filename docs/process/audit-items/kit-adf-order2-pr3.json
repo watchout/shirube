@@ -1,0 +1,42 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@0b00f1270f80fc9969c1aacf9801a8591516773d/docs/sds/audit-method.md#3",
+  "scope": "shirube の KIT-ADF 順番 2 の PR-3（R2）: scripts/sds/plan-admission.mjs、scripts/sds/plan-admission-shape.mjs（pin の項目と reason の名前を export する追記だけ）、tests/plan-admission-equivalence.mjs、tests/plan-admission.test.mjs、tests/plan-admission-gen*.mjs（fixture を作る script を置く場合）、tests/fixtures/plan-admission/**、本項目集合の file docs/process/audit-items/kit-adf-order2-pr3.json。PR-3 は 3a（plan-admission.mjs と単体試験）と 3b（比較の道具・fixture・門）の 2 本に分けてよい。各 PR に無い file の項目は N/A と書く。記法: [W] = E 版指示書 iyasaka-arc#57 6230190519、[CH] = 作業指示 CH-SHIRUBE-KIT-ADF-PR3-20261020 の v2、[Q] = 母集団の裁定 iyasaka-arc#57 6287945980、[Q2] = そのグループ数の訂正 iyasaka-arc#57 6288304108 と本作業指示 v2。全 7 項目必須。",
+  "items": [
+    {
+      "id": "KA3-1",
+      "criterion": "範囲と大きさ: base..head の変更が scope の file だけ。gate.mjs・plan-binding.mjs・design-gate.mjs、scripts/hygiene/**、.github/**、package.json、ADF の側に触れていない。plan-admission-shape.mjs の変更は export の追記だけで、判定の中身を変えていない。追加は PR ごとに 400 行以内（fixtures は数えない）、新しい file はそれぞれ 300 行以内（pr-size の出力）。",
+      "basis": "[W] §1・§3・§4、[CH]"
+    },
+    {
+      "id": "KA3-2",
+      "criterion": "境界: planAdmission(document, { actualSelfPin }) が { decision: \"PLAN_ADMISSION\", verdict, reason, findings: [{ reason, path, message }] } を返す。ADF の code の写し（部分を含む）ではない。TERMINAL_ADMISSION・TEST_ADMISSION・REPLAN・加速・ordinary binding・resolve-*-ref を含まない。gate.mjs の判定 4 につないでいない。",
+      "basis": "[W] §1・§3"
+    },
+    {
+      "id": "KA3-3",
+      "criterion": "等価: ADF 561baebe が report を返す入力では、verdict と reason が完全に同じで、findings の (reason, path) の組の集合が同じ。比較の道具は引数で ADF の checkout を受け取り、HEAD が 561baebe でなければ fail-closed で止まる。ADF が無い CI では skip をはっきり出す。CI に token を置かない。監査席が手元で ADF 561baebe を固定して道具を実行した出力を、監査結果に貼る。",
+      "basis": "[W] §2、[CH] §0 の答え 1"
+    },
+    {
+      "id": "KA3-4",
+      "criterion": "入力の集合と門: tests/fixtures/plan-admission/ に、[W] §2 の (a)〜(d) と、(e) reason の組み合わせ（単独・対・三つ組。作れない組み合わせは理由を一覧に書く）がある。呼び出し位置の一覧（ADF の file と行、種別 literal／helper、helper の名前、path 式、展開後の path）が data として固定されている。門は 83 グループ（[Q] と [Q2]: リテラル 23 は V8 coverage の枝の実行回数、helper を呼ぶ 60 は指摘の path で数える。path 式の変数は直前の for の実際の値で展開し、展開後の path が同じ位置だけをまとめる。ADF 561baebe ではまとまる組は無い）のどれもが 1 回以上出たことで、理由の無い漏れが 0。",
+      "basis": "[W] §2、[Q]、[CH] §0 の答え 2、[Q2]"
+    },
+    {
+      "id": "KA3-5",
+      "criterion": "fail-closed: ADF が例外を投げる入力（既知は owner_outcome.source_refs と next_action.changes_predicates が配列でも文字列でもない形）では、planAdmission が例外を投げずに BLOCK を返す。比較の道具は、ADF が例外を投げた入力の数と、その全部で Shirube が BLOCK だったことを出力する。この差は PR 本文の deviation_ledger に書かれ、ADF は直していない。",
+      "basis": "[W] §3、SDS S8、[CH] §0 の答え 1"
+    },
+    {
+      "id": "KA3-6",
+      "criterion": "知識の 1 か所と決定性と予算: pin の 4 項目と reason の名前は plan-admission-shape.mjs から import し、plan-admission.mjs に書き直していない（S3）。planAdmission は環境変数・時計・乱数・ネットワークを読まず、同じ入力で同じ出力になる試験がある（S4）。own-code-budget の出力（監査対象の head）で、KIT-ADF の scripts/**（PR-2 と PR-3 の合計）が 450 行以内、合計がその head の profile の上限以内。",
+      "basis": "[W] §4、SDS S3・S4、[CH] §0 の答え 3・4"
+    },
+    {
+      "id": "KA3-7",
+      "criterion": "証拠と独立性: CI の test と hygiene が監査対象の head で成功し、run の URL か check の ID が版付きで示されている。PR 本文の sds-pr/1 block（risk_class R2、changed_paths が diff と一致、delivery_plan_binding と control_handoff = [CH] の ref と sha256、audit の依頼と受領）と deviation_ledger がある。作者（shirube）・監査者（devauditor）・統合担当（suite-lead）が別の席。",
+      "basis": "[W] §6、distribution §4"
+    }
+  ]
+}

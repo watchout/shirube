@@ -93,3 +93,10 @@ export function checkPlanShape(document) {
   nodeId(document.next_action, out);
   return out;
 }
+
+// Shared with plan-admission.mjs (S3): the pin's fields, and every reason PLAN_ADMISSION can give.
+export const PIN_FIELDS = Object.keys(PIN.fields);
+export const REASON = Object.freeze({
+  INVALID_DELIVERY_PLAN: INVALID, UNKNOWN_FIELD: "UNKNOWN_FIELD", STALE_BASELINE: "STALE_BASELINE", CRITICAL_PATH_INVALID: "CRITICAL_PATH_INVALID",
+  SELF_APPLICATION_DRIFT: "SELF_APPLICATION_DRIFT", PLAN_STATUS_NOT_ADMITTED: "PLAN_STATUS_NOT_ADMITTED", OWNER_OUTCOME_INCOMPLETE: "OWNER_OUTCOME_INCOMPLETE", DELIVERY_GRAPH_INCOMPLETE: "DELIVERY_GRAPH_INCOMPLETE",
+});

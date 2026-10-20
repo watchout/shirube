@@ -1,0 +1,840 @@
+{
+  "schema_version": "shirube-delivery-plan/v1",
+  "plan_id": "DP-SPEC-SHIRUBE-005-ONE-WEEK-DELIVERY-001",
+  "generation": 2,
+  "status": "ADMITTED",
+  "control_source": {
+    "url": "https://github.com/watchout/ai-dev-framework/issues/576#issuecomment-5089077121",
+    "body_sha256": "58b700a219b8d18e2910319889ca23e344e49f9c7df0a253f825573714525304"
+  },
+  "owner_outcome": {
+    "source_refs": [
+      "https://github.com/watchout/ai-dev-framework/issues/576#issuecomment-5089077121",
+      "https://github.com/watchout/ai-dev-framework/issues/576#issuecomment-5085676216",
+      "https://github.com/watchout/ai-dev-framework/issues/576#issuecomment-5086591642"
+    ],
+    "observable_behavior": "every material development plan is admitted against sourced outcome, fresh baseline, covered delivery graph, critical path, immutable test subject, replan triggers, and operational terminal evidence",
+    "environment": "exact merged target repository heads plus current Shirube policy/runtime readback",
+    "non_goals": [
+      "unrelated product work",
+      "invented authentication, UI, schedule, rollout, or product requirements",
+      "report-only completion"
+    ],
+    "terminal_evidence": "DPL-001 through DPL-015 exact readback, all four negative specimens rejected, and zero uncovered parent predicates",
+    "terminal_predicates": [
+      {
+        "id": "DPL-001",
+        "description": "owner outcome is sourced observable and terminal",
+        "evidence_required": "schema and positive fixture"
+      },
+      {
+        "id": "DPL-002",
+        "description": "live baseline records repo runtime config and policy",
+        "evidence_required": "validator baseline result"
+      },
+      {
+        "id": "DPL-003",
+        "description": "graph covers every parent terminal predicate",
+        "evidence_required": "graph coverage result"
+      },
+      {
+        "id": "DPL-004",
+        "description": "critical path steps change unmet predicates",
+        "evidence_required": "critical path result"
+      },
+      {
+        "id": "DPL-005",
+        "description": "test contracts freeze exact finite subjects",
+        "evidence_required": "test admission result"
+      },
+      {
+        "id": "DPL-006",
+        "description": "material transitions require a new generation",
+        "evidence_required": "replan result"
+      },
+      {
+        "id": "DPL-007",
+        "description": "terminal requires operational parent evidence",
+        "evidence_required": "terminal admission result"
+      },
+      {
+        "id": "DPL-008",
+        "description": "canonical skill is present and distributed byte-identically",
+        "evidence_required": "path and digest manifest"
+      },
+      {
+        "id": "DPL-009",
+        "description": "ARC composes delivery planning",
+        "evidence_required": "downstream ARC check after self-application"
+      },
+      {
+        "id": "DPL-010",
+        "description": "ARC control author cannot implement product prototypes",
+        "evidence_required": "downstream ARC boundary check"
+      },
+      {
+        "id": "DPL-011",
+        "description": "authoritative aggregate consumes delivery plan validation",
+        "evidence_required": "aggregate integration test"
+      },
+      {
+        "id": "DPL-012",
+        "description": "canonical org policy pins admitted ADF",
+        "evidence_required": "downstream policy readback"
+      },
+      {
+        "id": "DPL-013",
+        "description": "Shirube self plan covers DP0 through DP7",
+        "evidence_required": "this plan and validator result"
+      },
+      {
+        "id": "DPL-014",
+        "description": "fresh planning requests trigger the skill",
+        "evidence_required": "trigger manifest"
+      },
+      {
+        "id": "DPL-015",
+        "description": "no open child or report-only state is terminal",
+        "evidence_required": "lifecycle readback"
+      }
+    ]
+  },
+  "live_baseline": {
+    "observed_at": "2026-07-27T02:10:18+09:00",
+    "evidence_ref": "https://github.com/watchout/ai-dev-framework/issues/576#issuecomment-5086606784",
+    "freshness": "FRESH",
+    "repositories": [
+      {
+        "name": "watchout/ai-dev-framework",
+        "branch": "main",
+        "commit": "a435c3bfad72805ced34d53884eccf30f8ebe690",
+        "tree": "cd2e46fc79abf992a4b2fed72a08f6ef99da76a6",
+        "evidence_ref": "https://github.com/watchout/ai-dev-framework/commit/a435c3bfad72805ced34d53884eccf30f8ebe690"
+      }
+    ],
+    "runtime": {
+      "release_id": "1.2.1",
+      "process_identity": "adf-lead/implementation_executor",
+      "config_digest": "sha256:6a6ef79f671a36f7b8fbcc8b37a6cac1ddd1133dd94df72b3399b867c16e9c1e",
+      "policy_digest": "sha256:c9b40c2c8c4fe9ce7c61d67f8bf8f5bba244a01f4576099a0712d4c9421798a1",
+      "target_manifest_digest": "sha256:49f1667da86e410021d73f0360cbe88de3accb50bb3061890d09293a3bba5ba0",
+      "evidence_ref": ".framework/runtime/shirube-v4-self-canary-activation.json"
+    }
+  },
+  "delivery_graph": {
+    "nodes": [
+      {
+        "id": "DP-N0-SOURCE-LOCK",
+        "repository": "none",
+        "depends_on": [],
+        "changes_predicates": [
+          "DPL-001",
+          "DPL-015"
+        ],
+        "deliverable": "digest-bound SPEC and sealed plan readback",
+        "integration_evidence": "https://github.com/watchout/ai-dev-framework/issues/576#issuecomment-5086606784",
+        "lifecycle_status": "COMPLETE"
+      },
+      {
+        "id": "DP-N1-ADF-IMPLEMENT",
+        "repository": "watchout/ai-dev-framework",
+        "depends_on": [
+          "DP-N0-SOURCE-LOCK"
+        ],
+        "changes_predicates": [
+          "DPL-001",
+          "DPL-002",
+          "DPL-003",
+          "DPL-004",
+          "DPL-005",
+          "DPL-006",
+          "DPL-007",
+          "DPL-008",
+          "DPL-011"
+        ],
+        "deliverable": "canonical skill schema validator decisions aggregate template fixtures and self-plan",
+        "integration_evidence": "draft PR and CELL-DPL-ADF-IMPLEMENT-001 evidence pack",
+        "lifecycle_status": "COMPLETE"
+      },
+      {
+        "id": "DP-N2-ADF-INDEPENDENT-GATES",
+        "repository": "watchout/ai-dev-framework",
+        "depends_on": [
+          "DP-N1-ADF-IMPLEMENT"
+        ],
+        "changes_predicates": [
+          "DPL-011",
+          "DPL-015"
+        ],
+        "deliverable": "fresh independent evidence audit and protected-surface result",
+        "integration_evidence": "independent exact-head audit readback",
+        "lifecycle_status": "PLANNED"
+      },
+      {
+        "id": "DP-N3-ADF-MERGE-DECISION",
+        "repository": "watchout/ai-dev-framework",
+        "depends_on": [
+          "DP-N2-ADF-INDEPENDENT-GATES"
+        ],
+        "changes_predicates": [
+          "DPL-008",
+          "DPL-011"
+        ],
+        "deliverable": "exact owner merge decision and main readback",
+        "integration_evidence": "merge API readback",
+        "lifecycle_status": "PLANNED"
+      },
+      {
+        "id": "DP-N4-SHIRUBE-SELF-APPLICATION",
+        "repository": "watchout/ai-dev-framework",
+        "depends_on": [
+          "DP-N3-ADF-MERGE-DECISION"
+        ],
+        "changes_predicates": [
+          "DPL-001",
+          "DPL-002",
+          "DPL-003",
+          "DPL-004",
+          "DPL-005",
+          "DPL-006",
+          "DPL-007",
+          "DPL-011",
+          "DPL-013"
+        ],
+        "deliverable": "admitted self-plan and exact five-fixture results at merged head",
+        "integration_evidence": "exact merged self-application readback",
+        "lifecycle_status": "PLANNED"
+      },
+      {
+        "id": "DP-N5-ARC-CONSUME",
+        "repository": "watchout/iyasaka-arc",
+        "depends_on": [
+          "DP-N4-SHIRUBE-SELF-APPLICATION"
+        ],
+        "changes_predicates": [
+          "DPL-009",
+          "DPL-010",
+          "DPL-014"
+        ],
+        "deliverable": "exact canonical skill composition and corrected ARC role boundary",
+        "integration_evidence": "downstream ARC self-check",
+        "lifecycle_status": "PLANNED"
+      },
+      {
+        "id": "DP-N6-ARC-INDEPENDENT-GATES-AND-MERGE",
+        "repository": "watchout/iyasaka-arc",
+        "depends_on": [
+          "DP-N5-ARC-CONSUME"
+        ],
+        "changes_predicates": [
+          "DPL-009",
+          "DPL-010",
+          "DPL-014",
+          "DPL-015"
+        ],
+        "deliverable": "ARC audit decision merge and main readback",
+        "integration_evidence": "downstream ARC exact-head evidence",
+        "lifecycle_status": "PLANNED"
+      },
+      {
+        "id": "DP-N7-ORG-POLICY-PIN",
+        "repository": "watchout/iyasaka-org",
+        "depends_on": [
+          "DP-N4-SHIRUBE-SELF-APPLICATION"
+        ],
+        "changes_predicates": [
+          "DPL-012"
+        ],
+        "deliverable": "thin DP0-DP7 obligation and exact merged ADF pin",
+        "integration_evidence": "downstream canonical policy candidate",
+        "lifecycle_status": "PLANNED"
+      },
+      {
+        "id": "DP-N8-ORG-INDEPENDENT-GATES-AND-PUBLICATION",
+        "repository": "watchout/iyasaka-org",
+        "depends_on": [
+          "DP-N7-ORG-POLICY-PIN"
+        ],
+        "changes_predicates": [
+          "DPL-012",
+          "DPL-015"
+        ],
+        "deliverable": "org audit publication decision and canonical readback",
+        "integration_evidence": "downstream org exact evidence",
+        "lifecycle_status": "PLANNED"
+      },
+      {
+        "id": "DP-N9-FRESH-SESSION-AND-TERMINAL",
+        "repository": "multi-repository",
+        "depends_on": [
+          "DP-N6-ARC-INDEPENDENT-GATES-AND-MERGE",
+          "DP-N8-ORG-INDEPENDENT-GATES-AND-PUBLICATION"
+        ],
+        "changes_predicates": [
+          "DPL-013",
+          "DPL-014",
+          "DPL-015"
+        ],
+        "deliverable": "isolated trigger operational negative recovery unaffected and terminal readback",
+        "integration_evidence": "terminal evidence pack",
+        "lifecycle_status": "PLANNED"
+      }
+    ]
+  },
+  "critical_path": {
+    "step_ids": [
+      "DP-N0-SOURCE-LOCK",
+      "DP-N1-ADF-IMPLEMENT",
+      "DP-N2-ADF-INDEPENDENT-GATES",
+      "DP-N3-ADF-MERGE-DECISION",
+      "DP-N4-SHIRUBE-SELF-APPLICATION",
+      "DP-N5-ARC-CONSUME",
+      "DP-N6-ARC-INDEPENDENT-GATES-AND-MERGE",
+      "DP-N7-ORG-POLICY-PIN",
+      "DP-N8-ORG-INDEPENDENT-GATES-AND-PUBLICATION",
+      "DP-N9-FRESH-SESSION-AND-TERMINAL"
+    ],
+    "wip_limit": 1
+  },
+  "test_contracts": [
+    {
+      "gate_id": "DPL-ADF-IMPLEMENTATION-GATE",
+      "version": "SPEC-SHIRUBE-005-G2",
+      "plan_generation": 2,
+      "test_subject": {
+        "repository": "watchout/ai-dev-framework",
+        "commit_sha": "a435c3bfad72805ced34d53884eccf30f8ebe690",
+        "release_id": "1.2.1",
+        "process_identity": "adf-lead/implementation_executor",
+        "config_digest": "sha256:6a6ef79f671a36f7b8fbcc8b37a6cac1ddd1133dd94df72b3399b867c16e9c1e",
+        "policy_digest": "sha256:c9b40c2c8c4fe9ce7c61d67f8bf8f5bba244a01f4576099a0712d4c9421798a1"
+      },
+      "observed_subject": {
+        "repository": "watchout/ai-dev-framework",
+        "commit_sha": "a435c3bfad72805ced34d53884eccf30f8ebe690",
+        "release_id": "1.2.1",
+        "process_identity": "adf-lead/implementation_executor",
+        "config_digest": "sha256:6a6ef79f671a36f7b8fbcc8b37a6cac1ddd1133dd94df72b3399b867c16e9c1e",
+        "policy_digest": "sha256:c9b40c2c8c4fe9ce7c61d67f8bf8f5bba244a01f4576099a0712d4c9421798a1"
+      },
+      "environment": {
+        "expected": "isolated checkout derived from exact ADF base a435c3bfad72805ced34d53884eccf30f8ebe690",
+        "observed": "isolated checkout derived from exact ADF base a435c3bfad72805ced34d53884eccf30f8ebe690"
+      },
+      "fixture_ids": [
+        "DPL-POSITIVE",
+        "DPL-AUN-OLD-DAEMON",
+        "DPL-KUSABI-UNFROZEN-QUALITY",
+        "DPL-SHIRUBE-SELF-PIN-DRIFT",
+        "DPL-KODAMA-COMPONENT-PARENT-GAP",
+        "OWD-SCOPE-SHRINK-CHEAT",
+        "OWD-CLOCK-RESET-AFTER-REPLAN",
+        "OWD-GREEN-PR-NO-RUNTIME",
+        "OWD-DAY-EIGHT-COMPLETE",
+        "OWD-QUEUE-NO-EXECUTION",
+        "OWD-THIRD-SAME-CELL-REWORK",
+        "OWD-PROTECTED-GATE-BYPASS",
+        "OWD-MIXED-TIME-AXIS",
+        "OWD-BASELINE-DOWNCONVERSION",
+        "OWD-OWNER-DIRECTIVE-IGNORED",
+        "OWD-EMPTY-QUEUE-FALSE-STOP",
+        "OWD-INDEPENDENT-NODE-STARVATION"
+      ],
+      "entry_criteria": [
+        "exact base and allowed-path readback",
+        "schema and validator present"
+      ],
+      "exit_criteria": [
+        "positive PASS",
+        "four exact negatives BLOCK",
+        "aggregate consumes result",
+        "focused and full checks green"
+      ],
+      "run_budget": {
+        "max_runs": 2,
+        "consumed_runs": 0
+      },
+      "stop_rule": "stop at first wrong subject out-of-scope path nondeterministic result or protected effect",
+      "retest_triggers": [
+        "head_change",
+        "fixture_change",
+        "schema_change",
+        "validator_change",
+        "aggregate_change"
+      ],
+      "evidence_sink": "Issue 576 and draft PR"
+    }
+  ],
+  "replan_triggers": {
+    "material_events": [
+      "source_change",
+      "owner_decision_change",
+      "merge",
+      "deploy",
+      "rollback",
+      "dependency_completion",
+      "dependency_failure",
+      "baseline_drift",
+      "policy_pin_change",
+      "configuration_change",
+      "fixture_change",
+      "environment_change"
+    ],
+    "observed_events": [],
+    "baseline_generation": 2,
+    "admitted_test_generation": 2
+  },
+  "terminal_acceptance": {
+    "required_predicates": [
+      "DPL-001",
+      "DPL-002",
+      "DPL-003",
+      "DPL-004",
+      "DPL-005",
+      "DPL-006",
+      "DPL-007",
+      "DPL-008",
+      "DPL-009",
+      "DPL-010",
+      "DPL-011",
+      "DPL-012",
+      "DPL-013",
+      "DPL-014",
+      "DPL-015"
+    ],
+    "covered_predicates": [
+      "DPL-001",
+      "DPL-002",
+      "DPL-003",
+      "DPL-004",
+      "DPL-005",
+      "DPL-006",
+      "DPL-007",
+      "DPL-008",
+      "DPL-009",
+      "DPL-010",
+      "DPL-011",
+      "DPL-012",
+      "DPL-013",
+      "DPL-014",
+      "DPL-015"
+    ],
+    "satisfied_predicates": [
+      "DPL-001",
+      "DPL-002",
+      "DPL-003",
+      "DPL-004",
+      "DPL-005",
+      "DPL-006",
+      "DPL-007",
+      "DPL-008",
+      "DPL-011"
+    ],
+    "uncovered_predicates": [],
+    "claim_scope": "parent",
+    "operational_evidence": {
+      "end_to_end": {
+        "status": "PENDING",
+        "evidence_ref": "required-evidence:DP-N9-operational-end-to-end",
+        "content_sha256": null,
+        "plan_generation": 2,
+        "predicate_ids": [
+          "DPL-001",
+          "DPL-002",
+          "DPL-003",
+          "DPL-004",
+          "DPL-005",
+          "DPL-006",
+          "DPL-007",
+          "DPL-008",
+          "DPL-009",
+          "DPL-010",
+          "DPL-011",
+          "DPL-012",
+          "DPL-013",
+          "DPL-014",
+          "DPL-015"
+        ]
+      },
+      "negative": {
+        "status": "PENDING",
+        "evidence_ref": "required-evidence:twelve-frozen-regression-results",
+        "content_sha256": null,
+        "plan_generation": 2,
+        "predicate_ids": [
+          "DPL-001",
+          "DPL-002",
+          "DPL-003",
+          "DPL-004",
+          "DPL-005",
+          "DPL-006",
+          "DPL-007",
+          "DPL-008",
+          "DPL-009",
+          "DPL-010",
+          "DPL-011",
+          "DPL-012",
+          "DPL-013",
+          "DPL-014",
+          "DPL-015"
+        ]
+      },
+      "degraded": {
+        "status": "PENDING",
+        "evidence_ref": "required-evidence:DP-N9-degraded-case",
+        "content_sha256": null,
+        "plan_generation": 2,
+        "predicate_ids": [
+          "DPL-001",
+          "DPL-002",
+          "DPL-003",
+          "DPL-004",
+          "DPL-005",
+          "DPL-006",
+          "DPL-007",
+          "DPL-008",
+          "DPL-009",
+          "DPL-010",
+          "DPL-011",
+          "DPL-012",
+          "DPL-013",
+          "DPL-014",
+          "DPL-015"
+        ]
+      },
+      "rollback_recovery": {
+        "status": "PENDING",
+        "evidence_ref": "required-evidence:DP-N9-rollback-recovery",
+        "content_sha256": null,
+        "plan_generation": 2,
+        "predicate_ids": [
+          "DPL-001",
+          "DPL-002",
+          "DPL-003",
+          "DPL-004",
+          "DPL-005",
+          "DPL-006",
+          "DPL-007",
+          "DPL-008",
+          "DPL-009",
+          "DPL-010",
+          "DPL-011",
+          "DPL-012",
+          "DPL-013",
+          "DPL-014",
+          "DPL-015"
+        ]
+      },
+      "unaffected": {
+        "status": "PENDING",
+        "evidence_ref": "required-evidence:DP-N9-unaffected-case",
+        "content_sha256": null,
+        "plan_generation": 2,
+        "predicate_ids": [
+          "DPL-001",
+          "DPL-002",
+          "DPL-003",
+          "DPL-004",
+          "DPL-005",
+          "DPL-006",
+          "DPL-007",
+          "DPL-008",
+          "DPL-009",
+          "DPL-010",
+          "DPL-011",
+          "DPL-012",
+          "DPL-013",
+          "DPL-014",
+          "DPL-015"
+        ]
+      },
+      "exact_readback": {
+        "status": "PENDING",
+        "evidence_ref": "required-evidence:merged-heads-policy-runtime-and-terminal-API",
+        "content_sha256": null,
+        "plan_generation": 2,
+        "predicate_ids": [
+          "DPL-001",
+          "DPL-002",
+          "DPL-003",
+          "DPL-004",
+          "DPL-005",
+          "DPL-006",
+          "DPL-007",
+          "DPL-008",
+          "DPL-009",
+          "DPL-010",
+          "DPL-011",
+          "DPL-012",
+          "DPL-013",
+          "DPL-014",
+          "DPL-015"
+        ]
+      }
+    }
+  },
+  "anti_work": [
+    "status polling without a keyed wait",
+    "duplicate evidence formatting or duplicate audit",
+    "implementation before PLAN_ADMISSION",
+    "tests before TEST_ADMISSION",
+    "downstream rollout before ADF self-application",
+    "child PR merge CI or report-only state represented as parent completion"
+  ],
+  "next_action": {
+    "node_id": "DP-N2-ADF-INDEPENDENT-GATES",
+    "owner_agent": "codex-cto",
+    "owner_function": "orchestration_controller",
+    "action": "route fresh exact-head independent and protected-surface gates after rework evidence",
+    "changes_predicates": [
+      "DPL-011",
+      "DPL-015"
+    ],
+    "blocking": true
+  },
+  "procedure_coverage": {
+    "DP0": {
+      "status": "COVERED",
+      "evidence_refs": [
+        "control_source",
+        "owner_outcome"
+      ]
+    },
+    "DP1": {
+      "status": "COVERED",
+      "evidence_refs": [
+        "live_baseline"
+      ]
+    },
+    "DP2": {
+      "status": "COVERED",
+      "evidence_refs": [
+        "delivery_graph"
+      ]
+    },
+    "DP3": {
+      "status": "COVERED",
+      "evidence_refs": [
+        "critical_path",
+        "anti_work",
+        "next_action"
+      ]
+    },
+    "DP4": {
+      "status": "COVERED",
+      "evidence_refs": [
+        "test_contracts"
+      ]
+    },
+    "DP5": {
+      "status": "COVERED",
+      "evidence_refs": [
+        "live_baseline.runtime",
+        "test_contracts.0.test_subject"
+      ]
+    },
+    "DP6": {
+      "status": "COVERED",
+      "evidence_refs": [
+        "replan_triggers"
+      ]
+    },
+    "DP7": {
+      "status": "COVERED",
+      "evidence_refs": [
+        "terminal_acceptance"
+      ]
+    }
+  },
+  "self_application": {
+    "required": true,
+    "control_source_ref": "https://github.com/watchout/ai-dev-framework/issues/576#issuecomment-5089077121",
+    "expected": {
+      "framework_version": "1.2.1",
+      "skill_digest": "sha256:eaf654b3c75de52280ac07ffea6cb08cd94067fa5bf12d285431fb393089167c",
+      "schema_digest": "sha256:328dd7d5c77da46029ea23889c3d3aacb1d9ab4ad688773637a73aa52591d9d4",
+      "validator_digest": "sha256:ba4028d7cef6aa1e1571520dae10c19ed45a5447e6740a6a0a9935b7da04ca59"
+    },
+    "observed": {
+      "framework_version": "1.2.1",
+      "skill_digest": "sha256:eaf654b3c75de52280ac07ffea6cb08cd94067fa5bf12d285431fb393089167c",
+      "schema_digest": "sha256:328dd7d5c77da46029ea23889c3d3aacb1d9ab4ad688773637a73aa52591d9d4",
+      "validator_digest": "sha256:ba4028d7cef6aa1e1571520dae10c19ed45a5447e6740a6a0a9935b7da04ca59"
+    }
+  },
+  "delivery_acceleration": {
+    "single_time_axis": {
+      "conventional_baseline_min_elapsed_seconds": 7776000,
+      "target_max_elapsed_seconds": 604800,
+      "exact_ratio": "90/7",
+      "machine_unit": "elapsed_seconds",
+      "business_day_conversion_allowed": false,
+      "twelve_week_substitution_allowed": false,
+      "pause_allowed": false,
+      "reset_allowed": false,
+      "replan_resets_clock": false,
+      "scope_or_quality_reduction_allowed": false
+    },
+    "clock": {
+      "original_request_received_at": "2026-07-27T07:04:30Z",
+      "request_event_ref": "https://github.com/watchout/ai-dev-framework/issues/576#issuecomment-5088285869",
+      "request_event_sha256": "sha256:1ee04beac363dc9d423ce310da2a509abeb8909f3a31b9cd9353932cb83aa2d2",
+      "request_received_at": "2026-07-27T07:04:30Z",
+      "deadline_at": "2026-08-03T07:04:30Z",
+      "deadline_event_ref": "https://github.com/watchout/ai-dev-framework/issues/576#issuecomment-5089077121",
+      "deadline_event_sha256": "sha256:58b700a219b8d18e2910319889ca23e344e49f9c7df0a253f825573714525304",
+      "verified_complete_at": null,
+      "machine_unit": "elapsed_seconds",
+      "pause_allowed": false,
+      "reset_allowed": false
+    },
+    "milestones": [
+      {
+        "id": "OWD-M1",
+        "due_elapsed_seconds": 14400,
+        "due_at": "2026-07-27T11:04:30Z",
+        "predicate": "outcome acceptance and authority gaps recorded"
+      },
+      {
+        "id": "OWD-M2",
+        "due_elapsed_seconds": 28800,
+        "due_at": "2026-07-27T15:04:30Z",
+        "predicate": "live baseline graph and exact actors admitted"
+      },
+      {
+        "id": "OWD-M3",
+        "due_elapsed_seconds": 86400,
+        "due_at": "2026-07-28T07:04:30Z",
+        "predicate": "first exact-subject executable slice run"
+      },
+      {
+        "id": "OWD-M4",
+        "due_elapsed_seconds": 345600,
+        "due_at": "2026-07-31T07:04:30Z",
+        "predicate": "full-scope exact candidate integration ready"
+      },
+      {
+        "id": "OWD-M5",
+        "due_elapsed_seconds": 518400,
+        "due_at": "2026-08-02T07:04:30Z",
+        "predicate": "audit scenario canary and rollback readiness complete"
+      },
+      {
+        "id": "OWD-M6",
+        "due_elapsed_seconds": 604800,
+        "due_at": "2026-08-03T07:04:30Z",
+        "predicate": "operational e2e negative recovery unaffected and live readback pass"
+      }
+    ],
+    "quality_floor_manifest": {
+      "canonicalization": "RFC8259_compact_JSON_ordered_array",
+      "items": [
+        "sourced_parent_deliverable_coverage",
+        "exact_test_subject",
+        "relevant_tests",
+        "security_checks",
+        "independent_audit",
+        "negative_recovery_unaffected",
+        "deploy_canary_live_readback",
+        "operator_recovery",
+        "zero_unauthorized_effects",
+        "zero_escaped_p0_p1"
+      ],
+      "sha256": "f28d6c22df2d69b48ed96b88968b3c68f3e2f2957a816e5e28d24dd4c88d0d61",
+      "deadline_can_waive_gate": false
+    },
+    "delay_budgets": {
+      "ready_to_grant_p95_max_seconds": 60,
+      "grant_to_execution_start_p95_max_seconds": 300,
+      "internal_actionable_wait_escalation_seconds": 1800,
+      "unresolved_internal_wait_plan_invalidation_seconds": 7200,
+      "combined_coordination_waiting_avoidable_rework_ratio_target_max": 0.2,
+      "unchanged_state_polling_counts_as_progress": false
+    },
+    "rework_budget": {
+      "same_exact_head_independent_audit_max": 1,
+      "same_cell_gate_blocks_before_replan_max": 2,
+      "implementation_wip_per_actor": 1
+    },
+    "equivalence_verification": {
+      "conventional_acceptance_digests": {
+        "owner_outcome_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "functional_acceptance_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "nonfunctional_acceptance_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "security_and_compliance_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "operational_environment_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "deployment_and_rollback_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "evidence_grade_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+      },
+      "target_acceptance_digests": {
+        "owner_outcome_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "functional_acceptance_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "nonfunctional_acceptance_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+        "security_and_compliance_digest": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+        "operational_environment_digest": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+        "deployment_and_rollback_digest": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+        "evidence_grade_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777"
+      },
+      "all_seven_acceptance_digests_equal": true,
+      "scope_reduced": false,
+      "quality_reduced": false
+    },
+    "terminal_measurement": {
+      "status": "PENDING",
+      "ci_green": false,
+      "operational_readback": "PENDING",
+      "exact_subject": {
+        "repository": "watchout/ai-dev-framework",
+        "commit_sha": "a435c3bfad72805ced34d53884eccf30f8ebe690",
+        "release_id": "1.2.1",
+        "process_identity": "adf-lead/implementation_executor",
+        "config_digest": "sha256:6a6ef79f671a36f7b8fbcc8b37a6cac1ddd1133dd94df72b3399b867c16e9c1e",
+        "policy_digest": "sha256:c9b40c2c8c4fe9ce7c61d67f8bf8f5bba244a01f4576099a0712d4c9421798a1",
+        "environment": "isolated checkout derived from exact ADF base a435c3bfad72805ced34d53884eccf30f8ebe690"
+      },
+      "protected_effects_performed": 0,
+      "protected_effects_authorized": 0
+    },
+    "flow_recovery": {
+      "direct_owner_input": {
+        "received": true,
+        "recorded": true,
+        "implicit_implementation_grant": false,
+        "controller_output": "EXACT_GRANT"
+      },
+      "queue": {
+        "state": "NON_EMPTY",
+        "admitted_frontmost_eligible": true,
+        "execution_disposition": "CONTINUE"
+      },
+      "typed_waits": {
+        "blocked_node_ids": [
+          "DP-N7-ORG-POLICY-PIN"
+        ],
+        "blocked_descendant_ids": [
+          "DP-N8-ORG-INDEPENDENT-GATES-AND-PUBLICATION",
+          "DP-N9-FRESH-SESSION-AND-TERMINAL"
+        ],
+        "independent_ready_node_ids": [
+          "DP-N2-ADF-INDEPENDENT-GATES"
+        ],
+        "ready_set_node_ids": [
+          "DP-N2-ADF-INDEPENDENT-GATES"
+        ]
+      },
+      "goal_and_cell": {
+        "root_goal_id": "GOAL-SHIRUBE-005-ONE-WEEK-DELIVERY-001",
+        "cell_id": "OWD-N1-ADF-G2-PR583",
+        "contradiction": false,
+        "cell_scope_expanded": false
+      },
+      "ready_to_grant_elapsed_seconds": 0,
+      "grant_to_execution_start_elapsed_seconds": 0,
+      "actionable_internal_wait_seconds": 0,
+      "execution_started": true,
+      "same_cell_gate_blocks": 0,
+      "implementation_wip_per_actor": 1,
+      "shared_protected_state_serial": true
+    }
+  }
+}
