@@ -1,0 +1,62 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@f8413fe1734ed24ea6ffdc665019e70e0320a2f9/docs/sds/audit-method.md#3",
+  "scope": "薄片 2「監査の受領を必須に」・薄片 3「Delivery Plan と作業指示に結ぶ（Inception が先を含む）」の設計の事前監査（D1〜D6。R4 の実装の前）: docs/design/slice23-control-v1.md（設計の記録、新しい file。設計 v1 iyasaka-arc#57 6305635938 の写しに参照の表を付けたもの）と、本項目集合の file docs/process/audit-items/slice23-design-audit-items.json。code はまだ無く、監査の対象は設計。記法: [V1] = 設計 v1 iyasaka-arc#57 6305635938（本文 SHA-256 5a896ea234bcb909cdc103a9f1431b7a463164c7e9820c3358422ecc7aa19881）、[OD-F] = 仕様の固定 iyasaka-arc#49 6305503572、[OI-K] = 門と script・きっかけの prompt iyasaka-arc#49 6305560011、[OD-S1] = S1 の 7 条件 iyasaka-arc#49 6305753673、[DP] = DP-SHIRUBE-001 g1 shirube#6 6305815774、[M] = shirube main f8413fe1。道筋（縦 = 受入 ID、横 = Unit と順序）も独立監査の対象にする（Owner の問い「設計や道筋自体には監査がいらないの？」2026-10-21）。道筋 g1 の本体は shirube#6 6305815774 の yaml の囲み（SHA-256 d8885559c92ae5caf605cdf1679cc7cf9cf81f751061685aee5d094ba7f83751）で、PR には写さない（pr-size 400 行の中に収めるため。裁定 = 作業指示 v3）。監査者はそれを取り直して読み、証拠は記録の参照の表と対応表の行を引く。全 11 項目必須。",
+  "items": [
+    {
+      "id": "D23-1",
+      "criterion": "目的と対象外: 記録が Owner の原文（[OD-F] の原文、[OI-K]、[OD-S1] の問 1・問 2）と決定 ID を引き、薄片 2 の目的（R2 以上は監査の受領が今の head を名指さないと統合できない）と薄片 3 の目的（Unit を名指さない・作業指示の範囲外・今の段の採択の無い道筋は進めない）、対象外（必須検査・ruleset・pin の変更そのもの = Owner、アカウントの分離、薄片 4・5、V3 の席の制御の撤去、AI-DLC の engine / hook）を [V1] §0・§6・[OD-S1] の「含まないもの」と食い違いなく書いている。",
+      "basis": "audit-method §3 D1、[V1] §0・§6、[OD-S1]"
+    },
+    {
+      "id": "D23-2",
+      "criterion": "全受入の検証計画: 記録が、S1 の 7 条件（S1-SH-01〜07）のそれぞれを、どの作業（[DP] の node）とどの観測（負例 PR の FAIL と merge 不可、実 PR の PASS、受付の拒否、FAIL の分類、作者の diff、Owner の手の数）で確かめるかに対応づけ、1 周の完了条件 5 つ（[V1] §5）と多対多で結んでいる。機械で確かめられないもの（Owner の承認が本人のものか、要求の意味）は未測定・対象外と明記している。",
+      "basis": "audit-method §3 D2、[V1] §5、[OD-S1] 決定 1 の表"
+    },
+    {
+      "id": "D23-3",
+      "criterion": "代替案: 記録が少なくとも次を、採った案と採らなかった案と理由つきで書いている。(a) PR の block は plan_id と node_id だけで門が最新の ADMITTED を解決する（対: 道筋の comment の digest と版を書かせる = 改版のたびに全 PR が無効）。(b) 依存 Unit の完了は道筋の COMPLETE または completes_unit の統合済み PR から観測（対: 道筋の改版だけ）。(c) 段の採択の印は Owner の決定の comment の stage_adoption の 1 行（対: ADF の schema に欄を足す = 凍結のため取らない）。(d) 作業指示は Unit ごとに常設で拡張は実行リードが supersedes の comment で出す（対: ARC だけ、PR ごと）。(e) Shirube 自身は pin の commit の checker で自分の PR を判定する（対: 最新の code で判定 = PR が検査を書き換えて自分を通せる）。",
+      "basis": "audit-method §3 D3、[V1] §2.1・§3・§7"
+    },
+    {
+      "id": "D23-4",
+      "criterion": "秘密・権限・観測・復旧・データ: 記録が、sds-gate-self.yml と導入の workflow が読む資格情報（github.token の読取りだけ。PR の code を checkout も実行もしない。定義は既定 branch から読まれる）、pin の `delivery_plan.control_source` の読取りに要る権限（public / private の違い、読めなければ FAIL で PASS を偽らない）、ruleset と pin の戻し方（ruleset の解除、pin の plan_binding_mode を report-only へ戻す PR）、blocking に上げる条件（記録だけの期間に門の不備による誤 FAIL が 0）を書いている。",
+      "basis": "audit-method §3 D4、distribution.md §4、SDS S5・S9"
+    },
+    {
+      "id": "D23-5",
+      "criterion": "予算と範囲: 記録が、own-code 2,300 行（T108 = A）の中で薄片 3 の code（plan-binding.mjs・plan-admission.mjs・gate.mjs・kit.mjs）を収める見込み（今の行数と増分の見積もり。超えるなら削る候補）、作者の手間の上限（PR の block の数行と label だけ）、Owner の手の上限（1 周で承認 1・exact-head 2・設定 2）を書いている。各 file 300 行・PR 400 行 / 20 file の上限に合わせた PR の分け方（[DP] の node 9 本の順）を書いている。",
+      "basis": "audit-method §3 D5、[OD-S1] S1-SH-05・S1-SH-07、hygiene-profile.md"
+    },
+    {
+      "id": "D23-6",
+      "criterion": "検証可能性と独立性: PR の変更が scope の 2 file（設計の記録と本項目集合）だけ（code・試験・.github/**・.shirube/** に触れていない）。CI（test・hygiene / hygiene）が成功している。PR 本文の sds-pr/1 block（risk_class R1、changed_paths、delivery_plan_binding = [DP] の plan_id DP-SHIRUBE-001・generation 1・node_id DP-N-SH-DESIGN-REC・comment_ref と comment_sha256、control_handoff = 作業指示の ref と sha256）がある。記録が引く [V1]・[OD-F]・[OI-K]・[OD-S1]・[DP] の参照に comment の URL と本文の SHA-256 が付いている。各判定（PA-1・判定 4 (b')・id だけの解決・依存の観測・supersedes の鎖・自己適用）に正例と負例の fixture を書ける具体性がある。作者（shirube の席）と監査者（devauditor）と統合担当（suite-lead）が別の席。この監査の受領が DP-N-SH-SELF-GATE と DP-N-SH-GATE4-IDS の作業指示の前提。",
+      "basis": "audit-method §2・§3 D6、[V1] §4・§8"
+    },
+    {
+      "id": "PL-1",
+      "criterion": "受入 ID（縦）: S1-SH-01〜07 のそれぞれが観測できる条件として書かれ（何が・どこで・誰が見て・何が出たら満たすか）、evidence_required が実際の記録の形（負例の FAIL・merge 不可・PASS・読み戻し・一覧）を名指し、Intent（[OD-F] §1）から辿れる。Owner の採択（[OD-S1]、stage_adoption: S1 DP-SHIRUBE-001）が control_source にある。S2〜S4 は【条件未採択】と明記され、作業指示の対象にしていない。",
+      "basis": "audit-method §3（設計 D2）、Goal Stages 2・3、[OD-S1]"
+    },
+    {
+      "id": "PL-2",
+      "criterion": "Unit の大きさ（横）: 各 node が今の段（S1）の受入 ID を 1 つ以上名指し、1 回の監査と 1 回の統合で閉じる大きさで、deliverable と integration_evidence が観測できる形で書かれている。受入 ID を名指さない node、後の段を進めるだけの node（置き場の node を除く）が無い。",
+      "basis": "[OD-F] §2（node の切り方 3 つ）、Goal Stages 4（anti_work）"
+    },
+    {
+      "id": "PL-3",
+      "criterion": "依存と順序: depends_on が設計・契約・保護面の前後関係（例: 設計監査 → 実装、自己適用 → ruleset、配布 → ruleset、1 周 → blocking）だけで、便宜の順序を依存にしていない。critical_path が dependency-closed で、S1 の残りの受入 ID への最短経路になっている。wip_limit が 1。",
+      "basis": "Goal Stages 4（critical_path）、[DP] の delivery_graph"
+    },
+    {
+      "id": "PL-4",
+      "criterion": "覆いと整合: S1 の 7 条件の全部がどれかの node に覆われ（terminal_acceptance.covered）、node の changes_predicates が terminal_predicates の中にある。live_baseline（main f8413fe1、tree・digest）が GitHub の実物と一致する。test_contracts の fixture（tests/ の試験）が実在する。Suite の道筋 DP-SUITE-001 の S1-SHIRUBE と二重に Unit を持たない（移す計画が書かれている）。",
+      "basis": "plan-admission の検査、SDS S3（知識は 1 か所）、S5（宣言は証拠でない）"
+    },
+    {
+      "id": "PL-5",
+      "criterion": "独立性: 道筋の作者（arc）が自分で採択した版を、この監査の PASS の前に作業指示の根拠として使っていない（DP-N-SH-DESIGN-REC の作業指示はこの監査を含む PR 自身なので可。それ以外の node の作業指示はこの監査の後）。記録の参照の表が道筋 g1 を shirube#6 6305815774 の URL と yaml の囲みの中身の SHA-256（d8885559c92ae5caf605cdf1679cc7cf9cf81f751061685aee5d094ba7f83751）で名指し、監査者が取り直した値と一致する。PR には道筋の写しを置いていない。",
+      "basis": "audit-method §2（作者≠監査）、[DP]"
+    }
+  ]
+}
