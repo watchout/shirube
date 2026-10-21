@@ -1,36 +1,36 @@
 {
   "schema": "sds-audit-items/1",
   "method_ref": "watchout/shirube@fb93400ca5895e52b0fec27774292b09eefe8fca/docs/sds/audit-method.md#3",
-  "scope": "AI-DLC の内包の設計 v1（DS-SHIRUBE-AIDLC-INCLUDE-V1、iyasaka-arc#57 の記録と docs/design/aidlc-include-v1.md の写し）の設計監査 D1〜D6 と、道筋 DP-SHIRUBE-001 g6（shirube#6 の DRAFT の comment。新 node DP-N-SH-AIDLC-INCLUDE・DP-N-SH-GATE-RECORDS-BRIDGE）の PL-1〜5。記法: [DS] = 設計 v1、[DP6] = DP-SHIRUBE-001 g6 の DRAFT、[OD] = OD-SHIRUBE-INCLUDE-AIDLC-NO-REINVENT-20261021-001（iyasaka-arc#49 6309035411）、[OD-INIT] = OD-SHIRUBE-INIT-AND-INTENT-START-20261021-001（6308731943）、[原典] = awslabs/aidlc-workflows 9b8df022（stage file）/ v2.11.1 895a35d8（docs・source）。監査者は [原典] の該当箇所を自分で取り直して読む（宣言値を写さない）。全 11 項目必須。",
+  "scope": "AI-DLC の内包の設計 v2（DS-SHIRUBE-AIDLC-INCLUDE-V2、iyasaka-arc#57 の記録と docs/design/aidlc-include-v2.md の写し。v1 の round 1 BLOCK = shirube#64 6309470154 の BF-01〜03 の是正）の設計監査 D1〜D6 と、道筋 DP-SHIRUBE-001 g6（shirube#6 の DRAFT 訂正 1。新 node DP-N-SH-AIDLC-INCLUDE・DP-N-SH-GATE-RECORDS-BRIDGE）の PL-1〜5。記法: [DS] = 設計 v2、[DP6] = DP-SHIRUBE-001 g6 の DRAFT 訂正 1、[OD] = OD-SHIRUBE-INCLUDE-AIDLC-NO-REINVENT-20261021-001（iyasaka-arc#49 6309035411）、[OD-INIT] = OD-SHIRUBE-INIT-AND-INTENT-START-20261021-001（6308731943）、[IDX] = iyasaka-org main の owner 指示の索引（PR #53 の統合後）、[原典] = awslabs/aidlc-workflows 9b8df022（stage file）/ v2.11.1 895a35d8（source・docs・試験）、[CC] = Claude Code の公式文書（permissions・tools-reference）。監査者は [原典] と [CC] の該当箇所を自分で取り直して読む（宣言値を写さない）。全 11 項目必須。",
   "items": [
     {
       "id": "AI-1",
-      "criterion": "目的と完了条件（D1）: [DS] §0 が Owner の原文と決定 ID を 1 対 1 で対応づけ、§1 の完了条件 7 つがそれぞれ「誰が・何を実行して・何が出れば」で観測可能に書かれている。完了条件が [OD] の 1〜3（再発明しない・内包の形・shirube から）と矛盾しない。",
-      "basis": "[OD]、L1・L2、audit-standard v1 D1"
+      "criterion": "目的と完了条件（D1）: [DS] §0 が Owner の原文と決定 ID を 1 対 1 で対応づけ、§1 の完了条件 8 つがそれぞれ「誰が・何を実行して・何が出れば」で観測可能に書かれている。完了条件が [OD] の 1〜3（再発明しない・内包の形・shirube から）と矛盾しない。[OD] と [OD-INIT] が [IDX] に行として在る。",
+      "basis": "[OD]、[IDX]、L1・L2、audit-standard v1 D1"
     },
     {
       "id": "AI-2",
-      "criterion": "形の整合（D2）: [DS] §2 の「git に入れる／入れない」の表が、shirube の hygiene の上限（PR +400 行・20 file・100KB・新規 file 300 行）と、[原典] の config の挙動（refresh は編集を保つ、doctor は欠けた file に `aidlc config` を促す、`.aidlc-version` が版を固定する）の両方と矛盾しない。原典の「`.claude/` を commit する」からの逸脱が deviation_ledger に「採った判断」と「採らなかった代替」で書かれている。",
-      "basis": "[DS] §2、[原典] docs/guide/01-getting-started.md §3・18-install-and-lifecycle.md、S2・S6、engineering-standards の使い方"
+      "criterion": "形の整合（D2）: [DS] §2 の「git に入れる／入れない」の表が、shirube の hygiene の上限（PR +400 行・20 file・100KB・新規 file 300 行）と、[原典] の config の実際の挙動（refresh は既存の settings の他の key を保ち allow を和集合にする、既存の settings を初回の install でも保つ、`.aidlc-version` が版を固定する、audit の shard の名前の host は clone-id の file か hostname）の両方と矛盾しない。原典の「`.claude/` を commit する」からの逸脱が deviation_ledger に「採った判断」と「採らなかった代替」で書かれている。機械の名前が GitHub に出ない経路（§2c）が、原典の clone-id の形式と合っている。",
+      "basis": "[DS] §2・§2c、[原典] core/tools/aidlc-init.ts・core/tools/aidlc-lib.ts・tests/unit/t294-config-diagnostics.test.ts・docs/guide/01-getting-started.md、S2・S3・S6"
     },
     {
       "id": "AI-3",
-      "criterion": "権限と保護面と外部依存（D3）: [DS] §3 が、原典の `permissions.allow` のうち席の権限を広げる 3 件（Task・Edit(/**)・WebSearch）の扱いを決め（Task は外す、残りは Q1 の既定 = 外す）、`.claude/settings.json` を変える PR を保護面（Owner の exact-head、R4）としている。外部依存の中身（engine は外の API とつながらない／利用の計測は endpoint 未設定なら送らない／通信は release の取得だけ／MCP server は none／Bedrock は使わない）が [原典] の source か docs の箇所で裏づけられ、Owner の原文「開発者のサーバーや API と連携したり依存はしない」への答えになっている。",
-      "basis": "[DS] §3、protected-surface R1、escalation-policy、S9、[原典] core/tools/aidlc-metrics.ts・harness/claude/.mcp.json・docs/reference/14-claude-features.md"
+      "criterion": "権限と保護面と外部依存（D3）: [DS] §3 の「allow は触らず committed の settings の deny `Agent` で subagent を止める」が、[原典] の refresh の挙動（allow の再追加、deny の保持）と [CC] の規則（deny → ask → allow の順、どの階層の deny も覆せない、subagent の道具の正式名 `Agent`）の両方で成り立ち、clone の直後の最初の session から効く。`Edit(/**)` の範囲（settings の置き場からの相対）の読みが [CC] と合い、`WebSearch` が Owner の未決（Q1）として残っている。`.claude/settings.json`・`.shirube/hygiene-profile.md` を変える PR が R4（Owner の exact-head）。外部依存の中身（engine は外の API とつながらない／計測は endpoint 未設定なら送らない／通信は release の取得だけ／MCP server は none／Bedrock は使わない）が [原典] の source か docs で裏づけられる。",
+      "basis": "[DS] §3、[原典] core/tools/aidlc-init.ts・core/tools/aidlc-metrics.ts、[CC] permissions・tools-reference、protected-surface R1、escalation-policy、subagent-owner-approval、S9"
     },
     {
       "id": "AI-4",
-      "criterion": "subagent と独立監査（D4）: [DS] が、Intent capture と Requirements analysis は inline で回り reviewer を none にすれば Task の起動なしで完了すること、subagent を使う 4 段（User stories・Reverse engineering・Practices discovery・Code generation）は着いた時に Owner に伺うことを書き、原典の reviewer を独立監査の代わりにしていない（監査者は別の席のまま）。[OD-INIT] の 3（席が intent を始める時は Owner の依頼の記録への参照が必須）と矛盾しない。",
+      "criterion": "subagent と独立監査（D4）: [DS] が、Intent capture と Requirements analysis は inline で回り reviewer を none にすれば subagent なしで完了すること、subagent を使う 4 段（User stories・Reverse engineering・Practices discovery・Code generation）は deny `Agent` のままでは止まり、着いた時に Owner に伺うことを書き、原典の reviewer を独立監査の代わりにしていない。[OD-INIT] の 3（席が intent を始める時は Owner の依頼の記録への参照が必須）と矛盾しない。",
       "basis": "[DS] §3.5・§8 Q2、[原典] stage file の mode、subagent-owner-approval、[OD-INIT] 3"
     },
     {
       "id": "AI-5",
-      "criterion": "負例と検査（D5）: [DS] §9 に kit check の負例 3 つ（版の不一致／Task の許可あり／.mcp.json あり → DRIFT）と正例 1 つ、新しい clone の doctor の記録、hook の衝突の表、Intent capture の audit で Task 0 回、問いの言語がある。check は手元の `aidlc version` の実測と pin を比べ（S5）、読めない時は PASS にせず（S8）、時刻・乱数を使わない（S4）。",
-      "basis": "[DS] §4・§9、S4・S5・S8、audit-standard v1 D5"
+      "criterion": "負例と検査（D5）: [DS] §9 に fresh clone（P1）と既存の checkout の refresh（P2）の正例と、負例 4 つ（deny の消失・.mcp.json・版の不一致・shard の名前に hostname）がある。`aidlc` が無い時は UNKNOWN で OK にしない（S8）。check は手元の `aidlc version` の実測と `.aidlc-version` を比べ（S5）、時刻・乱数を使わない（S4。乱数は prepare の token だけ）。CI の自己検査（committed の settings の deny と .mcp.json の不在）が self-apply の PR に入る。",
+      "basis": "[DS] §4・§6・§9、S4・S5・S8、audit-standard v1 D5"
     },
     {
       "id": "AI-6",
-      "criterion": "境界（D6）: [DS] §5 の橋（PR の block の欄 `aidlc_record`、門が読む file、形と在りかまでしか見ない、本人確認は CF-AUTH-01）が別 Unit（R3、別の設計の記録で D1〜D6）として境界だけ書かれ、この設計の実装の範囲（kit.mjs の変更・shirube への self-apply・Owner の手順・検証の記録）に橋の実装が入っていない。own-code の枠の付け替え（席側の hook 150 → AIDLC-INCLUDE 150、合計 2,300 不変）が [OD] の 4 と整合する。",
+      "criterion": "境界（D6）: [DS] §5 の橋が別 Unit（R3、別の設計の記録で D1〜D6）として境界だけ書かれ、この Unit の実装（kit の変更・self-apply・memory・Owner の手順・記録の PR・検証）に橋の実装が入っていない。own-code の枠の付け替え（席側の hook 150 → AIDLC-INCLUDE 150、合計 2,300 不変）が [OD] の 4 と整合する。v1 の pin の欄 `aidlc` をやめたことで `.shirube/sds-pin.json` を変えない。",
       "basis": "[DS] §4〜§6、[OD] 4・5、OD-SHIRUBE-OWN-CODE-BUDGET-2300-20261020-001"
     },
     {
@@ -40,7 +40,7 @@
     },
     {
       "id": "PL-2",
-      "criterion": "Unit の大きさ: AIDLC-INCLUDE の PR（kit.mjs の変更・self-apply・記録の PR）がそれぞれ +400 行 / 20 file に収まる見込みが [DS] §6 に数で書かれ、収まらない時の分け方（settings と gitignore を分ける等）が決まっている。",
+      "criterion": "Unit の大きさ: AIDLC-INCLUDE の各 PR（docs・kit の変更・self-apply・memory・記録）の追加行数と file 数の見込みが [DS] §6 に数で書かれ、+400 行 / 20 file を超える時の分け方と依存の順が PR ごとに決まっている。見込みの元の値（file の今の行数、評価の作業場の実測）が示されている。",
       "basis": "[DS] §6、hygiene-profile.md"
     },
     {
