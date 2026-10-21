@@ -1,7 +1,7 @@
-<!-- arc:design:DS-SHIRUBE-AIDLC-INCLUDE-V3:20261021 -->
-## 設計 v3: AI-DLC の内包 — 設定は deny で守り、reviewer は開始の時に切り、記録は原典どおり commit する（DS-SHIRUBE-AIDLC-INCLUDE-V3）
+<!-- arc:design:DS-SHIRUBE-AIDLC-INCLUDE-V4:20261021 -->
+## 設計 v4: AI-DLC の内包 — 設定は deny で守り、reviewer は開始の時に切り、記録は原典どおり commit する（DS-SHIRUBE-AIDLC-INCLUDE-V4）
 
-supersedes: 設計 v2（iyasaka-arc#57 6309948209、本文 SHA-256 `347df43d6e2207d536460028a385631a85fe9430be36aea032faf0eec79813ec`）の全体。v2 の設計監査 round 2 = BLOCK（shirube#64 6310341648）の BF-04（AI-4: §3.6 の reviewer = none を実現する操作が §6 の開始の手順に無い）を直した。BF-01-R2（道筋の試験の条件に v1 の負例が残っていた）は道筋 g6 訂正 2 で直す。v2 からの変更は §1 の 5、§3.6、§6 の 5、§9 の P3 と、この節の文だけ。round 1（6309470154）の BF-01〜03 の是正は v2 のまま。
+supersedes: 設計 v3（iyasaka-arc#57 6310367027、本文 SHA-256 `bb0323fca55a19171c73e48f03cb24d7b82e9dbaddaab151b394b041201d2ebf`）の全体。v3 の設計監査 round 3 = BLOCK（shirube#64 6310750260）の BF-05（AI-4: 新しい workflow の開始に `REVIEW_CLASS_CHANGED` を求めた観測の条件が、原典の新規作成の経路と合わない）を直した。BF-06（道筋の deliverable の旧 path）は道筋 g6 訂正 3 で直す。round 4 は OD-SHIRUBE-PR64-ROUND4-20261021-001（#49 6314983198）。v3 からの変更は §1 の 5、§3.6、§9 の P3、§7 の道筋の版、この節の文だけ。設計の記録の file 名はこの版から `docs/design/aidlc-include.md`（版に依らない）。round 1（6309470154）の BF-01〜03 と round 2（6310341648）の BF-01-R2・BF-04 の是正は v3 のまま。
 適用 ID: OD-SHIRUBE-INCLUDE-AIDLC-NO-REINVENT-20261021-001（#49 6309035411、`3cbfb54ac5c577439ae61efc90549569eec1ab91bdf055a95352f2afe01663c0`）、OD-SHIRUBE-INIT-AND-INTENT-START-20261021-001（#49 6308731943、`c3b2a2161f6706b26175a67b49fde2d7bcf5b8c89f1213c39fc2fca21fac2554`）、OD-SHIRUBE-SPEC-FREEZE-AIDLC-TRACE-20261021-001、OD-INCEPTION-ENTRY-AIDLC-FORM-AS-IS-20261021-001、protected-surface R1、subagent-owner-approval、S1〜S9、escalation-policy。原典 = awslabs/aidlc-workflows（MIT-0）。stage file = commit `9b8df02231f0230fd6f19846a0df1fb5567e7ece`、source・docs・試験 = release v2.11.1 = `895a35d86d20336d9b7bc4aedc9440e4a12c83ab`（評価の作業場で動かした版も 2.11.1）。risk = R4（`.claude/settings.json` の hook と permission は席の設定 = 保護面）。
 
 ### §0 Owner の言葉と決定の対応（v1 と同じ）
@@ -22,7 +22,7 @@ supersedes: 設計 v2（iyasaka-arc#57 6309948209、本文 SHA-256 `347df43d6e22
 | 2 | 再生成の後も subagent が止まっている | 1 の後の `.claude/settings.json` で `permissions.deny` に `Agent` がある（`allow` に原典の `Task` が戻っていてもよい）。既存の checkout の refresh（`aidlc config --yes` 2 回目）の後も同じ |
 | 3 | 版が揃う | `.aidlc-version` と `aidlc version` が一致し、kit check が OK |
 | 4 | 席にもともと入っている hook とぶつからない | user 設定の hook と project の hook の表。同じ event で同じ command が 2 回動く組 = 0、互いの出力を壊す組 = 0 |
-| 5 | Intent capture が subagent なしで完了する | Owner が `--init` → `--review none` を付けた intent の開始 → 問い → 要約の確認 → 承認まで。`aidlc-state.md` の `Review Override` が `none`、audit に `REVIEW_CLASS_CHANGED` があり、SUBAGENT_* の event が 0 |
+| 5 | Intent capture が subagent なしで完了する | Owner が `--init` → `--review none` を付けた intent の開始 → 問い → 要約の確認 → 承認まで。`aidlc-state.md` の `Review Override` が `none`、audit の WORKFLOW_STARTED の event の `Review Override` の欄が `none`、SUBAGENT_* の event が 0 |
 | 6 | 問いが日本語で出る | 問いの file（評価 S1-0 では日本語） |
 | 7 | kit check が負例を見つける | §9 の負例 4 つがそれぞれ DRIFT、`aidlc` が無い時は UNKNOWN |
 | 8 | 記録が門の読める所に残り、機械の名前を含まない | intent の記録が PR で main に入る。audit の shard の名前の host が、この機械の hostname から作る値と違う |
@@ -54,7 +54,7 @@ Codex の席での動きは S1 の必須にしない（shirube の実装席は C
 3.3 よって: kit は `allow` を編集しない（原典のまま）。committed の `.claude/settings.json` に `permissions.deny: ["Agent"]` を書く。refresh の後も deny が残り、allow に何があっても subagent は起きない。committed の file に入っているので、clone の直後の最初の session から効く（確かめる前に session を起動しても止まっている）。kit check と CI の自己検査（§4）は、この deny が消えていないかを見る。
 3.4 `Edit(/**)`: 先頭の `/` は settings の置き場（project）からの相対で、project の外には広がらない（permissions の文書「`/path` Path relative to the settings source」）。原典のまま。`WebSearch` = Q1（§8）。
 3.5 外部依存の中身（v1 §3.4 と同じ。source で確認）: engine は外の API とつながらない。利用の計測は `AIDLC_METRICS_ENDPOINT` を設定した時だけ送り、送り先は同梱されない。通信は install / update の GitHub release の取得だけ（署名の検証あり）。Bedrock は使わない。MCP server は none。
-3.6 reviewer = none。原典の Intent capture は `review_class: advisory`（stage file の frontmatter）で、feature の scope には review の上限が無いので、既定では reviewer の subagent を起こす（deny `Agent` とぶつかる）。原典の操作 = workflow を始める時に `--review none` を付ける（`docs/guide/12-cli-commands.md`「`/aidlc --review <class>`」: 「`--review none` skips gated stage reviewer dispatch」「It can be supplied when a workflow is created or alongside `--scope`」。`aidlc-state.md` の `Review Override` に書かれ `REVIEW_CLASS_CHANGED` が audit に残る）。deny `Agent` を外して回避しない。独立監査は別の席（devauditor）のまま。
+3.6 reviewer = none。原典の Intent capture は `review_class: advisory`（stage file の frontmatter）で、feature の scope には review の上限が無いので、既定では reviewer の subagent を起こす（deny `Agent` とぶつかる）。原典の操作 = workflow を始める時に `--review none` を付ける（`docs/guide/12-cli-commands.md`「`/aidlc --review <class>`」: 「`--review none` skips gated stage reviewer dispatch」「It can be supplied when a workflow is created or alongside `--scope`」。新しく始める時は、`aidlc-state.md` の `Review Override` と、audit の最初の event WORKFLOW_STARTED の `Review Override` の欄に `none` が書かれる（`core/tools/aidlc-utility.ts` L8325〜8341 の WORKFLOW_STARTED（L8339 の `Review Override` の欄）、L8714 の state の欄、上流試験 t266「intent-create and scope-change persist and audit --review」L369〜400 の intent-create 側）。`REVIEW_CLASS_CHANGED` は、動いている workflow の設定を途中で変えた時（scope の変更や `/aidlc --review none` の打ち直し）だけに出る（同じ試験の scope-change 側）。文書の 1 文だけから event の名前を決めない）。deny `Agent` を外して回避しない。独立監査は別の席（devauditor）のまま。
 
 ### §4 配布キットの変更（kit。GATE4-C とは別 Unit）
 - 新しい file `scripts/sds/kit-aidlc.mjs`（own-code の枠 AIDLC-INCLUDE 150 = 席側の hook 150 の付け替え。file 300 行・関数 50 行・複雑さ 10）。`kit.mjs`（176 行）は subcommand の配線だけ足す。
@@ -83,7 +83,7 @@ PR の sds-pr/1 block に `aidlc_record: {intent, stage}`。門は PR の head �
 Owner の手 = 2（install 1 回）・3 の exact-head 1 回・5（製品の仕事）。S1-SH-07 の数に入るのは 3 の exact-head だけ。
 
 ### §7 道筋
-DP-SHIRUBE-001 g6 の DRAFT（訂正 2。試験の条件を §9 の P1〜P3・N1〜N4・UNKNOWN に揃えた）: node DP-N-SH-AIDLC-INCLUDE（§6 の 0〜7、S1-SH-03・S1-SH-06、依存 = GATE4-A-BINDING）と DP-N-SH-GATE-RECORDS-BRIDGE（S1-SH-02・S1-SH-03、依存 = AIDLC-INCLUDE・GATE4-B-ADMISSION）。SELF-GATE の pin は BRIDGE を含む main。Suite の DP-N-SHIRUBE-SEAT-HOOK は Suite g8 で退役。新しい判断を含むので PL-1〜5 の独立監査の PASS の後に ADMITTED。
+DP-SHIRUBE-001 g6 の DRAFT（訂正 3。成果物の path を版に依らない `docs/design/aidlc-include.md` に、設計の参照を「作業指示が名指す版」にした）: node DP-N-SH-AIDLC-INCLUDE（§6 の 0〜7、S1-SH-03・S1-SH-06、依存 = GATE4-A-BINDING）と DP-N-SH-GATE-RECORDS-BRIDGE（S1-SH-02・S1-SH-03、依存 = AIDLC-INCLUDE・GATE4-B-ADMISSION）。SELF-GATE の pin は BRIDGE を含む main。Suite の DP-N-SHIRUBE-SEAT-HOOK は Suite g8 で退役。新しい判断を含むので PL-1〜5 の独立監査の PASS の後に ADMITTED。
 
 ### §8 risk と未決
 - risk: `.claude/settings.json`・`.shirube/hygiene-profile.md` = R4。kit = R2。橋 = R3。
@@ -101,7 +101,7 @@ DP-SHIRUBE-001 g6 の DRAFT（訂正 2。試験の条件を §9 の P1〜P3・N1
 | N2 | `.mcp.json` がある | check DRIFT |
 | N3 | `.aidlc-version` と `aidlc version` が違う | check DRIFT。`aidlc` が無い = UNKNOWN |
 | N4 | prepare を飛ばして `aidlc` を動かし、shard の名前に hostname が入る | check DRIFT |
-| P3 | 5 の開始の 1 行（`--review none`）の直後 | `aidlc-state.md` の `Review Override` = `none`、audit に `REVIEW_CLASS_CHANGED`、Intent capture の段の指示に reviewer の dispatch が無い。承認までに SUBAGENT_* の event = 0。`--review none` を付け忘れた時は reviewer の dispatch が deny `Agent` で拒まれて止まる（その時は打ち直す。deny は外さない） |
+| P3 | 5 の開始の 1 行（`--review none`）の直後 | `aidlc-state.md` の `Review Override` = `none`、audit の WORKFLOW_STARTED の `Review Override` の欄 = `none`（新規作成の経路。`REVIEW_CLASS_CHANGED` は求めない。途中で打ち直した時だけ `REVIEW_CLASS_CHANGED` が足される）、Intent capture の段の指示に reviewer の dispatch が無い。承認までに SUBAGENT_* の event = 0。`--review none` を付け忘れた時は reviewer の dispatch が deny `Agent` で拒まれて止まる（その時は打ち直す。deny は外さない） |
 P1・P2 は 1 の試験では原典の動きを模擬し（P3 は 5 の Owner の session で観測する）（`aidlc` の binary は CI に入れない）、実物は 5 の前に Owner の clone で 1 回確かめて記録する。根拠の行番号は release v2.11.1 の file のもの。
 
-next_action: actor=shirube; what=作業指示 v3 で #64 の file を v3 に差し替え、round 3 を依頼する; blocking=false
+next_action: actor=shirube; what=作業指示 v4 で #64 の file を docs/design/aidlc-include.md（この版）に差し替え、索引の PR iyasaka-org #54 の統合の後に round 4 を依頼する; blocking=false

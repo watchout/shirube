@@ -1,7 +1,7 @@
 {
   "schema": "sds-audit-items/1",
   "method_ref": "watchout/shirube@fb93400ca5895e52b0fec27774292b09eefe8fca/docs/sds/audit-method.md#3",
-  "scope": "AI-DLC の内包の設計 v3（DS-SHIRUBE-AIDLC-INCLUDE-V3、iyasaka-arc#57 の記録と docs/design/aidlc-include-v3.md の写し。round 1 BLOCK = shirube#64 6309470154 の BF-01〜03 と round 2 BLOCK = 6310341648 の BF-01-R2・BF-04 の是正）の設計監査 D1〜D6 と、道筋 DP-SHIRUBE-001 g6（shirube#6 の DRAFT 訂正 2。新 node DP-N-SH-AIDLC-INCLUDE・DP-N-SH-GATE-RECORDS-BRIDGE）の PL-1〜5。記法: [DS] = 設計 v3、[DP6] = DP-SHIRUBE-001 g6 の DRAFT 訂正 2、[OD] = OD-SHIRUBE-INCLUDE-AIDLC-NO-REINVENT-20261021-001（iyasaka-arc#49 6309035411）、[OD-INIT] = OD-SHIRUBE-INIT-AND-INTENT-START-20261021-001（6308731943）、[IDX] = iyasaka-org main の owner 指示の索引（PR #53 の統合後）、[原典] = awslabs/aidlc-workflows 9b8df022（stage file）/ v2.11.1 895a35d8（source・docs・試験）、[CC] = Claude Code の公式文書（permissions・tools-reference）。監査者は [原典] と [CC] の該当箇所を自分で取り直して読む（宣言値を写さない）。全 11 項目必須。",
+  "scope": "AI-DLC の内包の設計（DS-SHIRUBE-AIDLC-INCLUDE。iyasaka-arc#57 の記録のうち作業指示が名指す版と、その body と同じ bytes の docs/design/aidlc-include.md）の設計監査 D1〜D6 と、道筋 DP-SHIRUBE-001 g6（shirube#6 の DRAFT のうち作業指示の plan_binding が名指す訂正。新 node DP-N-SH-AIDLC-INCLUDE・DP-N-SH-GATE-RECORDS-BRIDGE）の PL-1〜5。記法: [DS] = 作業指示が名指す版の設計、[DP6] = 作業指示が名指す DP-SHIRUBE-001 g6 の DRAFT、[OD] = OD-SHIRUBE-INCLUDE-AIDLC-NO-REINVENT-20261021-001（iyasaka-arc#49 6309035411）、[OD-INIT] = OD-SHIRUBE-INIT-AND-INTENT-START-20261021-001（6308731943）、[IDX] = iyasaka-org main の owner 指示の索引（作業指示が名指す commit）、[原典] = awslabs/aidlc-workflows 9b8df022（stage file）/ v2.11.1 895a35d8（source・docs・試験）、[CC] = Claude Code の公式文書（permissions・tools-reference）。監査者は [原典] と [CC] の該当箇所を自分で取り直して読む（宣言値を写さない）。全 11 項目必須。",
   "items": [
     {
       "id": "AI-1",
@@ -20,7 +20,7 @@
     },
     {
       "id": "AI-4",
-      "criterion": "subagent と独立監査（D4）: [DS] が、Intent capture と Requirements analysis は inline で回り、reviewer を切れば subagent なしで完了すること、subagent を使う 4 段（User stories・Reverse engineering・Practices discovery・Code generation）は deny `Agent` のままでは止まり、着いた時に Owner に伺うことを書き、原典の reviewer を独立監査の代わりにしていない。reviewer を切る操作が [原典] の操作（workflow の開始の時の `--review none`、または同等の設定）として §6 の開始の手順に具体的に書かれ、§9 の検証計画で `Review Override` = `none` と reviewer の dispatch が無いことを確かめる。deny `Agent` を外して回避していない。[OD-INIT] の 3（席が intent を始める時は Owner の依頼の記録への参照が必須）と矛盾しない。",
+      "criterion": "subagent と独立監査（D4）: [DS] が、Intent capture と Requirements analysis は inline で回り、reviewer を切れば subagent なしで完了すること、subagent を使う 4 段（User stories・Reverse engineering・Practices discovery・Code generation）は deny `Agent` のままでは止まり、着いた時に Owner に伺うことを書き、原典の reviewer を独立監査の代わりにしていない。reviewer を切る操作が [原典] の操作（workflow の開始の時の `--review none`、または同等の設定）として §6 の開始の手順に具体的に書かれ、§9 の検証計画で `Review Override` = `none` と reviewer の dispatch が無いことを確かめる。観測に使う記録の欄と event の名前が、[原典] の source と試験の経路（新しく始めた時か、動いている workflow を途中で変えた時か）と一致する（文書の 1 文だけから決めていない）。deny `Agent` を外して回避していない。[OD-INIT] の 3（席が intent を始める時は Owner の依頼の記録への参照が必須）と矛盾しない。",
       "basis": "[DS] §3.6・§6・§8 Q2・§9、[原典] stage file の mode と review_class・docs/guide/12-cli-commands.md の `/aidlc --review <class>`、subagent-owner-approval、[OD-INIT] 3"
     },
     {
@@ -50,7 +50,7 @@
     },
     {
       "id": "PL-4",
-      "criterion": "覆いと整合: Suite の道筋の DP-N-SHIRUBE-SEAT-HOOK の退役が [DP6] の注記か [DS] §7 に書かれ、S1-SH-01〜07 の全部がどれかの node に覆われたまま（新 node の追加で覆いが欠けない）。[DP6] の control_source が [OD] を指し、generation・世代の結び・live_baseline（shirube main fb93400c）が整合している。[DP6] の文（node の deliverable・integration_evidence、test_contracts の exit_criteria、next_action）が [DS] の手順と検証計画（§6・§9）と矛盾しない（同じ入力に相反する期待値が無い）。",
+      "criterion": "覆いと整合: Suite の道筋の DP-N-SHIRUBE-SEAT-HOOK の退役が [DP6] の注記か [DS] §7 に書かれ、S1-SH-01〜07 の全部がどれかの node に覆われたまま（新 node の追加で覆いが欠けない）。[DP6] の control_source が [OD] を指し、generation・世代の結び・live_baseline（shirube main fb93400c）が整合している。[DP6] の現行の文（node の deliverable・integration_evidence、test_contracts の exit_criteria、next_action）が [DS] の手順と検証計画（§6・§9）と作業指示の提出の契約（file の path）と矛盾しない（同じ入力に相反する期待値が無い、存在しない path を指していない）。",
       "basis": "[DP6]、[OD]、shirube-delivery-plan/v1 の validator"
     },
     {
