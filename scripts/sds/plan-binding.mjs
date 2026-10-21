@@ -34,6 +34,8 @@ function pages(api, path, what, step) {
   }
   throw new Error(`${step} ${what} has more than ${MAX_PAGES * PAGE} entries`);
 }
+// The plan block judgment 4 chose, found again in its comment by plan_id and generation (judgment 5 reads it; a comment may hold several blocks).
+export const planBlock = (body, planId, generation, parse) => blocks(body, "shirube-delivery-plan/v1", parse).found.find((p) => p.plan_id === planId && p.generation === generation && p.status === "ADMITTED");
 function loadOld(b, { api, parse }) {
   const r = blocks(comment(b.comment_ref, b.comment_sha256, "4.3", api), "shirube-delivery-plan/v1", parse), p = r.found[0];
   need(!r.broken && r.found.length === 1 && p.plan_id === b.plan_id && p.generation === b.generation, "4.4 the comment needs one shirube-delivery-plan/v1 block with this plan_id and generation");
@@ -61,12 +63,17 @@ function loadNew(b, ctx, { api, parse, controlSource }) {
   return { p: tops[0].p, resolved: { comment_id: tops[0].id, comment_ref: ref, comment_sha256: createHash("sha256").update(tops[0].body).digest("hex") } };
 }
 // A node that is not COMPLETE counts as done when a PR naming it was merged into the default branch and its handoff says completes_unit: true.
-function completesUnit(pr, id, planId, { api, parse, block }) {
+function namedHandoff(pr, id, planId, block) { // the control_handoff ref of a PR whose sds-pr block binds this node, or null
   let named;
-  try { named = block(pr.body); } catch { return false; } // a PR without exactly one sds-pr block names no node
+  try { named = block(pr.body); } catch { return null; } // a PR without exactly one sds-pr block names no node
   const b = named.delivery_plan_binding, h = named.control_handoff;
-  if (b?.plan_id !== planId || b?.node_id !== id || !str(h?.ref) || !REF.test(h.ref)) return false;
-  return blocks(comment(h.ref, h.sha256, "4.8", api), "shirube-v3/control_handoff/v1", parse).found.some((d) => d.completes_unit === true && d.plan_binding?.node_id === id && d.plan_binding?.plan_id === planId);
+  return b?.plan_id === planId && b?.node_id === id && str(h?.ref) && REF.test(h.ref) ? h : null;
+}
+function completesUnit(pr, id, planId, io) {
+  const h = namedHandoff(pr, id, planId, io.block);
+  if (!h) return false;
+  const { doc } = handoff(h, io); // the one reader of 4.9/4.10: a missing marker, a broken YAML or differing blocks is no completion
+  return doc.completes_unit === true && doc.plan_binding?.node_id === id && doc.plan_binding?.plan_id === planId;
 }
 const candidate = (pr, branch) => Boolean(pr?.merged_at) && pr.base?.ref === branch && str(pr.body); // a merged PR into the default branch is the only thing that can complete a Unit
 function mergedUnit(id, planId, repo, io) {

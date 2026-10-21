@@ -14,13 +14,13 @@ const fence = (kind, text) => `\`\`\`${kind}\n${text}\n\`\`\`\n`;
 const refOf = (id) => `${SOURCE}#issuecomment-${id}`;
 const accepted = () => ({ verdict: "RECEIPT_ACCEPTED" });
 
-// o: id / status / generation / terminal / satisfied / n0 (the status of the node N1 depends on) / extraNode (a node of another stage)
+// o: plan_id / status / generation / terminal / satisfied / n0 (the status of the node N1 depends on) / n1 (its predicates) / onlyN0 (no node N1)
 function planBody(o = {}) {
   const terminal = (o.terminal ?? ["S1-A", "S1-B", "S2-C"]).map((id) => `{id: ${id}}`).join(", ");
   return fence("yaml", ["schema_version: shirube-delivery-plan/v1", `plan_id: ${o.plan_id ?? PLAN_ID}`, `generation: ${o.generation ?? 2}`, `status: ${o.status ?? "ADMITTED"}`,
     `owner_outcome: {terminal_predicates: [${terminal}]}`, ...(o.satisfied ? [`terminal_acceptance: {satisfied_predicates: [${o.satisfied}]}`] : []),
-    `delivery_graph: {nodes: [{id: N0, repository: ${REPO}, depends_on: [], lifecycle_status: ${o.n0 ?? "COMPLETE"}, changes_predicates: [S1-A]},`,
-    `  {id: N1, repository: ${REPO}, depends_on: [N0], lifecycle_status: PLANNED, changes_predicates: ${o.n1 ?? "[S1-A, S1-B]"}}]}`].join("\n"));
+    `delivery_graph: {nodes: [{id: N0, repository: ${REPO}, depends_on: [], lifecycle_status: ${o.n0 ?? "COMPLETE"}, changes_predicates: [S1-A]}${o.onlyN0 ? "" : ","}`,
+    ...(o.onlyN0 ? [] : [`  {id: N1, repository: ${REPO}, depends_on: [N0], lifecycle_status: PLANNED, changes_predicates: ${o.n1 ?? "[S1-A, S1-B]"}}`]), "]}"].join("\n"));
 }
 // pb: the plan the handoff was written against (an older generation than the resolved one is normal), and changes (its changes_predicates)
 const HANDOFF = (extra = "", pb = {}) => `${MARK}\n${fence("yaml", ["schema_version: shirube-v3/control_handoff/v1", "cell: {id: X}",
@@ -140,7 +140,11 @@ test("T4-45 a COMPLETE depends_on node passes without looking at any PR", () => 
   const r = run();
   assert.equal(r.plan_binding.result, "PASS"); assert.ok(!r.calls.some((c) => c.includes("pulls?state=closed")));
 });
+const BAD_HANDOFF = (body, why) => [`a merged PR whose handoff is ${why}`, { scene: { closed: [NAMING("N0", refOf(21), body)] }, completing: body }];
+const FALSE_TWIN = COMPLETING.replace("completes_unit: true", "completes_unit: false");
 for (const [name, o, why] of [
+  ...[[`${COMPLETING}\n${FALSE_TWIN}`, "contradicted by a second block", /CHANDOFF-REF-007/], [`${COMPLETING}\n${fence("yaml", "schema_version: shirube-v3/control_handoff/v1\nbroken: [")}`, "followed by a broken block", /CHANDOFF-REF-008/],
+    [COMPLETING.replace(MARK, ""), "without the marker", /CHANDOFF-REF-005/]].map(([body, why, code]) => [...BAD_HANDOFF(body, why), new RegExp(`^4\\.10 ${code.source}`)]),
   ["a merged PR whose handoff lacks completes_unit", { scene: { closed: [NAMING("N0", refOf(21), HANDOFF().replace("node_id: N1", "node_id: N0"))] }, completing: HANDOFF().replace("node_id: N1", "node_id: N0") }, /^4\.8 /],
   ["a PR that was closed without merging", { scene: { closed: [{ ...NAMING("N0", refOf(21), COMPLETING), merged_at: null }] } }, /^4\.8 /],
   ["a PR merged into a branch that is not the default", { scene: { closed: [{ ...NAMING("N0", refOf(21), COMPLETING), base: { ref: "feature/x" } }] } }, /^4\.8 /],
@@ -163,6 +167,8 @@ test("T4-48 currentStage throws a reason for what it cannot read or what contrad
   assert.throws(bad([{ id: "S1-A" }], ["S1-Z"]), /not a terminal predicate/);
   assert.throws(bad([{ id: "X-A" }], []), /stage prefix/);
   assert.throws(bad([{ id: "S5-A" }], []), /stage prefix/);
+  assert.throws(bad([{ id: "BAD-A" }, { id: "S2-B" }], ["BAD-A"]), /stage prefix/); // a satisfied ID is checked too
+  assert.throws(bad([{ id: "BAD-A" }], ["BAD-A"]), /stage prefix/); // also when every ID is satisfied
   assert.throws(bad([{ id: 7 }], []), /id/);
   assert.throws(bad("S1-A", []), /array/);
   assert.throws(bad([{ id: "S1-A" }], "S1-A"), /array/);
@@ -181,21 +187,31 @@ test("T4-51 (b') all terminal IDs satisfied: the plan is closed and a node FAILs
 test("T4-52 (b') a satisfied ID that is not a terminal ID, or an ID without a stage prefix, FAILs 4.18 with the reason", () => {
   assert.match(reason({ comments: [[2, planBody({ satisfied: "S1-Z" })]] }), /^4\.18 .*not a terminal predicate/);
   assert.match(reason({ comments: [[2, planBody({ terminal: ["S1-A", "S1-B", "Q-C"] })]] }), /^4\.18 .*stage prefix/);
+  const accepted = planBody({ terminal: ["BAD-A", "S2-C"], satisfied: "BAD-A", n1: "[S2-C]" }); // a bad prefix that is already satisfied must not pass
+  assert.match(reason({ comments: [[2, accepted]], handoff: HANDOFF("", { changes: "S2-C" }) }), /^4\.18 .*stage prefix/);
 });
 // Judgment 5 reads the plan judgment 4 resolved: a new-form PR has no comment_ref of its own, so the gate's own resolved comment is used.
 const DESIGN_REF = `https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6285512379`, SRC = "c".repeat(40), APPROVAL = "<!-- shirube-owner-decision/v1:OD-X -->\nd@1 を承認する\n";
 const DESIGN_FILE = `# design\n\n${fence("json sds-design", JSON.stringify({ schema: "sds-design/1", design_id: "d", version: 1, open_decisions: [], approval: { ref: DESIGN_REF, sha256: sha(APPROVAL) },
   main_connection: { id: "MC1", statement: "s", first_node: "N1" } }, null, 2))}`;
-test("T4-55 judgment 5 gets the plan that judgment 4 resolved for a new-form PR (the PR names no comment_ref)", () => {
+function designRun(comments) { // the design binding of a new-form PR, with the plan comments served from `comments` ([id, body])
   const pin = JSON.stringify({ plan_binding_mode: "report-only", design_binding_mode: "report-only", delivery_plan: { control_source: SOURCE } });
   const design_binding = { design_ref: `https://github.com/watchout/iyasaka-arc/blob/${SRC}/docs/design.md`, design_sha256: sha(DESIGN_FILE), design_id: "d", version: 1 };
-  const s = scene({ pin, block: { design_binding } });
+  const s = scene({ pin, block: { design_binding }, comments }), plans = new Map(comments);
   const api = (path) => (path === `repos/watchout/iyasaka-arc/contents/docs/design.md?ref=${SRC}` ? { encoding: "base64", content: Buffer.from(DESIGN_FILE).toString("base64") }
-    : path === "repos/watchout/iyasaka-arc/issues/comments/6285512379" ? { body: APPROVAL } : path === `repos/${REPO}/issues/comments/2` ? { body: planBody({ generation: 2 }) } : s.api(path));
+    : path === "repos/watchout/iyasaka-arc/issues/comments/6285512379" ? { body: APPROVAL } : plans.has(Number(/repos\/watchout\/aun\/issues\/comments\/(\d+)$/.exec(path)?.[1])) ? { body: plans.get(Number(path.split("/").at(-1))) } : s.api(path));
   const r = gate({ repo: REPO, pr: 7 }, api, 0, accepted);
-  assert.equal(r.plan_binding.result, "PASS");
-  assert.deepEqual([r.design_binding.result, r.design_binding.findings.map((f) => f.reason)], ["PASS", ["5.6"]]); // 5.5 would mean the plan did not arrive
+  return [r.plan_binding.result, r.plan_binding.generation, r.design_binding.result, r.design_binding.findings?.map((f) => f.reason)];
+}
+test("T4-55 judgment 5 gets the plan that judgment 4 resolved for a new-form PR (the PR names no comment_ref)", () => {
+  assert.deepEqual(designRun([[2, planBody({ generation: 2 })]]), ["PASS", 2, "PASS", ["5.6"]]); // 5.5 would mean the plan did not arrive
 });
+for (const [name, first] of [["an older generation", planBody({ generation: 1, onlyN0: true })], ["another plan_id", planBody({ plan_id: "DP-OTHER-001", generation: 9, onlyN0: true })]]) {
+  test(`T4-56 judgment 5 reads the block judgment 4 chose, not the first block of the comment (${name} comes first)`, () => {
+    assert.deepEqual(designRun([[2, first + planBody({ generation: 2 })]]), ["PASS", 2, "PASS", ["5.6"]]);
+    assert.deepEqual(designRun([[2, planBody({ generation: 2 }) + first]]), ["PASS", 2, "PASS", ["5.6"]]); // the order does not matter
+  });
+}
 test("T4-53 FAIL reasons are plain text with no tokens or credentials", () => {
   for (const o of [{ comments: [] }, { listError: "gh: Not Found (HTTP 404)" }, { pin: null }]) assert.doesNotMatch(reason(o), /ghp_|token|Authorization/i);
 });

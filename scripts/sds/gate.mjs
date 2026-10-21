@@ -10,7 +10,7 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { matchesAny, parseArgs } from "../hygiene/lib.mjs";
 import { verifyAudit } from "../hygiene/audit-admission.mjs";
-import { planBinding, blocks, comment } from "./plan-binding.mjs";
+import { planBinding, planBlock, comment } from "./plan-binding.mjs";
 import { refOf, hex, show, designGate, failed } from "./design-gate.mjs";
 import { parseYaml } from "./yaml.mjs";
 
@@ -92,7 +92,7 @@ function approvalOf(block, api) { // null when approval.ref has no valid shape: 
 }
 function planOf(binding, b, { api, parse }) { // judgment 4's plan, read again only when judgment 4 passed, with judgment 4's own reader (S3)
   const ref = binding.comment_ref ?? b?.comment_ref, digest = binding.comment_sha256 ?? b?.comment_sha256; // the new form has the gate's own resolved comment
-  return binding.result === "PASS" ? read("the plan comment", () => blocks(comment(ref, digest, "5", api), "shirube-delivery-plan/v1", parse).found[0]) : null;
+  return binding.result === "PASS" ? read("the plan comment", () => { const p = planBlock(comment(ref, digest, "5", api), binding.plan_id, binding.generation, parse); need(p, "the plan block judgment 4 chose is not in the comment"); return p; }) : null;
 }
 function judged(d, block, input) { // designGate, and 5.8: the PR names the design_id and version the block has
   const { findings } = designGate(block, input), differs = findings[0]?.reason !== "5.1" && (block.design_id !== d.design_id || block.version !== d.version);

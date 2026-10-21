@@ -18,9 +18,10 @@ function stageOf(id) {
 // "S1".."S4", or null when every terminal predicate is satisfied (the plan is closed).
 export function currentStage(plan) {
   const terminal = ids(plan?.owner_outcome?.terminal_predicates, "owner_outcome.terminal_predicates", (x) => x?.id);
+  const stages = terminal.map(stageOf); // every terminal ID has a stage prefix, satisfied or not
   const done = ids(plan?.terminal_acceptance?.satisfied_predicates ?? [], "terminal_acceptance.satisfied_predicates");
   const stray = done.find((id) => !terminal.includes(id));
   if (stray !== undefined) throw new Error(`satisfied_predicates names ${stray}, which is not a terminal predicate`);
-  const open = terminal.filter((id) => !done.includes(id)).map(stageOf);
+  const open = stages.filter((_, i) => !done.includes(terminal[i]));
   return open.length === 0 ? null : `S${Math.min(...open)}`;
 }
