@@ -1,0 +1,37 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@f8413fe1734ed24ea6ffdc665019e70e0320a2f9/docs/sds/audit-method.md#3",
+  "scope": "shirube の配布先一覧 docs/sds/consumers.json（PR #60、R3、head 82483fda）の設計の監査（D1〜D6、後から行う = T154 = A の形。ARC の作業指示 CH-SHIRUBE-CONSUMERS-20261021 に R3 の事前監査の工程が無かったため）: docs/design/consumers-registry.md（設計の記録、新しい file）と、本項目集合の file docs/process/audit-items/consumers-design-audit-items.json。監査の対象は設計で、PR #60 の中身（consumers.json の 7 要素）は設計との一致を見る材料。記法: [D5] = distribution.md §5「配布先の管理」@ f8413fe1、[OD] = T161 = A iyasaka-arc#49 6303458175、[OD-RP] = T164 = A iyasaka-arc#49 6303932618（room-panel は #60 の後の別 PR）、[CH] = 作業指示 iyasaka-arc#57 6303531134、[PR] = shirube PR #60 head 82483fda とその監査 cycle 2（#60 6305078376）。項目の文は kit.mjs（main f8413fe1）の実態に合わせた（spe-dev の指摘 shirube PR #62 6306178261、ARC の裁定 (a)）。全 6 項目必須。",
+  "items": [
+    {
+      "id": "CSD-1",
+      "criterion": "目的と対象外: 記録が Owner の原文と決定 ID（[OD]、[OD-RP]）を引き、配布先一覧の目的（「配布先」の正 = 1 file。status が読取り専用で観測する対象の一覧。追加・削除は Owner の承認の PR = [D5]）と対象外（各 repo の pin の中身、導入 PR そのもの、required 化、room-panel の 1 行 = 別 PR）を書いている。[D5] と食い違わない。",
+      "basis": "audit-method §3 D1、[D5]"
+    },
+    {
+      "id": "CSD-2",
+      "criterion": "全受入の検証計画: 記録が、一覧の受入（7 要素の key = repo・adopter・adoption{ref,sha256}・hygiene_profile・state、adoption の本文 SHA-256 の一致、repo の実在、status の実行 = exit 0 と 7 行）のそれぞれを、どの観測（監査 cycle 2 の CS-1〜3 の実測、status の再実行）が示すかに対応づけている。kodama = adopted / 6 repo = planned の区別は、一覧の state の欄（人が読む）と、status が pin の有無（sds_commit が e94a74e9 か null か）から出す結果の 2 つで、status は state を読まないことを記録が実態どおりに書いている。未測定（6 repo の導入の完了）は未測定と書いている。",
+      "basis": "audit-method §3 D2、[PR] の CS-1〜3"
+    },
+    {
+      "id": "CSD-3",
+      "criterion": "代替案: 記録が少なくとも次を、採った案と採らなかった案と理由つきで書いている。(a) Shirube 側に 1 file の一覧を持つ（対: 各 repo の pin だけ = 配布先の全体を観測できない）。(b) state の欄を kit が読まない観測用の欄とする（対: kit.mjs を変えて state を解釈する = code の変更と own-code の予算）。(c) adoption の記録を Owner の決定の URL と本文 SHA-256 で結ぶ（対: 決定の文を写す = 知識の重複）。(d) 一覧の更新は Owner の承認の PR（R3）とする（対: R1 docs = 配布先の追加を監査なしで変えられる）。",
+      "basis": "audit-method §3 D3、[D5]"
+    },
+    {
+      "id": "CSD-4",
+      "criterion": "秘密・権限・観測・復旧・データ: 記録が実態を書いている: status は GitHub の GET だけだが gh の認証が要り、7 repo は private なので読める資格情報が前提であること（資格情報の権限の範囲は未測定と明記）。404 は「無い」と読まれ、pin が無い repo と同じ行になり、403 などは UNKNOWN になること（読めない repo を「観測できず」と区別するのは kit.mjs の改修 = 別の Unit、台帳）。status は一覧の repo だけを読み、adoption・state を pin と比べないこと（不一致の検出も別の Unit）。一覧に秘密・host 名・token を書かないこと。誤った行の戻し方（行を消す PR = 同じく R3）。宣言と観測の違いを S5 のとおり区別して書いている。",
+      "basis": "audit-method §3 D4、[D5]、SDS S5・S9"
+    },
+    {
+      "id": "CSD-5",
+      "criterion": "予算と範囲: 記録が、docs だけで own-code に触れないこと、PR #60 の大きさ（2 file、+94 行）が hygiene の上限の中であること、room-panel の追加が別 PR である理由（[OD-RP] の決定の時刻が #60 の依頼の後）を書いている。",
+      "basis": "audit-method §3 D5、[OD-RP]"
+    },
+    {
+      "id": "CSD-6",
+      "criterion": "検証可能性と独立性: この PR の変更が scope の 2 file だけ（code・試験・.github/**・.shirube/** に触れていない）。CI が成功している。PR 本文の sds-pr/1 block（risk_class R1、changed_paths、delivery_plan_binding と control_handoff = この作業指示の ref と sha256）がある。記録が引く [D5]・[OD]・[OD-RP]・[CH]・[PR] の参照に URL と本文の SHA-256（または head）が付いている。作者（spe-dev）と監査者（devauditor）と統合担当（suite-lead）が別の席。この監査の受領が PR #60 の統合の条件（T154 の形）。",
+      "basis": "audit-method §2・§3 D6、[CH]"
+    }
+  ]
+}
