@@ -30,7 +30,7 @@
     },
     {
       "id": "D23-6",
-      "criterion": "検証可能性と独立性: PR の変更が scope の 2 file（設計の記録と本項目集合）だけ（code・試験・.github/**・.shirube/** に触れていない）。CI（test・hygiene / hygiene）が成功している。PR 本文の sds-pr/1 block（risk_class R1、changed_paths、delivery_plan_binding = [DP] の plan_id DP-SHIRUBE-001・generation 1・node_id DP-N-SH-DESIGN-REC・comment_ref と comment_sha256、control_handoff = 作業指示の ref と sha256）がある。記録が引く [V1]・[OD-F]・[OI-K]・[OD-S1]・[DP] の参照に comment の URL と本文の SHA-256 が付いている。各判定（PA-1・判定 4 (b')・id だけの解決・依存の観測・supersedes の鎖・自己適用）に正例と負例の fixture を書ける具体性がある。作者（shirube の席）と監査者（devauditor）と統合担当（suite-lead）が別の席。この監査の受領が DP-N-SH-SELF-GATE と DP-N-SH-GATE4-IDS の作業指示の前提。",
+      "criterion": "検証可能性と独立性: PR の変更が scope の 2 file（設計の記録と本項目集合）だけ（code・試験・.github/**・.shirube/** に触れていない）。CI（test・hygiene / hygiene）が成功している。PR 本文の sds-pr/1 block（risk_class R1、changed_paths、delivery_plan_binding = [DP] の plan_id DP-SHIRUBE-001・generation 2・node_id DP-N-SH-DESIGN-REC・comment_ref と comment_sha256、control_handoff = 作業指示の ref と sha256）がある。記録が引く [V1]・[OD-F]・[OI-K]・[OD-S1]・[DP] の参照に comment の URL と本文の SHA-256 が付いている。各判定（PA-1・判定 4 (b')・id だけの解決・依存の観測・supersedes の鎖・自己適用）に正例と負例の fixture を書ける具体性がある。作者（shirube の席）と監査者（devauditor）と統合担当（suite-lead）が別の席。この監査の受領が DP-N-SH-SELF-GATE と DP-N-SH-GATE4-IDS の作業指示の前提。",
       "basis": "audit-method §2・§3 D6、[V1] §4・§8"
     },
     {
