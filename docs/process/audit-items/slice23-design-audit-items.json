@@ -1,16 +1,16 @@
 {
   "schema": "sds-audit-items/1",
   "method_ref": "watchout/shirube@f8413fe1734ed24ea6ffdc665019e70e0320a2f9/docs/sds/audit-method.md#3",
-  "scope": "薄片 2「監査の受領を必須に」・薄片 3「Delivery Plan と作業指示に結ぶ（Inception が先を含む）」の設計の事前監査（D1〜D6。R4 の実装の前）: docs/design/slice23-control-v1.md（設計の記録、新しい file。設計 v1 iyasaka-arc#57 6305635938 の写しに参照の表を付けたもの）と、本項目集合の file docs/process/audit-items/slice23-design-audit-items.json。code はまだ無く、監査の対象は設計。記法: [V1] = 設計 v1 iyasaka-arc#57 6305635938（本文 SHA-256 5a896ea234bcb909cdc103a9f1431b7a463164c7e9820c3358422ecc7aa19881）、[OD-F] = 仕様の固定 iyasaka-arc#49 6305503572、[OI-K] = 門と script・きっかけの prompt iyasaka-arc#49 6305560011、[OD-S1] = S1 の 7 条件 iyasaka-arc#49 6305753673、[DP] = DP-SHIRUBE-001 g1 shirube#6 6305815774、[M] = shirube main f8413fe1。道筋（縦 = 受入 ID、横 = Unit と順序）も独立監査の対象にする（Owner の問い「設計や道筋自体には監査がいらないの？」2026-10-21）。道筋 g1 の本体は shirube#6 6305815774 の yaml の囲み（SHA-256 d8885559c92ae5caf605cdf1679cc7cf9cf81f751061685aee5d094ba7f83751）で、PR には写さない（pr-size 400 行の中に収めるため。裁定 = 作業指示 v3）。監査者はそれを取り直して読み、証拠は記録の参照の表と対応表の行を引く。全 11 項目必須。",
+  "scope": "薄片 2「監査の受領を必須に」・薄片 3「Delivery Plan と作業指示に結ぶ（Inception が先を含む）」の設計の事前監査（D1〜D6。R4 の実装の前）: docs/design/slice23-control-v1.md（設計の記録、新しい file。設計 v1 iyasaka-arc#57 6305635938 と設計 v2 iyasaka-arc#57 6306257668（v1 の §3・§7 の置き換えと §3b・§9 の追加、A6 の裁定 #57 6306089613 を含む）の写しに参照の表を付けたもの）と、本項目集合の file docs/process/audit-items/slice23-design-audit-items.json。code はまだ無く、監査の対象は設計。記法: [V1] = 設計 v1 iyasaka-arc#57 6305635938（本文 SHA-256 5a896ea234bcb909cdc103a9f1431b7a463164c7e9820c3358422ecc7aa19881）、[V2] = 設計 v2 iyasaka-arc#57 6306257668（本文 SHA-256 1f09a0d44fa180873a3f281163ac92abd98573ecd232056667652e5c8832ceb0。§3・§7 は v2 が正）、[A6] = A6 の裁定 #57 6306089613、[OD-2] = 決定 iyasaka-arc#49 6306226221（S1-SH-07 = 6 回、AUN S1 の付け替え）、[OD-F] = 仕様の固定 iyasaka-arc#49 6305503572、[OI-K] = 門と script・きっかけの prompt iyasaka-arc#49 6305560011、[OD-S1] = S1 の 7 条件 iyasaka-arc#49 6305753673、[DP] = DP-SHIRUBE-001 g2 shirube#6 6306247323（g1 6305815774 を置換。yaml の囲みの SHA-256 3297489c50efd12f5a90b489bdda5031271b3cdcbfc516faab578e7c204e0808）、[M] = shirube main f8413fe1。道筋（縦 = 受入 ID、横 = Unit と順序）も独立監査の対象にする（Owner の問い「設計や道筋自体には監査がいらないの？」2026-10-21）。道筋 g2 の本体は shirube#6 6306247323 の yaml の囲み（SHA-256 3297489c50efd12f5a90b489bdda5031271b3cdcbfc516faab578e7c204e0808）で、PR には写さない（pr-size 400 行の中に収めるため。裁定 = 作業指示 v3）。監査者はそれを取り直して読み、証拠は記録の参照の表と対応表の行を引く。全 11 項目必須。",
   "items": [
     {
       "id": "D23-1",
-      "criterion": "目的と対象外: 記録が Owner の原文（[OD-F] の原文、[OI-K]、[OD-S1] の問 1・問 2）と決定 ID を引き、薄片 2 の目的（R2 以上は監査の受領が今の head を名指さないと統合できない）と薄片 3 の目的（Unit を名指さない・作業指示の範囲外・今の段の採択の無い道筋は進めない）、対象外（必須検査・ruleset・pin の変更そのもの = Owner、アカウントの分離、薄片 4・5、V3 の席の制御の撤去、AI-DLC の engine / hook）を [V1] §0・§6・[OD-S1] の「含まないもの」と食い違いなく書いている。",
+      "criterion": "目的と対象外: 記録が Owner の原文（[OD-F] の原文、[OI-K]、[OD-S1] の問 1・問 2）と決定 ID を引き、薄片 2 の目的（R2 以上は監査の受領が今の head を名指さないと統合できない）と薄片 3 の目的（Unit を名指さない・作業指示の範囲外・今の段の採択の無い道筋は進めない）、対象外（必須検査・ruleset・pin の変更そのもの = Owner、アカウントの分離、薄片 4・5、V3 の席の制御の撤去、AI-DLC の engine / hook）を [V2]/[V1] §0・§6・[OD-S1] の「含まないもの」と食い違いなく書いている。",
       "basis": "audit-method §3 D1、[V1] §0・§6、[OD-S1]"
     },
     {
       "id": "D23-2",
-      "criterion": "全受入の検証計画: 記録が、S1 の 7 条件（S1-SH-01〜07）のそれぞれを、どの作業（[DP] の node）とどの観測（負例 PR の FAIL と merge 不可、実 PR の PASS、受付の拒否、FAIL の分類、作者の diff、Owner の手の数）で確かめるかに対応づけ、1 周の完了条件 5 つ（[V1] §5）と多対多で結んでいる。機械で確かめられないもの（Owner の承認が本人のものか、要求の意味）は未測定・対象外と明記している。",
+      "criterion": "全受入の検証計画: 記録が、S1 の 7 条件（S1-SH-01〜07）のそれぞれを、どの作業（[DP] の node）とどの観測（負例 PR の FAIL と merge 不可、実 PR の PASS、受付の拒否、FAIL の分類、作者の diff、Owner の手の数）で確かめるかに対応づけ、1 周の完了条件 5 つ（[V2]/[V1] §5）と多対多で結んでいる。機械で確かめられないもの（Owner の承認が本人のものか、要求の意味）は未測定・対象外と明記している。",
       "basis": "audit-method §3 D2、[V1] §5、[OD-S1] 決定 1 の表"
     },
     {
@@ -25,7 +25,7 @@
     },
     {
       "id": "D23-5",
-      "criterion": "予算と範囲: 記録が、own-code 2,300 行（T108 = A）の中で薄片 3 の code（plan-binding.mjs・plan-admission.mjs・gate.mjs・kit.mjs）を収める見込み（今の行数と増分の見積もり。超えるなら削る候補）、作者の手間の上限（PR の block の数行と label だけ）、Owner の手の上限（1 周で承認 1・exact-head 2・設定 2）を書いている。各 file 300 行・PR 400 行 / 20 file の上限に合わせた PR の分け方（[DP] の node 9 本の順）を書いている。",
+      "criterion": "予算と範囲: 記録が、own-code 2,300 行（T108 = A）の中で薄片 3 の code（plan-binding.mjs・plan-admission.mjs・gate.mjs・kit.mjs）を収める見込み（今の行数と増分の見積もり。超えるなら削る候補）、作者の手間の上限（PR の block の数行と label だけ）、Owner の手の上限（S1-SH-07 = 1 周で 6 回まで = [OD-2]。見込み = 承認 1・exact-head 2・設定 2 = 5）を書いている。各 file 300 行・PR 400 行 / 20 file の上限に合わせた PR の分け方（[DP] の node 9 本の順）を書いている。",
       "basis": "audit-method §3 D5、[OD-S1] S1-SH-05・S1-SH-07、hygiene-profile.md"
     },
     {
@@ -40,7 +40,7 @@
     },
     {
       "id": "PL-2",
-      "criterion": "Unit の大きさ（横）: 各 node が今の段（S1）の受入 ID を 1 つ以上名指し、1 回の監査と 1 回の統合で閉じる大きさで、deliverable と integration_evidence が観測できる形で書かれている。受入 ID を名指さない node、後の段を進めるだけの node（置き場の node を除く）が無い。",
+      "criterion": "Unit の大きさ（横）: 各 node が今の段（S1）の受入 ID を 1 つ以上名指し、1 回の監査と 1 回の統合で閉じる大きさで、deliverable と integration_evidence が観測できる形で書かれている。受入 ID を名指さない node、後の段を進めるだけの node（置き場の node を除く）が無い。 判定 4 の code は子 Unit（GATE4-A・B・C）に分かれ、各 1 PR・1 監査・1 統合で閉じる見込み（[V2] §3b）。",
       "basis": "[OD-F] §2（node の切り方 3 つ）、Goal Stages 4（anti_work）"
     },
     {
@@ -55,7 +55,7 @@
     },
     {
       "id": "PL-5",
-      "criterion": "独立性: 道筋の作者（arc）が自分で採択した版を、この監査の PASS の前に作業指示の根拠として使っていない（DP-N-SH-DESIGN-REC の作業指示はこの監査を含む PR 自身なので可。それ以外の node の作業指示はこの監査の後）。記録の参照の表が道筋 g1 を shirube#6 6305815774 の URL と yaml の囲みの中身の SHA-256（d8885559c92ae5caf605cdf1679cc7cf9cf81f751061685aee5d094ba7f83751）で名指し、監査者が取り直した値と一致する。PR には道筋の写しを置いていない。",
+      "criterion": "独立性: 道筋の作者（arc）が自分で採択した版を、この監査の PASS の前に作業指示の根拠として使っていない（DP-N-SH-DESIGN-REC の作業指示はこの監査を含む PR 自身なので可。それ以外の node の作業指示はこの監査の後）。記録の参照の表が道筋 g2 を shirube#6 6306247323 の URL と yaml の囲みの中身の SHA-256（3297489c50efd12f5a90b489bdda5031271b3cdcbfc516faab578e7c204e0808）で名指し、監査者が取り直した値と一致する。PR には道筋の写しを置いていない。",
       "basis": "audit-method §2（作者≠監査）、[DP]"
     }
   ]
