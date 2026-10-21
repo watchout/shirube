@@ -1,1 +1,72 @@
-[]
+[
+  {
+    "repo": "watchout/kodama",
+    "adopter": "Owner",
+    "adoption": {
+      "ref": "https://github.com/watchout/kodama/pull/87#issuecomment-6286232170",
+      "sha256": "c17718e47380fb2395f6ee65d5d96913409320940f5109ca9f8bc663e40a58e5"
+    },
+    "hygiene_profile": "none",
+    "state": "adopted"
+  },
+  {
+    "repo": "watchout/omotenasuai-control",
+    "adopter": "Owner",
+    "adoption": {
+      "ref": "https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6303458175",
+      "sha256": "82dd398e5a39626bcb880d3bba718f2ba03c445f052c36c0a407572ed2256423"
+    },
+    "hygiene_profile": "docs",
+    "state": "planned"
+  },
+  {
+    "repo": "watchout/omotenasuai-common-api",
+    "adopter": "Owner",
+    "adoption": {
+      "ref": "https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6303458175",
+      "sha256": "82dd398e5a39626bcb880d3bba718f2ba03c445f052c36c0a407572ed2256423"
+    },
+    "hygiene_profile": "product",
+    "state": "planned"
+  },
+  {
+    "repo": "watchout/totonoe",
+    "adopter": "Owner",
+    "adoption": {
+      "ref": "https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6303458175",
+      "sha256": "82dd398e5a39626bcb880d3bba718f2ba03c445f052c36c0a407572ed2256423"
+    },
+    "hygiene_profile": "product",
+    "state": "planned"
+  },
+  {
+    "repo": "watchout/omotenasuai-motenashi",
+    "adopter": "Owner",
+    "adoption": {
+      "ref": "https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6303458175",
+      "sha256": "82dd398e5a39626bcb880d3bba718f2ba03c445f052c36c0a407572ed2256423"
+    },
+    "hygiene_profile": "product",
+    "state": "planned"
+  },
+  {
+    "repo": "watchout/omotenasuai-yagokoro",
+    "adopter": "Owner",
+    "adoption": {
+      "ref": "https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6303458175",
+      "sha256": "82dd398e5a39626bcb880d3bba718f2ba03c445f052c36c0a407572ed2256423"
+    },
+    "hygiene_profile": "product",
+    "state": "planned"
+  },
+  {
+    "repo": "watchout/omotenasuai-matakuru",
+    "adopter": "Owner",
+    "adoption": {
+      "ref": "https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6303458175",
+      "sha256": "82dd398e5a39626bcb880d3bba718f2ba03c445f052c36c0a407572ed2256423"
+    },
+    "hygiene_profile": "product",
+    "state": "planned"
+  }
+]
