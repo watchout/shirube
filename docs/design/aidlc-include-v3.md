@@ -1,7 +1,7 @@
-<!-- arc:design:DS-SHIRUBE-AIDLC-INCLUDE-V2:20261021 -->
-## 設計 v2: AI-DLC の内包 — 設定は deny で守り、記録は原典どおり commit する（DS-SHIRUBE-AIDLC-INCLUDE-V2）
+<!-- arc:design:DS-SHIRUBE-AIDLC-INCLUDE-V3:20261021 -->
+## 設計 v3: AI-DLC の内包 — 設定は deny で守り、reviewer は開始の時に切り、記録は原典どおり commit する（DS-SHIRUBE-AIDLC-INCLUDE-V3）
 
-supersedes: 設計 v1（iyasaka-arc#57 6309124155、本文 SHA-256 `8b1a84c7e48c13c0d637921590ded44537d0d33b3da6c9231f88d458d1c904d1`）の全体。v1 の設計監査 round 1 = BLOCK（shirube#64 6309470154）の BF-01（AI-2・AI-3）・BF-02（PL-2）を直した。BF-03（索引に決定 2 件が無い）は iyasaka-org PR #53（索引に 8 行）で直す。
+supersedes: 設計 v2（iyasaka-arc#57 6309948209、本文 SHA-256 `347df43d6e2207d536460028a385631a85fe9430be36aea032faf0eec79813ec`）の全体。v2 の設計監査 round 2 = BLOCK（shirube#64 6310341648）の BF-04（AI-4: §3.6 の reviewer = none を実現する操作が §6 の開始の手順に無い）を直した。BF-01-R2（道筋の試験の条件に v1 の負例が残っていた）は道筋 g6 訂正 2 で直す。v2 からの変更は §1 の 5、§3.6、§6 の 5、§9 の P3 と、この節の文だけ。round 1（6309470154）の BF-01〜03 の是正は v2 のまま。
 適用 ID: OD-SHIRUBE-INCLUDE-AIDLC-NO-REINVENT-20261021-001（#49 6309035411、`3cbfb54ac5c577439ae61efc90549569eec1ab91bdf055a95352f2afe01663c0`）、OD-SHIRUBE-INIT-AND-INTENT-START-20261021-001（#49 6308731943、`c3b2a2161f6706b26175a67b49fde2d7bcf5b8c89f1213c39fc2fca21fac2554`）、OD-SHIRUBE-SPEC-FREEZE-AIDLC-TRACE-20261021-001、OD-INCEPTION-ENTRY-AIDLC-FORM-AS-IS-20261021-001、protected-surface R1、subagent-owner-approval、S1〜S9、escalation-policy。原典 = awslabs/aidlc-workflows（MIT-0）。stage file = commit `9b8df02231f0230fd6f19846a0df1fb5567e7ece`、source・docs・試験 = release v2.11.1 = `895a35d86d20336d9b7bc4aedc9440e4a12c83ab`（評価の作業場で動かした版も 2.11.1）。risk = R4（`.claude/settings.json` の hook と permission は席の設定 = 保護面）。
 
 ### §0 Owner の言葉と決定の対応（v1 と同じ）
@@ -22,7 +22,7 @@ supersedes: 設計 v1（iyasaka-arc#57 6309124155、本文 SHA-256 `8b1a84c7e48c
 | 2 | 再生成の後も subagent が止まっている | 1 の後の `.claude/settings.json` で `permissions.deny` に `Agent` がある（`allow` に原典の `Task` が戻っていてもよい）。既存の checkout の refresh（`aidlc config --yes` 2 回目）の後も同じ |
 | 3 | 版が揃う | `.aidlc-version` と `aidlc version` が一致し、kit check が OK |
 | 4 | 席にもともと入っている hook とぶつからない | user 設定の hook と project の hook の表。同じ event で同じ command が 2 回動く組 = 0、互いの出力を壊す組 = 0 |
-| 5 | Intent capture が subagent なしで完了する | reviewer = none で、Owner が `--init` → intent の開始 → 問い → 要約の確認 → 承認まで。audit の記録で SUBAGENT_* の event が 0 |
+| 5 | Intent capture が subagent なしで完了する | Owner が `--init` → `--review none` を付けた intent の開始 → 問い → 要約の確認 → 承認まで。`aidlc-state.md` の `Review Override` が `none`、audit に `REVIEW_CLASS_CHANGED` があり、SUBAGENT_* の event が 0 |
 | 6 | 問いが日本語で出る | 問いの file（評価 S1-0 では日本語） |
 | 7 | kit check が負例を見つける | §9 の負例 4 つがそれぞれ DRIFT、`aidlc` が無い時は UNKNOWN |
 | 8 | 記録が門の読める所に残り、機械の名前を含まない | intent の記録が PR で main に入る。audit の shard の名前の host が、この機械の hostname から作る値と違う |
@@ -54,7 +54,7 @@ Codex の席での動きは S1 の必須にしない（shirube の実装席は C
 3.3 よって: kit は `allow` を編集しない（原典のまま）。committed の `.claude/settings.json` に `permissions.deny: ["Agent"]` を書く。refresh の後も deny が残り、allow に何があっても subagent は起きない。committed の file に入っているので、clone の直後の最初の session から効く（確かめる前に session を起動しても止まっている）。kit check と CI の自己検査（§4）は、この deny が消えていないかを見る。
 3.4 `Edit(/**)`: 先頭の `/` は settings の置き場（project）からの相対で、project の外には広がらない（permissions の文書「`/path` Path relative to the settings source」）。原典のまま。`WebSearch` = Q1（§8）。
 3.5 外部依存の中身（v1 §3.4 と同じ。source で確認）: engine は外の API とつながらない。利用の計測は `AIDLC_METRICS_ENDPOINT` を設定した時だけ送り、送り先は同梱されない。通信は install / update の GitHub release の取得だけ（署名の検証あり）。Bedrock は使わない。MCP server は none。
-3.6 reviewer = none。独立監査は別の席（devauditor）のまま。
+3.6 reviewer = none。原典の Intent capture は `review_class: advisory`（stage file の frontmatter）で、feature の scope には review の上限が無いので、既定では reviewer の subagent を起こす（deny `Agent` とぶつかる）。原典の操作 = workflow を始める時に `--review none` を付ける（`docs/guide/12-cli-commands.md`「`/aidlc --review <class>`」: 「`--review none` skips gated stage reviewer dispatch」「It can be supplied when a workflow is created or alongside `--scope`」。`aidlc-state.md` の `Review Override` に書かれ `REVIEW_CLASS_CHANGED` が audit に残る）。deny `Agent` を外して回避しない。独立監査は別の席（devauditor）のまま。
 
 ### §4 配布キットの変更（kit。GATE4-C とは別 Unit）
 - 新しい file `scripts/sds/kit-aidlc.mjs`（own-code の枠 AIDLC-INCLUDE 150 = 席側の hook 150 の付け替え。file 300 行・関数 50 行・複雑さ 10）。`kit.mjs`（176 行）は subcommand の配線だけ足す。
@@ -76,14 +76,14 @@ PR の sds-pr/1 block に `aidlc_record: {intent, stage}`。門は PR の head �
 | 2 | Owner が `aidlc` を per-user に入れる（版 = 2.11.1 か、その時の最新の release を Owner が選ぶ） | Owner | 外部依存 | — | — |
 | 3 | shirube への self-apply: `.aidlc-version`（1）・`aidlc.settings.json`（約 10）・`.claude/settings.json`（約 235）・`.gitignore`（+約 40）・`.shirube/hygiene-profile.md`（+約 3: audit の shard を exclude_generated に）・`tests/self-aidlc-settings.test.mjs`（新、約 25: committed の settings に deny `Agent`、`.mcp.json` が無い） | shirube → devauditor → Owner の exact-head → suite-lead | R4 | 約 315 行・6 file | 3a = settings・version・preset・gitignore、3b = profile と自己検査（どちらも R4。exact-head が 2 回になるので、超えない限り 1 本） |
 | 4 | memory の PR: `aidlc/spaces/default/memory/**` | shirube → devauditor → suite-lead | R1 | 8 file・382 行（2.11.1 の実測） | phases/ を別の PR に |
-| 5 | Owner の手: 自分の clone で `kit prepare --seat owner` → `aidlc config --yes` → `kit check` が OK → `claude` → `/aidlc --init`（READY で止まる）→ `/aidlc feature <Shirube への依頼>` → 問いに答える → 要約の確認 → 承認 | Owner | 製品の仕事 | — | — |
+| 5 | Owner の手: 自分の clone で `kit prepare --seat owner` → `aidlc config --yes` → `kit check` が OK → `claude` → `/aidlc --init`（READY で止まる）→ `/aidlc --scope feature --review none <Shirube への依頼>`（開始と reviewer の上限を 1 行で。§3.6）→ `aidlc-state.md` の `Review Override` が `none` かを見る（違えば `/aidlc --review none` を打ち直してから進む）→ 問いに答える → 要約の確認 → 承認 | Owner | 製品の仕事 | — | — |
 | 6 | intent の記録の PR: 状態（約 110）・intents.json（約 10）・project-description（1）・問いの file（約 80）・memory.md（約 15）・intent-statement と stakeholder-map（見込み 100〜200）。audit の shard（評価では途中までで 435 行）は 3 の profile で exclude_generated | shirube の席が Owner の clone から写す（同じ OS user、読むだけ）→ devauditor → suite-lead | R1 | 約 320〜420 行・7 file | 6a = 問いの file・memory.md・状態、6b = 段の出力（6b は 6a の後） |
 | 7 | 検証の記録（§1 の 8 条件）を shirube#6 に | shirube ＋ arc | 記録 | — | — |
 3 と 6 の作業は、席の session の cwd（`~/Developer/claude-shirube`）ではなく repo の別の clone で行う。席の作業場は repo の checkout ではないので、3 の統合で席自身の session に AI-DLC の hook は入らない。hook が効くのは shirube の checkout で起動した session（5 の Owner の session）だけ。
 Owner の手 = 2（install 1 回）・3 の exact-head 1 回・5（製品の仕事）。S1-SH-07 の数に入るのは 3 の exact-head だけ。
 
 ### §7 道筋
-DP-SHIRUBE-001 g6 の DRAFT（訂正 1）: node DP-N-SH-AIDLC-INCLUDE（§6 の 0〜7、S1-SH-03・S1-SH-06、依存 = GATE4-A-BINDING）と DP-N-SH-GATE-RECORDS-BRIDGE（S1-SH-02・S1-SH-03、依存 = AIDLC-INCLUDE・GATE4-B-ADMISSION）。SELF-GATE の pin は BRIDGE を含む main。Suite の DP-N-SHIRUBE-SEAT-HOOK は Suite g8 で退役。新しい判断を含むので PL-1〜5 の独立監査の PASS の後に ADMITTED。
+DP-SHIRUBE-001 g6 の DRAFT（訂正 2。試験の条件を §9 の P1〜P3・N1〜N4・UNKNOWN に揃えた）: node DP-N-SH-AIDLC-INCLUDE（§6 の 0〜7、S1-SH-03・S1-SH-06、依存 = GATE4-A-BINDING）と DP-N-SH-GATE-RECORDS-BRIDGE（S1-SH-02・S1-SH-03、依存 = AIDLC-INCLUDE・GATE4-B-ADMISSION）。SELF-GATE の pin は BRIDGE を含む main。Suite の DP-N-SHIRUBE-SEAT-HOOK は Suite g8 で退役。新しい判断を含むので PL-1〜5 の独立監査の PASS の後に ADMITTED。
 
 ### §8 risk と未決
 - risk: `.claude/settings.json`・`.shirube/hygiene-profile.md` = R4。kit = R2。橋 = R3。
@@ -101,6 +101,7 @@ DP-SHIRUBE-001 g6 の DRAFT（訂正 1）: node DP-N-SH-AIDLC-INCLUDE（§6 の 
 | N2 | `.mcp.json` がある | check DRIFT |
 | N3 | `.aidlc-version` と `aidlc version` が違う | check DRIFT。`aidlc` が無い = UNKNOWN |
 | N4 | prepare を飛ばして `aidlc` を動かし、shard の名前に hostname が入る | check DRIFT |
-P1・P2 は 1 の試験では原典の動きを模擬し（`aidlc` の binary は CI に入れない）、実物は 5 の前に Owner の clone で 1 回確かめて記録する。根拠の行番号は release v2.11.1 の file のもの。
+| P3 | 5 の開始の 1 行（`--review none`）の直後 | `aidlc-state.md` の `Review Override` = `none`、audit に `REVIEW_CLASS_CHANGED`、Intent capture の段の指示に reviewer の dispatch が無い。承認までに SUBAGENT_* の event = 0。`--review none` を付け忘れた時は reviewer の dispatch が deny `Agent` で拒まれて止まる（その時は打ち直す。deny は外さない） |
+P1・P2 は 1 の試験では原典の動きを模擬し（P3 は 5 の Owner の session で観測する）（`aidlc` の binary は CI に入れない）、実物は 5 の前に Owner の clone で 1 回確かめて記録する。根拠の行番号は release v2.11.1 の file のもの。
 
-next_action: actor=shirube; what=作業指示 v2 で #64 の file を v2 に差し替え、索引の PR（iyasaka-org #53）の統合の後に round 2 を依頼する; blocking=false
+next_action: actor=shirube; what=作業指示 v3 で #64 の file を v3 に差し替え、round 3 を依頼する; blocking=false
