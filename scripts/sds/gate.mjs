@@ -48,7 +48,8 @@ function protectedPaths(ctx, api) {
   }
   const read = JSON.parse(Buffer.from(pin.content, "base64").toString("utf8")), extra = read.protected_paths ?? [];
   need(Array.isArray(extra), "protected paths: the base pin's protected_paths must be a list");
-  return { guarded: [...DEFAULT_PROTECTED, ...extra], mode: read.plan_binding_mode === undefined ? "report-only" : read.plan_binding_mode, design_binding_mode: read.design_binding_mode }; // only a missing field defaults
+  const source = read.delivery_plan?.control_source; // the issue holding this repo's plan (judgment 4, new form)
+  return { guarded: [...DEFAULT_PROTECTED, ...extra], mode: read.plan_binding_mode === undefined ? "report-only" : read.plan_binding_mode, design_binding_mode: read.design_binding_mode, controlSource: typeof source === "string" ? source : undefined }; // only a missing field defaults
 }
 function risk(p, pr) {
   const labels = (p.labels ?? []).map((l) => l.name).filter((n) => /^risk:R[0-4]$/.test(n));
@@ -90,7 +91,8 @@ function approvalOf(block, api) { // null when approval.ref has no valid shape: 
   return m ? read("the approval comment", () => api(`repos/${m[1]}/issues/comments/${m[2]}`).body) : null;
 }
 function planOf(binding, b, { api, parse }) { // judgment 4's plan, read again only when judgment 4 passed, with judgment 4's own reader (S3)
-  return binding.result === "PASS" ? read("the plan comment", () => blocks(comment(b.comment_ref, b.comment_sha256, "5", api), "shirube-delivery-plan/v1", parse).found[0]) : null;
+  const ref = binding.comment_ref ?? b?.comment_ref, digest = binding.comment_sha256 ?? b?.comment_sha256; // the new form has the gate's own resolved comment
+  return binding.result === "PASS" ? read("the plan comment", () => blocks(comment(ref, digest, "5", api), "shirube-delivery-plan/v1", parse).found[0]) : null;
 }
 function judged(d, block, input) { // designGate, and 5.8: the PR names the design_id and version the block has
   const { findings } = designGate(block, input), differs = findings[0]?.reason !== "5.1" && (block.design_id !== d.design_id || block.version !== d.version);
@@ -123,11 +125,11 @@ export function gate({ repo, pr: number, head }, api = github, now = Date.now(),
   const actual = files(repo, ctx.pr, api);
   const paths = [...new Set(actual.flatMap((f) => (f.from ? [f.from, f.path] : [f.path])))]; // a rename declares both paths
   need(JSON.stringify([...paths].sort()) === JSON.stringify([...pr.changed_paths].sort()), "2 changed paths: the block differs from the PR diff");
-  const { guarded, mode, design_binding_mode } = protectedPaths(ctx, api);
+  const { guarded, mode, design_binding_mode, controlSource } = protectedPaths(ctx, api);
   const protectedTouched = actual.some((f) => [f.path, f.from].some((x) => x && matchesAny(x, guarded))); // renames count both sides
   const effective = protectedTouched ? "R4" : declared;
   const request = RISKS.indexOf(effective) >= 2 ? audited(pr, ctx, api, now, verify) : null;
-  const binding = planBinding(mode, { pr, ctx, paths, request }, { api, parse });
+  const binding = planBinding(mode, { pr, ctx, paths, request }, { api, parse, controlSource, block });
   if (binding.result === "FAIL" && mode !== "report-only") throw Object.assign(new Error(`4 plan binding: ${binding.reason}`), { binding });
   const design = judgment5(design_binding_mode, { pr, effective, binding }, { api, parse });
   return { check: "sds-gate", verdict: "PASS", head: ctx.head, risk_class: declared, effective_risk: effective, protected_touched: protectedTouched, owner_approval: "NOT_CHECKED_BY_MACHINE", authorization: "NONE", plan_binding: binding, design_binding: design };
