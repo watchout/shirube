@@ -1,6 +1,6 @@
-# 薄片 2・3 の設計の記録 — 設計 v1 + 設計 v2（監査 cycle 1 の是正）
+# 薄片 2・3 の設計の記録 — 設計 v1 + 設計 v2 + 設計 v3（監査 cycle 1・2 の是正）
 
-この file は設計の記録です。実装でも Owner の採択でもありません。設計の作者は ARC、この記録の作成は shirube の席（作業指示 CH-SHIRUBE-DESIGN-REC-SLICE23-20261021 v4）です。R4 の実装（薄片 2・3 の code と workflow）の前に、独立監査（D23-1〜6 と PL-1〜5）を受けます。この監査の PASS と受領の前は、これに基づく実装の作業指示は出ません（[CH]）。file 名は v1 のままです（中身の版は下の表で分かります）。
+この file は設計の記録です。実装でも Owner の採択でもありません。設計の作者は ARC、この記録の作成は shirube の席（作業指示 CH-SHIRUBE-DESIGN-REC-SLICE23-20261021 v7）です。R4 の実装（薄片 2・3 の code と workflow）の前に、独立監査（D23-1〜6 と PL-1〜5）を受けます。この監査の PASS と受領の前は、これに基づく実装の作業指示は出ません（[CH]）。file 名は v1 のままです（中身の版は下の表で分かります）。
 
 ## 参照
 
@@ -9,29 +9,35 @@
 | 記号 | 記録 | URL | 本文の SHA-256 |
 |---|---|---|---|
 | [V1] | 設計 v1（ARC）。§3・§7 は [V2] が置換 | https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6305635938 | `5a896ea234bcb909cdc103a9f1431b7a463164c7e9820c3358422ecc7aa19881` |
-| [V2] | 設計 v2（ARC。§3・§3b・§5 への追加・§7・§9） | https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6306257668 | `1f09a0d44fa180873a3f281163ac92abd98573ecd232056667652e5c8832ceb0` |
+| [V2] | 設計 v2（ARC。§3・§3b・§5 への追加・§7・§9）。§5 の 5 つの条件は [V3] が置換 | https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6306257668 | `1f09a0d44fa180873a3f281163ac92abd98573ecd232056667652e5c8832ceb0` |
+| [V3] | 設計 v3（ARC。§5 の置き換え = 証拠を report-only / blocking の段階で分けた表） | https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6306926136 | `356d5dcd0d9c1d9194e4f8edb8f24ff15e0ee5dfef6156373090483e1569ad36` |
 | [A6] | 追記 A6（5 点）への ARC の裁定 | https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6306089613 | `dad270bd63466f6e62c857dae15c8d739a90127344d17862fbd19266c7212ca5` |
 | [OD-2] | Owner の決定 OD-AUN-S1-REGROUP-AND-SHIRUBE-S1-SH-07-SIX-20261021-001（S1-SH-07 = 6 回） | https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6306226221 | `44095e3060618975ac1e4bc7fe5ea5739b19f3ca7a2d09e9189c731e01edece5` |
 | [OD-F] | 仕様の固定（Owner の決定 OD-SHIRUBE-SPEC-FREEZE-AIDLC-TRACE-20261021-001） | https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6305503572 | `22f4a3c51efde3f0f8fb0041c75d3f7ba7a56d0161b9c54636b7f78dcac38d30` |
 | [OI-K] | 門と script・きっかけの prompt（Owner の指示 OI-SHIRUBE-GATES-SCRIPTS-AND-KICKOFF-PROMPTS-20261021-001） | https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6305560011 | `ff88552a4595270c18be431ab973052d868f589f4c42458097e15a845c75f243` |
 | [OD-S1] | S1 の 7 条件と作業指示の範囲の拡張（Owner の決定 OD-SHIRUBE-S1-DONE-CONDITIONS-AND-LEAD-HANDOFF-SCOPE-20261021-001） | https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6305753673 | `8c6f8542888d5cd0302146f5d6f10bb097ab9fe12893fee533f670984a5a4893` |
-| [DP] | 道筋 DP-SHIRUBE-001 **generation 2**（ARC。g1 を置換） | https://github.com/watchout/shirube/issues/6#issuecomment-6306247323 | comment 全体 `34ac269b79d5dc4db16da677220156c3ecf9ca03e19593b5ba1caef255b8ee13`。道筋の本体 = yaml の囲みの中身（24611 bytes）の SHA-256 `3297489c50efd12f5a90b489bdda5031271b3cdcbfc516faab578e7c204e0808` |
-| [DP-g1] | 道筋 g1（**g2 が置換**。cycle 1 の監査対象） | https://github.com/watchout/shirube/issues/6#issuecomment-6305815774 | comment 全体 `965d060694bc9d3fed1e0797e017dabf32f56878833da070bce6df402632aad2`。yaml の囲み（21466 bytes）`d8885559c92ae5caf605cdf1679cc7cf9cf81f751061685aee5d094ba7f83751` |
+| [DP] | 道筋 DP-SHIRUBE-001 **generation 3**（ARC。g2 を置換） | https://github.com/watchout/shirube/issues/6#issuecomment-6306918136 | comment 全体 `52734de703b27f87bc56f8dcab975d56385da626af4d885eca91598cf623aafc`。道筋の本体 = yaml の囲みの中身（26435 bytes、末尾 LF 1 個）の SHA-256 `656aafd40509bb6590e0a606783063ea0d48f5e7902795d2e593563fc036f94f` |
+| [DP-g2] | 道筋 g2（**g3 が置換**。cycle 2 の監査対象） | https://github.com/watchout/shirube/issues/6#issuecomment-6306247323 | comment 全体 `34ac269b79d5dc4db16da677220156c3ecf9ca03e19593b5ba1caef255b8ee13`。yaml の囲み（24611 bytes）`3297489c50efd12f5a90b489bdda5031271b3cdcbfc516faab578e7c204e0808` |
+| [DP-g1] | 道筋 g1（g2・g3 が置換。cycle 1 の監査対象） | https://github.com/watchout/shirube/issues/6#issuecomment-6305815774 | comment 全体 `965d060694bc9d3fed1e0797e017dabf32f56878833da070bce6df402632aad2`。yaml の囲み（21466 bytes）`d8885559c92ae5caf605cdf1679cc7cf9cf81f751061685aee5d094ba7f83751` |
 | [R1] | 監査 cycle 1（BLOCK、BF-01〜06） | https://github.com/watchout/shirube/pull/61#issuecomment-6306167166 | `fc77c412f65ad22eae81c6fb521845ab1ce5c53806c28cd9696f71646d42e336` |
-| [CH] | 作業指示 v4（ARC） | https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6306267867 | `556556b7a0d5841f399dfaaa6faa9360563547674af8389243c5f9e2e76fce5e` |
+| [R2] | 監査 cycle 2（BLOCK、BF-01 の残り 1 件。9 PASS / 2 FAIL） | https://github.com/watchout/shirube/pull/61#issuecomment-6306541266 | `59c69f0bd349c9106506dab75a8a94fef78946972d6579aecd5d889c75c8c9e2` |
+| [CH] | 作業指示 v7（ARC。block つき） | https://github.com/watchout/iyasaka-arc/issues/57#issuecomment-6306931949 | `4e5e5df72df32afcc7e8fbe6edf83a3e065782b14f042d719e636c038f30484e` |
 | [M] | shirube main `f8413fe1734ed24ea6ffdc665019e70e0320a2f9`（tree `4dbd88e4e5641ad428e29fc08299eeb19c2b9f5a`）。引くもの: `docs/sds/distribution.md`・`docs/sds/audit-method.md`・`kit/sds-gate-caller.yml`・`.github/workflows/sds-gate.yml`・`scripts/sds/*.mjs`・`.shirube/hygiene-profile.md` | commit 固定 | — |
 
 道筋の file は repo に写していません（ARC の裁定。知識は 1 か所、S3）。道筋の本体は [DP] の yaml の囲みで、上の SHA-256 で取り直して照合できます。
 
-## 設計の写し（v1 と v2）
+## 設計の写し（v1・v2・v3）
 
-設計 v2 の見出しの宣言どおり、§0・§1・§2・§4・§6・§8 は [V1] のまま有効で、§3・§7 は [V2] が置き換え、§3b・§9 は [V2] の追加、§5 は [V1] の 5 つの条件に [V2] の版の結びを足したものです。次の各区間は、出どころの comment の本文をそのまま写しました（区間の上に出どころの行範囲を書き、この file の作成時に、各区間が出どころの行と一致することを機械で照合）。設計の中身は変えていません。[V2] の本文にある `\`` は、ARC の投稿の引用の形がそのまま残ったもので、bytes を揃えるために直していません。[V1]・[V2] の末尾の `next_action` の行は、その時点の引渡しなので写していません。
+設計 v2 の見出しの宣言どおり、§0・§1・§2・§4・§6・§8 は [V1] のまま有効で、§3・§7 は [V2] が置き換え、§3b・§9 は [V2] の追加、§5 は、[V3] の表（証拠を report-only / blocking の段階で分けたもの）が [V1] の 5 つの条件を置き換え、そのあとに [V2] の版の結びが続きます。次の各区間は、出どころの comment の本文をそのまま写しました（区間の上に出どころの行範囲を書き、この file の作成時に、各区間が出どころの行と一致することを機械で照合）。設計の中身は変えていません。[V2] の本文にある `\`` は、ARC の投稿の引用の形がそのまま残ったもので、bytes を揃えるために直していません。[V1]・[V2]・[V3] の末尾の `next_action` の行は、その時点の引渡しなので写していません。
 
 <!-- 写し: [V1] 4 行（適用 ID） -->
 適用 ID: OD-SHIRUBE-SPEC-FREEZE-AIDLC-TRACE-20261021-001（#49 6305503572）、OI-SHIRUBE-GATES-SCRIPTS-AND-KICKOFF-PROMPTS-20261021-001（#49 6305560011）、OI-SHIRUBE-NO-AUDIT-NO-SKIP-CONTROL-20261021-001（#49 6304645183）、OD-SHIRUBE-CONTROL-FIRST-THIN-SLICE-20261020-001、OD-SHIRUBE-IMPLEMENTER-CODEX-ADF-20260929、Protected surface = owner gate。作者 = arc（control_artifact_author）。risk = R4（workflow と pin に触れる）。実装の前に設計の事前監査（D1〜D6）を通す。
 
 <!-- 写し: [V2] 4 行（適用 ID） -->
 適用 ID: OD-SHIRUBE-SPEC-FREEZE-AIDLC-TRACE-20261021-001、OI-SHIRUBE-GATES-SCRIPTS-AND-KICKOFF-PROMPTS-20261021-001、OD-SHIRUBE-S1-DONE-CONDITIONS-AND-LEAD-HANDOFF-SCOPE-20261021-001、OD-AUN-S1-REGROUP-AND-SHIRUBE-S1-SH-07-SIX-20261021-001（#49 6306226221）。supersedes: 設計 v1 = #57 6305635938（§0・§1・§2.1〜2.5・§4・§6・§8 は v1 のまま有効。下の節だけ置き換え・追加）。道筋 = DP-SHIRUBE-001 g2（shirube#6 6306247323、yaml SHA-256 3297489c…）。監査 cycle 1 = shirube#61 6306167166。A6 の裁定 = #57 6306089613。
+
+<!-- 写し: [V3] 4 行（適用 ID） -->
+適用 ID: OD-SHIRUBE-SPEC-FREEZE-AIDLC-TRACE-20261021-001、OD-SHIRUBE-S1-DONE-CONDITIONS-AND-LEAD-HANDOFF-SCOPE-20261021-001、OD-AUN-S1-REGROUP-AND-SHIRUBE-S1-SH-07-SIX-20261021-001。supersedes_part_of: 設計 v2 = #57 6306257668 の §5（置き換え）。道筋 = DP-SHIRUBE-001 g3（shirube#6 6306918136、yaml SHA-256 656aafd4…）。監査 cycle 2 = shirube#61 6306541266（9 PASS / 2 FAIL = D23-2・PL-3、新規指摘なし）。
 
 <!-- 写し: [V1] 6〜8 行（§0） -->
 ### 0. 目的（Owner の言葉）と完了の定義
@@ -97,10 +103,22 @@ Owner の手（1 周）= 承認 1（設計 v2）+ exact-head 2（SELF-GATE・DIS
 ### 4. 役割と Owner の手
 作者 = shirube の席（実装）、設計 = arc、監査 = devauditor（設計の事前監査 → 実装後）、統合 = suite-lead。Owner の手: exact-head 2 回（shirube の自己適用 = workflow、AUN の導入 = workflow）、ruleset 2 回（shirube・aun）、薄片 3 を blocking に上げる時の pin の exact-head 1 回。全 repo に配る時の必須化の採択は 1 枚。
 
-<!-- 写し: [V1] 50〜52 行（§5 の 5 つの条件） -->
-### 5. 「1 周」の完了条件（AUN）
-(1) 実 PR が 1 件、門を通って統合された（N14 か N15 の PR）。(2) 負例が 1 件、門で止まった。(3) 統合後の main で次の PR にも門が効いている。(4) 作者の手間は PR の block の数行と label だけ。(5) 記録だけの期間の判定 4 の FAIL に、門の不備による誤 FAIL が 0。
-加えて、利用者に見える振る舞いを変えた Unit があれば、Bolt の終わりに Owner が実演を見た記録。
+<!-- v1 の §5（50〜52 行。5 つの条件）は [V3] の §5 が置き換えた。写さない -->
+<!-- 写し: [V3] 6〜19 行（§5 の置き換え = 証拠を report-only / blocking の段階で分けた表） -->
+### §5 「1 周」の完了条件（置き換え）— 証拠と段階の対応
+固定 base f8413fe1 の gate.mjs の事実: 判定 1〜3 の FAIL は mode に依らず gate 全体を FAIL にする。判定 4 の FAIL は pin の plan_binding_mode が blocking の時だけ全体を FAIL にし、report-only では JSON の plan_binding に FAIL を書いて verdict は PASS のまま。したがって負例の証拠は段階で分かれる。
+
+| 証拠 | 段階（pin の mode） | 取る node | 何が記録に残るか |
+|---|---|---|---|
+| (1) 実 PR が門を通って統合された | report-only | AUN-LOOP | gate の PASS の status と統合の記録（pin の commit） |
+| (2a) 監査なしの R2 負例が止まる | report-only | AUN-LOOP | 判定 3 で gate 全体 FAIL、ruleset で merge 不可（機械の拒否の実測） |
+| (2b) Unit なし・範囲外の負例の判定 4 | report-only | AUN-LOOP | gate の JSON の plan_binding = FAIL（verdict PASS）。merge 不可はここでは取らない |
+| (2c) Unit なし・範囲外の負例が止まる | **blocking** | BLOCKING-AUN（Owner の exact-head の後） | gate 全体 FAIL、ruleset で merge 不可（機械の拒否の実測） |
+| (3) 統合後の main でも門が効く | report-only | AUN-LOOP | 統合後の次の PR の gate の status |
+| (4) 作者の手間は数行 | report-only | AUN-LOOP | 実 PR の diff と作者の席の記録 |
+| (5) 誤 FAIL 0 | report-only | AUN-LOOP | 記録だけの判定 4 の FAIL の分類（本当の飛ばし／作者が直せる不備／門の不備 = 0） |
+| 採択の無い道筋の拒否 | 手元の受付 | AUN-LOOP | plan-admission の STAGE_ENTRY_WITHOUT_CONDITIONS の出力 |
+「1 周」= (1)〜(5) のうち (2c) 以外。S1-SH-02 の受入は (2b) と (2c) の両方で閉じる（BLOCKING-AUN が S1-SH-02 の最後の node）。各記録に pin の commit と mode を結ぶ。手動の統合拒否は機械の merge 不可の代わりにしない。受入条件の意味と report-only の意味は変えない。
 
 <!-- 写し: [V2] 32〜33 行（§5 への追加 = 版の結び） -->
 ### §5 「1 周」の完了条件（v1 のまま 5 つ）+ 版の結び（BF-01）
@@ -153,19 +171,19 @@ Owner の言葉と決定 ID を、上の参照の表のとおり引きます。
 
 ### A1. S1 の 7 条件と、作業・観測・「1 周」の対応（D23-2、PL-1）
 
-条件の定義は [OD-S1] の決定 1（S1-SH-07 の数は [OD-2]）、node と観測の記録の形は [DP]（`terminal_predicates` の `evidence_required`、各 node の `changes_predicates` と `integration_evidence`）、「1 周」の 5 条件は写しの §5 です。node 名は `DP-N-SH-` を略します。
+条件の定義は [OD-S1] の決定 1（S1-SH-07 の数は [OD-2]）、node と観測の記録の形は [DP]（`terminal_predicates` の `evidence_required`、各 node の `changes_predicates` と `integration_evidence`）、「1 周」の証拠は写しの §5（[V3] の表。(1)〜(5)、(2a)〜(2c)）です。node 名は `DP-N-SH-` を略します。
 
-| 受入 ID | 作業（[DP] の node） | 観測（実際の記録の形） | §5 |
+| 受入 ID | 作業（[DP] の node） | 観測（実際の記録の形） | [V3] §5 |
 |---|---|---|---|
-| S1-SH-01 監査なしは統合できない | DESIGN-REC・KIT-VERIFIER・SELF-GATE・RULESET-SHIRUBE・DIST-AUN・RULESET-AUN | shirube と aun で各 1 件: R2 の負例 PR の sds-gate の FAIL（判定 3）と、ruleset で merge できなかった記録 | (2)(3) |
-| S1-SH-02 道筋に無い作業は統合できない | DESIGN-REC・GATE4-A・GATE4-C・DIST-AUN・AUN-LOOP・BLOCKING-AUN | Unit を名指さない PR・allowed_paths の外を変えた PR の判定 4 の FAIL 各 1 件。blocking の段では merge できなかった記録 | (2) |
-| S1-SH-03 Inception が先 | DESIGN-REC・GATE4-B・AUN-LOOP | 採択の参照の無い道筋を plan-admission が STAGE_ENTRY_WITHOUT_CONDITIONS で拒んだ負例の出力と、採択のある道筋が通った出力 | (2) |
-| S1-SH-04 正しい PR は止まらない | AUN-LOOP | 統合された実 PR（N14 か N16）の sds-gate の PASS の status と、記録だけの期間の全 FAIL の 3 分類（本当の飛ばし／作者が直せる不備／門の不備 = 0） | (1)(5) |
+| S1-SH-01 監査なしは統合できない | DESIGN-REC・KIT-VERIFIER・SELF-GATE・RULESET-SHIRUBE・DIST-AUN・RULESET-AUN | shirube と aun で各 1 件: R2 の負例 PR の sds-gate の FAIL（判定 3。mode に依らず gate 全体の FAIL）と、ruleset で merge できなかった記録（aun 側は AUN-LOOP の (2a)） | (2a)(3) |
+| S1-SH-02 道筋に無い作業は統合できない | DESIGN-REC・GATE4-A・GATE4-C・DIST-AUN・AUN-LOOP・BLOCKING-AUN | **(2b) AUN-LOOP（report-only）**: Unit を名指さない PR・allowed_paths の外を変えた PR の gate の JSON の `plan_binding` = FAIL（verdict は PASS。merge 不可はここでは取らない）。**(2c) BLOCKING-AUN（blocking、Owner の exact-head の後）**: 同じ負例が gate 全体 FAIL になり ruleset で merge できない記録。どちらも pin の commit と mode を結ぶ | (2b)(2c) |
+| S1-SH-03 Inception が先 | DESIGN-REC・GATE4-B・AUN-LOOP | 採択の参照の無い道筋を手元の plan-admission が STAGE_ENTRY_WITHOUT_CONDITIONS で拒んだ負例の出力と、採択のある道筋が通った出力 | 受付の拒否 |
+| S1-SH-04 正しい PR は止まらない | AUN-LOOP | 統合された実 PR（N14 か N16）の sds-gate の PASS の status（pin の commit と mode = report-only）と、記録だけの期間の全 FAIL の 3 分類（本当の飛ばし／作者が直せる不備／門の不備 = 0） | (1)(5) |
 | S1-SH-05 作者の手間は増えない | GATE4-A・GATE4-C・AUN-LOOP | 実 PR の diff（block の行数）と、作者の席の記録（道筋・作業指示の編集が無い） | (4) |
 | S1-SH-06 Shirube 自身が門を通る | SELF-GATE・RULESET-SHIRUBE | shirube の PR の sds-gate の status と、main の ruleset の読み戻し | (3) |
 | S1-SH-07 Owner の手は 1 周で 6 回まで | AUN-LOOP | 1 周の間に Owner が受けた依頼（カード・決定）の一覧と数 | — |
 
-S1-SH-07 は「1 周」の 5 条件に無く、数えて確かめます（数え方は A4）。機械で確かめないもの（未測定・対象外）: Owner の承認が本人のものか（[M] distribution.md §7 のとおり機械で見ない。アカウントの分離は対象外）、要求の意味・設計の良し悪し（独立監査が見る）、ruleset の設定の意図（機械が読み戻すのは設定の値だけ）、Owner の決定の comment が本当に Owner の言葉か（PA-1 は marker と `stage_adoption` の行の構造だけを見る）。
+「1 周」は (1)〜(5) のうち (2c) 以外で、各記録に pin の commit と mode を結びます。手動の統合拒否は機械の merge 不可の代わりにしません（[V3] §5）。S1-SH-07 は [V3] §5 の表に無く、数えて確かめます（数え方は A4）。機械で確かめないもの（未測定・対象外）: Owner の承認が本人のものか（[M] distribution.md §7 のとおり機械で見ない。アカウントの分離は対象外）、要求の意味・設計の良し悪し（独立監査が見る）、ruleset の設定の意図（機械が読み戻すのは設定の値だけ）、Owner の決定の comment が本当に Owner の言葉か（PA-1 は marker と `stage_adoption` の行の構造だけを見る）。
 
 ### A2. 代替案（D23-3）
 
@@ -184,7 +202,7 @@ S1-SH-07 は「1 周」の 5 条件に無く、数えて確かめます（数え
 - 読める範囲: [V2] §3.7 の対応表のとおり（sds-gate は `github.token` で、その repo の中だけ。PA-1 と手元の検査は席の `gh` の資格情報。CI に新しい token は足さない）。道筋と作業指示の写しは製品 repo の issue に置く（[V2] §3.1・§3.6）。読めない・parse できない時は FAIL で、PASS を偽らない。shirube は public、aun・iyasaka-arc は private（API で確認）。他の private repo の comment を `github.token` が読めないのは GitHub の仕様で、作者は CI での実測を未了（GATE4-A の試験に同じ repo は読める／他の private は 404 で FAIL の正負例を置く = [V2] §3.7）。
 - 観測: gate の結果の JSON の `plan_binding.result` と `reason`、commit status の description（先頭 140 字）。blocking に上げる前の FAIL は、gate の run の JSON と PR を見て 3 分類する。
 - 戻し方: (1) ruleset の解除（Owner の設定 1 回。解除すると report-only と同じで、読み戻しで確かめる）。(2) pin の `plan_binding_mode` を `report-only` へ戻す PR（`.shirube/**` で R4、Owner の exact-head）。(3) gate の不備なら pin の `sds_commit` を前の commit に戻す PR（同じく R4）。report-only の間は何も止めないので、(1)(2) が安全側の状態。
-- blocking に上げる条件: AUN の記録だけの期間の判定 4 の FAIL を 1 件ずつ 3 分類し、門の不備による誤 FAIL が 0（写しの §5 の (5)、S1-SH-04、[DP] の BLOCKING-AUN の条件）。上げる操作は pin の `plan_binding_mode` の変更（BLOCKING-AUN、R4、Owner の exact-head 1 回。1 周の外）。
+- blocking に上げる条件: AUN の記録だけの期間の判定 4 の FAIL を 1 件ずつ 3 分類し、門の不備による誤 FAIL が 0（[V3] §5 の (5)、S1-SH-04、[DP] の BLOCKING-AUN の条件）。上げる操作は pin の `plan_binding_mode` の変更（BLOCKING-AUN、R4、Owner の exact-head 1 回。1 周の外）。
 - データ: gate が読むのは同じ repo の issue・PR・comment だけ。個人情報・秘密を読まず、書かず、この記録にも書かない。
 
 ### A4. 予算と範囲・PR の分け方・Owner の手（D23-5、PL-2）
@@ -205,7 +223,7 @@ S1-SH-07 は「1 周」の 5 条件に無く、数えて確かめます（数え
 - 作者の手間の上限: PR の block の `delivery_plan_binding` は `plan_id` と `node_id` の 2 欄（今は 5 欄）と label。`control_handoff` の ref・sha256 は今のまま。道筋・作業指示を作者が更新しに行かない（S1-SH-05）。
 - Owner の手の上限（BF-03）: 1 周で 6 回まで（[OD-2]）。見込み = 承認 1（設計 v2）+ exact-head 2（SELF-GATE・DIST-AUN）+ 設定 2（RULESET-SHIRUBE・RULESET-AUN）= 5。判定 4 の code の 3 つの子 Unit は R2（記録だけの段の code。設計の事前監査はこの監査で済む）で、exact-head を持たない。BLOCKING-AUN の exact-head は 1 周の外（[V2] §3b）。
 
-PR の分け方（[DP] g2 の順。critical_path のとおり 1 つずつ）:
+PR の分け方（[DP] g3 の順。critical_path のとおり 1 つずつ）:
 
 | 順 | node | PR | risk | Owner の手 |
 |---|---|---|---|---|
@@ -216,8 +234,8 @@ PR の分け方（[DP] g2 の順。critical_path のとおり 1 つずつ）:
 | 7 | RULESET-SHIRUBE | PR なし | — | 設定 1 |
 | 8 | DIST-AUN | aun: kit apply の導入 PR（同じ pin）、作業指示の写しは aun#3 に置く | R4 | exact-head 1 |
 | 9 | RULESET-AUN | PR なし | — | 設定 1 |
-| 10 | AUN-LOOP | aun・shirube: 実 PR 1 件と負例（監査なし・Unit なし・範囲外）3 件の使い捨て PR。記録は aun#3 と shirube#6 | — | なし |
-| 11 | BLOCKING-AUN | aun: pin の `plan_binding_mode` を blocking に | R4 | exact-head 1（1 周の外） |
+| 10 | AUN-LOOP | aun・shirube: 実 PR 1 件、監査なしの R2 負例（判定 3 の FAIL と ruleset の拒否 = (2a)）、Unit なし・範囲外の負例（`plan_binding` の FAIL を report-only で記録 = (2b)）の使い捨て PR、受付の負例。記録は aun#3 と shirube#6（pin の commit と mode を結ぶ） | — | なし |
+| 11 | BLOCKING-AUN | aun: pin の `plan_binding_mode` を blocking に。統合の後に Unit なし・範囲外の負例 PR 各 1 件で、gate 全体の FAIL と ruleset の merge 不可を観測 = (2c) | R4 | exact-head 1（1 周の外） |
 
 ### A5. 各判定の正例・境界・負例の fixture（D23-6、BF-04）
 
@@ -233,6 +251,7 @@ fixture は `tests/fixtures/**` に置き（pr-size と行数の計数外）、�
 | 作業指示の鎖（[V2] §3.6） | 同じ cell の marker + `supersedes: <前の URL>` が最初の作業指示までたどれ、その写しが門が動く repo の control_source にあり、PR が最新を名指す | `supersedes` が無い拡張、別の cell を指す、鎖が輪、写しが control_source に無い、範囲外の path（4.17） |
 | 読める範囲（[V2] §3.7） | 同じ repo の道筋・作業指示の写し・監査の依頼と返却の comment は `github.token` で読める | 他の repo の private の comment は 404 で FAIL |
 | 自己適用 | shirube の PR を pin の commit の checker が判定し、tools identity の検査（`job.workflow_sha`）が通る | PR が `plan-binding.mjs` を常に PASS に書き換えても同じ PR の判定は変わらず FAIL のまま。workflow を足す PR は effective R4 |
+| 段階（[V3] §5） | report-only: Unit なし・範囲外の PR は `plan_binding` = FAIL でも verdict は PASS（既存の試験 T4-03・T4-21）。blocking: 同じ種類の欠けは gate 全体 FAIL（既存の試験 T4-04）。判定 3 の FAIL は mode に依らず gate 全体 FAIL | report-only の記録に merge 不可を求める、blocking の前に (2c) を求める、各記録に pin の commit と mode を結ばない |
 
 投稿者の席は機械で区別できません（席のアカウントは共有）。作業指示の鎖で機械が見るのは構造だけで、「実行リードが出した」か、範囲の意味が妥当かは、運用と独立監査が見ます（[OD-S1] 決定 2、アカウントの分離は対象外）。
 
@@ -249,24 +268,25 @@ ARC の裁定（[A6]）で確定し、[V2] の §3・§3b・§7 に取り込ま�
 | 項目 | 答える所 |
 |---|---|
 | D23-1 目的と対象外 | A0、写しの §0・§6、参照の表 |
-| D23-2 全受入の検証計画 | A1、写しの §5 |
+| D23-2 全受入の検証計画 | A1、[V3] §5（証拠を report-only / blocking の段階で分けた表。(1)〜(5)、(2a)〜(2c)） |
 | D23-3 代替案 | A2、写しの §7（[V2]）・§3 |
 | D23-4 秘密・権限・観測・復旧・データ | A3、[V2] §3.7、写しの §2 |
 | D23-5 予算と範囲 | A4、[V2] §3b、[OD-2] |
-| D23-6 検証可能性と独立性 | 参照の表（URL と SHA-256）、A5、写しの §4・§8。この PR は 2 file だけ（この記録と項目集合）。作者（shirube の席）・監査者（devauditor）・統合担当（suite-lead）は別の席。この監査の受領を前提にする node は、[DP] g2 の `depends_on` で DESIGN-REC に依存する GATE4-A・GATE4-B・KIT-VERIFIER と、それらを経る SELF-GATE。この項目の本文にある「generation 1」は、[DP] が g2 になったので generation 2 と読む（PR 本文の `delivery_plan_binding` は g2） |
+| D23-6 検証可能性と独立性 | 参照の表（URL と SHA-256）、A5、写しの §4・§8。この PR は 2 file だけ（この記録と項目集合）。作者（shirube の席）・監査者（devauditor）・統合担当（suite-lead）は別の席。この監査の受領を前提にする node は、[DP] g3 の `depends_on` で DESIGN-REC に依存する GATE4-A・GATE4-B・KIT-VERIFIER と、それらを経る SELF-GATE。PR 本文の `delivery_plan_binding` は g3、`control_handoff` は作業指示 v7 |
 | PL-1 受入 ID（縦） | [DP] の `terminal_predicates`（S1-SH-01〜07 の description と evidence_required）、A1、[OD-S1]（`stage_adoption: S1 DP-SHIRUBE-001`）、[OD-F] §1。S2〜S4 の受入 ID は description に【条件未採択】とあり、その置き場の node（S2-ALL-REPOS・S3-OPERATION・S4-EFFECT）の deliverable に、Owner が条件を採択してから分けると書かれている（S2 には「それまで作業指示は出さない」とある） |
 | PL-2 Unit の大きさ（横） | [DP] の node 11 本（各 node が S1-SH-* を名指し、deliverable と integration_evidence を持つ）、[V2] §3b の子 Unit（各 1 PR・1 監査・1 統合）、A4 の PR の分け方 |
-| PL-3 依存と順序 | [DP] の `depends_on`（設計監査 → 判定 4 の code → 自己適用 → ruleset、自己適用 → 配布 → ruleset、ruleset → 1 周 → blocking）、`critical_path.step_ids`（14 step。先頭の 11 が S1 の node、残る 3 が S2〜S4 の置き場）、`wip_limit: 1`、[V2] §5 の版の結び |
+| PL-3 依存と順序 | [DP] の `depends_on`（設計監査 → 判定 4 の code → 自己適用 → ruleset、自己適用 → 配布 → ruleset、ruleset → 1 周 → blocking）、`critical_path.step_ids`（14 step。先頭の 11 が S1 の node、残る 3 が S2〜S4 の置き場）、`wip_limit: 1`、[V2] §5 の版の結び、[V3] §5（AUN-LOOP の証拠 = report-only の (1)(2a)(2b)(3)(4)(5)、BLOCKING-AUN の証拠 = blocking の (2c)。report-only で取れない merge 不可を AUN-LOOP に求めない。[DP] g3 の両 node の `integration_evidence` に pin の commit と mode を結ぶと書かれている） |
 | PL-4 覆いと整合 | [DP] の `terminal_acceptance`（`covered_predicates` は S1-SH-01〜07 と S2〜S4 の 10 件、`uncovered_predicates` は空）。`live_baseline` は main `f8413fe1`・tree `4dbd88e4…`（作者が GitHub API で commit の tree を読み一致を確認）、`target_manifest_digest` は A7 のとおり再現。道筋 DP-SUITE-001 の Shirube の node は、次の Suite g8 でこの道筋に移す計画が [DP] に書かれている |
-| PL-5 独立性 | 参照の表の [DP] の行（URL と yaml の囲みの SHA-256 `3297489c…`）。PR に道筋の写しは置いていない。DESIGN-REC の作業指示はこの監査を含む PR 自身なので、g2（ARC が作成）を根拠にできる。それ以外の node の作業指示は、この監査の受領の後（[CH]） |
+| PL-5 独立性 | 参照の表の [DP] の行（URL と yaml の囲みの SHA-256 `656aafd4…`）。PR に道筋の写しは置いていない。DESIGN-REC の作業指示はこの監査を含む PR 自身なので、g3（ARC が作成）を根拠にできる。それ以外の node の作業指示は、この監査の受領の後（[CH]） |
 
-## 監査 cycle 1（[R1]）の指摘と、直した所
+## 監査 cycle 1（[R1]）・cycle 2（[R2]）の指摘と、直した所
 
 | 指摘 | 直した所 |
 |---|---|
-| BF-01 AUN-LOOP の前に新 checker が届かない | [V2] §5 の版の結び、[DP] g2 の順（判定 4 の code → SELF-GATE → DIST-AUN が同じ pin → AUN-LOOP） |
+| BF-01 AUN-LOOP の前に新 checker が届かない | [V2] §5 の版の結び、[DP] の順（判定 4 の code → SELF-GATE → DIST-AUN が同じ pin → AUN-LOOP） |
+| BF-01 の残り（cycle 2）負例の証拠を report-only と blocking で分けていない | [V3] §5（証拠の段階の表）、[DP] g3 の AUN-LOOP（(2a)(2b) = report-only）と BLOCKING-AUN（(2c) = blocking）の `integration_evidence`、A1・A4・A5 |
 | BF-02 `github.token` では道筋以外の private を読めない | [V2] §3.1・§3.4・§3.6・§3.7、A3 |
 | BF-03 S1-SH-07 と計画が両立しない | [OD-2]（6 回）、[V2] §3b、A4 |
 | BF-04 「今の段 k」が未定義 | [V2] §3.3、[A6] 2、A5 の k の正例・境界・負例 |
-| BF-05 GATE4 が 1 回で閉じる Unit か不明 | [V2] §3b の子 Unit（A・B・C）、[DP] g2 |
+| BF-05 GATE4 が 1 回で閉じる Unit か不明 | [V2] §3b の子 Unit（A・B・C）、[DP] g3 |
 | BF-06 `target_manifest_digest` を再現できない | [V2] §9、A7 |
