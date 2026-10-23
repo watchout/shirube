@@ -1,0 +1,52 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@62ff73db52ce8f29f3b982507b5d2e36578ae60f/docs/sds/audit-method.md#3",
+  "scope": "Owner の AI-DLC の作業場の記録 119 file の写し（記録だけ、プログラム無し、R1）の W-1〜W-3 と、その記録のうち U1（u1-skeleton）の 4 つの設計の記録の設計の事前監査 D1〜D6。作業指示 SHIRUBE-AIDLC-RECORDS-PR-20261023（iyasaka-arc#24 6354029911）の §2 と、Owner の答えを反映した arc の指示（iyasaka-arc#24 6354413834）の文を項目にした。作者は項目を足し引きしていない。記法: [WS] = Owner の作業場 ~/Developer/aidlc-owner/shirube（読取りだけ）。[U1] = aidlc/spaces/default/intents/261021-dev-speedup-automation/construction/u1-skeleton/ の functional-design・nfr-requirements・nfr-design・infrastructure-design（各 .md と traceability.json）。[INC] = aidlc/spaces/default/intents/261021-dev-speedup-automation/inception/（requirements-analysis/requirements.md の FR・NFR、contract-design/contract-summary.md の C1〜C8、units-generation/unit-of-work.md の U1、delivery-planning/）。[STD] = 監査の規格 v1（iyasaka-arc cross-cutting/decisions/2026-09-30-sds-audit-standard-v1.md @ aba51009）の設計監査 D1〜D6。[OD-PR] = OD-SHIRUBE-PR-SIZE-RECORDS-AND-U1-BUNDLE-20261023-001（iyasaka-arc#49 6354019047）。[OD-INC] = OD-SHIRUBE-INCEPTION-APPROVED-20261022-001（iyasaka-arc#49 6350628309）。[OD-PUB] = OD-SHIRUBE-PUBLIC-REPO-NO-AIDLC-AUDIT-20261023-001（iyasaka-arc#49 6354411741）。",
+  "items": [
+    {
+      "id": "W-1",
+      "criterion": "bytes の一致: PR の head の `aidlc/` の下の 119 file それぞれの sha256 が、[WS] の同じ path の file の sha256 と一致する。監査席は PR 本文の一覧（宣言）を使わず、head の blob（contents API か git）と [WS] の file の bytes から自分で再計算する。[WS] の file が PR の head を作った後に変わっていたら、変わった path と依頼の時点の sha256 を返却に書き、その path は PASS にしない。",
+      "basis": "作業指示 §2 W-1、OD-SHIRUBE-DESIGN-INSIDE-AIDLC-SESSION-20261022-001（iyasaka-arc#49 6329978835）の 3、S5（宣言は証拠でない）"
+    },
+    {
+      "id": "W-2",
+      "criterion": "形と範囲: PR が変える path は、`aidlc/` の下の 119 file と、この項目集合の file（docs/process/audit-items/aidlc-records-20261023.json）だけ。`aidlc/` の下に `/audit/` を含む path が無い。`aidlc/` の下の file の形は Markdown・JSON・txt と、コメントだけの印 1 file（aidlc/spaces/default/memory/templates/.gitkeep、886 bytes、先頭 `# Template-override floor (TPL).`、プログラムではない）だけで、プログラム（.js .mjs .cjs .ts .py .sh など）・実行 bit・symlink が無い。.claude/・.aidlc-version・aidlc.settings*.json・.framework/・.gitignore・.shirube/・.github/・scripts/ は変えていない。",
+      "basis": "作業指示 §1・§2 W-2、arc の指示 iyasaka-arc#24 6354113545（確認 2）・6354413834 の 2、[OD-PR] の 2（記録の置き場にプログラムを置かない）、[OD-PUB] の 1"
+    },
+    {
+      "id": "W-3",
+      "criterion": "一覧の一致: [WS] で `GIT_OPTIONAL_LOCKS=0 git status --porcelain --untracked-files=all aidlc` を読取りだけで実行した path の一覧から、`/audit/` を含む path を除いた物と、PR の `aidlc/` の下の path の一覧が一致する（119 file。足りない・余分が無い）。除かれた path は 2 file だけ（intents/261021-ai-handoff-flow/audit/owner-gpnwa4zc9q15.md と intents/261021-dev-speedup-automation/audit/owner-gpnwa4zc9q15.md）で、ほかに除いた物が無い。",
+      "basis": "作業指示 §2 W-3、arc の指示 iyasaka-arc#24 6354413834 の 2、[OD-PUB] の 1（audit の記録は 2 file、載せるのは 119 file）"
+    },
+    {
+      "id": "D1",
+      "criterion": "goal / non-goal（D1）: [U1] の 4 つの設計の記録の goal と non-goal が、[INC] の要件（requirements.md の FR・NFR のうち U1 に結ばれた物）と、unit-of-work.md の U1 の範囲・注意と制約と一致する。ほかの Unit（U2 計測・U3 記録の橋と承認の記録・U4 門の判定の追加）の仕事を U1 に取り込んでいない。各記録の traceability.json の `N/A` の行が、どの Unit が受け持つか（delivered by <Unit>）を書いている。",
+      "basis": "[STD] D1、[INC] requirements.md・unit-of-work.md、作業指示 §2 D1〜D6"
+    },
+    {
+      "id": "D2",
+      "criterion": "受入と受け渡しの形の接続（D2）: U1 に結ばれた受入 ID と NFR の 100% に、誰が・いつ・期待値・証拠の形を持つ検証の計画が結ばれている（または `N/A: delivered by <Unit>`・`Deferred` の理由が書かれている）。各 traceability.json の coverage に欠落が無く、`OK` の target が実在する設計の項を指す。受け渡しの形 C1〜C8 のうち U1 が実装する物は、contract-summary.md の定義と同じ欄・名前で設計に出てくる。未接続の受入 ID があれば一覧で返す。",
+      "basis": "[STD] D2、[INC] contract-summary.md の C1〜C8・requirements.md の FR・NFR、作業指示 §2 D1〜D6"
+    },
+    {
+      "id": "D3",
+      "criterion": "代替案（D3）: [U1] の主要な選択（例: 門の呼出しの workflow と pin の置き方、網羅率の検査の CI、監査の席の分類の役、核の関数と script の分け方）に、検討した代替案と採らない理由が、設計の記録か questions の file の選択肢に書かれている。各問いの答えが Owner の答えか arc の下書きを Owner が確認した物かが区別されている。",
+      "basis": "[STD] D3、[OD-INC]（Owner の答えと arc の下書きの区別）、OD-INTENT-CAPTURE-DRAFTED-BY-ARC-SHIRUBE-AUN-20261022-001（iyasaka-arc#49 6329313516）"
+    },
+    {
+      "id": "D4",
+      "criterion": "保護面と横断の懸念（D4）: U1 が触れる保護面（門の呼出しの workflow・.shirube/sds-pin.json・網羅率の検査の CI と計測の job・監査の席の分類の役）が、設計の記録（security-design・infrastructure-specification・cicd-pipeline など）に過不足なく列挙され、[OD-PR] の 4 と [OD-INC] の 5 の範囲（U1 の PR は R4、Owner の exact-head は 1 回）と一致する。保護面でない Unit の仕事が U1 の保護面の PR に紛れていない。秘密と権限（workflow の permissions が最小、計測の専用の資格情報は U2 で Owner の決定を取る）・観測・復旧（戻し方）・データ（承認の記録の置き場が保護面の外）が各記録で扱われている。責任・依存・契約（audit-method §3 の AI-14）が同じ記録から読める。",
+      "basis": "[STD] D4、[OD-PR] の 4、[OD-INC] の 5、protected-surface R1、S9（資格情報は用途ごと）、audit-method §3 設計 D1〜D6 の行"
+    },
+    {
+      "id": "D5",
+      "criterion": "予算（D5）: U1 の設計から作るコードが、shirube の自前コードの予算（2,300 行）と PR の上限（追加 400 行・20 file・100KB・新規 file 300 行・関数 50 行・複雑さ 10）に収まる見積りを持つ（収まらない場合は分け方が書かれている）。Owner の手が、1 周で合計 5 回（S1-SH-07 の上限は 6 回）の内訳（[OD-INC] の 4）のうち U1 に割り当てられた回数（保護面の exact-head 1 回）を超えない。",
+      "basis": "[STD] D5、[OD-INC] の 4、OD-AUN-S1-REGROUP-AND-SHIRUBE-S1-SH-07-SIX-20261021-001（iyasaka-arc#49 6306226221）、.shirube/hygiene-profile.md の limits"
+    },
+    {
+      "id": "D6",
+      "criterion": "検証可能（D6）: [U1] の設計の主張が、誰が・何を実行して・何が出れば満たしたと言えるかで観測でき、過大な主張（実測や試験の無い「保証する」「必ず」、未観測の挙動の断定）が無い。AI-DLC の原典や Claude Code の挙動に依拠する主張は、実測か出典（固定の版・commit）を持つか、「未確認」と書かれている。",
+      "basis": "[STD] D6、S5・S8、L3（断定の前に対立仮説と識別測定）"
+    }
+  ]
+}
