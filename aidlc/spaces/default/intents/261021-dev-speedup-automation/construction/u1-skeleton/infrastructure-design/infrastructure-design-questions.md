@@ -137,6 +137,19 @@ A は audit の写しを作るので、記録が 2 つに分かれ、U2 以降�
 
 [Answer]: X: 実装の席を、この Owner の作業場（`~/Developer/aidlc-owner/shirube`）で起動し、その席が同じ作業場で `/aidlc --resume` する。audit は 1 つのまま、作り手も門も設計を変えない（Owner がこの会話で arc の勧めを選んだ。席の起動の場所を変える作業は、決定 6353826462 のとおり手順を別に Owner に示す）
 
+## Q8. [設計] 2 回目の監査の返却で決まった事を、この段の記録に写す（2026-10-24 の開き直し）
+
+shirube PR #65 の 2 回目の監査の返却（6362354895）を受けて、Owner が選んだ事です。
+- Units Generation の Q8（BF-04）: U1 の実装の PR は 4 本。順は P1 → R → I1 作り手 → A → I2 kit の自己用の書く先と `budget.mjs` → I3 記録の橋と門の判定 → K → I4 計測。確かめの PR は I4。
+- U1 の NFR Design の Q8（BF-07）: 網羅率を測る試験の job と確かめの command を Node 26（26.7.0 以上）で動かす。`ci.yml` の `node-version` を "26" にする変更は P1 の中。
+
+この段の `cicd-pipeline.md`・`infrastructure-specification.md`・`monitoring-design.md` は、その前の形（実装の PR 3 本、CI は Node 22）のままです。記録した確かめの command（Q6）の文は変えません。この Mac の Node は 26.9 なので、そのまま Node 26 で動きます。
+
+A. 写す。PR の順の表、試験と網羅率の行（Node 26）、確かめの PR（I4）、見張りの目標の期間を揃える。新しい判断は入れない
+X. Other (please specify)
+
+[Answer]: A（Owner が Units Generation の Q8 と U1 の NFR Design の Q8 で選んだ中身を写すだけなので、ここで同じ問いを聞き直さない）
+
 ## Consolidated Summary Confirmation
 
 - 門の呼出し: kit の部品と同じ中身（出来事・権限・呼び方）を `.github/workflows/sds-gate-self.yml` の名前で shirube に入れ、配布先と同じ形を保つ。権限は kit の部品どおり一番上に置く（job が 1 つなので効き目は job ごとと同じ）（arc の設計） [Q1]
@@ -157,6 +170,11 @@ A は audit の写しを作るので、記録が 2 つに分かれ、U2 以降�
   - 実装の席を、この Owner の作業場（`~/Developer/aidlc-owner/shirube`）で起動し、同じ作業場で `/aidlc --resume` して U1 の Code Generation を回す。audit は 1 つのままで、作り手も門も設計を変えない。
   - 承認の記録の PR（A）は、席が U1 の Code Generation を始めた後（I1 の後）に、この作業場で作る。
   - 席の起動の場所を変える手順は、決定 6353826462 のとおり別に Owner に示す。（Owner の選択） [Q7]
+- 2 回目の監査の返却で決まった事の写し:
+  - PR の順を P1 → R → I1 → A → I2 → I3 → K → I4 にし、確かめの PR を I4 にする。K は門の判定（I3）の後で、pin を I3 の後の main に上げる。
+  - `ci.yml` の網羅率を測る試験の job を Node 26（26.7.0 以上）で動かす（P1 の中）。確かめの command の文は変えず、この Mac の Node 26.9 で動かす。
+  - 見張りの目標の期間を「K の後の I4 から」にする。
+  - （Owner が Units Generation の Q8 と U1 の NFR Design の Q8 で選んだ） [Q8]
 
 Does this all look correct before I generate the artifact?
 

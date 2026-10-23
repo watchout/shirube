@@ -5,7 +5,8 @@
 - 受け渡しの形: `inception/contract-design/contract-summary.md`（C9 は 2026-10-23 に Contract Design を開き直して足した）
 - Unit: `inception/units-generation/unit-of-work.md`
 - 物語: `inception/user-stories/stories.md`
-- この段の答え: `functional-design-questions.md` の Q1〜Q11
+- この段の答え: `functional-design-questions.md` の Q1〜Q12
+- 2 回目の監査の返却: shirube PR #65 の 6362007900 の BF-07・BF-08（Contract Design の Q12・Q13）
 - 独立監査の指摘: shirube PR #65 の sds-audit-review の BF-01〜BF-03
 
 ```yaml
@@ -43,9 +44,17 @@ rules:
     applies_to: StageSequence
     trigger: aidlc_record が形として正しい時
     logic: >
-      PR が指す段（と Unit）の一番新しい試行の行を探す。その行より前の行のうち、同じ Unit の段の行の一番新しい試行の行を、前の段とする。
-      Unit の最初の段の前は、Inception の最後の段の行とする（C9）
+      PR が指す段（と Unit）の一番新しい試行の行を探す。その行より前にある、superseded の付いていない行のうち、同じ Unit の段の行の一番新しい試行の行を、前の段とする。
+      Unit の最初の段の前は、Inception の最後の段の行とする（C9、Q12）
     violation: —
+    source: FR2.1
+  - id: BR2.6
+    statement: PR が指す段（と Unit）の一番新しい試行の行に superseded が付いていれば FAIL にする（上流を後から開き直したので、この段を新しい試行で始め直す）
+    category: validation
+    applies_to: StageSequenceEntry
+    trigger: PR が指す段の行を見つけた時
+    logic: IF その行の superseded = true THEN FAIL（理由「上流の段を開き直したので、この段の試行は無効。上流を承認し、この段を新しい試行で始め直す」と、段・Unit・試行の番号）
+    violation: 記録の判定が FAIL。前の段の古い承認では PASS にしない
     source: FR2.1
   - id: BR2.2
     statement: 段の順の記録が無い・JSON として読めない・形が違う・intent が違う時は FAIL にし、探した path を出す
@@ -98,7 +107,7 @@ rules:
     violation: 記録の判定が FAIL
     source: FR2.1
   - id: BR3.3
-    statement: 前の段の行の approval_ref は、C2 の置き場の決まり（approvals/<intent>/<段>/<unit>.json、Inception の段は _intent.json）と同じ path でなければならない
+    statement: 前の段の行の approval_ref は、C2 の置き場の決まり（approvals/<intent>/<段>/<unit>/attempt-<n>.json、Inception の段は approvals/<intent>/<段>/_intent/attempt-<n>.json。<n> はその行の attempt）と同じ path でなければならない（Q12）
     category: validation
     applies_to: StageSequenceEntry.approvalRef
     trigger: approved = true の行を読んだ時
@@ -178,7 +187,7 @@ rules:
     category: calculation
     applies_to: ApprovalRecord
     trigger: 席が作り手の CLI を動かした時
-    logic: intent・段・Unit・audit の場所を受け、その段（と Unit）の一番新しい試行の承認の出来事を見つけたら、欄の順を決めた 1 つの JSON を作業場の file に書く
+    logic: intent・段・Unit・audit の場所を受け、その段（と Unit）の承認された試行ごとに、欄の順を決めた 1 つの JSON を、試行の番号つきの置き場（approvals/<intent>/<段>/<unit>/attempt-<n>.json、Inception の段は .../_intent/attempt-<n>.json）に書く（C2、Q12）。段の順の記録で approved = true の行は、どれもその試行の file を持つ
     violation: BR5.3
     source: FR2.2
   - id: BR5.2
@@ -212,8 +221,9 @@ rules:
     trigger: 席が作り手の CLI を動かした時
     logic: >
       audit から、実行した段・Unit・試行を実行した順に並べる。飛ばした段は入れない。開き直した段は新しい試行の行を足し、古い行を消さない。
-      各行の approved は BR5.1・BR5.2 で承認の記録を作れる時だけ true とし、approval_ref に C2 の置き場の path を書く。
-      approvals/<intent>/_sequence.json を作業場に書く（前の file は置き換える）
+      上流の段を開き直した出来事（audit の jump）の時点で、それより前にあった下流の行に superseded: true を付ける（同じ Unit の段ならその Unit の下流、Inception の段なら全部の Unit の下流。C9、Q12）。
+      各行の approved は BR5.1・BR5.2 で承認の記録を作れる時だけ true とし、approval_ref にその行の試行の番号つきの path を書く。
+      approvals/<intent>/_sequence.json を作業場に書く（段の順の記録は作り直す物なので、前の file は置き換える）
     violation: audit が読めない時は何も書かずに exit code 1
     source: FR2.1
   - id: BR5.6
@@ -223,6 +233,14 @@ rules:
     trigger: 段の順の記録を作る時
     logic: shard の file を名前の順に並べ、bytes をつないだ物の SHA-256 を求める。欄と行の順を決めておく。範囲の決め方（shard 全体か、段の出来事だけか）は U3 で決め直す（C9 の未決の問い）
     violation: —
+    source: NFR2
+  - id: BR5.8
+    statement: 承認の記録の file は一度作ったら書き換えない。同じ path に file が既にある時は、bytes を比べる（C2、Q12）
+    category: constraint
+    applies_to: ApprovalRecord
+    trigger: 承認の記録の file を書く時
+    logic: IF 同じ path に file が無い THEN 書く。IF あって bytes が同じ THEN 書かない。IF あって bytes が違う THEN 何も書かずに exit code 1（理由に path）。古い試行の file は消さない。identity_check を後から verified に書き換えない
+    violation: 作り手が失敗で終わり、file を書き換えない
     source: NFR2
   - id: BR5.7
     statement: 作り手は push も統合もせず、作業場に file を書くだけ
@@ -311,7 +329,7 @@ rules:
     violation: —
     source: FR10.1
   - id: BR7.5
-    statement: 保護面の 1 本の PR に同梱する file（AI-DLC の自己適用の file・.gitignore の audit の除外）と、kit を shirube に当てた時に書く file を、U1 の置き場に入れる（Q7・Q11、BF-01）。kit が書く file は P1 には入れない（P1 は手で組む = U1 の NFR Requirements の Q8）。I2 の後の kit の版上げの PR（K）で入れる（Delivery Planning の Q11）
+    statement: 保護面の 1 本の PR に同梱する file（AI-DLC の自己適用の file・.gitignore の audit の除外）と、kit を shirube に当てた時に書く file を、U1 の置き場に入れる（Q7・Q11、BF-01）。kit が書く file は P1 には入れない（P1 は手で組む = U1 の NFR Requirements の Q8）。I3（門の判定）の後の kit の版上げの PR（K）で入れる（Delivery Planning の Q11・Q12）
     category: policy
     applies_to: U1 の置き場の宣言（sds-design-locations）
     trigger: U1 の PR の変更 path を置き場と比べる時
@@ -325,10 +343,10 @@ rules:
 | 群 | 決まり | 要点 |
 |----|--------|------|
 | BR1 | BR1.1〜BR1.3 | PR の block の記録の欄の形 |
-| BR2 | BR2.1〜BR2.5 | 前の段は main の段の順の記録だけから求める。無い・壊れた・intent が違う時は FAIL、ほかの Unit の行は使わない |
-| BR3 | BR3.1〜BR3.7 | main からだけ読む。前の段の一番新しい試行が承認済みで、承認の記録の試行が同じ時だけ PASS。決まった形だけ |
+| BR2 | BR2.1〜BR2.6 | 前の段は main の段の順の記録だけから、無効の印の無い行で求める。無い・壊れた・intent が違う時は FAIL、ほかの Unit の行は使わない。PR が指す段の行に無効の印があれば FAIL |
+| BR3 | BR3.1〜BR3.7 | main からだけ読む。前の段の一番新しい試行が承認済みで、試行の番号つきの承認の記録の試行が同じ時だけ PASS。決まった形だけ |
 | BR4 | BR4.1〜BR4.4 | 記録だけの判定、log の 1 行の JSON、観測できず、同じ head で同じ結果 |
-| BR5 | BR5.1〜BR5.7 | 作り手は承認の記録と段の順の記録を audit から同じ bytes で作り、push せず、audit を写さない。Unit の設計の段は 2 つの記録がそろった時だけ承認 |
+| BR5 | BR5.1〜BR5.8 | 作り手は承認の記録（試行ごとの file）と段の順の記録（無効の印つき）を audit から同じ bytes で作り、承認の記録の file は書き換えず、push せず、audit を写さない。Unit の設計の段は 2 つの記録がそろった時だけ承認 |
 | BR6 | BR6.1〜BR6.5 | 計測は引数で受け、数えて出すだけで、書かない |
 | BR7 | BR7.1〜BR7.5 | shirube 自身の門の呼出し・pin・網羅率の床、kit の自己用の書く先、保護面の同梱の置き場（保護面は Owner の exact-head） |
 
@@ -337,6 +355,11 @@ rules:
 | 負例 | 決まり | 結果 |
 |------|--------|------|
 | 開き直した後の新しい試行に承認が無い（古い試行の行だけが approved = true） | BR3.2 | FAIL。要る試行の番号を出す |
+| 下流の段（例: Code Generation）を始めた後に上流の段（例: Infrastructure Design）を開き直し、上流の新しい試行が未承認（監査の指摘 BF-07 の反例） | BR2.6 | PR が指す段の行に無効の印があるので FAIL。古い試行の承認では PASS にしない |
+| 上流を開き直して再承認し、下流を新しい試行で始め直した（正例） | BR2.1・BR2.6 | PASS |
+| 試行 1 の承認の記録を保存 → 段を開き直す → 試行 2 を再承認（`attempt-2.json` を足す）→ 受け入れる（監査の指摘 BF-08 の正例） | BR3.3・BR3.5・BR5.8 | PASS。`attempt-1.json` は残る |
+| 同じ path の承認の記録が、違う bytes で作られようとした | BR5.8 | 作り手が失敗で終わり、file を書き換えない |
+| approval_ref が試行の番号つきの決まりの path と違う | BR3.3 | FAIL。決まりの path を出す |
 | 複数の Unit がある（前の行がほかの Unit） | BR2.5 | ほかの Unit の行を使わずに、同じ Unit の行で判定する |
 | 段の順の記録が無い・壊れている・intent が違う | BR2.2 | FAIL。探した path を出す |
 | 承認の記録の試行の番号が、段の順の記録の一番新しい試行と違う | BR3.5 | FAIL。要る試行の番号を出す |

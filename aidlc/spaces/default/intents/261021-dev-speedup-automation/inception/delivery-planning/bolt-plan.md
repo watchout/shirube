@@ -7,7 +7,7 @@
 - Unit: `inception/units-generation/unit-of-work.md`・`unit-of-work-dependency.md`・`unit-of-work-story-map.md`
 - 受け渡しの形: `inception/contract-design/contract-summary.md`
 - 進め方: `inception/practices-discovery/team-practices.md`
-- この段の答え: `delivery-planning-questions.md`（Q1〜Q11）
+- この段の答え: `delivery-planning-questions.md`（Q1〜Q12）
 
 Bolt は、作る 1 回分の単位です。1 つの Bolt が終わると、動く物ができます。ここでは 1 つの Bolt = 1 つの Unit です（Q3）。
 
@@ -45,34 +45,35 @@ Bolt は、作る 1 回分の単位です。1 つの Bolt が終わると、動�
   - shirube の門の呼出しの workflow と pin（記録だけ）（Q8）
   - 段の順の記録（受け渡しの形 C9、`approvals/<intent>/_sequence.json`）の最小の形
   - kit の自己用の書く先（shirube では呼出しを `sds-gate-self.yml` に書き、再利用 workflow を書き換えない）（Units Generation の Q7、U1 の Functional Design の Q9）
-- **PR の順**（Q10・Q11。Q9 の順を改めた。もとは iyasaka-arc#49 6354019047 の 4・6354411741 の 2）:
+- **PR の順**（Q10〜Q12。Q9 の順を改めた。もとは iyasaka-arc#49 6354019047 の 4・6354411741 の 2）:
   1. P1 保護面の 1 本（R4、Owner の exact-head 1 回）。中身は次のとおり。
      - AI-DLC の自己適用の file（`docs/design/aidlc-include.md` §6 の 3）
      - 大きさの数えの除外（`.shirube/hygiene-profile.md` の `exclude_generated`）
      - `.gitignore` の audit の除外
-     - U1 の保護面（門の呼出し・pin・網羅率の CI と計測の job）
+     - U1 の保護面（門の呼出し・pin・網羅率の CI と計測の job）。網羅率を測る試験の job は Node 26 で動かす（Q12、U1 の NFR Design の Q8）
      - own-code の予算の改め（同じ `hygiene-profile.md` の中。S1 全体の own-code の見積もりを添え、値は Owner が exact-head で決める。P1 自身の増分は今の予算に収まる）（Q10）
   2. R 記録の PR（AI-DLC の記録。audit は載せない。Owner の作業場の file と bytes が同じかを監査する）。
-  3. I1 実装 1: 承認の記録と段の順の記録の作り手（CLI）と、kit の自己用の書く先（Q11）。
+  3. I1 実装 1: 承認の記録と段の順の記録の作り手（CLI）（Q12）。
   4. A 承認の記録の PR（I1 の CLI で作った承認の記録と段の順の記録。bytes が同じかを監査する）。CLI は I1 で初めてできるので、I1 の後に置く（Q10）。
-  5. I2 実装 2: 記録の橋と門の判定。
-  6. K kit の版上げの PR（Q11）。shirube の pin を I2 の後の main に上げ、kit で呼出しを書き、kit が書く 3 つの file（sds-audit の skill・PR の雛形・`AGENTS.md`）を入れる。
+  5. I2 実装 2: kit の自己用の書く先と `budget.mjs`（Q12）。
+  6. I3 実装 3: 記録の橋と門の判定（Q12）。
+  7. K kit の版上げの PR（Q11）。shirube の pin を I3 の後の main に上げ、kit で呼出しを書き、kit が書く 3 つの file（sds-audit の skill・PR の雛形・`AGENTS.md`）を入れる。
      - 「最初の導入」ではなく「版上げ」として扱い、決まり iyasaka-arc#49 6308341298 の 1 のとおり Owner の手なしで統合する（差分が kit の file だけ・kit check OK・上げる先は監査 PASS で別の席が統合した shirube main）。
-  7. I3 実装 3: 計測。新しい門で判定される確かめの PR（Q11、U1 の Functional Design の Q6）。
-  - U1 の PR の数は、保護面の 1 本と実装の PR 3 本（Units Generation の Q7）。R・A・K は Unit を指さないので数えない（C7）。
-  - `budget.mjs` をどの実装の PR に置くかと、I1 が 400 行を超えないかは、U1 の NFR の段で見積もり直す。
+  8. I4 実装 4: 計測。新しい門で判定される確かめの PR（Q11・Q12、U1 の Functional Design の Q6）。
+  - U1 の PR の数は、保護面の 1 本と実装の PR 4 本（Units Generation の Q8）。R・A・K は Unit を指さないので数えない（C7）。
+  - 1 本 400 行・20 file の上限は変えない。分け方は見積もりの上の端でも、どの PR も 400 行以内（Units Generation の Q8）。
   - 決定 6354019047 の 4 の順を改めることは、この段の承認の後に arc が #49 に記録する。
 - **済みの条件**:
   - 試験が先にあり（失敗を確かめてから実装）、統合の前の CI で行の網羅率が 80% 以上。
   - P1 を、Owner の exact-head 1 回で統合した。監査の席の分類の役の決定（FR5.4）と own-code の予算の改めも、この 1 回にまとめて記録した。
   - A で、承認の記録と段の順の記録が main に入った。
-  - K で、shirube の pin が I2 の後の main に上がった。
-  - I3 が AI-DLC の記録の欄を持ち、I2 の後の門が記録だけで判定し、段の順の記録と承認の記録を main から読み、commit status と log の 1 行の JSON（`sds-gate-result/1`）を出した。
+  - K で、shirube の pin が I3 の後の main に上がった。
+  - I4 が AI-DLC の記録の欄を持ち、I3 の後の門が記録だけで判定し、段の順の記録と承認の記録を main から読み、commit status と log の 1 行の JSON（`sds-gate-result/1`）を出した。
   - 計測がその status と log を読み、PASS と FAIL を数えた 1 行の JSON（`sds-metrics/1` の最小の形）を出した。
   - 門は統合を止めていない。
 - **確かめること**: workflow → commit status → log → 計測の読取りが、実際の GitHub の上でつながる。記録だけの門は、正しい PR を止めない。
 - **見せる物**: 実際の PR の門の log の 1 行の JSON と、計測の出力（Q7）。
-- **実際に通す確かめ**: 門の workflow が、I3 の head で `sds-gate` の status を付け、計測の CLI が I3 を数えに入れること。門は base の pin の commit から動くので、確かめの前に K で pin を上げておく（Q11）。
+- **実際に通す確かめ**: 門の workflow が、I4 の head で `sds-gate` の status を付け、計測の CLI が I4 を数えに入れること。門は base の pin の commit から動くので、確かめの前に K で pin を上げておく（Q11・Q12）。
 
 ## B2 U2 u2-metrics — 計測の全体
 

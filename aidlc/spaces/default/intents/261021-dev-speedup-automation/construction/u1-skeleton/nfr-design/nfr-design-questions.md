@@ -101,6 +101,39 @@ X. Other (please specify)
 
 [Answer]: A（Delivery Planning の Q11 と U1 の NFR Requirements の Q9 は、Owner がこの会話で選び、要約を確かめた中身。写すだけなので、ここで同じ問いを聞き直さない）
 
+## Q8. [設計] 監査の指摘 BF-07: 網羅率の確かめの command が CI の Node 22 で動かない（2026-10-23 の 4 回目の開き直し）
+
+監査（shirube PR #65 の返却 https://github.com/watchout/shirube/pull/65#issuecomment-6362354895 の BF-07。前の返却 6362007900 の BF-06 も同じ指摘）です。
+- Q5 で決めた数え方は `--test-coverage-include='scripts/**' --test-coverage-include-all --test-coverage-lines=80`。
+- `--test-coverage-include-all` は Node 26.7.0 で足された機能。監査の席が確かめた結果は次のとおり。
+  - Node v22.23.2・v24.20.0: 試験が始まる前に `bad option` で止まる（exit 9）。
+  - Node v26.9.0: 動く。
+- shirube の CI（`ci.yml`）は Node 22 で動く。98.20% は、この Mac の Node 26.9 で測った値。
+- 求められていること: 採択した数え方（80%・`scripts/**` の全部・試験が読まない file も 0%）を保ったまま、Node の版と使える測り方を揃える。選んだ版で、正しく動くことと床を下回った時に止まることを確かめる計画にする。CI の設定は P1 の exact-head の手順に結ぶ。床や数える物は弱めない。
+- 参考: `--test-coverage-include`・`--test-coverage-exclude` は Node 22.5.0 から、`--test-coverage-lines` は Node 22.8.0 からある（Node の文書）。
+
+A. 網羅率を測る試験の job と確かめの command を、Node 26（26.7.0 以上）で動かす。
+   - `ci.yml` の `node-version` を "26" にする（P1 の中、保護面、Owner の exact-head）。
+   - `package.json` の engines（Node 22 以上）は変えない。
+   - P1 の CI で、正しく動くことと、床を下回った試しの変更で止まることを確かめる。
+B. Node 22 のまま、`--test-coverage-include-all` を使わない。
+   - 代わりに、`scripts/**` の全部の file を読み込む試験を足して、試験が読まない file を無くす（数え方は `--test-coverage-include='scripts/**' --test-coverage-lines=80`）。
+   - 全部の file が数えに入っているかは、その試験が `scripts/**` の file の一覧と照らして確かめる。
+   - 読み込んだ時に CLI として動き出す script が無いかを、file ごとに確かめる要がある。
+   - 試験の file が 1 つ増え、U1 の PR の大きさにも入る。
+X. Other (please specify)
+
+[Answer]: A（Owner が選んだ。網羅率を測る試験の job と確かめの command を Node 26（26.7.0 以上）で動かす。ci.yml の node-version を 26 にする変更は P1（保護面、Owner の exact-head）の中。package.json の engines は変えない。数え方と 80% の床は変えない。arc が質問ボードで噛み砕いて聞いた（2026-10-24））
+
+## Q9. [設計] PR ごとの置き方を、実装の PR 4 本の分け方に写す（2026-10-24 の開き直し）
+
+Units Generation の Q8（監査の指摘 BF-04）で、Owner が U1 の実装の PR を 4 本までにしました（I1 作り手 / I2 kit の自己用の書く先と `budget.mjs` / I3 記録の橋と門の判定 / I4 計測、順は P1 → R → I1 → A → I2 → I3 → K → I4）。この段の `logical-components.md` の「PR ごとの置き方」は、その前の 3 本の形（I2 が 400 行の上限に当たる見込みの注意つき）のままです。
+
+A. 写す。表を 4 本の分け方と U1 の NFR Requirements の Q10 の見積もりに揃え、上限に当たる見込みの注意を外す。新しい判断は入れない
+X. Other (please specify)
+
+[Answer]: A（Owner が Units Generation の Q8 で選んだ中身を写すだけなので、ここで同じ問いを聞き直さない）
+
 ## Consolidated Summary Confirmation
 
 - 時間の上限と予算: 1 つの共通の部品に置き、門・記録の橋・計測が使う。値は 1 か所、時計を読むのは CLI の入口だけで、核の関数は開始の時刻と今の時刻を引数で受ける（arc の設計） [Q1]
@@ -116,6 +149,8 @@ X. Other (please specify)
   - 今の値は 98.20%。（arc の設計） [Q5]
 - 大きさの見積もりへの対応（監査の指摘 BF-04）: `logical-components.md` に「PR ごとの置き方」の節を置き、見積もりの表の PR（P1・I1〜I3）に部品と file を割り当てる。対応表の NFR6.1・NFR7.1 を Deferred から OK に変える。400 行を超える見込みの時は、U1 の PR の数を変えずに試験と実装の分け方で収める（arc の設計） [Q6]
 - PR ごとの置き方の直し（4 回目の開き直し）: 表を P1 → R → I1（作り手と kit の自己用の書く先）→ A → I2（記録の橋・門の判定・`budget.mjs` を既定）→ K（Unit を指さない kit の版上げ）→ I3（計測）に揃え、見積もりを U1 の NFR Requirements の Q9 の値にする。I2 が 400 行の上限に当たる見込みと、3 本の合計が 1,200 行を超える時は Owner に伺うことを注意として書く（Delivery Planning の Q11、NFR Requirements の Q9） [Q7]
+- 網羅率の Node の版（監査の指摘 BF-07）: 網羅率を測る試験の job と確かめの command を Node 26（26.7.0 以上）で動かす。`ci.yml` の `node-version` を 26 にする変更は P1（保護面、Owner の exact-head）の中。`package.json` の engines は変えない。数え方（`scripts/**` の全部、試験が読まない file も 0%）と 80% の床は変えない。P1 の CI で、正しく動くことと床を下回った試しで止まることを確かめる（Owner の選択） [Q8]
+- PR ごとの置き方の直し（監査の指摘 BF-04）: 表を実装の PR 4 本（I1 作り手 / I2 kit の自己用の書く先と `budget.mjs` / I3 記録の橋と門の判定 / I4 計測）にし、順を P1 → R → I1 → A → I2 → I3 → K → I4 にする。どの PR も上の端で 400 行以内なので、Q7 の「上限に当たる見込み」の注意を外す（Units Generation の Q8 の写し） [Q9]
 
 Does this all look correct before I generate the artifact?
 

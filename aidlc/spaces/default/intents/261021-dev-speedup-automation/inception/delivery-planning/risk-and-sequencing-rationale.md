@@ -1,6 +1,6 @@
 # 順番の理由と危うさ（Risk and Sequencing Rationale）
 
-出典: この段の答え（`delivery-planning-questions.md` の Q1〜Q11）、Unit の依存（`inception/units-generation/unit-of-work-dependency.md`）、要件（`inception/requirements-analysis/requirements.md`）、受け渡しの形（`inception/contract-design/contract-summary.md`）、実現性の評価（`ideation/feasibility/feasibility-assessment.md`）。
+出典: この段の答え（`delivery-planning-questions.md` の Q1〜Q12）、Unit の依存（`inception/units-generation/unit-of-work-dependency.md`）、要件（`inception/requirements-analysis/requirements.md`）、受け渡しの形（`inception/contract-design/contract-summary.md`）、実現性の評価（`ideation/feasibility/feasibility-assessment.md`）。
 
 Bolt は、作る 1 回分の単位です（1 つの Bolt = 1 つの Unit）。
 
@@ -17,7 +17,7 @@ Bolt は、作る 1 回分の単位です（1 つの Bolt = 1 つの Unit）。
 
 | 順 | Bolt | 理由 |
 |----|------|------|
-| 1 | B1 細い版 | どの Unit も待たない。workflow → commit status → log → 計測のつながりを、機能を足す前に実際の GitHub で確かめる（Q7・Q8）。shirube の保護面（AI-DLC の自己適用・大きさの数えの除外・`.gitignore` の audit の除外・U1 の保護面）と own-code の予算の改めを 1 本の PR にまとめ、exact-head をここで 1 回に済ませる。順番は P1 保護面の 1 本 → R 記録の PR → I1 作り手と kit の自己用の書く先 → A 承認の記録の PR → I2 → K kit の版上げ → I3。承認の記録を作る CLI が I1 で初めてできるので、A を I1 の後に置いた（Q10）。門は base の pin の commit から動くので、I2 の後に K で pin を上げ、I3 を新しい門で判定される確かめの PR にした（Q11。Q9 と #49 6354019047 の 4 の順を改めた） |
+| 1 | B1 細い版 | どの Unit も待たない。workflow → commit status → log → 計測のつながりを、機能を足す前に実際の GitHub で確かめる（Q7・Q8）。shirube の保護面（AI-DLC の自己適用・大きさの数えの除外・`.gitignore` の audit の除外・U1 の保護面）と own-code の予算の改めを 1 本の PR にまとめ、exact-head をここで 1 回に済ませる。順番は P1 保護面の 1 本 → R 記録の PR → I1 作り手 → A 承認の記録の PR → I2 kit の自己用の書く先と `budget.mjs` → I3 記録の橋と門の判定 → K kit の版上げ → I4 計測。承認の記録を作る CLI が I1 で初めてできるので、A を I1 の後に置いた（Q10）。門は base の pin の commit から動くので、門の判定（I3）の後に K で pin を上げ、I4 を新しい門で判定される確かめの PR にした（Q11）。実装の PR 3 本・1 本 400 行の中で成り立つ分け方が無かったので（監査の指摘 BF-04）、上限を変えずに実装の PR を 4 本にした（Q12、Units Generation の Q8。Q9 と #49 6354019047 の 4 の順を改めた） |
 | 2 | B2 計測 | 門で止め始める前に今の値をそろえる（C3）。主な指標の「半分」の判定と、Owner の手・誤って止めた回数の見張りに要る |
 | 3 | B3 承認の記録 | B4 の判定 5 が「設計の記録が承認済みか」を記録の橋に確かめるため、B4 より前に要る |
 | 4 | B4 門の判定 | B1・B3 の上に置き場の検査と段階を足す。配る版をそろえる |

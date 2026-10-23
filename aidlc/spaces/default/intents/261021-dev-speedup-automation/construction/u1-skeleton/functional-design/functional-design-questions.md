@@ -158,6 +158,23 @@ X. Other (please specify)
 
 [Answer]: A（Owner が U1 の NFR Requirements の Q7 = A で選んだ中身。「Functional Design: 置き場に、kit が書く file を足す」。ここで同じ問いを聞き直さない）
 
+## Q12. [設計] 2 回目の監査の返却（BF-07・BF-08・BF-04）で決まった事を、この段の決まりに写す（2026-10-24 の開き直し）
+
+shirube PR #65 の 2 回目の監査の返却を受けて、前の段で Owner が選んだ事です。
+- Contract Design の Q12（返却 6362007900 の BF-07）: 作り手が、上流の段を開き直した時点で、それより前の下流の行に無効の印 `superseded: true` を付ける。門は、PR が指す段の一番新しい試行の行に印があれば FAIL。前の段は、印の無い行だけから選ぶ。
+- Contract Design の Q13（同じ返却の BF-08）: 承認の記録の置き場に試行の番号を入れる（`approvals/<intent>/<段>/<unit>/attempt-<n>.json`、Inception の段は `.../_intent/attempt-<n>.json`）。一度作った file は書き換えず、同じ path に file があれば bytes を比べ、同じなら書かず、違えば失敗。
+- Units Generation の Q8（返却 6362354895 の BF-04）: U1 の実装の PR は 4 本。順は P1 → R → I1 作り手 → A → I2 kit の自己用の書く先と `budget.mjs` → I3 記録の橋と門の判定 → K → I4 計測。確かめの PR は I4。
+
+この段の記録（`entities.md`・`rules.md`・`functional-spec.md`）は、その前の形のままです。
+- BR2.1 は「前の行」だけから前の段を選ぶ。
+- BR3.3・`entities.md` は、試行の番号の無い置き場を使う。
+- W4・W5 は、実装の PR 3 本の順。
+
+A. 写す。上の 3 つを、データの形・決まり・振る舞いの仕様に揃え、C9・C2 の負例と正例を決まりの試験に入れる。新しい判断は入れない
+X. Other (please specify)
+
+[Answer]: A（Owner が Contract Design の Q12・Q13 と Units Generation の Q8 で選んだ中身を写すだけなので、ここで同じ問いを聞き直さない）
+
 ## Consolidated Summary Confirmation
 
 - 確かめる承認: PR が指す段の、直前の段の承認の記録（要件 FR2.1 のとおり）（arc の設計） [Q1]
@@ -173,6 +190,12 @@ X. Other (please specify)
 - kit が shirube に書く file（2 回目の開き直し）: `.claude/skills/sds-audit/SKILL.md`・`.github/pull_request_template.md`・`AGENTS.md` を U1 の置き場に足す（U1 の NFR Requirements の Q7 = A）。3 回目の開き直し（NFR Requirements の Q8 = A）で確かめた: P1 は今の kit では作れず手で組むので、3 つは P1 に入れない。どの PR で入れるかは Infrastructure Design で決める。置き場の block は変えない [Q11、NFR Requirements の Q8]
 - PR の順（2 回目の開き直しで Delivery Planning の Q10 が改めた）: P1 保護面の 1 本 → R 記録の PR → I1 作り手 → A 承認の記録の PR → I2 記録の橋と門の判定 → I3 計測と kit の自己用の書く先。Q6 の「門の呼出しの PR が main に入った後の、U1 の残りの実装の PR」は、A の後の I2・I3 になる（Q6 の答えは変えない） [Q6、Delivery Planning の Q10]
 - PR の順（4 回目の開き直しで Delivery Planning の Q11 が改めた）: P1 → R → I1（作り手と kit の自己用の書く先）→ A → I2（記録の橋と門の判定）→ K（kit の版上げの PR。shirube の pin を I2 の後の main に上げ、kit が書く 3 つの file を入れる）→ I3（計測）。門は base の pin の commit から動くので、Q6 の確かめの PR は、K の後の I3 になる（Q6 の答えは変えない）。kit が書く 3 つの file は K で入る [Q6、Q11、Delivery Planning の Q11]
+- 2 回目の監査の返却で決まった事の写し（2026-10-24）:
+  - 上流を後から開き直した時（C9）: 作り手が古い下流の行に `superseded: true` を付ける。門は、PR が指す段の一番新しい試行の行に印があれば FAIL。前の段は印の無い行だけから選ぶ（BR2 を直す）。
+  - 同じ段の 2 回目の承認（C2）: 置き場は `approvals/<intent>/<段>/<unit>/attempt-<n>.json`。一度作った file は書き換えず、同じ path に file があれば bytes を比べる（BR3.3・BR5・entities を直す）。
+  - 負例と正例: 上流を開き直した後の FAIL、再承認して始め直した後の PASS、試行 1 保存 → 開き直し → 試行 2 再承認 → 受け入れ。
+  - PR の順: P1 → R → I1 作り手 → A → I2 kit の自己用の書く先と `budget.mjs` → I3 記録の橋と門の判定 → K → I4 計測。確かめの PR は I4（W4・W5 を直す。Q6 の答えは変えない）。
+  - （Owner が Contract Design の Q12・Q13 と Units Generation の Q8 で選んだ） [Q12]
 
 Does this all look correct before I generate the artifact?
 

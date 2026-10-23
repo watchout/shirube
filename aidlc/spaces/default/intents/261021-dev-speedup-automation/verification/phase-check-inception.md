@@ -2,7 +2,7 @@
 
 **判定: PASS**（未解決の GAP・ORPHAN・不正な対応先・抜けた上流の ID は 0）
 
-確かめた日: 2026-10-22。2026-10-23 に、U1 の設計の独立監査（BF-02）を受けて Contract Design を開き直して C9 を足し、Delivery Planning を通し直した後に、もう一度確かめた（3 つの対応表は変わっていない）。同じ日に、U1 の大きさの見積もり（監査の指摘 BF-04）を受けて Units Generation を開き直し（Q7: U1 の PR の数と中身）、Contract Design（変更なし）と Delivery Planning（Q10: PR の順と予算の改めの時点）を通し直した後に、もう一度確かめた（3 つの対応表は変わっていない）。さらに、U1 の Infrastructure Design の Q5（監査の指摘 BF-03、pin を上げる順）を受けて Delivery Planning を開き直し（Q11）、もう一度確かめた（3 つの対応表は変わっていない）。読んだ対応表は 3 つ（Contract Design は要件の対応表を持たないので入らない）。
+確かめた日: 2026-10-22。2026-10-23 に、U1 の設計の独立監査（BF-02）を受けて Contract Design を開き直して C9 を足し、Delivery Planning を通し直した後に、もう一度確かめた（3 つの対応表は変わっていない）。同じ日に、U1 の大きさの見積もり（監査の指摘 BF-04）を受けて Units Generation を開き直し（Q7: U1 の PR の数と中身）、Contract Design（変更なし）と Delivery Planning（Q10: PR の順と予算の改めの時点）を通し直した後に、もう一度確かめた（3 つの対応表は変わっていない）。さらに、U1 の Infrastructure Design の Q5（監査の指摘 BF-03、pin を上げる順）を受けて Delivery Planning を開き直し（Q11）、もう一度確かめた（3 つの対応表は変わっていない）。2026-10-24 に、2 回目の監査の返却（shirube PR #65、6362007900・6362354895）の BF-04・BF-07・BF-08 を受けて Units Generation（Q8: U1 の実装の PR 4 本）・Contract Design（Q12・Q13: C9 の無効の印、C2 の試行ごとの置き場）・Delivery Planning（Q12）を通し直し、もう一度確かめた（3 つの対応表は変わっていない）。読んだ対応表は 3 つ（Contract Design は要件の対応表を持たないので入らない）。
 
 ## 対応表ごとの結果
 
@@ -34,7 +34,9 @@
 | 受け渡しの形 C9（段の順の記録）の `source_digest` の範囲 | U3 の Functional Design（U1 は最小の形） |
 | U1 の設計の独立監査の指摘 BF-01〜BF-05 | U1 の 4 つの設計の段の通し直し |
 | own-code の予算（残り約 362 行。U1 だけで約 550〜750 行の見込み） | P1 を出す時に S1 全体の見積もりを添え、P1 の中で 1 回だけ改める（Delivery Planning の Q10） |
-| 決定 iyasaka-arc#49 6354019047 の 4 の PR の順の改め（承認の記録の PR を I1 の後へ、kit の版上げの PR を I2 と I3 の間へ = Delivery Planning の Q10・Q11） | この段の承認の後に arc が #49 に記録する |
+| 決定 iyasaka-arc#49 6354019047 の 4 の PR の順の改め（P1 → R → I1 → A → I2 → I3 → K → I4 = Delivery Planning の Q10〜Q12） | この段の承認の後に arc が #49 に記録する |
+| C9 の無効の印と C2 の試行ごとの置き場を、U1 の Functional Design の決まり（BR2・BR3・BR5・entities）に入れる | U1 の Functional Design の通し直し |
+| 網羅率を測る試験の job を Node 26 で動かす（U1 の NFR Design の Q8） | U1 の NFR Design と Infrastructure Design の通し直し、確かめの command の承認 |
 | `budget.mjs` の置き場と I1 の大きさ（kit の自己用の書く先を I1 へ移した後） | U1 の NFR Requirements と NFR Design の通し直し |
 
 ## 承認

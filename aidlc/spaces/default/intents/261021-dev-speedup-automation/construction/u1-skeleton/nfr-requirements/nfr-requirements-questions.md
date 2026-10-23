@@ -212,6 +212,21 @@ B の時は I1 が約 400〜460、I2 が約 350〜400。own-code の増分の合
 
 [Answer]: A（arc の設計。`budget.mjs` を使うのは門・記録の橋・計測で、作り手は使わない（NFR Design の Q1）。使う物と同じ PR に置けば、I1 に使われない code を置かず、試験も使う形で書ける。ただし上の見込みでは、A なら I2、B なら I1 が 400 行の上限に当たる。`budget.mjs` は I2 より前にあればよいので、Code Generation の計画で 2 本の見積もりを出し直し、小さい方に置く（この段の「1 本が 400 行を超える見込みの時は Code Generation の計画で見直す」のまま）。実装の 3 本の合計（約 1,020〜1,230 行）が上の端で 3 本の上限 1,200 行を超える時は、U1 の PR の数（Units Generation の Q7）を変えることになるので、その時に Owner に伺う）
 
+## Q10. [規模] 実装の PR 4 本の分け方と、網羅率を測る Node の版を写す（2026-10-24 の開き直し）
+
+2 回目の監査の返却（shirube PR #65 の 6362354895）を受けて、Owner が選んだ事です。
+- Units Generation の Q8（BF-04）: U1 の実装の PR を 4 本までにする。1 本 400 行・20 file の上限は変えない。分け方は I1 作り手 / I2 kit の自己用の書く先と `budget.mjs` / I3 記録の橋と門の判定 / I4 計測。順は P1 → R → I1 → A → I2 → I3 → K → I4。
+- U1 の NFR Design の Q8（BF-07）: 網羅率を測る試験の job と確かめの command を Node 26（26.7.0 以上）で動かす。`ci.yml` の変更は P1 の中。`package.json` の engines（Node 22 以上）は変えない。
+
+この段の `tech-stack-decisions.md` は、その前の形のままです。
+- 大きさの見積もりの表は、実装の PR 3 本（I2 が 400 行の上限に当たる見込み）。
+- NFR8.2 の行は、Node の版を書いていない。
+
+A. 写す。見積もりの表を 4 本の分け方にし（Q9 の部品ごとの見込みから）、NFR8.2 の行に Node 26 を書く。新しい判断は入れない
+X. Other (please specify)
+
+[Answer]: A（Owner が Units Generation の Q8 と U1 の NFR Design の Q8 で選んだ中身を写すだけなので、ここで同じ問いを聞き直さない）
+
 ## Consolidated Summary Confirmation
 
 - 時間の上限と予算: 問い合わせ 1 回 20 秒（今の門と同じ値を 1 か所で持つ）。門の全体は 5 分、計測の全体は 10 分。使い切ったら「観測できず」（arc の設計） [Q1]
@@ -237,6 +252,15 @@ B の時は I1 が約 400〜460、I2 が約 350〜400。own-code の増分の合
   - `budget.mjs` はそれを使う I2 に置くのを既定とし、Code Generation の計画で I1・I2 の見積もりを出し直して小さい方に置く（I2 より前ならどちらでもよい）。
   - **注意**: A の既定のままでは I2 が 1 本 400 行の上限に当たる見込み。実装の 3 本の合計（約 1,020〜1,230 行）が上の端で 1,200 行を超える時は、U1 の PR の数（Units Generation の Q7）を変えることになるので、その時に Owner に伺う。
   - （arc の設計） [Q9]
+- 実装の PR 4 本の見積もり（2026-10-24 の開き直し、監査の指摘 BF-04。Q9 の表の I1〜I3 を置き換える）:
+  - I1 = 作り手・その試験: 約 270〜340 行、own-code +約 180〜230。
+  - I2 = kit の自己用の書く先・`budget.mjs`・その試験: 約 110〜140 行、own-code +約 35〜55。
+  - I3 = 記録の橋・門の判定・その試験: 約 350〜400 行、own-code +約 170〜230。
+  - K = kit が書く 3 つの file・呼出しと pin: 約 110〜115 行（Unit を指さない）。
+  - I4 = 計測・その試験: 約 290〜350 行、own-code +約 135〜185。
+  - どの PR も、見積もりの上の端で 400 行・20 file の中。own-code の増分は P1 の約 50 を足して約 570〜750 行。予算は P1 で S1 全体の見積もりを添えて 1 回だけ改める（Q8 のまま）。
+  - 網羅率を測る試験の job と確かめの command は Node 26（26.7.0 以上）で動かす（U1 の NFR Design の Q8、監査の指摘 BF-07）。
+  - （Owner が Units Generation の Q8 と U1 の NFR Design の Q8 で選んだ） [Q10]
 
 Does this all look correct before I generate the artifact?
 

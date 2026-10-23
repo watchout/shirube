@@ -17,7 +17,7 @@
 | # | 渡す側（Provider） | 受ける側（Consumer） | 渡し方（Mechanism） | 形の持ち主（Owner） |
 |---|--------------------|----------------------|----------------------|---------------------|
 | C1 | External: 作者の席（PR を書く） | U1・U4 の門（SdsGate）、U2 の計測（MetricsCollector） | PR の本文の ```json sds-pr``` block（`sds-pr/1` に欄を足す） | SdsGate（U1・U4） |
-| C2 | U1・U3 の承認の記録の作り手（ApprovalRecordWriter） | U1・U3 の記録の橋（RecordBridge） | repo の file `approvals/<intent>/<段>/<unit>.json`（`sds-approval-record/1`） | ApprovalRecordWriter（U3） |
+| C2 | U1・U3 の承認の記録の作り手（ApprovalRecordWriter） | U1・U3 の記録の橋（RecordBridge） | repo の file `approvals/<intent>/<段>/<unit>/attempt-<n>.json`（`sds-approval-record/1`、Q13） | ApprovalRecordWriter（U3） |
 | C3 | U1・U4 の門（SdsGate） | U1・U2 の計測（MetricsCollector） | commit status `sds-gate` の state と、門の workflow の log の 1 行の JSON（`sds-gate-result/1`） | SdsGate（U1・U4） |
 | C4 | U1・U2 の計測（MetricsCollector） | External: W2 の道具（iyasaka-arc） | 標準出力の 1 行の JSON（`sds-metrics/1`）と exit code | MetricsCollector（U2） |
 | C5 | External: 監査の席（devauditor） | U2 の計測（MetricsCollector） | PR の comment の ```json sds-gate-fail-classification``` block（`sds-gate-fail-classification/1`） | MetricsCollector（U2） |
@@ -60,7 +60,7 @@ added_fields:
 
 ## C2 承認の記録（`sds-approval-record/1`）
 
-置き場: repo の `approvals/<intent>/<段>/<unit>.json`（Q8）。保護面（`.shirube/**`）の外。Inception の段は `<unit>` の代わりに `_intent.json`。
+置き場: repo の `approvals/<intent>/<段>/<unit>/attempt-<n>.json`（Q8・Q13）。保護面（`.shirube/**`）の外。Inception の段は `<unit>` の代わりに `_intent`（`approvals/<intent>/<段>/_intent/attempt-<n>.json`）。`<n>` はその段（と Unit）の試行の番号で、file の `attempt` と同じ。試行ごとに別の file になり、履歴が残る（Q13、監査の指摘 BF-08）。
 
 ```yaml
 contract: sds-approval-record/1
@@ -77,6 +77,8 @@ fields:
   - { name: source_audit_ref, type: string, required: true, meaning: "元の audit の file の repo の中の path" }
 rules:
   - 同じ承認から 2 回作っても、同じ bytes になる（NFR2）
+  - 一度作った file は書き換えない。作り手は、同じ path に file が既にあれば bytes が同じかを確かめ、同じなら書かず、違えば失敗で終わる（Q13）
+  - 同じ段を開き直して再承認した時は、新しい試行の番号の file を足す。古い試行の file は消さない（Q13）
   - 一度作った記録を、後から identity_check: verified に書き換えない（iyasaka-arc#49 6315688299 の 4）
   - 記録の橋は、この形の file だけを承認として読む。ほかの形（コメントの文など）は読まない
   - 作る元（Q11）: Inception の段と Code Generation 以降は、段の承認の出来事から作る。Unit ごとの設計の段（Functional Design・NFR Requirements・NFR Design・Infrastructure Design）は単独の承認が無いので、Owner の要約の確認の記録と Unit の完了の記録の両方が、その段の一番新しい試行にそろった時に作る。片方だけ・古い試行の物だけなら作らない
@@ -235,13 +237,17 @@ fields:
       - { name: unit, type: string, required: false, meaning: Unit の directory 名（Construction の Unit の段だけ） }
       - { name: attempt, type: integer, required: true, meaning: その段（と Unit）の試行の番号 }
       - { name: approved, type: boolean, required: true, meaning: "この試行が承認済みか（Unit の設計の段は Q11 の 2 つの記録がそろった時に true）" }
-      - { name: approval_ref, type: string, required: false, meaning: "approved が true の時、承認の記録（C2）の repo の中の path" }
+      - { name: approval_ref, type: string, required: false, meaning: "approved が true の時、その行の試行の承認の記録（C2）の repo の中の path（attempt-<n> つき）" }
+      - { name: superseded, type: boolean, required: false, meaning: "上流の段を後から開き直したので無効になった行は true。無い時は false（Q12）" }
 rules:
   - 飛ばした段は入らない
   - 段を開き直すと、新しい試行の行が足される。古い行は消さない
+  - 作り手は、上流の段を開き直した出来事（audit の jump）の時点で、それより前にあった下流の行に superseded: true を付ける。同じ Unit の段を開き直した時は、その Unit の下流の行に付ける。Inception の段を開き直した時は、全部の Unit の下流の行に付ける（Q12、監査の指摘 BF-07）
   - 作り手は、記録を入れる PR のたびに audit から作り直す。同じ audit からは同じ bytes を作る
   - 記録の橋は main のこの file と承認の記録だけを読む。この file が無い・読めない・壊れている・intent が違う時は、記録の判定を FAIL にする
-  - 前の段は、PR が指す段（と Unit）の一番新しい試行の行より前にある行のうち、同じ Unit の段の行（Unit の最初の段の前は Inception の最後の段の行）の、一番新しい試行の行とする
+  - PR が指す段（と Unit）の一番新しい試行の行に superseded: true が付いていれば、記録の判定を FAIL にする（理由: 上流を開き直したので、この段を新しい試行で始め直す）（Q12）
+  - 前の段は、PR が指す段（と Unit）の一番新しい試行の行より前にある、superseded の付いていない行のうち、同じ Unit の段の行（Unit の最初の段の前は Inception の最後の段の行）の、一番新しい試行の行とする（Q12）
+  - superseded は欄を足すだけなので、版は sds-stage-sequence/1 のまま（Q2）
 ```
 
 ```json
@@ -250,18 +256,27 @@ rules:
   "intent": "261021-dev-speedup-automation",
   "source_digest": "<sha256>",
   "entries": [
-    { "order": 13, "stage": "delivery-planning", "attempt": 2, "approved": true, "approval_ref": "approvals/261021-dev-speedup-automation/delivery-planning/_intent.json" },
-    { "order": 14, "stage": "functional-design", "unit": "u1-skeleton", "attempt": 2, "approved": true, "approval_ref": "approvals/261021-dev-speedup-automation/functional-design/u1-skeleton.json" },
-    { "order": 15, "stage": "nfr-requirements", "unit": "u1-skeleton", "attempt": 2, "approved": false }
+    { "order": 13, "stage": "delivery-planning", "attempt": 2, "approved": true, "approval_ref": "approvals/261021-dev-speedup-automation/delivery-planning/_intent/attempt-2.json" },
+    { "order": 14, "stage": "infrastructure-design", "unit": "u1-skeleton", "attempt": 1, "approved": true, "approval_ref": "approvals/261021-dev-speedup-automation/infrastructure-design/u1-skeleton/attempt-1.json" },
+    { "order": 15, "stage": "code-generation", "unit": "u1-skeleton", "attempt": 1, "approved": false, "superseded": true },
+    { "order": 16, "stage": "infrastructure-design", "unit": "u1-skeleton", "attempt": 2, "approved": false }
   ]
 }
 ```
 
+（例: Code Generation を始めた後に Infrastructure Design を開き直した。order 15 は無効になり、Code Generation を指す PR は FAIL。order 16 を再承認し、Code Generation を試行 2 で始め直すと、order 17 = code-generation 試行 2 の行が足され、PR が PASS できる。）
+
 負例（記録の橋の試験に入れる）:
 - 開き直した後の新しい試行に承認が無い（古い試行の承認しか無い）→ FAIL。要る試行の番号を出す。
+- 下流の段を始めた後に上流の段を開き直し、上流の新しい試行が未承認 → PR が指す段の行が superseded なので FAIL（Q12、監査の指摘 BF-07 の反例）。
 - 複数の Unit がある → 前の段は同じ Unit の行から決める。ほかの Unit の行は使わない。
 - 段の順の記録が無い・壊れている → FAIL。探した path を出す。
 - 承認の記録の試行の番号が、段の順の記録の一番新しい試行と違う → FAIL。
+- approval_ref が試行の番号つきの決まりの path と違う → FAIL（Q13）。
+
+正例（記録の橋の試験に入れる）:
+- 上流を開き直して再承認し、下流を新しい試行で始め直した → PASS（Q12）。
+- 試行 1 の承認の記録を保存 → 段を開き直す → 試行 2 を再承認（`attempt-2.json` を足す）→ 受け入れる（Q13、監査の指摘 BF-08 の正例）。
 
 ## 形の持ち主と変え方の決まり
 

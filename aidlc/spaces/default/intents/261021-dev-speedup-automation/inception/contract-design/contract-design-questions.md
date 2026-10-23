@@ -146,6 +146,52 @@ X. Other (please specify)
 
 [Answer]: A（arc の設計。AUN の取り組みの audit で確かめた: U1 の設計の 4 段（functional-design・nfr-requirements・nfr-design・infrastructure-design）は、どれも SUMMARY_CONFIRMATION_RECORDED と、その段の Unit の UNIT_COMPLETED があり、GATE_APPROVED は無い。A なら AI-DLC がもう残している 2 つの記録から作れるので、新しい承認の手順を足さず、作者の手間も Owner の手の数も増えない = S1-SH-05・S1-SH-07。B は、Unit の設計の段を飛ばした実装の PR でも Delivery Planning の承認だけで通るので、「工程を飛ばしたら進めない」= OI-SHIRUBE-NO-AUDIT-NO-SKIP-CONTROL-20261021-001（#49 6304645183）と、仕様の固定の「次の段階は前の段階の出力への参照が無いと始まらない」= #49 6305503572 に届かない。要件 FR2.1「直前の段の承認」は変えず、Unit の設計の段でそれを何の記録で読むかを決める。2 つの記録は同じ試行の物に限り、片方だけ・古い試行の物だけなら承認なしとする）
 
+## Q12. [設計] 受け渡しの形 C9: 下流の段を始めた後に上流の段を開き直した時（監査の指摘 BF-07、2026-10-23 の 4 回目の開き直し）
+
+監査（shirube PR #65 の返却 https://github.com/watchout/shirube/pull/65#issuecomment-6362007900 の BF-07）の指摘です。
+- C9 の決まり「前の段は、PR が指す段の一番新しい試行の行より前にある行の、一番新しい試行の行」（U1 の Functional Design の BR2.1 も同じ）では、PR が指す段を始めた後に上流の段を開き直した時、その新しい試行の行は「後ろ」にあるので見落とされる。
+- 例: 同じ Unit で order 1 = Delivery Planning（承認済み）、2 = Infrastructure Design 試行 1（承認済み）、3 = Code Generation 試行 1、4 = Infrastructure Design 試行 2（未承認）。
+  - Code Generation を指す PR の前の段は order 2 になり、試行 1 の承認で PASS してしまう。
+  - 「古い承認を採らない」（U1 の Functional Design の Q3・Q8）の期待は FAIL。
+- 求められていること: 上流を後から開き直した時に、古い下流の試行を無効にする決まりと、前の段の一番新しい試行の選び方を一つに決め、C9・BR2・BR3 を揃える。
+  - 確かめ方に入れる物: 新しい試行が未承認なら FAIL。再承認し、下流を新しい試行で始め直したら PASS。
+
+A. 作り手が、段の順の記録の行に「無効」の印を付ける（`superseded: true`。欄を足すだけなので版は `sds-stage-sequence/1` のまま）。
+   - 上流の段を開き直した出来事（audit の jump）の時点で、それより前にあった同じ Unit（Inception の段なら全部の Unit）の下流の行に印を付ける。
+   - 門は、PR が指す段の一番新しい試行の行に印があれば FAIL（理由: 上流を開き直したので、この段を新しい試行で始め直す）。
+   - 前の段は、印の無い行だけから選ぶ。
+B. 作り手は印を付けず、門が順番で決める。
+   - PR が指す段の一番新しい行より後ろに、同じ Unit（または Inception）の上流の段の行があれば FAIL（下流の試行が古い）。
+   - 「上流か下流か」は、段の順の記録の中の段の最初の試行の並びで決める。
+X. Other (please specify)
+
+[Answer]: A（Owner が選んだ。作り手が、上流の段を開き直した出来事の時点で、それより前にあった下流の行に「無効」の印（superseded: true）を付け、門は印のある段の PR を止め、前の段は印の無い行だけから選ぶ。arc が質問ボードで噛み砕いて聞いた（2026-10-24））
+
+## Q13. [設計] 受け渡しの形 C2: 同じ段を 2 回目に承認した時の承認の記録の置き場（監査の指摘 BF-08、2026-10-23 の 4 回目の開き直し）
+
+監査（同じ返却の BF-08）の指摘です。
+- C2 の承認の記録の置き場 `approvals/<intent>/<段>/<unit>.json` には、試行の番号が入っていない。
+- U1 の Functional Design では、次の 3 つを同時に決めている。
+  - 一度作った記録を書き換えない（`entities.md`）
+  - approval_ref はこの決まった path だけ（BR3.3）
+  - 承認の記録の試行の番号は、段の順の記録の一番新しい試行と同じ（BR3.5）
+- そのため、試行 1 の承認の記録が main にある段を、開き直して試行 2 で再承認した時に、どの決まりも守って記録を置く方法が無い。
+- C2 の決まりが禁じているのは「後から identity_check を verified に書き換えること」で、記録の全部の書き換えを禁じてはいない。
+- 求められていること: 履歴と一番新しい試行の参照の方法、同じ入力での作り直し、再承認の書き込みの扱いを決め、C2・C9・entities・作り手・読み手の決まりを揃える。
+  - 守ること: S1 の `identity_check: none` を後から verified に書き換えない。
+  - 確かめ方に入れる物: 試行 1 を保存 → 開き直し → 試行 2 を再承認 → 受け入れ、の正例。
+
+A. 置き場に試行の番号を入れる: `approvals/<intent>/<段>/<unit>/attempt-<n>.json`（Inception の段は `approvals/<intent>/<段>/_intent/attempt-<n>.json`）。
+   - 一度作った file は書き換えず、試行ごとの履歴が残る。
+   - 段の順の記録の approval_ref は、その行の試行の file を指す。
+   - 作り手は、同じ path の file が既にあれば bytes が同じかを確かめ、同じなら書かず、違えば失敗で終わる。
+B. 置き場は今の 1 つのまま、再承認の時は新しい試行の記録で書き換える。
+   - 「書き換えない」を「identity_check を後から verified に書き換えない」だけに絞る。
+   - 試行の履歴は、段の順の記録と audit に残る。
+X. Other (please specify)
+
+[Answer]: A（Owner が選んだ。承認の記録の置き場に試行の番号を入れ、試行ごとに別の file にして履歴を残す。一度作った file は書き換えない。arc が質問ボードで噛み砕いて聞いた（2026-10-24））
+
 ## Consolidated Summary Confirmation
 
 - 形の書き方: 形ごとに版の名前を付ける（例: `sds-approval-record/1`）。形は設計の記録に、欄の表（名前・型・必須か・意味）と例で書く。機械の検査は、その形を読む部品のコードで行い、JSON Schema は書かない（実行時の依存を足さない NFR5、形の知識を 1 か所に S3）（arc の設計） [Q1]
@@ -157,6 +203,8 @@ X. Other (please specify)
 - 読めない時・時間切れ: どの境目でも「観測できず」（exit code 2）を返し、自動の再試行はしない（arc の設計） [Q7]
 - 段の順の記録（C9、監査の指摘 BF-02 への開き直し）: `approvals/<intent>/_sequence.json`、形 `sds-stage-sequence/1`。欄は schema・intent・source_digest・entries（実行した順に order・stage・unit・attempt・approved・approval_ref）。飛ばした段は入らず、開き直すと新しい試行の行が足される。作り手は ApprovalRecordWriter（U3、U1 で最小の形）、読み手は RecordBridge。記録を入れる PR のたびに audit から作り直し、同じ audit からは同じ bytes。読めない・壊れている・intent が違う時は FAIL（arc の設計） [Q10]
 - Unit の設計の段の承認の有無（C9）: Owner の要約の確認の記録と Unit の完了の記録の両方が、その段の一番新しい試行にそろった物を承認済みとし、承認の記録（C2）もその 2 つから作る。片方だけ・古い試行の物だけなら承認なし。Inception の段と Code Generation 以降は、段の承認の出来事から作る。U1 の Functional Design の Q10 にも使う（arc の設計） [Q11]
+- 上流を後から開き直した時（C9、監査の指摘 BF-07）: 作り手が、上流の段を開き直した出来事の時点で、それより前にあった同じ Unit（Inception の段なら全部の Unit）の下流の行に、無効の印 `superseded: true` を付ける（欄を足すだけで版は `sds-stage-sequence/1` のまま）。門は、PR が指す段の一番新しい試行の行に印があれば FAIL（上流を開き直したので、この段を新しい試行で始め直す）。前の段は、印の無い行だけから選ぶ。確かめ方: 新しい試行が未承認なら FAIL、再承認して下流を新しい試行で始め直したら PASS（Owner の選択） [Q12]
+- 同じ段の 2 回目の承認（C2、監査の指摘 BF-08）: 承認の記録の置き場に試行の番号を入れる（`approvals/<intent>/<段>/<unit>/attempt-<n>.json`、Inception の段は `approvals/<intent>/<段>/_intent/attempt-<n>.json`）。一度作った file は書き換えず、試行ごとの履歴が残る。段の順の記録の approval_ref は、その行の試行の file を指す。作り手は、同じ path の file が既にあれば bytes が同じかを確かめ、同じなら書かず、違えば失敗で終わる。S1 の `identity_check: none` は後から verified に書き換えない。確かめ方: 試行 1 を保存 → 開き直し → 試行 2 を再承認 → 受け入れ、の正例（Owner の選択） [Q13]
 
 Does this all look correct before I generate the artifact?
 

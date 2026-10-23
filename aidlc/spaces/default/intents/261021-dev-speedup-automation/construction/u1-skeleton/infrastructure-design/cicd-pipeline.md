@@ -5,25 +5,26 @@
 - 作る順番の計画: `inception/delivery-planning/bolt-plan.md` の B1（Delivery Planning の Q10・Q11）
 - U1 の基盤の仕様: `infrastructure-specification.md`
 - U1 の大きさの見積もり: `construction/u1-skeleton/nfr-requirements/tech-stack-decisions.md`
-- この段の答え: `infrastructure-design-questions.md`（Q1〜Q7）
+- この段の答え: `infrastructure-design-questions.md`（Q1〜Q8）
 
 本番への展開はありません。「出す」とは、main に統合することです。
 
-## U1 の PR の順（Q4・Q5、監査の指摘 BF-01・BF-03）
+## U1 の PR の順（Q4・Q5・Q8、監査の指摘 BF-01・BF-03・BF-04）
 
 | 順 | PR | 中身 | 作る | 監査 | 統合 |
 |----|----|------|------|------|------|
-| 1 | P1 保護面の 1 本（R4） | AI-DLC の自己適用の file（`.aidlc-version`・`aidlc.settings.json`・`.claude/settings.json`・`.gitignore`・`.shirube/hygiene-profile.md`・`tests/self-aidlc-settings.test.mjs`）、大きさの数えの除外（`exclude_generated`）と own-code の予算の改め（S1 全体の見積もりを添える）、`.gitignore` の audit の除外、`sds-gate-self.yml`、`.shirube/sds-pin.json`（記録だけ、U1 の前の main に固定）、`ci.yml`（網羅率の床・計測の job）。監査の席の分類の役の決定（FR5.4）もこの 1 回にまとめる | shirube の実装の席。今の kit では作れない（shirube の再利用 workflow を上書きする）ので手で組む | devauditor | Owner の exact-head 1 回の後に suite-lead |
+| 1 | P1 保護面の 1 本（R4） | AI-DLC の自己適用の file（`.aidlc-version`・`aidlc.settings.json`・`.claude/settings.json`・`.gitignore`・`.shirube/hygiene-profile.md`・`tests/self-aidlc-settings.test.mjs`）、大きさの数えの除外（`exclude_generated`）と own-code の予算の改め（S1 全体の見積もりを添える）、`.gitignore` の audit の除外、`sds-gate-self.yml`、`.shirube/sds-pin.json`（記録だけ、U1 の前の main に固定）、`ci.yml`（網羅率の床・計測の job。網羅率を測る試験の job は Node 26）。監査の席の分類の役の決定（FR5.4）もこの 1 回にまとめる | shirube の実装の席。今の kit では作れない（shirube の再利用 workflow を上書きする）ので手で組む | devauditor | Owner の exact-head 1 回の後に suite-lead |
 | 2 | R 記録の PR | AI-DLC の記録（audit は載せない）。Owner の作業場の file と bytes が同じか | shirube の実装の席 | devauditor（bytes の一致） | suite-lead |
-| 3 | I1 実装 1 | 承認の記録と段の順の記録の作り手（CLI）、kit の自己用の書く先、その試験 | shirube の実装の席 | devauditor（R2） | suite-lead |
-| 4 | A 承認の記録の PR | I1 の CLI で作った承認の記録と段の順の記録。U1 の Code Generation を始めた後に、この作業場で作る（Q7） | shirube の実装の席 | devauditor（bytes の一致） | suite-lead |
-| 5 | I2 実装 2 | 記録の橋、門の記録の判定、`budget.mjs`（既定）、その試験 | shirube の実装の席 | devauditor（R2） | suite-lead |
-| 6 | K kit の版上げの PR | kit の upgrade で、shirube の pin を I2 の後の main に上げ、kit で呼出しを書き、kit が書く 3 つの file（sds-audit の skill・PR の雛形・`AGENTS.md`）を入れる。「版上げ」として扱う | shirube の実装の席 | devauditor（差分が kit の file だけ・kit check OK・上げる先が監査 PASS の main） | suite-lead（Owner の手なし = iyasaka-arc#49 6308341298 の 1） |
-| 7 | I3 実装 3 | 計測、その試験。新しい門で判定される確かめの PR | shirube の実装の席 | devauditor（R2） | suite-lead |
+| 3 | I1 実装 1 | 承認の記録と段の順の記録の作り手（CLI）、その試験 | shirube の実装の席 | devauditor（R2） | suite-lead |
+| 4 | A 承認の記録の PR | I1 の CLI で作った承認の記録（試行ごとの file）と段の順の記録。U1 の Code Generation を始めた後に、この作業場で作る（Q7） | shirube の実装の席 | devauditor（bytes の一致） | suite-lead |
+| 5 | I2 実装 2 | kit の自己用の書く先、`budget.mjs`、その試験 | shirube の実装の席 | devauditor（R2） | suite-lead |
+| 6 | I3 実装 3 | 記録の橋、門の記録の判定、その試験 | shirube の実装の席 | devauditor（R2） | suite-lead |
+| 7 | K kit の版上げの PR | kit の upgrade で、shirube の pin を I3 の後の main に上げ、kit で呼出しを書き、kit が書く 3 つの file（sds-audit の skill・PR の雛形・`AGENTS.md`）を入れる。「版上げ」として扱う | shirube の実装の席 | devauditor（差分が kit の file だけ・kit check OK・上げる先が監査 PASS の main） | suite-lead（Owner の手なし = iyasaka-arc#49 6308341298 の 1） |
+| 8 | I4 実装 4 | 計測、その試験。新しい門で判定される確かめの PR | shirube の実装の席 | devauditor（R2） | suite-lead |
 
-- U1 の PR の数は、保護面の 1 本と実装の PR 3 本（Units Generation の Q7）。R・A・K は Unit を指さないので数えない。
-- 門は base の `sds-gate-self.yml` が固定した commit から動く。I1・I2 は U1 の前の門で判定され、記録の判定はまだ無い。新しい門で判定される最初の U1 の PR は、K の後の I3（Delivery Planning の Q11）。
-- 1 本が 400 行・20 file を超える見込みの時は、Code Generation の計画で試験と実装の分け方を見直す。I2 は上限に当たる見込みなので、`budget.mjs` は I1・I2 の見積もりを出し直して小さい方に置く。3 本の合計が 1,200 行を超える時は Owner に伺う（U1 の NFR Requirements の Q9）。
+- U1 の PR の数は、保護面の 1 本と実装の PR 4 本（Units Generation の Q8）。R・A・K は Unit を指さないので数えない。
+- 門は base の `sds-gate-self.yml` が固定した commit から動く。I1〜I3 は U1 の前の門で判定され、記録の判定はまだ無い。新しい門で判定される最初の U1 の PR は、K の後の I4（Delivery Planning の Q11・Q12）。
+- どの PR も、見積もりの上の端で 400 行・20 file の中に収まる（U1 の NFR Requirements の Q10）。実測で超えそうになった時は、Code Generation の計画で試験と実装の分け方を見直す。U1 の PR の数は変えない。
 
 ## 実装の席の作業場（Q7）
 
@@ -49,6 +50,7 @@
 
 - CI の網羅率の床と同じ数え方（`scripts/**` の全部、試験が読まない file も 0%）。
 - `npm ci` で devDependencies（ESLint・jscpd など）を入れてから試験を動かす。動かす所で npm の registry につながる必要がある。
+- Node 26（26.7.0 以上）で動かす（`--test-coverage-include-all` は Node 26.7.0 から。Node 22・24 では試験の前に `bad option` で止まる = 監査の指摘 BF-07、U1 の NFR Design の Q8、この段の Q8）。この Mac の Node は 26.9。CI の網羅率を測る試験の job も Node 26。
 
 ## 戻し方
 

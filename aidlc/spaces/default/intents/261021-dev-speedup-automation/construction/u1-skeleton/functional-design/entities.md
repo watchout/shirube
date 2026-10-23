@@ -6,7 +6,8 @@
 - Unit: `inception/units-generation/unit-of-work.md`・`unit-of-work-story-map.md`
 - 要件: `inception/requirements-analysis/requirements.md`
 - 物語: `inception/user-stories/stories.md`
-- この段の答え: `functional-design-questions.md` の Q1〜Q11
+- この段の答え: `functional-design-questions.md` の Q1〜Q12
+- 2 回目の監査の返却: shirube PR #65 の 6362007900 の BF-07・BF-08（Contract Design の Q12・Q13）
 - 独立監査の指摘: shirube PR #65 の sds-audit-review の BF-01〜BF-03
 
 U1 は各データの最小の形だけを扱います。全部の欄と FAIL の扱いは、U2（計測）と U3（承認の記録と段の順の記録）で仕上げます。
@@ -53,6 +54,7 @@ entities:
       - 置き場は repo の approvals/<intent>/_sequence.json（保護面の外、C9）
       - 飛ばした段は入らない
       - 段を開き直すと新しい試行の行が足される。古い行は消さない
+      - 上流の段を開き直した時点で、それより前にあった下流の行に superseded: true を付ける（同じ Unit の段を開き直したらその Unit の下流、Inception の段なら全部の Unit の下流。C9、Q12）
       - 記録を入れる PR のたびに audit から作り直す。同じ audit からは同じ bytes
       - 読み手は RecordBridge。作り手は ApprovalRecordWriter（U3 で仕上げ、U1 で最小の形）
     relationships:
@@ -67,7 +69,8 @@ entities:
       - { name: unit, type: string, required: false, constraints: "Construction の Unit の段だけ" }
       - { name: attempt, type: integer, required: true, min: 1 }
       - { name: approved, type: boolean, required: true, constraints: "Unit の設計の段は、要約の確認の記録と Unit の完了の記録の両方がこの試行にそろった時だけ true（Q10）" }
-      - { name: approvalRef, type: string, required: false, constraints: "approved が true の時だけ。C2 の置き場の決まりどおりの path" }
+      - { name: approvalRef, type: string, required: false, constraints: "approved が true の時だけ。C2 の置き場の決まりどおりの、その行の試行の番号つきの path（attempt-<n>.json）" }
+      - { name: superseded, type: boolean, required: false, constraints: "上流の段を後から開き直したので無効になった行は true。無い時は false（C9、Q12）" }
     constraints:
       - approved が true なら approvalRef は必須、false なら approvalRef は無い
     relationships:
@@ -88,8 +91,10 @@ entities:
       - { name: sourceEventDigest, type: "string (SHA-256 の 16 進 64 桁)", required: true, constraints: "作る元にした出来事（Unit の設計の段は 2 つの記録）の本文の SHA-256（C2）" }
       - { name: sourceAuditRef, type: string, required: true, constraints: "元の audit の file の path。audit は公開の repo に載せない（iyasaka-arc#49 6354411741）ので、門と記録の橋はこの path を読まない" }
     constraints:
-      - 置き場は repo の approvals/<intent>/<段>/<unit>.json（Inception の段は _intent.json）
-      - 一度作った記録を書き換えない
+      - 置き場は repo の approvals/<intent>/<段>/<unit>/attempt-<n>.json（Inception の段は approvals/<intent>/<段>/_intent/attempt-<n>.json）。<n> は file の attempt と同じ（C2、Q12）
+      - 一度作った file は書き換えない。同じ path に file が既にあれば、作り手は bytes が同じかを確かめ、同じなら書かず、違えば失敗で終わる（C2、Q12）
+      - 同じ段を開き直して再承認した時は、新しい試行の番号の file を足す。古い試行の file は消さない（試行ごとの履歴が残る）
+      - identity_check を後から verified に書き換えない（iyasaka-arc#49 6315688299 の 4）
       - 作る元（Q10、C2）は、Inception の段と Code Generation 以降が段の承認の出来事、Unit の設計の段が要約の確認の記録と Unit の完了の記録の 2 つ
     relationships:
       - { to: AidlcRecordRef, cardinality: "1", direction: "ApprovalRecord -> AidlcRecordRef（同じ intent・段・Unit）" }
@@ -143,6 +148,8 @@ entities:
 
 - PR の block（SdsPrBlock）が、AI-DLC の記録の場所（AidlcRecordRef）を指します。
 - 記録の橋は、main にある段の順の記録（StageSequence、C9）から、PR が指す段の前の段と、その段の一番新しい試行を求めます。そして、その試行の承認の記録（ApprovalRecord）を main から読みます。
+  - 上流を後から開き直して無効の印（superseded）が付いた行は、前の段に選びません。PR が指す段の行に印があれば FAIL です（Q12）。
+  - 承認の記録は試行ごとに別の file（attempt-<n>.json）で、再承認しても古い試行の file は残ります（Q12）。
   - `aidlc-state.md` には Unit ごとの試行の番号が無いので、使いません。
   - audit は公開の repo に載せないので、門と記録の橋は audit を読みません（BF-02）。
 - 段の順の記録と承認の記録は、承認の記録の作り手（ApprovalRecordWriter）が Owner の作業場の audit から作ります。承認の記録の PR（`bolt-plan.md` の A。作り手を入れる I1 の後）が、2 つを main に入れます。

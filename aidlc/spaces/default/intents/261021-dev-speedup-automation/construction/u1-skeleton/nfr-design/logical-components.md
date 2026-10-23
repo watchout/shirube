@@ -24,20 +24,20 @@
 | 計測で 1 つの repo が読めない | その repo の件数だけ（「観測できず」、partial） | 次の回で測り直す |
 | 計測の全体の予算切れ | 読み終えていない repo（「観測できず」） | 予算の値を `budget.mjs` で見直す（B2 の実測から） |
 
-## PR ごとの置き方（NFR6.1・NFR7.1、Q6、監査の指摘 BF-04）
+## PR ごとの置き方（NFR6.1・NFR7.1、Q6・Q9、監査の指摘 BF-04）
 
-見積もりは `tech-stack-decisions.md` の「大きさの見積もり」（幅つき、実装の実測ではない）。U1 は保護面の 1 本と実装の PR 3 本まで（Units Generation の Q7）、順は P1 → R → I1 → A → I2 → K → I3（Delivery Planning の Q10・Q11）。
+見積もりは `tech-stack-decisions.md` の「大きさの見積もり」（幅つき、実装の実測ではない）。U1 は保護面の 1 本と実装の PR 4 本まで（Units Generation の Q8）、順は P1 → R → I1 → A → I2 → I3 → K → I4（Delivery Planning の Q10〜Q12）。
 
 | PR | 部品 | file | 追加行（見込み） | own-code の増分 |
 |----|------|------|------------------|-----------------|
-| P1 保護面の 1 本（手で組む） | 門の呼出し・pin・CI | `.github/workflows/sds-gate-self.yml`・`.github/workflows/ci.yml`（網羅率の床と計測の job）・`.shirube/sds-pin.json`・`.shirube/hygiene-profile.md`（`exclude_generated` と own-code の予算）・AI-DLC の自己適用の file・`.gitignore` | 約 380 | 約 50 |
-| I1 実装 1 | ApprovalRecordWriter、KitCli の自己用の書く先 | `scripts/sds/approval-record.mjs`・`scripts/sds/kit.mjs`・`docs/sds/distribution.md`（数えない）・その試験 | 約 320〜400 | 約 195〜255 |
-| I2 実装 2 | RecordBridge、SdsGate の記録の判定、時間の上限と予算 | `scripts/sds/record-bridge.mjs`・`scripts/sds/gate.mjs`・`scripts/sds/budget.mjs`（既定）・その試験 | 約 410〜480 | 約 190〜260 |
-| I3 実装 3 | MetricsCore・MetricsCollector | `scripts/sds/metrics/**`・その試験 | 約 290〜350 | 約 135〜185 |
+| P1 保護面の 1 本（手で組む） | 門の呼出し・pin・CI | `.github/workflows/sds-gate-self.yml`・`.github/workflows/ci.yml`（網羅率の床と計測の job。網羅率を測る job は Node 26）・`.shirube/sds-pin.json`・`.shirube/hygiene-profile.md`（`exclude_generated` と own-code の予算）・AI-DLC の自己適用の file・`.gitignore` | 約 380 | 約 50 |
+| I1 実装 1 | ApprovalRecordWriter | `scripts/sds/approval-record.mjs`・その試験 | 約 270〜340 | 約 180〜230 |
+| I2 実装 2 | KitCli の自己用の書く先、時間の上限と予算 | `scripts/sds/kit.mjs`・`scripts/sds/budget.mjs`・`docs/sds/distribution.md`（数えない）・その試験 | 約 110〜140 | 約 35〜55 |
+| I3 実装 3 | RecordBridge、SdsGate の記録の判定 | `scripts/sds/record-bridge.mjs`・`scripts/sds/gate.mjs`・その試験 | 約 350〜400 | 約 170〜230 |
+| I4 実装 4 | MetricsCore・MetricsCollector | `scripts/sds/metrics/**`・その試験 | 約 290〜350 | 約 135〜185 |
 
-- R（記録の PR）・A（承認の記録の PR）・K（kit の版上げの PR）は Unit を指さないので、この表に入れない。K は I2 の後に shirube の pin を上げ、kit が書く 3 つの file を入れる（約 110〜115 行・5 file）。I3 は K の後の門で判定される（Delivery Planning の Q11）。
-- `budget.mjs` は、それを使う I2 に置くのを既定とする。I2 より前ならどちらでもよいので、Code Generation の計画で I1・I2 の見積もりを出し直し、小さい方に置く（U1 の NFR Requirements の Q9）。
-- **注意**: 既定のままでは I2 が 1 本 400 行の上限に当たる見込み。実装の 3 本の合計（約 1,020〜1,230 行）が上の端で 1,200 行を超える時は、U1 の PR の数（Units Generation の Q7）を変えることになるので、その時に Owner に伺う。
+- R（記録の PR）・A（承認の記録の PR）・K（kit の版上げの PR）は Unit を指さないので、この表に入れない。K は I3 の後に shirube の pin を上げ、kit が書く 3 つの file を入れる（約 110〜115 行・5 file）。I4 は K の後の門で判定される（Delivery Planning の Q11・Q12）。
+- どの PR も、見積もりの上の端で 400 行・20 file の中に収まる（I3 の上の端がちょうど 400 行）。`budget.mjs` は、それを使う記録の橋と門（I3）より前の I2 に置く。
 - 各部品は 1 つの PR の中で、試験が先・実装が後の順に作る（`team.md` の Testing Posture）。1 本が 400 行・20 file を超える見込みになった時は、Code Generation の計画で試験と実装の分け方を見直す。U1 の PR の数は変えない。
 - 新しい file は 300 行、関数は 50 行・複雑さ 10 まで（`team.md` の Code Style）。`gate.mjs`（今 143 行）と `kit.mjs`（今 176 行）は、足した後も 300 行の中に収める。
 - own-code の予算は、P1 で S1 全体の見積もりを添えて 1 回だけ改める（NFR6.1）。

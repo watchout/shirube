@@ -13,6 +13,7 @@
 - 2026-10-23T04:37:19Z — U1（3 回目）: Q2 の答えの文「承認の記録は実装の PR より前に main に入れる」は、I1（承認の記録の作り手を入れる PR）には当てはまらない。Delivery Planning の Q10（Owner が承認）で、承認の記録の PR（A）を I1 の後に置いたため。I1 の記録の判定は記録だけで、FAIL でも止めない。Q2 の答えそのものは変えていない
 - 2026-10-23T04:53:02Z — U1（4 回目）: 3 回目に functional-spec.md の W4 と rules.md の BR7.5 で、kit が書く 3 つの file を P1 に入れると書いたのは、Q11（置き場に足すだけ）を超えた書き過ぎだった。P1 は今の kit では作れず手で組むので、その記述を外した（U1 の NFR Requirements の Q8 = A、Owner が開き直しを選んだ）。置き場の block は変えていない
 - 2026-10-23T06:58:54Z — U1（5 回目）: W4 と W5 を Delivery Planning の Q11 に合わせた。門は base の pin の commit から動くので、I1・I2 は U1 の前の門で判定され、新しい門で判定される最初の U1 の PR は K の後の I3 になる。kit の自己用の書く先は I1 で入り、kit が書く 3 つの file は K で入る。Q6 の答えそのもの（U1 の残りの実装の PR で確かめる）は変えていない
+- 2026-10-23T23:14:42Z — U1（6 回目）: 2 回目の監査の返却（BF-07・BF-08・BF-04）で前の段に決まった事を写した（Q12）。BR2.6（PR が指す段の行に無効の印があれば FAIL）と BR5.8（承認の記録の file は書き換えず、同じ path なら bytes を比べる）を足し、BR2.1・BR3.3・BR5.1・BR5.5・entities を直した。PR の順は I1 作り手 → A → I2 kit と budget.mjs → I3 記録の橋と門 → K → I4 計測で、確かめの PR は I4。Q1〜Q11 の答えは変えていない
 
 ## Tradeoffs
 <!-- example: 2026-05-29T10:14:32Z — picked TDD over BDD this run; the team is unit-first and the domain is well-understood -->

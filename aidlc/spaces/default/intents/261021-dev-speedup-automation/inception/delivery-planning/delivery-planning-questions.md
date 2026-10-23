@@ -183,6 +183,20 @@ X. Other (please specify)
 
 [Answer]: A（Owner が U1 の Infrastructure Design の Q5 で A を選んだ中身。ここで同じ問いを聞き直さない）
 
+## Q12. [進め方] U1 の実装の PR を 4 本にした分け方と順を写す（2026-10-24 の 5 回目の開き直し）
+
+監査の指摘 BF-04（shirube PR #65 の返却 6362354895）を受けて、Units Generation の Q8 で Owner が選んだ事です。
+- U1 は、保護面の 1 本と実装の PR 4 本まで。1 本 400 行・20 file の上限は変えない。
+- 分け方: I1 作り手 / I2 kit の自己用の書く先と `budget.mjs` / I3 記録の橋と門の判定 / I4 計測。
+- 順: P1 → R → I1 → A → I2 → I3 → K → I4。K は門の判定（I3）の後で、I4 が新しい門で判定される確かめの PR。
+
+あわせて、U1 の NFR Design の Q8（監査の指摘 BF-07 = Node 22 で網羅率の command が動かない）で Owner が選んだ事があります。網羅率を測る試験の job と確かめの command を Node 26 で動かすので、P1 の `ci.yml` の変更に Node の版の変更（22 → 26）が加わります。
+
+A. 写す。B1 の中身・PR の順・済みの条件・確かめの PR（I4）を、上の分け方と順に揃える。P1 の中身に、`ci.yml` の Node の版の変更を足す。新しい判断は入れない
+X. Other (please specify)
+
+[Answer]: A（Owner が Units Generation の Q8 と U1 の NFR Design の Q8 で選んだ中身を写すだけなので、ここで同じ問いを聞き直さない）
+
 ## Consolidated Summary Confirmation
 
 - 作る順番: U1（細い版）→ U2（計測。門で止め始める前に今の値を測る）→ U3（記録の橋と承認の記録）→ U4（門の判定の追加）→ U6・U7（aun・onza への配布）。U5 は U1 の後、同じ席の空いた所に入れる（arc の設計） [Q1]
@@ -209,6 +223,12 @@ X. Other (please specify)
   - I3 が、新しい門で判定される確かめの PR になる。
   - Owner の手は 4 回の予定のまま。`budget.mjs` の置き場と I1 の大きさは、U1 の NFR の段で見積もり直す。
   - （Owner が U1 の Infrastructure Design の Q5 = A で選んだ） [Q11]
+- U1 の実装の PR を 4 本に（2026-10-24 の 5 回目の開き直し、監査の指摘 BF-04。Q10・Q11 の順と中身を改める）:
+  - 分け方: I1 作り手 / I2 kit の自己用の書く先と `budget.mjs` / I3 記録の橋と門の判定 / I4 計測。1 本 400 行・20 file の上限は変えない。
+  - 順: P1 → R → I1 → A → I2 → I3 → K → I4。K は I3 の後で、I4 が新しい門で判定される確かめの PR。
+  - P1 の `ci.yml` の変更に、網羅率を測る試験の job の Node の版の変更（22 → 26）を足す（U1 の NFR Design の Q8、監査の指摘 BF-07）。
+  - Owner の手は 4 回の予定のまま。
+  - （Owner が Units Generation の Q8 と U1 の NFR Design の Q8 で選んだ） [Q12]
 
 Does this all look correct before I generate the artifact?
 
