@@ -7,7 +7,7 @@
 - Unit: `inception/units-generation/unit-of-work.md`・`unit-of-work-dependency.md`・`unit-of-work-story-map.md`
 - 受け渡しの形: `inception/contract-design/contract-summary.md`
 - 進め方: `inception/practices-discovery/team-practices.md`
-- この段の答え: `delivery-planning-questions.md`（Q1〜Q8）
+- この段の答え: `delivery-planning-questions.md`（Q1〜Q11）
 
 Bolt は、作る 1 回分の単位です。1 つの Bolt が終わると、動く物ができます。ここでは 1 つの Bolt = 1 つの Unit です（Q3）。
 
@@ -43,15 +43,36 @@ Bolt は、作る 1 回分の単位です。1 つの Bolt が終わると、動�
   - 門の status
   - 計測が status と log を数えて出すところ
   - shirube の門の呼出しの workflow と pin（記録だけ）（Q8）
+  - 段の順の記録（受け渡しの形 C9、`approvals/<intent>/_sequence.json`）の最小の形
+  - kit の自己用の書く先（shirube では呼出しを `sds-gate-self.yml` に書き、再利用 workflow を書き換えない）（Units Generation の Q7、U1 の Functional Design の Q9）
+- **PR の順**（Q10・Q11。Q9 の順を改めた。もとは iyasaka-arc#49 6354019047 の 4・6354411741 の 2）:
+  1. P1 保護面の 1 本（R4、Owner の exact-head 1 回）。中身は次のとおり。
+     - AI-DLC の自己適用の file（`docs/design/aidlc-include.md` §6 の 3）
+     - 大きさの数えの除外（`.shirube/hygiene-profile.md` の `exclude_generated`）
+     - `.gitignore` の audit の除外
+     - U1 の保護面（門の呼出し・pin・網羅率の CI と計測の job）
+     - own-code の予算の改め（同じ `hygiene-profile.md` の中。S1 全体の own-code の見積もりを添え、値は Owner が exact-head で決める。P1 自身の増分は今の予算に収まる）（Q10）
+  2. R 記録の PR（AI-DLC の記録。audit は載せない。Owner の作業場の file と bytes が同じかを監査する）。
+  3. I1 実装 1: 承認の記録と段の順の記録の作り手（CLI）と、kit の自己用の書く先（Q11）。
+  4. A 承認の記録の PR（I1 の CLI で作った承認の記録と段の順の記録。bytes が同じかを監査する）。CLI は I1 で初めてできるので、I1 の後に置く（Q10）。
+  5. I2 実装 2: 記録の橋と門の判定。
+  6. K kit の版上げの PR（Q11）。shirube の pin を I2 の後の main に上げ、kit で呼出しを書き、kit が書く 3 つの file（sds-audit の skill・PR の雛形・`AGENTS.md`）を入れる。
+     - 「最初の導入」ではなく「版上げ」として扱い、決まり iyasaka-arc#49 6308341298 の 1 のとおり Owner の手なしで統合する（差分が kit の file だけ・kit check OK・上げる先は監査 PASS で別の席が統合した shirube main）。
+  7. I3 実装 3: 計測。新しい門で判定される確かめの PR（Q11、U1 の Functional Design の Q6）。
+  - U1 の PR の数は、保護面の 1 本と実装の PR 3 本（Units Generation の Q7）。R・A・K は Unit を指さないので数えない（C7）。
+  - `budget.mjs` をどの実装の PR に置くかと、I1 が 400 行を超えないかは、U1 の NFR の段で見積もり直す。
+  - 決定 6354019047 の 4 の順を改めることは、この段の承認の後に arc が #49 に記録する。
 - **済みの条件**:
   - 試験が先にあり（失敗を確かめてから実装）、統合の前の CI で行の網羅率が 80% 以上。
-  - shirube の保護面の PR（門の呼出し・pin・網羅率の CI）を、Owner の exact-head 1 回で統合した。監査の席の分類の役の決定（FR5.4）も、この 1 回にまとめて記録した。
-  - shirube の実際の PR 1 本が AI-DLC の記録の欄を持ち、門が記録だけで判定し、承認の記録を読み、commit status と log の 1 行の JSON（`sds-gate-result/1`）を出した。
+  - P1 を、Owner の exact-head 1 回で統合した。監査の席の分類の役の決定（FR5.4）と own-code の予算の改めも、この 1 回にまとめて記録した。
+  - A で、承認の記録と段の順の記録が main に入った。
+  - K で、shirube の pin が I2 の後の main に上がった。
+  - I3 が AI-DLC の記録の欄を持ち、I2 の後の門が記録だけで判定し、段の順の記録と承認の記録を main から読み、commit status と log の 1 行の JSON（`sds-gate-result/1`）を出した。
   - 計測がその status と log を読み、PASS と FAIL を数えた 1 行の JSON（`sds-metrics/1` の最小の形）を出した。
   - 門は統合を止めていない。
 - **確かめること**: workflow → commit status → log → 計測の読取りが、実際の GitHub の上でつながる。記録だけの門は、正しい PR を止めない。
 - **見せる物**: 実際の PR の門の log の 1 行の JSON と、計測の出力（Q7）。
-- **実際に通す確かめ**: 門の workflow が、その PR の head で `sds-gate` の status を付け、計測の CLI がその PR を数えに入れること。
+- **実際に通す確かめ**: 門の workflow が、I3 の head で `sds-gate` の status を付け、計測の CLI が I3 を数えに入れること。門は base の pin の commit から動くので、確かめの前に K で pin を上げておく（Q11）。
 
 ## B2 U2 u2-metrics — 計測の全体
 
@@ -65,7 +86,7 @@ Bolt は、作る 1 回分の単位です。1 つの Bolt が終わると、動�
   - 今の値の PR の番号の一覧と値が固定され、同じ入力から同じ bytes が出る。
   - 4 つの指標と判定が、物語 US1.1〜US1.7 の受入の条件を満たす。
   - W2 の道具の担当（iyasaka-arc）に、受け渡しの形 C4 を渡した。
-  - 全体の own-code の見積もりを出し、超えるなら Owner に予算の改めを 1 回伺った（Units Generation の Q5）。
+  - own-code が、P1 で改めた予算に収まっている（予算の改めは S1 全体の見積もりで P1 の 1 回にまとめた = Q10、Units Generation の Q5 の「1 回だけ」）。
 - **確かめること**: 今の値を、GitHub の記録だけから同じ物差しで測れる。門で止め始める前に、今の値がそろう（実現性の条件 C3）。
 - **見せる物**: 今の値を含む `sds-metrics/1` の出力と、#53 に載せる文。
 
@@ -134,14 +155,16 @@ Bolt は、作る 1 回分の単位です。1 つの Bolt が終わると、動�
   - shirube の status
   - Owner の手の数
 
-## Owner の手の予定（1 周 5 回、上限 6 回）
+## Owner の手の予定（1 周 4 回、上限 6 回）
 
 | # | いつ | 何 |
 |---|------|----|
-| 1 | B1 | shirube の保護面の exact-head（門の呼出し・pin・網羅率の CI・分類の役の決定をまとめる） |
-| 2 | B2 の見積もりの後（超える時だけ） | own-code の予算の改め |
-| 3 | B6 | aun の保護面の exact-head（最初の導入・網羅率の CI） |
-| 4 | B7 | onza の保護面の exact-head（最初の導入・網羅率の CI） |
-| 5 | Bolt の後 | 門を止める形への切り替え（shirube と aun をまとめて） |
+| 1 | B1 | shirube の保護面の 1 本の PR（P1）の exact-head（AI-DLC の自己適用・大きさの数えの除外・`.gitignore` の audit の除外・門の呼出し・pin・網羅率の CI と計測の job・分類の役の決定・own-code の予算の改めをまとめる。予算は S1 全体の見積もりを添える）（Q10） |
+| 2 | B6 | aun の保護面の exact-head（最初の導入・網羅率の CI） |
+| 3 | B7 | onza の保護面の exact-head（最初の導入・網羅率の CI） |
+| 4 | Bolt の後 | 門を止める形への切り替え（shirube と aun をまとめて） |
+
+- 予算の改めは、前の計画（Q4）では B2 の見積もりの後の別の 1 回だった。U1 だけで残り 362 行を超える見込みなので、P1 の 1 回にまとめた（Q10）。
+- 計測の専用の資格情報（U1 の NFR Requirements の Q2）を作る決定が別の 1 回になっても、5 回で上限に収まる。
 
 AI-DLC の会話での段の承認と要約の確認は、この 5 回に数えません（要件 FR1.6）。

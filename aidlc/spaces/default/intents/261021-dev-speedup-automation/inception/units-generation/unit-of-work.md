@@ -5,18 +5,19 @@
 - 設計の決定: `inception/domain-design/decisions.md`（ADR-001〜009）
 - 要件: `inception/requirements-analysis/requirements.md`
 - 物語: `inception/user-stories/stories.md`
-- この段の答え: `units-generation-questions.md`（Q1〜Q6 と分け方の承認）
+- この段の答え: `units-generation-questions.md`（Q1〜Q7 と分け方の承認。Q7 は 2026-10-23 の開き直しで足した）
 
 決まり:
 - 部品の関係の深いまとまりごとに分ける（Q1）。
 - 1 つの Unit は、PR 1〜2 本（1 本あたり追加 400 行・20 file の中）に収まる大きさにする（Q3）。
+  - U1 だけは、保護面の 1 本と実装の PR 3 本まで（1 本あたりの上限は同じ）。記録の PR は Unit を指さないので数えない（Q7、2026-10-23）。
 - 試験が先（`team-practices.md`）。
 
 ## Unit の一覧
 
 | Unit ID | Directory | 種類 | 大きさ | 置き場の repo | 作る席 |
 |---------|-----------|------|--------|---------------|--------|
-| U1 | u1-skeleton | service | M | shirube | shirube の実装の席 |
+| U1 | u1-skeleton | service | L | shirube | shirube の実装の席 |
 | U2 | u2-metrics | service | L | shirube | shirube の実装の席 |
 | U3 | u3-approval-records | service | M | shirube | shirube の実装の席 |
 | U4 | u4-gate-judgements | service | M | shirube | shirube の実装の席 |
@@ -38,10 +39,14 @@
   3. 承認の記録の作り手（ApprovalRecordWriter）が、その記録を最小の形で作る。
   4. 門（SdsGate）がこの判定を記録だけ（report-only）で行い、commit status に結果を含める。
   5. 計測（MetricsCollector・MetricsCore）が、その status を読んで PASS と FAIL を数え、1 行の JSON を出す。
+- **後で決まって書き足した中身**（Q7、2026-10-23）:
+  - AI-DLC の自己適用の file と、大きさの数えの除外（`.shirube/hygiene-profile.md` の `exclude_generated`）。U1 の保護面と 1 本の PR にまとめる（iyasaka-arc#49 6354019047 の 1・4、6354411741 の 2）。
+  - 配布キット（KitCli）が、shirube 自身では門の呼出しを別の file に書き、再利用 workflow を書き換えない変更（U1 の Functional Design の Q9、監査の指摘 BF-03）。
+- **大きさ**: 保護面の 1 本と実装の PR 3 本まで（Q7）。見積もりは U1 の NFR Requirements に置く。
 - **境目**: 各部品の最小の形だけを作る。指標の全体は U2、承認の記録の形の確定は U3、設計の置き場の検査は U4 で作る。
 - **動かし方**: shirube 自身の PR で、門を固定 commit の再利用 workflow から記録だけ（report-only）で動かす（統合は止めない）。計測は CLI として手で動かせる。
 - **注意と制約**:
-  - shirube の門の呼出しの workflow と pin（記録だけ）を U1 に入れる。どちらも保護面なので、U1 の PR は R4 で、Owner の exact-head を通す。この 1 回に、網羅率の検査の CI と、監査の席の分類の役の決定もまとめる（Delivery Planning の Q8・Q4、この段の中で直した）。
+  - shirube の門の呼出しの workflow と pin（記録だけ）を U1 に入れる。どちらも保護面なので、U1 の保護面の PR は R4 で、Owner の exact-head を通す。この 1 回に、網羅率の検査の CI と、監査の席の分類の役の決定もまとめる（Delivery Planning の Q8・Q4、10/22 にその段の中で直した）。AI-DLC の自己適用と大きさの数えの除外も、この 1 本に入れる（Q7）。
   - 計測は書込みをしない（ADR-003）。
 
 ## U2 u2-metrics — 計測の全体

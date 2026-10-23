@@ -108,6 +108,44 @@ X. Other (please specify)
 
 [Answer]: B。この答えで Q4 の答えを置き換える。置き場は Unit の Functional Design の出力に、機械で読む block（例: `json sds-design-locations`、形の名前は Q1 の付け方）を 1 つ置き、その Unit が変えてよい folder・file の型（glob）を並べる。block は設計の段で arc が下書きし、Owner が段の承認で確かめる。門は PR が指す Unit の block を読み、変更 path がその中かを見る（arc の設計。Q4 の manifest の案は、実装を AI-DLC の Code Generation の段で行うことを前提にしていた。その前提は実装の段で伺うと決めたままで、まだ決まっていない = iyasaka-arc#49 6327673130。B なら、承認済みの要件 FR6.1 と部品の設計（DesignBinding）を変えずに済み、実装をどこで行っても同じ検査になる。置き場を folder・file の型で書くのは、部品の置き場を決める設計の範囲で、関数の中身のような実装の細部ではない。AI-DLC がこの block を書くように、team.md の決まりに 1 行足す）
 
+## Q10. [設計] 受け渡しの形 C9: 段の順の記録の形（監査の指摘 BF-02 への開き直し）
+
+U1 の設計の独立監査（shirube PR #65 の sds-audit-review、BF-02）を受けて、U1 の Functional Design で次の方針を決めました（Q8 = A）。
+- 承認の記録の作り手が、intent ごとの「段の順の記録」を audit から作り、記録を入れる PR に含める。
+- 記録の橋は、この記録と承認の記録だけを main から読む。
+
+理由は、記録の橋が前の段・Unit・一番新しい試行を、公開してよい入力だけで決める必要があるためです。
+- `aidlc-state.md` には Unit ごとの試行の番号がありません。
+- audit は公開の repo に載せないと決めました（iyasaka-arc#49 6354411741）。
+
+この新しい受け渡しの形を、C9 として決めます。
+
+A. 次の形にする。
+   - 置き場: `approvals/<intent>/_sequence.json`（C2 と同じ保護面の外の置き場）
+   - 形の名前: `sds-stage-sequence/1`
+   - 欄: `schema`・`intent`・`source_digest`（元にした audit の範囲の SHA-256）・`entries`（実行した順に `{order, stage, unit, attempt, approved, approval_ref}`）
+   - 並べ方: 飛ばした段は入らない。段を開き直すと、新しい試行の行が足される（古い行は消さない）。
+   - 持ち主: 作り手は ApprovalRecordWriter（U3、U1 で最小の形）、読み手は RecordBridge。記録を入れる PR のたびに audit から作り直し、同じ audit からは同じ bytes を作る。
+   - 読めない・壊れている・intent が違う時は、記録の橋の判定を FAIL にする。
+B. A と同じ中身を、承認の記録（C2）の file の中に入れる（形を 1 つにまとめる。承認の記録のたびに段の順を全部持つ）
+X. Other (please specify)
+
+[Answer]: A（arc の設計。U1 の Functional Design の Q8 = A と同じ形。B は承認の記録のたびに段の順を全部持つので、同じ知識が記録の数だけ並ぶ = Shirube 開発規格 S3。段の順は intent に 1 つあれば足り、承認の記録は 1 つの段の 1 つの試行だけを持つ形のままにできる。観測した事実（audit）から作り、作者の宣言を使わない = S5。audit の原文は公開しない = iyasaka-arc#49 6354411741）
+
+## Q11. [設計] 受け渡しの形 C9: Unit の設計の段の「承認の有無」の意味
+
+AI-DLC では、Unit ごとの設計の段（Functional Design・NFR Requirements・NFR Design・Infrastructure Design）に単独の承認がありません。段ごとに記録されるのは、次の 2 つだけです。
+- Owner がその会話で確かめた要約の確認（summary confirmation の記録）
+- Unit の完了の記録
+
+承認は、Unit の終わりの確かめでまとめて行います。U1 の記録の audit にも、設計の段の承認の出来事はありません。C9 の `approved` の欄と、承認の記録（C2）を何から作るかを決めます。この答えは、U1 の Functional Design の Q10 にもそのまま使います。
+
+A. Unit の設計の段は、Owner の要約の確認の記録と Unit の完了の記録の両方が、その段の一番新しい試行にそろった物を「承認済み」とする。承認の記録（C2）は、その 2 つから作る。Inception の段と Code Generation 以降は、今までどおり段の承認の出来事から作る
+B. Unit の設計の段には承認を求めない。Construction の段の PR は、Inception の最後の段（Delivery Planning）の承認を直前の承認とみなす
+X. Other (please specify)
+
+[Answer]: A（arc の設計。AUN の取り組みの audit で確かめた: U1 の設計の 4 段（functional-design・nfr-requirements・nfr-design・infrastructure-design）は、どれも SUMMARY_CONFIRMATION_RECORDED と、その段の Unit の UNIT_COMPLETED があり、GATE_APPROVED は無い。A なら AI-DLC がもう残している 2 つの記録から作れるので、新しい承認の手順を足さず、作者の手間も Owner の手の数も増えない = S1-SH-05・S1-SH-07。B は、Unit の設計の段を飛ばした実装の PR でも Delivery Planning の承認だけで通るので、「工程を飛ばしたら進めない」= OI-SHIRUBE-NO-AUDIT-NO-SKIP-CONTROL-20261021-001（#49 6304645183）と、仕様の固定の「次の段階は前の段階の出力への参照が無いと始まらない」= #49 6305503572 に届かない。要件 FR2.1「直前の段の承認」は変えず、Unit の設計の段でそれを何の記録で読むかを決める。2 つの記録は同じ試行の物に限り、片方だけ・古い試行の物だけなら承認なしとする）
+
 ## Consolidated Summary Confirmation
 
 - 形の書き方: 形ごとに版の名前を付ける（例: `sds-approval-record/1`）。形は設計の記録に、欄の表（名前・型・必須か・意味）と例で書く。機械の検査は、その形を読む部品のコードで行い、JSON Schema は書かない（実行時の依存を足さない NFR5、形の知識を 1 か所に S3）（arc の設計） [Q1]
@@ -117,6 +155,8 @@ X. Other (please specify)
 - 計測が門の結果を読む所: commit status の state と、門の workflow の log に出る 1 行の JSON（arc の設計） [Q5]
 - 計測の出力: 標準出力に版の名前つきの 1 行の JSON。#53 に載せる文は、その JSON の中の 1 つの欄（arc の設計） [Q6]
 - 読めない時・時間切れ: どの境目でも「観測できず」（exit code 2）を返し、自動の再試行はしない（arc の設計） [Q7]
+- 段の順の記録（C9、監査の指摘 BF-02 への開き直し）: `approvals/<intent>/_sequence.json`、形 `sds-stage-sequence/1`。欄は schema・intent・source_digest・entries（実行した順に order・stage・unit・attempt・approved・approval_ref）。飛ばした段は入らず、開き直すと新しい試行の行が足される。作り手は ApprovalRecordWriter（U3、U1 で最小の形）、読み手は RecordBridge。記録を入れる PR のたびに audit から作り直し、同じ audit からは同じ bytes。読めない・壊れている・intent が違う時は FAIL（arc の設計） [Q10]
+- Unit の設計の段の承認の有無（C9）: Owner の要約の確認の記録と Unit の完了の記録の両方が、その段の一番新しい試行にそろった物を承認済みとし、承認の記録（C2）もその 2 つから作る。片方だけ・古い試行の物だけなら承認なし。Inception の段と Code Generation 以降は、段の承認の出来事から作る。U1 の Functional Design の Q10 にも使う（arc の設計） [Q11]
 
 Does this all look correct before I generate the artifact?
 

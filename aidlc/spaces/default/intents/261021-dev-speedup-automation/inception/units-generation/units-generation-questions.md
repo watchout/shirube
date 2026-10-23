@@ -79,6 +79,31 @@ X. Other (please specify)
 
 [Answer]: A（arc の設計。配布はその repo の席が作り、監査と統合もその repo ごとに通るので、repo ごとに分ける方が依存が単純になる。shirube 自身への適用は門の Unit の中 = S1-SH-06）
 
+## Q7. [設計] U1 の PR の数と中身を、後で決まった事に合わせる（2026-10-23 の開き直し）
+
+U1 の NFR Requirements で、監査の指摘 BF-04（shirube PR #65）を受けて U1 の大きさを見積もりました（Q6 の arc の下書き）。その結果、この段の決まりと合わない所が出たので、Owner の選択（U1 の NFR Requirements の Q7 = A）でこの段を開き直しました。
+
+見積もり（下書き。実装の実測ではない）:
+- 実装は約 1,050〜1,200 行。追加 400 行の上限の中で、実装の PR が 3 本（I1〜I3）要る。
+- これとは別に、保護面の 1 本（P1、約 380 行・約 11 file）がある。
+- 記録の PR（AI-DLC の記録、承認の記録と段の順の記録）は Unit を指さない（受け渡しの形 C7）。
+
+食い違う所:
+- Q3 の決まり「1 つの Unit は PR 1〜2 本」に、U1 は収まらない。
+- U1 の中身（`unit-of-work.md`）に、後で決まった 2 つが書かれていない。
+  - AI-DLC の自己適用の file と大きさの数えの除外を、U1 の保護面と 1 本の PR にまとめる（iyasaka-arc#49 6354019047 の 1・4、6354411741 の 2）。
+  - 配布キットが shirube 自身の再利用 workflow を書き換えないようにする kit の変更（U1 の Functional Design の Q9、監査の指摘 BF-03）。
+
+A. Q3 の決まりを U1 だけ改める。
+   - U1 は、保護面の 1 本と実装の PR 3 本まで（1 本あたり追加 400 行・20 file の中）。記録の PR は Unit を指さないので数えない。
+   - ほかの Unit は PR 1〜2 本のまま。
+   - U1 の中身に、上の 2 つを書き足す。
+B. 全部の Unit で「PR 1〜3 本」に改める（U1 の中身に上の 2 つを書き足すのは A と同じ）
+C. U1 を小さくする。計測を U2 へ移し、U1 の実装の PR を 2 本に収める（細い版で計測までを通す確かめ = Delivery Planning の Q7 を改める要がある）
+X. Other (please specify)
+
+[Answer]: A（arc の設計。U1 は端から端まで通る細い版で、部品 5 つ（門・記録の橋・承認の記録の作り手・計測・kit）にまたがるので、ほかの Unit と同じ目安に収まらない。改めるのは U1 だけにし、ほかの Unit は「1〜2 本」のまま保つ。B は U1 のためだけに全部の Unit の目安を緩めることになる（例が 1 つしか無い物を一般の決まりにしない = Shirube 開発規格 S2）。C は細い版で計測までを通す確かめ（Delivery Planning の Q7）を変え、U1 の確かめが「門が判定する」までで止まる。1 本あたり追加 400 行・20 file の上限（hygiene-profile）は変えない。U1 の中身への 2 つの書き足しは、どちらも Owner の決定と承認済みの設計の写しで、新しい判断は入らない）
+
 ## Plan Approval
 
 U1 u1-skeleton（service、依存なし）、U2 u2-metrics（service、U1）、U3 u3-approval-records（service、U1）、U4 u4-gate-judgements（service、U1・U3）、U5 u5-plan-admission（service、依存なし）、U6 u6-dist-aun（packaging、U4）、U7 u7-dist-onza（packaging、U4）。U1 を端から端まで通る細い版とする。
@@ -92,10 +117,16 @@ U1 u1-skeleton（service、依存なし）、U2 u2-metrics（service、U1）、U
 
 - Unit の境目: 部品の関係の深いまとまりごとに分ける（計測、記録の橋と承認の記録、門の判定の追加、計画の受付、配布）（arc の設計） [Q1]
 - 最初の Unit: PR の block の AI-DLC の記録の欄 → 記録の橋（承認の記録 1 種類、記録だけ）→ 門の status → 計測が status を読んで数えて出す、までを最小の形で 1 本通す。門は記録だけで止めない（arc の設計） [Q2]
-- Unit の大きさ: PR 1〜2 本（1 本あたり追加 400 行・20 file の中）に収まる大きさ（arc の設計） [Q3]
+- Unit の大きさ: PR 1〜2 本（1 本あたり追加 400 行・20 file の中）に収まる大きさ。U1 だけは Q7 の決まり（arc の設計） [Q3、U1 は Q7 で改めた]
 - 並べて進めること: 依存の無い Unit は、別の席なら並べてよい。同じ席に 2 つの Unit を同時に渡さない（arc の設計） [Q4]
 - own-code の予算: この段の後の見積もりで全体の行数を出し、超えるなら 1 回だけ Owner に予算の改めを伺う。これは Owner の手の 1 回に入るので、Delivery Planning で 6 回の内訳を確かめる（arc の設計） [Q5]
 - 配布の Unit: aun と onza で 1 つずつ。shirube 自身への適用は門の Unit の中で行う（arc の設計） [Q6]
+- U1 の PR の数と中身（2026-10-23 の開き直し）:
+  - U1 だけ、保護面の 1 本と実装の PR 3 本まで（1 本あたり追加 400 行・20 file の中）。記録の PR は Unit を指さないので数えない。ほかの Unit は PR 1〜2 本のまま。1 本あたりの上限は変えない。
+  - U1 の中身に 2 つを書き足す。どちらも決まった事の写し。
+    - AI-DLC の自己適用の file と大きさの数えの除外を、U1 の保護面と 1 本の PR にまとめる（iyasaka-arc#49 6354019047 の 1・4、6354411741 の 2）
+    - kit が shirube 自身の再利用 workflow を書き換えない変更（U1 の Functional Design の Q9）
+  - （arc の設計） [Q7]
 - 分け方: 7 つの Unit。U1 u1-skeleton（端から端まで通る細い版、依存なし）、U2 u2-metrics（U1）、U3 u3-approval-records（U1）、U4 u4-gate-judgements（U1・U3）、U5 u5-plan-admission（依存なし）、U6 u6-dist-aun（U4）、U7 u7-dist-onza（U4）。U1〜U5 は service、U6・U7 は packaging（承認済み） [Plan Approval]
 
 Does this all look correct before I generate the artifact?

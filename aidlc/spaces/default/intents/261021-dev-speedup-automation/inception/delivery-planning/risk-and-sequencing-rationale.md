@@ -1,6 +1,6 @@
 # 順番の理由と危うさ（Risk and Sequencing Rationale）
 
-出典: この段の答え（`delivery-planning-questions.md` の Q1〜Q8）、Unit の依存（`inception/units-generation/unit-of-work-dependency.md`）、要件（`inception/requirements-analysis/requirements.md`）、受け渡しの形（`inception/contract-design/contract-summary.md`）、実現性の評価（`ideation/feasibility/feasibility-assessment.md`）。
+出典: この段の答え（`delivery-planning-questions.md` の Q1〜Q11）、Unit の依存（`inception/units-generation/unit-of-work-dependency.md`）、要件（`inception/requirements-analysis/requirements.md`）、受け渡しの形（`inception/contract-design/contract-summary.md`）、実現性の評価（`ideation/feasibility/feasibility-assessment.md`）。
 
 Bolt は、作る 1 回分の単位です（1 つの Bolt = 1 つの Unit）。
 
@@ -17,7 +17,7 @@ Bolt は、作る 1 回分の単位です（1 つの Bolt = 1 つの Unit）。
 
 | 順 | Bolt | 理由 |
 |----|------|------|
-| 1 | B1 細い版 | どの Unit も待たない。workflow → commit status → log → 計測のつながりを、機能を足す前に実際の GitHub で確かめる（Q7・Q8）。shirube の保護面の exact-head をここで 1 回に済ませる |
+| 1 | B1 細い版 | どの Unit も待たない。workflow → commit status → log → 計測のつながりを、機能を足す前に実際の GitHub で確かめる（Q7・Q8）。shirube の保護面（AI-DLC の自己適用・大きさの数えの除外・`.gitignore` の audit の除外・U1 の保護面）と own-code の予算の改めを 1 本の PR にまとめ、exact-head をここで 1 回に済ませる。順番は P1 保護面の 1 本 → R 記録の PR → I1 作り手と kit の自己用の書く先 → A 承認の記録の PR → I2 → K kit の版上げ → I3。承認の記録を作る CLI が I1 で初めてできるので、A を I1 の後に置いた（Q10）。門は base の pin の commit から動くので、I2 の後に K で pin を上げ、I3 を新しい門で判定される確かめの PR にした（Q11。Q9 と #49 6354019047 の 4 の順を改めた） |
 | 2 | B2 計測 | 門で止め始める前に今の値をそろえる（C3）。主な指標の「半分」の判定と、Owner の手・誤って止めた回数の見張りに要る |
 | 3 | B3 承認の記録 | B4 の判定 5 が「設計の記録が承認済みか」を記録の橋に確かめるため、B4 より前に要る |
 | 4 | B4 門の判定 | B1・B3 の上に置き場の検査と段階を足す。配る版をそろえる |
@@ -31,8 +31,8 @@ Bolt は、作る 1 回分の単位です（1 つの Bolt = 1 つの Unit）。
 | 心配 | 起きやすさ | 影響 | 手当て |
 |------|------------|------|--------|
 | 門が正しい PR を止める（誤って止める回数 0 が守れない） | 中 | 高（S1-SH-04） | 全部の判定を記録だけで始める。門の FAIL ごとに監査の席が分類し、門の不備が 0 で実際の PR が 10 件通るまで止める形にしない（FR7.2）。受け渡しの形の未決 C7（置き場の宣言が無い PR）を B4 の設計で決める |
-| Owner の手が上限（6 回）を超える | 中 | 中（S1-SH-07） | 保護面の変更を repo ごとに 1 本にまとめ、切り替えも 1 回にまとめて、予定を 5 回にした（Q4）。1 つ見込み違いが出ても 6 回に収まる。計測が 1 件ごとの URL つきで数える |
-| own-code の予算（残り約 362 行）を超える | 高 | 中（NFR6） | B2 の後に全体の見積もりを出し、超えるなら 1 回だけ Owner に予算の改めを伺う（Owner の手の予定の 2） |
+| Owner の手が上限（6 回）を超える | 中 | 中（S1-SH-07） | 保護面の変更を repo ごとに 1 本にまとめ、切り替えも 1 回にまとめ（Q4）、予算の改めも shirube の保護面の 1 本に入れて、予定を 4 回にした（Q10）。計測の専用の資格情報の決定が加わっても 5 回で、6 回に収まる。計測が 1 件ごとの URL つきで数える |
+| own-code の予算（残り約 362 行）を超える | 高（U1 だけで約 550〜750 行の見込み） | 中（NFR6） | P1 を出す時に S1 全体の own-code の見積もりを添え、P1 の `hygiene-profile.md` の中で 1 回だけ予算を改める（Q10）。P1 自身の増分は今の予算に収まるので、閾値を同じ PR で緩めない決まりに当たらない |
 
 ほかの心配:
 - AI-DLC の版の変化で、記録の橋や承認の記録が壊れる: 版を固定しているので、1 周の間は起きにくい。版を上げる時に audit の形を確かめる（外からの待ち D）。

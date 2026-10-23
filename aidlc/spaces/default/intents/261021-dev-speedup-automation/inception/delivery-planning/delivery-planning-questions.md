@@ -116,17 +116,99 @@ X. Other (please specify)
 
 [Answer]: A（arc の設計。細い版は、workflow・commit status・計測の読取りが実際につながることを、機能を足す前に確かめる物 = 進め方の段の決まり。B では、そのつながりを確かめるのが U4 まで遅れ、細い版の意味が薄れる。A でも shirube の保護面の exact-head は 1 回のままで、Q4 = B の合計 5 回は変わらない。門は記録だけ（report-only）で動くので、正しい PR を止めない。shirube 自身が門を通る（S1-SH-06）ことも U1 から測れる。U1 は保護面に触れることになるので、U1 の PR は R4 として Owner の exact-head を通す）
 
+## Q9. [進め方] 前の承認の後に決まった事を計画に写すか（通し直し）
+
+この段の前の承認（2026-10-22）の後に、次の 3 つが決まりました。
+- iyasaka-arc#49 6354019047 の 4: 保護面の 1 本の PR に、次の 3 つをまとめ、Owner の exact-head は 1 回にする。順番は、保護面の 1 本 → 記録の PR → U1 の実装の PR。
+  - AI-DLC の自己適用の file
+  - 大きさの数えの除外（`exclude_generated`）
+  - U1 の保護面（門の呼出し・pin・網羅率の CI と計測の job）
+- 6354411741 の 2: `.gitignore` の audit の除外を、その保護面の PR に同梱する（audit の記録は公開の repo に載せない）。
+- Contract Design の開き直しで足した C9: 記録を入れる PR に、段の順の記録（`approvals/<intent>/_sequence.json`）を含める。
+
+A. 写す。B1 の中身と PR の順を上の 3 つに揃える。Owner の手は 1 周 5 回の予定のまま（保護面の exact-head は shirube で 1 回）
+X. Other (please specify)
+
+[Answer]: A（arc の下書き。3 つとも Owner が決めて #49 に記録済みの事（6354019047 の 4、6354411741 の 2）と、この開き直しで承認した C9 を計画に写すだけで、新しい判断は入らない = OD-ROUTES-G4-ADOPT-AND-REFLECT-WITHOUT-CONFIRM-20261020-001 の考え方。あわせて、10/22 にこの段の中で Units Generation の unit-of-work.md（U1・U4 の注意の行）を直した事を、この段の memory.md の Deviations に 1 行残す。AI-DLC の決まりでは前の段に及ぶ変更は段を戻して通し直すが、この直しは 10/22 のこの段の承認で Owner が受けた物で、今回の開き直しでは中身を変えない）
+
+## Q10. [進め方] U1 の PR の順と、own-code の予算を伺う時点（2026-10-23 の 2 回目の開き直し）
+
+経緯:
+- U1 の NFR Requirements で、監査の指摘 BF-04 を受けて U1 の大きさを見積もった（Q6 の arc の下書き。実装の実測ではない）。
+- その結果を受けて、Units Generation を開き直した（Q7 = A）。U1 は保護面の 1 本と実装の PR 3 本まで。
+
+今の計画（Q9）のままでは、次の 2 つが成り立ちません。
+1. **記録の PR の順**: 承認の記録と段の順の記録は、作り手の CLI で作る（U1 の Functional Design の Q4、ADR-005。手で写さない）。
+   - その CLI は、U1 の最初の実装の PR（I1）で初めてできる。
+   - 「記録の PR → U1 の実装の PR」（Q9、iyasaka-arc#49 6354019047 の 4）の順では、承認の記録を実装の前に main に入れられない。
+2. **予算を伺う時点**: own-code の増分は U1 だけで約 550〜750 行の見込みで、残り 362 行を超える。
+   - 今の計画では、予算の改めは B2 の見積もりの後（Owner の手の 2 回目）。
+   - それより前に、U1 の実装の PR が予算を超えてしまう。
+
+どちらの案でも、PR の順は次のとおりにします。
+- P1: 保護面の 1 本（Owner の exact-head）
+- R: 記録の PR（AI-DLC の記録。audit は載せない）
+- I1: 承認の記録と段の順の記録の作り手
+- A: 承認の記録の PR（I1 の CLI で作った承認の記録と段の順の記録）
+- I2: 記録の橋と門の判定
+- I3: 計測と、kit の自己用の書く先
+
+決定 6354019047 の 4 の順を改めることは、この段の承認の後に arc が #49 に記録します。
+
+A. 予算は、S1 全体の own-code の見積もりを出したうえで、P1 の `.shirube/hygiene-profile.md` の変更の中で 1 回だけ改める。
+   - P1 自身の own-code の増分（約 50 行）は今の予算に収まるので、「検査の閾値を緩める変更を同じ PR で行わない」に当たらない。
+   - 予算の決定は P1 の exact-head に入る。Owner の手は 1 周 4 回の予定になる。
+B. 予算は、S1 全体の own-code の見積もりを出したうえで、P1 の前の別の PR（R3、Owner の exact-head）で 1 回だけ改める。
+   - Owner の手の 2 回目を P1 の前に移す。回数は 5 回のまま。
+X. Other (please specify)
+
+[Answer]: A（arc の設計。Owner は「保護面の変更を 1 本の PR にまとめ、exact-head は 1 回にする」と決めている = iyasaka-arc#49 6354019047 の 4。予算の値は P1 がもう変える `.shirube/hygiene-profile.md` の中にあり、同じ file の保護面の変更を 2 本に分ける理由が無い。P1 自身の own-code の増分（約 50 行）は今の予算に収まるので、「検査の閾値を緩める変更を、それで通す PR と同じ PR で行わない」には当たらない。A なら Owner の手は 1 周 4 回の予定になり、計測の専用の資格情報の決定（U1 の NFR Requirements の Q2）が別の 1 回になっても 5 回で、上限 6 回に余裕が残る。予算の値そのものは、P1 を出す時に S1 全体の own-code の見積もりを添えて Owner が exact-head で決める。B は予算だけの PR に 1 回使い、資格情報の決定が入ると上限ちょうどの 6 回になる）
+
+## Q11. [進め方] 新しい門のコードで判定される確かめの PR のための、pin を上げる順（2026-10-23 の 3 回目の開き直し）
+
+U1 の Infrastructure Design で分かったことです（監査の指摘 BF-03）。
+- shirube の門は、base の `sds-gate-self.yml` が固定した shirube の commit から動く。P1 で固定するのは U1 の前の commit。
+- I2（記録の橋と門の記録の判定）を統合しても、pin を上げるまで、その後の PR は U1 の前の門で判定される。
+- Owner の手の要らない kit の版上げの PR（K、決まり iyasaka-arc#49 6308341298 の 1）は、kit の自己用の書く先ができてからでないと出せない。Q10 の順では、それが I3 に入る。
+- そのため Q10 の順では、U1 の実装の PR（I1〜I3）はどれも新しい門で判定されない。U1 の Functional Design の Q6（U1 の残りの実装の PR で確かめる）と、B1 の済みの条件が成り立たない。
+
+A. kit の自己用の書く先を I3 から I1 へ移し、I2 と I3 の間に K を入れる。
+   - 順: P1 → R → I1（承認の記録と段の順の記録の作り手、kit の自己用の書く先）→ A → I2（記録の橋と門の判定）→ K → I3（計測）。
+   - K は、shirube の pin を I2 の後の main に上げ、kit で呼出しを書き、kit が書く 3 つの file（sds-audit の skill・PR の雛形・`AGENTS.md`）を入れる。
+   - K は「最初の導入」ではなく「版上げ」として扱い、Owner の手は要らない。Unit を指さない kit の版上げの PR なので、U1 の PR の数（保護面の 1 本と実装の PR 3 本）に数えない。
+   - I3 が、新しい門で判定される確かめの PR になる（U1 の Functional Design の Q6 のまま）。
+   - Owner の手は 4 回の予定のまま。
+   - `budget.mjs` をどの PR に置くかと、I1 が 400 行を超えないかは、U1 の NFR の段で見積もり直す。
+X. Other (please specify)
+
+[Answer]: A（Owner が U1 の Infrastructure Design の Q5 で A を選んだ中身。ここで同じ問いを聞き直さない）
+
 ## Consolidated Summary Confirmation
 
 - 作る順番: U1（細い版）→ U2（計測。門で止め始める前に今の値を測る）→ U3（記録の橋と承認の記録）→ U4（門の判定の追加）→ U6・U7（aun・onza への配布）。U5 は U1 の後、同じ席の空いた所に入れる（arc の設計） [Q1]
 - 順番の物差し: 点数の型は使わず、依存の順・実現性の条件 C3・完了の条件への効き方で決める（arc の設計） [Q2]
 - Bolt の大きさ: 1 つの Bolt = 1 つの Unit（arc の設計） [Q3]
-- Owner の手の内訳: 保護面の変更は repo ごとに 1 本にまとめ（shirube・aun・onza で 3 回）、門を止める形への切り替えは目安を満たした所で 1 回にまとめ、予算の改めが 1 回。合計 5 回 [Q4]
+- Owner の手の内訳: 保護面の変更は repo ごとに 1 本にまとめ（shirube・aun・onza で 3 回）、門を止める形への切り替えは目安を満たした所で 1 回にまとめ、予算の改めが 1 回。合計 5 回。**Q10 で改めた**: 予算の改めは shirube の保護面の 1 本（P1）の exact-head に入り、合計 4 回の予定 [Q4、Q10]
 - 外からの待ち: W2 の道具の変更、aun・Onza の席の受け持ち、Owner の exact-head と切り替え、AI-DLC の版を上げる時の audit の形の確かめ（arc の設計） [Q5]
 - 一番の心配: 門が正しい PR を止めること、Owner の手が上限を超えること、own-code の予算を超えること（arc の設計） [Q6]
 - U1 の確かめ方: shirube の実際の PR 1 本で、門が記録だけで判定し、承認の記録を読み、計測が status を数えて出すことを、門の log と計測の出力で確かめる（arc の設計） [Q7]
-- U1 の保護面: shirube の門の呼出しと pin（記録だけ）を U1 に入れ、shirube の保護面の exact-head（予算以外の shirube の保護面の変更・網羅率の CI・分類の役の決定をまとめた 1 回）を U1 で行う。U4 は保護面に触れない。合計は 5 回のまま [Q8]
+- U1 の保護面: shirube の門の呼出しと pin（記録だけ）を U1 に入れ、shirube の保護面の exact-head（予算以外の shirube の保護面の変更・網羅率の CI・分類の役の決定をまとめた 1 回）を U1 で行う。U4 は保護面に触れない。合計は 5 回のまま。**Q10 で改めた**: 「予算以外」を外し、予算の改めもこの 1 回に入れる [Q8、Q10]
 - 承認済みの記録の直し: Units Generation の unit-of-work.md の U1・U4 の注意の行（保護面の扱い）を、この段の中で Q8 に合わせて直し、直した事を記録に残す（段は開き直さない）
+- 通し直しで写す事（2026-10-23）: 保護面の 1 本の PR に、AI-DLC の自己適用の file・大きさの数えの除外・U1 の保護面・`.gitignore` の audit の除外をまとめ、順番は保護面の 1 本 → 記録の PR（C9 の段の順の記録を含む）→ U1 の実装の PR とする（#49 6354019047 の 4、6354411741 の 2）。Owner の手は 1 周 5 回の予定のまま。10/22 の unit-of-work.md の直しは、この段の memory.md の Deviations に 1 行残し、開き直さない。**PR の順は Q10 で改めた** [Q9、Q10]
+- U1 の PR の順と予算（2026-10-23 の 2 回目の開き直し）:
+  - 順: P1 保護面の 1 本 → R 記録の PR（AI-DLC の記録、audit は載せない）→ I1 作り手 → A 承認の記録の PR（I1 の CLI で作った承認の記録と段の順の記録）→ I2 記録の橋と門の判定 → I3 計測と kit の自己用の書く先。
+    - 理由: 承認の記録は CLI で作り、その CLI は I1 で初めてできる。
+    - 決定 6354019047 の 4 の順の改めは、この段の承認の後に arc が #49 に記録する。
+  - 予算: S1 全体の own-code の見積もりを添えて、P1 の `.shirube/hygiene-profile.md` の中で 1 回だけ改め、P1 の exact-head で Owner が値を決める。
+    - P1 自身の増分（約 50 行）は今の予算に収まるので、閾値を同じ PR で緩める決まりに当たらない。
+  - Owner の手は 1 周 4 回の予定。計測の専用の資格情報の決定が別の 1 回になっても 5 回。
+  - （arc の設計） [Q10]
+- pin を上げる順（2026-10-23 の 3 回目の開き直し、Q10 の順と中身を改める）:
+  - 順: P1 → R → I1（作り手と kit の自己用の書く先）→ A → I2（記録の橋と門の判定）→ K（kit の版上げの PR）→ I3（計測）。
+  - K で shirube の pin を I2 の後の main に上げ、kit が書く 3 つの file も入れる。K は「版上げ」として扱い、Owner の手は要らず、U1 の PR の数に数えない。
+  - I3 が、新しい門で判定される確かめの PR になる。
+  - Owner の手は 4 回の予定のまま。`budget.mjs` の置き場と I1 の大きさは、U1 の NFR の段で見積もり直す。
+  - （Owner が U1 の Infrastructure Design の Q5 = A で選んだ） [Q11]
 
 Does this all look correct before I generate the artifact?
 

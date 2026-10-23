@@ -90,3 +90,4 @@
 - Reverse Engineering では、取り組みの範囲に関係する部品がすでに実装済みかを重点に読み、要件定義で作り直しを避けるために「すでにあるもの」と「まだ無いもの」を分けて書く。 (learned 2026-10-22) <!-- cid:261021-dev-speedup-automation:reverse-engineering:ba795be437dc17c2e0f41dfbf20efb08499136707774a4c5a7952079d46c1764 -->
 - 別の作業者を立てる段で、その道具が無いかサブエージェントの承認が無いときは、Owner に「この会話で行う」か「飛ばして後で戻る」かを選んでもらい、選ばれた形で進めたことを記録に残す。 (learned 2026-10-22) <!-- cid:261021-dev-speedup-automation:reverse-engineering:0a93effbfafcf5421d1fa436599afbe52cf407f165a386110c80a3b678338cbb -->
 - 選択肢の説明が、iyasaka-arc#49 に記録された Owner の決定より古い時は、最新の決定の URL を引いて直してから答える。 (learned 2026-10-22) <!-- cid:261021-dev-speedup-automation:practices-discovery:4bb8a410b7c3693466acf8be65e72cc91506534aa017ac08c6030d3ae5f8cae4 -->
+- 門のコードを変える Unit の PR の順を決める時は、門が base の pin の commit から動くことを踏まえ、新しい門のコードで判定させたい PR より前に、pin を上げる PR（kit の版上げなど）を入れる。 (learned 2026-10-23) <!-- cid:261021-dev-speedup-automation:delivery-planning:7271feb66a3c4558db8d99a14dcff9565464df2f4e713d3b576b1cda60bdef91 -->

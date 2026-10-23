@@ -2,7 +2,7 @@
 
 **判定: PASS**（未解決の GAP・ORPHAN・不正な対応先・抜けた上流の ID は 0）
 
-確かめた日: 2026-10-22。読んだ対応表は 3 つ（Contract Design は要件の対応表を持たないので入らない）。
+確かめた日: 2026-10-22。2026-10-23 に、U1 の設計の独立監査（BF-02）を受けて Contract Design を開き直して C9 を足し、Delivery Planning を通し直した後に、もう一度確かめた（3 つの対応表は変わっていない）。同じ日に、U1 の大きさの見積もり（監査の指摘 BF-04）を受けて Units Generation を開き直し（Q7: U1 の PR の数と中身）、Contract Design（変更なし）と Delivery Planning（Q10: PR の順と予算の改めの時点）を通し直した後に、もう一度確かめた（3 つの対応表は変わっていない）。さらに、U1 の Infrastructure Design の Q5（監査の指摘 BF-03、pin を上げる順）を受けて Delivery Planning を開き直し（Q11）、もう一度確かめた（3 つの対応表は変わっていない）。読んだ対応表は 3 つ（Contract Design は要件の対応表を持たないので入らない）。
 
 ## 対応表ごとの結果
 
@@ -31,7 +31,11 @@
 | 受け渡しの形の未決 C7（packaging の Unit と、Unit を指さない PR の置き場の宣言） | U4 の Functional Design |
 | 受け渡しの形の未決 C6（計画の受付と ai-dev-framework の等価の試験） | U5 の Functional Design |
 | 受け渡しの形の未決 C2・C3・C4 | U3・U1・U2 の Functional Design |
-| own-code の予算（残り約 362 行） | B2 の後の見積もり |
+| 受け渡しの形 C9（段の順の記録）の `source_digest` の範囲 | U3 の Functional Design（U1 は最小の形） |
+| U1 の設計の独立監査の指摘 BF-01〜BF-05 | U1 の 4 つの設計の段の通し直し |
+| own-code の予算（残り約 362 行。U1 だけで約 550〜750 行の見込み） | P1 を出す時に S1 全体の見積もりを添え、P1 の中で 1 回だけ改める（Delivery Planning の Q10） |
+| 決定 iyasaka-arc#49 6354019047 の 4 の PR の順の改め（承認の記録の PR を I1 の後へ、kit の版上げの PR を I2 と I3 の間へ = Delivery Planning の Q10・Q11） | この段の承認の後に arc が #49 に記録する |
+| `budget.mjs` の置き場と I1 の大きさ（kit の自己用の書く先を I1 へ移した後） | U1 の NFR Requirements と NFR Design の通し直し |
 
 ## 承認
 

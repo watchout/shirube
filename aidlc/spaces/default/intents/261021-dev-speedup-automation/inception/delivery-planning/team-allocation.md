@@ -8,8 +8,8 @@ Bolt は、作る 1 回分の単位です（1 つの Bolt = 1 つの Unit）。�
 
 | Bolt | Unit | 作る（実装） | 設計の下書き | 監査 | 統合 | Owner の手 |
 |------|------|--------------|--------------|------|------|------------|
-| B1 | U1 u1-skeleton | shirube の実装の席 | arc（この会話で Owner が確認） | devauditor | suite-lead | shirube の保護面の exact-head 1 回 |
-| B2 | U2 u2-metrics | shirube の実装の席 | arc | devauditor | suite-lead | 予算の改め（超える時だけ）1 回 |
+| B1 | U1 u1-skeleton | shirube の実装の席（記録の PR・承認の記録の PR・kit の版上げの PR も作る） | arc（この会話で Owner が確認） | devauditor（記録の PR・承認の記録の PR は bytes の一致も監査） | suite-lead | shirube の保護面の 1 本の PR（own-code の予算の改めを含む）の exact-head 1 回 |
+| B2 | U2 u2-metrics | shirube の実装の席 | arc | devauditor | suite-lead | — |
 | B3 | U3 u3-approval-records | shirube の実装の席 | arc | devauditor | suite-lead | — |
 | B4 | U4 u4-gate-judgements | shirube の実装の席 | arc | devauditor | suite-lead | — |
 | B5 | U5 u5-plan-admission | shirube の実装の席 | arc | devauditor | suite-lead | — |
@@ -30,7 +30,7 @@ Bolt は、作る 1 回分の単位です（1 つの Bolt = 1 つの Unit）。�
 | devauditor | 全 Bolt の監査、門の FAIL の分類 | B1 の後、分類の書き込みが増える |
 | suite-lead | 全 Bolt の統合 | 毎回、作者と別の席として統合する |
 | arc | 設計の下書き、切り替えの伺い、#49 の記録 | 設計の段ごとに下書きが要る |
-| Owner | 5 回の決定、この会話の承認 | 上限 6 回 |
+| Owner | 4 回の決定（予算の改めは B1 の 1 回に入れた = Q10）、この会話の承認 | 上限 6 回 |
 
 ## 席どうしの関わり方
 

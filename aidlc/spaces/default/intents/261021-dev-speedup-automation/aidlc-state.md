@@ -44,7 +44,7 @@
 - **Construction Iteration**: unit-major
 - **Construction Execution**: serial
 
-- **Construction Verification Command**: node --test --experimental-test-coverage --test-coverage-lines=80 tests/*.test.mjs tests/u2/*.test.mjs
+- **Construction Verification Command**: npm ci && node --test --experimental-test-coverage --test-coverage-include='scripts/**' --test-coverage-include-all --test-coverage-lines=80 tests/*.test.mjs tests/u2/*.test.mjs
 
 - **Unit Ownership**: solo
 
@@ -62,9 +62,43 @@
 
 
 
-- **Parked**: 2026-10-22T23:43:43Z
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+- **Parked**: 2026-10-23T07:58:48Z
 
 - **Parked At Stage**: functional-design
+
+- **Parked By**: person
 
 ## Phase Progress
 <!-- Status values: Pending, Active, Verified, Skipped -->
@@ -126,7 +160,7 @@
 - **Current Stage**: functional-design
 - **Next Stage**: nfr-requirements
 - **Status**: Running
-- **Last Updated**: 2026-10-22T23:43:43Z
+- **Last Updated**: 2026-10-23T07:58:48Z
 
 ## Session Resume Point
 - **Last Completed Stage**: delivery-planning

@@ -53,6 +53,7 @@
 
 <!-- Team-specific mandates -->
 - 評価・成功の指標（測れるもの）は、基本的に自社が管理できる範囲の指標にする。自社が管理できない結果（例: 宿泊客の口コミの点数、市場や他社の動き）を成功の判定に使わない。外れる時は Owner の明示の決定を記録する。 (Owner の指示 2026-10-22: 「すべての評価＝測れるに共通することだが、基本的にはうちの管理できる範囲の指標であることを共通概念としてください」 https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6329643565 )
+- 問いの答えは、この会話も arc も下書きで決めない。Owner の判断が要る問いも、事実を写すだけの問いも、[Answer] は空けておき、arc の名前で勧めを書かない。arc が Owner と arc の端末の会話で噛み砕いて聞き、Owner の言葉のまま [Answer] に写す。問いの背景と選択肢は、作る側の言葉を減らし、Owner が見る場面の例で書く。 (Owner の決定 2026-10-23 OD-AIDLC-QUESTIONS-ASKED-IN-PLAIN-DIALOGUE-NOT-DRAFTED-20261023-001 https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6360243431 )
 - Functional Design の段では、Unit ごとの `functional-spec.md` に機械で読む block（```` ```json sds-design-locations ````、形 `sds-design-locations/1` = `schema`・`unit`・`paths`）を 1 つ置き、その Unit が変えてよい folder・file の型（glob）を並べる。設計の段で arc が下書きし、Owner が段の承認で確かめる。門の判定 5 がこの block を読み、PR の変更 path がその中かを見る（contract-design の Q9 = B と contract-summary.md の C7、2026-10-22 承認。Functional Design の出力が無い Unit の扱いは C7 の未決の問い）。
 
 ## Corrections

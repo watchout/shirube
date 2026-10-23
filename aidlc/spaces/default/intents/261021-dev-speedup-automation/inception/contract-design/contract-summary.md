@@ -4,7 +4,7 @@
 - Unit: `inception/units-generation/unit-of-work.md`・`unit-of-work-dependency.md`
 - 部品: `inception/domain-design/components.md`
 - 要件: `inception/requirements-analysis/requirements.md`
-- この段の答え: `contract-design-questions.md`（Q1・Q2・Q5〜Q9。Q3 は Q8、Q4 は Q9 で置き換え）
+- この段の答え: `contract-design-questions.md`（Q1・Q2・Q5〜Q11。Q3 は Q8、Q4 は Q9 で置き換え。Q10・Q11 は U1 の設計の独立監査 BF-02 を受けて、この段を開き直して足した）
 
 ## 書き方の決まり
 
@@ -24,6 +24,7 @@
 | C6 | External: 設計の席（arc、道筋を書く） | U5 の計画の受付（PlanAdmission） | 道筋の記録（`shirube-delivery-plan/v1`）に今の段の採択の参照の欄を足す | PlanAdmission（U5） |
 | C7 | External: AI-DLC の Functional Design の出力（設計の段で arc が下書き） | U4 の判定 5（DesignBinding） | Unit の `construction/<unit>/functional-design/functional-spec.md` の ```json sds-design-locations``` block（`sds-design-locations/1`） | DesignBinding（U4） |
 | C8 | U4 の配布キット（KitCli） | U6・U7（External: aun・onza の repo） | 配布先の `.shirube/sds-pin.json`（`sds-pin/1`、既存）と部品 | KitCli（U4） |
+| C9 | U1・U3 の承認の記録の作り手（ApprovalRecordWriter） | U1・U3 の記録の橋（RecordBridge） | repo の file `approvals/<intent>/_sequence.json`（`sds-stage-sequence/1`） | ApprovalRecordWriter（U3） |
 
 ## C1 PR の機械向けの block（`sds-pr/1` に欄を足す）
 
@@ -78,6 +79,8 @@ rules:
   - 同じ承認から 2 回作っても、同じ bytes になる（NFR2）
   - 一度作った記録を、後から identity_check: verified に書き換えない（iyasaka-arc#49 6315688299 の 4）
   - 記録の橋は、この形の file だけを承認として読む。ほかの形（コメントの文など）は読まない
+  - 作る元（Q11）: Inception の段と Code Generation 以降は、段の承認の出来事から作る。Unit ごとの設計の段（Functional Design・NFR Requirements・NFR Design・Infrastructure Design）は単独の承認が無いので、Owner の要約の確認の記録と Unit の完了の記録の両方が、その段の一番新しい試行にそろった時に作る。片方だけ・古い試行の物だけなら作らない
+  - source_event_digest は、作る元にした出来事（Unit の設計の段は 2 つの記録）の本文の SHA-256
 ```
 
 ```json
@@ -210,6 +213,56 @@ rules:
 
 形は変えません。U6・U7 は、U4 の後の shirube の commit を `sds_commit` に固定し、`plan_binding_mode` と `design_binding_mode` は記録だけ（report-only）で始めます。pin の変更は保護面で、最初の導入は Owner の exact-head を通します。
 
+## C9 段の順の記録（`sds-stage-sequence/1`）
+
+U1 の設計の独立監査（shirube PR #65、BF-02）を受けて、この段を開き直して足した形です（Q10・Q11）。記録の橋が、前の段・Unit・一番新しい試行を、公開してよい入力だけで決めるのに使います。`aidlc-state.md` には Unit ごとの試行の番号が無く、audit は公開の repo に載せません（iyasaka-arc#49 6354411741）。
+
+置き場: repo の `approvals/<intent>/_sequence.json`（C2 と同じ、保護面の外）。
+
+```yaml
+contract: sds-stage-sequence/1
+fields:
+  - { name: schema, type: string, required: true, meaning: "sds-stage-sequence/1" }
+  - { name: intent, type: string, required: true, meaning: intent の記録の名前 }
+  - { name: source_digest, type: string, required: true, meaning: 元にした audit の範囲の SHA-256 }
+  - name: entries
+    type: array
+    required: true
+    meaning: 実行した段の並び（実行した順）
+    fields:
+      - { name: order, type: integer, required: true, meaning: 1 から始まる実行の順 }
+      - { name: stage, type: string, required: true, meaning: 段の slug }
+      - { name: unit, type: string, required: false, meaning: Unit の directory 名（Construction の Unit の段だけ） }
+      - { name: attempt, type: integer, required: true, meaning: その段（と Unit）の試行の番号 }
+      - { name: approved, type: boolean, required: true, meaning: "この試行が承認済みか（Unit の設計の段は Q11 の 2 つの記録がそろった時に true）" }
+      - { name: approval_ref, type: string, required: false, meaning: "approved が true の時、承認の記録（C2）の repo の中の path" }
+rules:
+  - 飛ばした段は入らない
+  - 段を開き直すと、新しい試行の行が足される。古い行は消さない
+  - 作り手は、記録を入れる PR のたびに audit から作り直す。同じ audit からは同じ bytes を作る
+  - 記録の橋は main のこの file と承認の記録だけを読む。この file が無い・読めない・壊れている・intent が違う時は、記録の判定を FAIL にする
+  - 前の段は、PR が指す段（と Unit）の一番新しい試行の行より前にある行のうち、同じ Unit の段の行（Unit の最初の段の前は Inception の最後の段の行）の、一番新しい試行の行とする
+```
+
+```json
+{
+  "schema": "sds-stage-sequence/1",
+  "intent": "261021-dev-speedup-automation",
+  "source_digest": "<sha256>",
+  "entries": [
+    { "order": 13, "stage": "delivery-planning", "attempt": 2, "approved": true, "approval_ref": "approvals/261021-dev-speedup-automation/delivery-planning/_intent.json" },
+    { "order": 14, "stage": "functional-design", "unit": "u1-skeleton", "attempt": 2, "approved": true, "approval_ref": "approvals/261021-dev-speedup-automation/functional-design/u1-skeleton.json" },
+    { "order": 15, "stage": "nfr-requirements", "unit": "u1-skeleton", "attempt": 2, "approved": false }
+  ]
+}
+```
+
+負例（記録の橋の試験に入れる）:
+- 開き直した後の新しい試行に承認が無い（古い試行の承認しか無い）→ FAIL。要る試行の番号を出す。
+- 複数の Unit がある → 前の段は同じ Unit の行から決める。ほかの Unit の行は使わない。
+- 段の順の記録が無い・壊れている → FAIL。探した path を出す。
+- 承認の記録の試行の番号が、段の順の記録の一番新しい試行と違う → FAIL。
+
 ## 形の持ち主と変え方の決まり
 
 - 形の持ち主は、上の一覧の Owner の部品の Unit。形を変える PR は、その Unit の席が作り、独立監査を通す。
@@ -225,5 +278,6 @@ rules:
 | C7 | packaging の Unit（U6・U7）には Functional Design の出力が無い（原典の決まり）。記録を入れる PR など、Unit を指さない PR もある。これらの PR の置き場の宣言をどこに置くか（無いまま FAIL にすると、正しい PR を止める） | U4 |
 | C6 | 計画の受付は、ai-dev-framework の固定 commit の判定と同じになるよう書き直した物。欄を足すと、その等価の試験の扱いが変わる | U5 |
 | C2 | AI-DLC の audit の承認の出来事の、どの欄から digest を取るか（AI-DLC の版で変わりうる） | U3 |
+| C9 | `source_digest` の audit の範囲の決め方（intent の audit の shard 全体か、段の出来事だけか） | U3 |
 | C4 | W2 の道具の側で、出力を受けて #53 に載せる変更（iyasaka-arc の担当） | U2 |
 | C3 | 今の門の 1 行の JSON に `schema` と judgements の欄を足す時、今の読み手（あれば）に影響が無いか | U1 |

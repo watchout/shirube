@@ -1,1 +1,1 @@
-node --test --experimental-test-coverage --test-coverage-lines=80 tests/*.test.mjs tests/u2/*.test.mjs
+npm ci && node --test --experimental-test-coverage --test-coverage-include='scripts/**' --test-coverage-include-all --test-coverage-lines=80 tests/*.test.mjs tests/u2/*.test.mjs
