@@ -1,0 +1,28 @@
+{
+  "stage": "domain-design",
+  "upstream_ids": [
+    "US1.1", "US1.2", "US1.3", "US1.4", "US1.5", "US1.6", "US1.7",
+    "US2.1", "US2.2", "US2.3", "US2.4", "US2.5", "US2.6", "US2.7", "US2.8",
+    "US3.1", "US3.2"
+  ],
+  "coverage": [
+    { "id": "US1.1", "status": "OK", "target": "MetricsCore, MetricsCollector, Baseline" },
+    { "id": "US1.2", "status": "OK", "target": "MetricsCollector, MetricsSnapshot" },
+    { "id": "US1.3", "status": "OK", "target": "MetricsCollector, OwnerTouch" },
+    { "id": "US1.4", "status": "OK", "target": "MetricsCore, MetricsSnapshot" },
+    { "id": "US1.5", "status": "OK", "target": "MetricsCollector, FailClassification" },
+    { "id": "US1.6", "status": "OK", "target": "MetricsCore, FailClassification" },
+    { "id": "US1.7", "status": "OK", "target": "MetricsCore, MetricsSnapshot" },
+    { "id": "US2.1", "status": "OK", "target": "SdsGate, SdsPrBlock, GateResult" },
+    { "id": "US2.2", "status": "OK", "target": "RecordBridge, AidlcStageRef, ApprovalRecordWriter, ApprovalRecord" },
+    { "id": "US2.3", "status": "OK", "target": "PlanAdmission, DeliveryPlan" },
+    { "id": "US2.4", "status": "OK", "target": "AuditAdmission, AuditReceipt, SdsGate" },
+    { "id": "US2.5", "status": "OK", "target": "PlanBinding, WorkInstructionBinding" },
+    { "id": "US2.6", "status": "OK", "target": "DesignBinding, DesignRecordRef, RecordBridge" },
+    { "id": "US2.7", "status": "OK", "target": "SdsGate, GateResult, KitCli, Pin" },
+    { "id": "US2.8", "status": "OK", "target": "SdsGate" },
+    { "id": "US3.1", "status": "OK", "target": "KitCli, Pin, ConsumerEntry" },
+    { "id": "US3.2", "status": "OK", "target": "KitCli, Pin" }
+  ],
+  "reverse": []
+}
