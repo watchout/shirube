@@ -1,6 +1,6 @@
 // ApprovalRecordWriter (U1 I1; iyasaka-arc#49 6377584568, 6375005810; rules BR5.1-BR5.8 and contracts C2/C9 of the U1 design records).
-// Builds the approval records (sds-approval-record/1) and the stage sequence (sds-stage-sequence/1) from one intent's AI-DLC audit shards.
-// It only writes files in the working tree: no network, no git, no clock. The same audit gives the same bytes (NFR2.1, NFR10.4).
+// Builds the approval records (sds-approval-record/1) and the stage sequence (sds-stage-sequence/1) from one intent's AI-DLC audit shards. It only writes
+// files in the working tree: no network, no git, no clock. The same audit gives the same bytes (NFR2.1, NFR10.4).
 // Usage: node approval-record.mjs --intent <name> [--root <checkout>] [--out <dir>] [--audit <dir under root>] [--require stage[:unit],...]
 import { createHash } from "node:crypto";
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
@@ -45,9 +45,11 @@ const addRow = (c, stage, unit) => {
   return row;
 };
 const approve = (row, ...events) => { row.src.push(...events); row.approved = true; };
-const supersede = (c, stage, unit) => { // a reopened stage invalidates the rows downstream of it (all units, or only the reopened unit)
+const supersede = (c, stage, unit) => { // a reopened stage invalidates what is downstream of it (all units, or only the reopened unit): its rows, and the confirmations still waiting for a next attempt
   const from = c.rank.get(stage); need(from !== undefined, `a jump back targets ${stage}, which never started`);
-  for (const row of c.rows) if (c.rank.get(row.stage) > from && (!unit || row.unit === unit)) row.superseded = true;
+  const rank = (s) => c.rank.get(s), inUnit = (u) => !unit || u === unit;
+  for (const row of c.rows) if (rank(row.stage) > from && inUnit(row.unit)) row.superseded = true;
+  for (const k of [...c.confirm.keys()]) { const [s, u] = k.split("\u0000"); if (rank(s) >= from && inUnit(u)) c.confirm.delete(k); } // the reopened stage's own waiting confirmation goes too
 };
 
 const HANDLERS = {
@@ -86,7 +88,9 @@ const HANDLERS = {
     }
   },
   STAGE_JUMPED: (c, e) => { if (e.f.Direction === "BACKWARD") supersede(c, e.f.Target, e.f.Unit); },
-  GATE_REJECTED: (c, e) => { if (e.f.Reopen === "jump") supersede(c, e.f.Stage, e.f.Unit); },
+  GATE_REJECTED: (c, e) => { // a rejected stage's waiting confirmation is void, however it reopens
+    for (const s of (e.f["Gate Stages"] ?? e.f.Stage ?? "").split(/,\s*/)) c.confirm.delete(key(s, e.f.Unit)); if (e.f.Reopen === "jump") supersede(c, e.f.Stage, e.f.Unit);
+  },
 };
 
 function approvalOf(intent, row) {

@@ -13,8 +13,7 @@ test("AI-DLC settings: the Agent tool is denied, no .mcp.json exists, the versio
   assert.ok(JSON.parse(read(".claude/settings.json")).permissions.deny.includes("Agent"));
   assert.equal(existsSync(resolve(root, ".mcp.json")), false);
   assert.match(read(".aidlc-version"), /^\d+\.\d+\.\d+\n?$/);
-  assert.doesNotThrow(() => JSON.parse(read("aidlc.settings.json")));
-  assert.doesNotMatch(read("aidlc.settings.json"), /"(?:model|modelId|model_id)"\s*:/i, "presets never set a model id");
+  assert.doesNotMatch(JSON.stringify(JSON.parse(read("aidlc.settings.json"))), /"(?:model|modelId|model_id)"\s*:/i, "valid JSON, and the presets never set a model id");
 });
 
 test("NFR6.1: the profile leaves AI-DLC records out of size counts, sets the Owner's budget, and loosens no other limit", () => {
