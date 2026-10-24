@@ -1,3 +1,41 @@
 node_modules/
 .hygiene/jscpd/
 .hygiene/gitleaks-allowed.json
+
+# BEGIN AI-DLC:gitignore
+# AI-DLC: local working files
+aidlc/active-space
+aidlc/spaces/*/intents/active-intent
+aidlc/.aidlc-clone-id
+aidlc.settings.local.json
+aidlc/.aidlc-unit-scope.json
+aidlc/.aidlc-unit-parked
+aidlc/.aidlc-claim-generations.json
+aidlc/.aidlc-unit-participant
+aidlc/.aidlc-claim-registry.json
+aidlc/.aidlc-unit-releases/
+aidlc/.aidlc-unit-merges/
+aidlc/.aidlc-active-space-*.tmp
+aidlc/active-memory/
+aidlc/.aidlc-sessions/
+aidlc/.aidlc-request-text/
+aidlc/spaces/*/intents/.aidlc-*
+**/aidlc/spaces/*/intents/**/.aidlc-engine/
+**/aidlc/spaces/*/intents/**/.aidlc-sensors/
+aidlc/spaces/*/knowledge/documentkb/.journal/
+aidlc/spaces/*/knowledge/.sources.local.json
+aidlc/spaces/*/intents/*/runtime-graph.json
+aidlc/spaces/*/intents/*/.aidlc-*
+aidlc/diagnostics/
+.claude/settings.local.json
+# END AI-DLC:gitignore
+
+# AI-DLC engine copies are regenerated in every checkout (docs/design/aidlc-include.md §2): only settings.json and skills/sds-audit/ are tracked.
+# This allowlist also covers the per-stage runner skills (skills/aidlc-*/) that §2b's list does not name; the pull request states the deviation.
+.claude/*
+!.claude/settings.json
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/sds-audit/
+# AI-DLC audit records are not committed to this public repository (iyasaka-arc#49 6354411741).
+aidlc/spaces/*/intents/*/audit/

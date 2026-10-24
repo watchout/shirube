@@ -1,0 +1,12 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@62ff73db52ce8f29f3b982507b5d2e36578ae60f/docs/sds/audit-method.md#3",
+  "scope": "U1 の保護面の 1 本（R4）の実装監査: 門の呼出し sds-gate-self.yml、.shirube/sds-pin.json、ci.yml、AI-DLC の自己適用の file（.aidlc-version・aidlc.settings.json・.claude/settings.json・.gitignore）、.shirube/hygiene-profile.md、tests/workflow-contract.test.mjs、本項目集合の file。設計 = shirube PR #65 の U1 の設計の記録（3 回目の監査 PASS 6377211784）。記法: [OD] = Owner の決定 iyasaka-arc#49 6377584568・6375005810、[WO] = 作業指示 iyasaka-arc#24 6377588228。全 5 項目必須。作者が項目の文を書いた物で、範囲が弱い・足りないと見えたら blocking_findings に書く。",
+  "items": [
+    {"id": "P1-1", "criterion": "門の呼出しと pin。PASS: sds-gate-self.yml が pull_request_target と issue_comment で、pin の sds_commit（40 桁、base main）に固定した再利用 workflow を呼び、PR の code を checkout せず、権限は statuses の書込みと読取りだけ。pin は plan・design とも report-only で、files の digest が実 file と一致し、protected_paths は kit の既定に設定 3 file を足しただけ。", "basis": "[OD] 6375005810 の 2、U1 の Infrastructure Design（NFR4.1・NFR10.1・BR7.1）"},
+    {"id": "P1-2", "criterion": "CI。PASS: ci.yml の一番上が permissions: {} で、各 job は読取りだけ。試験の job が Node 26 で npm ci の後に網羅率の command（scripts/** の全部、行 80%）を動かす。計測の job は PR では動かず、読取りだけで、step の条件は CLI が無い間だけ動かさない。engines は Node 22 以上のまま。失敗を隠す記述（continue-on-error・|| true）が無い。", "basis": "[OD] 6375005810 の S4、NFR8.2・NFR10.3・BR7.2、Shirube 開発規格 S8・S9"},
+    {"id": "P1-3", "criterion": "自己適用と git の範囲。PASS: .claude/settings.json の deny に Agent があり、秘密・機械の名前・model の名前を含まない。aidlc.settings.json は model の ID を設定しない。.gitignore は AI-DLC の block を原典のまま持ち、engine の写し（aidlc-* の skill を含む）と audit の記録を除き、settings.json と skills/sds-audit/ は追跡する。設計の §2b の列挙との違いが PR 本文に書かれている。", "basis": "docs/design/aidlc-include.md §2・§3、[OD] iyasaka-arc#49 6354411741"},
+    {"id": "P1-4", "criterion": "profile。PASS: .shirube/hygiene-profile.md の変更が、exclude_generated への aidlc/ の Markdown・JSON・txt と docs/ の Markdown の追加、own_code_lines の改め（案 2,700。値は Owner が exact-head で決めると PR 本文にある）、説明の文だけ。ほかの上限と include / exclude は変わらない。", "basis": "[OD] iyasaka-arc#49 6354019047・6357471211、NFR6.1"},
+    {"id": "P1-5", "criterion": "範囲・大きさ・独立性。PASS: base..head の変更が scope の file だけで、PR の追加が 400 行・20 file の中（pr-size が PASS）。CI の test と hygiene が監査対象の head で成功している。PR 本文の sds-pr/1 block（risk_class R4、changed_paths が diff と一致、control_handoff = [WO]）と risk:R4 の label がある。試験の一部を I1 へ移したことと、統合の前に Owner の exact-head が要ることが本文に書かれている。作者・監査者・統合担当が別の席。", "basis": "[WO]、distribution §4、NFR7.1"}
+  ]
+}

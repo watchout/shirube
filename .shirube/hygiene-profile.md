@@ -11,13 +11,14 @@ This page is the one place where this repository declares what the hygiene check
   `--ignore-gitleaks-allow`), so no exception is needed; an exception is required only when a real finding is suppressed.
 - large files: only `package-lock.json` (lockfile, built-in exemption). Nothing else is allowed over 100KB.
 - mode: blocking from the first PR (this repository has no report-only period).
-- limits that are internal budgets, not upstream recommendations: new file 300 lines, function 50 lines, complexity 10, PR +400 / 20 files, own code 2,300 lines.
+- limits that are internal budgets, not upstream recommendations: new file 300 lines, function 50 lines, complexity 10, PR +400 / 20 files, own code 2,700 lines.
+- own-code budget: raised once from 2,300 to 2,700 lines for the whole of the first complete version (the U1 implementation adds about 570–760 lines on top of the 1,938 in use). The value is a proposal for the Owner to set at the exact head of the protected-surface PR (iyasaka-arc#49 6357471211, 6375005810). No other limit is loosened in the same change. Size counts leave out AI-DLC records (`aidlc/` Markdown, JSON and text) and Markdown under `docs/` (iyasaka-arc#49 6354019047): records, not code.
 
 ```json
 {
   "language": "js",
   "lines": { "include": ["scripts/**", "configs/**", ".github/workflows/**", "tests/**"], "exclude": ["tests/fixtures/**"] },
-  "exclude_generated": ["tests/fixtures/**", ".hygiene/jscpd/**"],
+  "exclude_generated": ["tests/fixtures/**", ".hygiene/jscpd/**", "aidlc/**/*.md", "aidlc/**/*.json", "aidlc/**/*.txt", "docs/**/*.md"],
   "own_code": { "include": ["scripts/**", "configs/**", ".github/workflows/**"], "exclude": [] },
   "large_file_allow": [],
   "exceptions": [],
@@ -27,7 +28,7 @@ This page is the one place where this repository declares what the hygiene check
     "pr_changed_files": 20,
     "large_file_bytes": 102400,
     "baseline_max_entries": 0,
-    "own_code_lines": 2300
+    "own_code_lines": 2700
   },
   "mode": "blocking",
   "enforce_by": "2026-09-26"

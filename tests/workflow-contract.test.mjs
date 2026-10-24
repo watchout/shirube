@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 
 const wf = readFileSync(resolve(import.meta.dirname, "../.github/workflows/hygiene.yml"), "utf8");
@@ -132,4 +133,36 @@ for (const [name, patch, exit] of cases) test(`A6 aggregate shell: ${name}`, () 
     assert.equal(summary, outcomes + "\n");
     assert.equal(summary.trimEnd().split("\n").length, 12);
   } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// U1 P1 (iyasaka-arc#49 6377584568): shirube runs its own gate from a pinned commit, report-only, and floors coverage in CI.
+const file = (p) => readFileSync(resolve(import.meta.dirname, "..", p), "utf8");
+const strip = (t) => t.split("\n").filter((l) => !l.trim().startsWith("#")).join("\n");
+const job = (t, n) => t.match(new RegExp(`\\n  ${n}:(\\n[\\s\\S]*?)(?=\\n  [a-z-]+:\\n|$)`))?.[1] ?? "";
+const perms = (t) => Object.fromEntries([...t.matchAll(/\n +([a-z-]+): (read|write)(?=\n)/g)].map((m) => [m[1], m[2]]));
+const COVERAGE = "node --test --experimental-test-coverage --test-coverage-include='scripts/**' --test-coverage-include-all --test-coverage-lines=80 tests/*.test.mjs tests/u2/*.test.mjs";
+
+test("BR7.1 NFR4.1 NFR10.1: shirube's own gate is report-only, calls the pinned reusable gate on pull_request_target, never checks out the PR, and writes statuses only", () => {
+  const t = strip(file(".github/workflows/sds-gate-self.yml")), pin = JSON.parse(file(".shirube/sds-pin.json"));
+  assert.match(pin.sds_commit, /^[a-f0-9]{40}$/);
+  assert.deepEqual([pin.schema, pin.plan_binding_mode, pin.design_binding_mode], ["sds-pin/1", "report-only", "report-only"]);
+  for (const [p, sha] of Object.entries(pin.files)) assert.equal(createHash("sha256").update(file(p)).digest("hex"), sha, p);
+  assert.match(t, /\non:\n\s+pull_request_target:\n[\s\S]*\n\s+issue_comment:\n/);
+  assert.match(t, new RegExp(`uses: watchout/shirube/\\.github/workflows/sds-gate\\.yml@${pin.sds_commit}\\n`));
+  assert.doesNotMatch(t, /actions\/checkout/);
+  assert.deepEqual(perms(t), { actions: "read", checks: "read", contents: "read", issues: "read", "pull-requests": "read", statuses: "write" });
+});
+
+test("BR7.2 NFR8.2 NFR10.3: ci.yml floors scripts/** coverage at 80% on Node 26, drops permissions at the top, and measures read-only off pull requests", () => {
+  const t = strip(ci), tests = job(t, "test"), measure = job(t, "measure");
+  assert.match(t, /\npermissions: \{\}\n/);
+  assert.match(t, /\n {2}push:\n {4}branches: \[main\]\n {2}workflow_dispatch:\n/);
+  assert.match(tests, /node-version: "26"/);
+  assert.ok(tests.includes(`run: ${COVERAGE}`) && tests.indexOf("run: npm ci") < tests.indexOf(`run: ${COVERAGE}`), "coverage runs after npm ci");
+  assert.equal(JSON.parse(file("package.json")).engines.node, ">=22");
+  for (const n of ["test", "hygiene"]) assert.deepEqual(perms(job(t, n)), { contents: "read" });
+  assert.deepEqual(perms(measure), { contents: "read", actions: "read", "pull-requests": "read", statuses: "read" });
+  assert.match(measure, /if: \$\{\{ github\.event_name != 'pull_request' \}\}/);
+  assert.match(measure, /if: \$\{\{ hashFiles\('scripts\/sds\/metrics\/cli\.mjs'\) != '' \}\}[\s\S]*run: node scripts\/sds\/metrics\/cli\.mjs --repos watchout\/shirube /);
+  assert.doesNotMatch(measure, /secrets\./);
 });
