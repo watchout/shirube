@@ -59,6 +59,12 @@ test("BR5.5: reopening a unit stage supersedes only that unit's downstream rows;
   assert.deepEqual(ids(rows(...units, jump("inc", 15))), ["inc#1+", `${FD}:u1#1+x`, `${NR}:u1#1+x`, `${FD}:u2#1+x`, `${NR}:u2#1+x`]);
 });
 
+test("BR5.1: a unit-scope gate approval approves the named stages of that unit, but never a unit design stage (event shape assumed to mirror the rejection's)", () => {
+  const CG = "code-generation", gate = blk("GATE_APPROVED", 4, { Stage: CG, Unit: "u1", "Gate Scope": "unit-end", "Gate Stages": `${FD}, ${CG}` });
+  assert.deepEqual(ids(rows(ustart(FD, "u1", 1), ustart(CG, "u1", 2), udone(CG, "u1", 3), gate)), [`${FD}:u1#1-`, `${CG}:u1#1+`]);
+  assert.deepEqual(ids(rows(ustart(CG, "u2", 1), gate)), [`${CG}:u2#1-`], "an approval for another unit does not count");
+});
+
 test("NFR2.1 NFR10.4: the same audit gives the same bytes, and the module reads no clock, network, git or GitHub", () => {
   const b = [start("a", 1), ok("a", 2)];
   assert.equal(JSON.stringify(rows(...b)), JSON.stringify(rows(...b)));
