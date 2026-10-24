@@ -1,30 +1,57 @@
 # Self-application (handover v5 SR / K7): this repository runs its own unit tests and its own hygiene workflow.
+# The test job floors the line coverage of all of scripts/** at 80% (iyasaka-arc#49 6336689921); --test-coverage-include-all needs Node 26.7+, so it runs on Node 26 (engines stays >= 22).
 name: ci
 
 on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
+
+permissions: {}
 
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "26"
           cache: npm
       - run: npm ci
-      - run: npm test
-      - name: Own-code budget (OWN-01, 1,500 lines)
+      - run: node --test --experimental-test-coverage --test-coverage-include='scripts/**' --test-coverage-include-all --test-coverage-lines=80 tests/*.test.mjs tests/u2/*.test.mjs
+      - name: Own-code budget (OWN-01)
         run: node scripts/hygiene/own-code-budget.mjs --profile .shirube/hygiene-profile.md
 
   hygiene:
+    permissions:
+      contents: read
     uses: ./.github/workflows/hygiene.yml
     with:
       profile: .shirube/hygiene-profile.md
       targets: scripts configs
       node-version: "22"
+
+  measure:
+    if: ${{ github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+      statuses: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "26"
+      - name: Measure the gate over the last 30 days (read-only, one JSON line; skipped only until scripts/sds/metrics/cli.mjs exists)
+        if: ${{ hashFiles('scripts/sds/metrics/cli.mjs') != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/sds/metrics/cli.mjs --repos watchout/shirube --from "$(TZ=Asia/Tokyo date -d '30 days ago' +%F)" --to "$(TZ=Asia/Tokyo date +%F)" --now "$(date -u +%Y-%m-%dT%H:%M:%SZ)"

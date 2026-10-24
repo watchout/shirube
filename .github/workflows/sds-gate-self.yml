@@ -1,0 +1,21 @@
+# shirube's own gate: the kit's caller (kit/sds-gate-caller.yml) written by hand, because the kit would overwrite the reusable workflow in this repository.
+# It runs the gate at the commit pinned in .shirube/sds-pin.json, report-only (iyasaka-arc#49 6377584568). pull_request_target: a PR cannot rewrite the check that judges it; the gate never runs the PR's code.
+name: sds-gate-self
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited, ready_for_review, labeled, unlabeled]
+  issue_comment:
+    types: [created, edited, deleted] # a deleted request or review on the PR re-judges the same head
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  actions: read
+  checks: read
+  statuses: write
+jobs:
+  sds-gate:
+    if: ${{ github.event_name == 'pull_request_target' || github.event.issue.pull_request }}
+    uses: watchout/shirube/.github/workflows/sds-gate.yml@62ff73db52ce8f29f3b982507b5d2e36578ae60f
+    with:
+      pr: ${{ github.event.pull_request.number || github.event.issue.number }}
