@@ -1,6 +1,4 @@
-// Moved here from the U1 protected-surface PR (#66) to keep that PR inside the size limit (iyasaka-arc#49 6377584568; U1 P1 deviation 1).
-// The committed Claude settings stop subagents, no MCP server is configured, AI-DLC is pinned to one version, the public repository carries
-// no model id in its AI-DLC settings, engine copies and audit records stay out of git, and the budget is the Owner's (iyasaka-arc#49 6379138360).
+// Moved from the U1 protected-surface PR #66 to keep that PR inside the size limit (iyasaka-arc#49 6377584568): settings, pin, .gitignore and profile contracts; the budget is the Owner's (6379138360).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";

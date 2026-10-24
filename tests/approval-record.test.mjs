@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, existsSync, readdirSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { plan, writeAll } from "../scripts/sds/approval-record.mjs";
@@ -111,17 +111,28 @@ test("BR5.3 BR5.5: an unreadable audit, or a required stage without an approved 
   } finally { rmSync(d, { recursive: true, force: true }); rmSync(e, { recursive: true, force: true }); }
 });
 
-// ---- regressions for the first audit's findings (BF-01 .. BF-04): bad input is refused before anything is written
-const GA = (stage, extra = "") => `## GATE_APPROVED\n**Event**: GATE_APPROVED\n**Stage**: ${stage}\n**User Input**: Approve${extra}`;
+// ---- regressions for the audit findings (rounds 1 and 2): bad input is refused before anything is written
 const fails = (d, ...extra) => { const r = cli(d, ...extra); return [r.code, r.out?.verdict, listing(d)]; };
 const gone = (...dirs) => dirs.forEach((d) => rmSync(d, { recursive: true, force: true }));
+const at = (block, iso) => block.replace(/\*\*Timestamp\*\*: .*/, `**Timestamp**: ${iso}`);
+const LC = (n) => confirm(FD, "u1", n), RC = (n) => confirm(FD, "u1", n, "Request changes"), US = (n) => ustart(FD, "u1", n), UC = (n) => udone(FD, "u1", n);
+const GA = "## GATE_APPROVED\n**Event**: GATE_APPROVED\n**Stage**: a\n**User Input**: Approve"; // no Timestamp line at all
+const D = "2026-10-24T00:00:02"; // a fixed UTC second for the time cases
 
-test("BR5.3 C2: an approval event without a valid time is refused (approved_at is required); the CLI writes nothing", () => {
-  assert.throws(() => rows(start("intent-capture", 1), GA("intent-capture")), /no valid Timestamp/);
-  assert.throws(() => rows(start("intent-capture", 1), blk("GATE_APPROVED", 2, { Stage: "intent-capture" }).replace(T(2), "yesterday")), /no valid Timestamp/);
-  assert.throws(() => rows(start("intent-capture", 1), blk("GATE_APPROVED", 2, { Stage: "intent-capture" }).replace(T(2), "2026-13-45T99:99:99Z")), /no valid Timestamp/);
-  const d = fixture(audit(start("intent-capture", 1), GA("intent-capture")));
+test("BR5.3 C2: every handled event needs a real UTC calendar time (approved_at is required); the CLI writes nothing", () => {
+  for (const bad of ["yesterday", "2026-13-45T99:99:99Z", "2026-02-30T00:00:02Z", "2026-02-29T00:00:02Z", "2100-02-29T00:00:02Z", "2026-04-31T00:00:02Z", "2026-10-24T24:00:00Z",
+    "2026-10-24T00:60:00Z", "2026-10-24T00:00:60Z", `${D}.1234567890Z`, `${D}+09:00`]) assert.throws(() => rows(start("a", 1), at(ok("a", 2), bad)), /no valid Timestamp/, bad);
+  assert.throws(() => rows(start("a", 1), GA), /no valid Timestamp/);
+  for (const good of ["2024-02-29T00:00:02Z", "2000-02-29T00:00:02Z", "2026-12-31T23:59:59Z", `${D}.5Z`, `${D}.123456789Z`]) assert.equal(rows(start("a", 1), at(ok("a", 2), good)).approvals[0].record.approved_at, good);
+  const d = fixture(audit(start("a", 1), GA));
   try { assert.deepEqual(fails(d), [1, "FAIL", []]); } finally { gone(d); }
+});
+
+test("BR5.2 C2: of the two events a unit design approval rests on, the later instant is approved_at, whatever the fractional digits", () => {
+  const run = (c, s, d) => rows(at(LC(1), c), at(US(2), s), at(UC(3), d)).approvals[0].record.approved_at;
+  assert.equal(run(`${D}Z`, `${D}.100Z`, `${D}.500Z`), `${D}.500Z`);
+  assert.equal(run(`${D}.500Z`, `${D}.100Z`, `${D}Z`), `${D}.500Z`, "the confirmation can be the later one");
+  assert.equal(run(`${D}Z`, `${D}Z`, `${D}.000000001Z`), `${D}.000000001Z`);
 });
 
 test("BR2.1 BR5.5: --require needs the newest attempt of the stage to be approved and not superseded", () => {
@@ -131,27 +142,43 @@ test("BR2.1 BR5.5: --require needs the newest attempt of the stage to be approve
   try {
     assert.deepEqual(fails(a, "--require", "intent-capture"), [1, "FAIL", []], "an older approval does not satisfy a reopened stage");
     assert.deepEqual(fails(b, "--require", "requirements-analysis"), [1, "FAIL", []], "a superseded row does not satisfy it");
+    for (const v of [[], [""]]) assert.deepEqual(fails(c, "--require", ...v), [1, "FAIL", []], "a --require without a stage name is an error, not a pass");
     assert.equal(cli(c, "--require", "intent-capture").code, 0, "the newest attempt approved is enough");
   } finally { gone(a, b, c); }
 });
 
-test("BR5.2: a Request changes after the unit started takes back the confirmation that attempt had already used", () => {
-  const rc = confirm(FD, "u1", 3, "Request changes");
-  assert.deepEqual(ids(rows(confirm(FD, "u1", 1), ustart(FD, "u1", 2), rc, udone(FD, "u1", 4))), [`${FD}:u1#1-`], "taken back after the start");
-  assert.deepEqual(ids(rows(confirm(FD, "u1", 1), rc, ustart(FD, "u1", 4), udone(FD, "u1", 5))), [`${FD}:u1#1-`], "taken back before the start");
-  assert.deepEqual(ids(rows(confirm(FD, "u1", 1), ustart(FD, "u1", 2), udone(FD, "u1", 3), rc)), [`${FD}:u1#1+`], "an approval already given stands");
+test("BR5.2: a confirmation belongs to the attempt it was given in; a change request takes it back; nothing is carried across attempts", () => {
+  const R = (...b) => ids(rows(...b));
+  assert.deepEqual(R(LC(1), US(2), RC(3), UC(4)), [`${FD}:u1#1-`], "taken back after the start");
+  assert.deepEqual(R(LC(1), RC(3), US(4), UC(5)), [`${FD}:u1#1-`], "taken back before the start");
+  assert.deepEqual(R(LC(1), US(2), UC(3), RC(4)), [`${FD}:u1#1+`], "an approval already given stands");
+  assert.deepEqual(R(LC(1), US(2), RC(3), LC(4), UC(5)), [`${FD}:u1#1+`], "re-confirmed after the change request");
+  assert.deepEqual(R(LC(1), US(2), LC(3), UC(4), US(5), UC(6)), [`${FD}:u1#1+`, `${FD}:u1#2-`], "the next attempt has none of its own");
+  assert.deepEqual(R(LC(1), US(2), LC(3), UC(4), LC(5), US(6), UC(7)), [`${FD}:u1#1+`, `${FD}:u1#2+`], "after the reopening a new one counts");
+  assert.deepEqual(R(LC(1), US(2), UC(3), UC(4)), [`${FD}:u1#1+`], "a second completion changes nothing");
+  assert.deepEqual(R(start("inc", 1), ok("inc", 2), LC(3), US(4), jump("inc", 5), LC(6), US(7), UC(8)), ["inc#1+", `${FD}:u1#1-x`, `${FD}:u1#2+`], "an attempt given up by a jump back takes no later confirmation");
+  const a = rows(LC(1), US(2), LC(3), UC(4)).approvals[0].record;
+  assert.deepEqual([a.source_event_digest, a.approved_at], [sha(LC(3), UC(4)), T(4)], "the approval rests on the latest confirmation of its attempt");
 });
 
-test("BR5.7: names that could leave the approvals folder are refused before anything is written", () => {
+test("BR5.7: names and links that could carry a write out of the approvals folder are refused before anything is written", () => {
   for (const bad of ["../../../escape-record", "a/b", "/abs", ".", "..", "", "a b"]) assert.throws(() => rows(start(bad, 1), ok(bad, 2)), /stage is not a plain name/, bad);
   assert.throws(() => rows(ustart(FD, "../u", 1), udone(FD, "../u", 2)), /unit is not a plain name/);
   assert.throws(() => plan({ intent: "../x", shards: [{ ref: REF, text: audit(start("a", 1), ok("a", 2)) }] }), /intent is not a plain name/);
-  const d = fixture(audit(start("../../../escape-record", 1), ok("../../../escape-record", 2)));
-  try { assert.deepEqual(fails(d), [1, "FAIL", []]); assert.equal(existsSync(join(d, "..", "escape-record")), false); }
-  finally { gone(d, join(d, "..", "escape-record")); }
-  const o = mkdtempSync(join(tmpdir(), "ar-out-"));
+  assert.throws(() => plan({ intent: "i1", shards: [{ ref: REF, text: audit(start("a", 1), ok("a", 2)).replace(/\n/g, "\r\n") }] }), /CR line ends/);
+  const d = fixture(audit(start("../../../escape-record", 1), ok("../../../escape-record", 2))), o = mkdtempSync(join(tmpdir(), "ar-out-"));
   try {
+    assert.deepEqual(fails(d), [1, "FAIL", []]); assert.equal(existsSync(join(d, "..", "escape-record")), false);
     assert.throws(() => writeAll(o, [{ path: "approvals/i1/../../x.json", record: {} }], { path: "approvals/i1/_sequence.json", value: {} }), /leaves the output folder/);
     assert.deepEqual(listing(o), []);
-  } finally { gone(o); }
+  } finally { gone(d, o, join(d, "..", "escape-record")); }
+  const regular = (e) => (existsSync(join(e, "approvals")) ? readdirSync(join(e, "approvals"), { recursive: true, withFileTypes: true }).filter((x) => x.isFile()).map((x) => join(x.parentPath, x.name)) : []);
+  const w = (e, p) => { mkdirSync(join(e, p), { recursive: true }); return join(e, p); }, X = (o) => join(o, "x.json");
+  const links = [(e, o) => { mkdirSync(join(e, "approvals")); symlinkSync(o, join(e, "approvals/i1")); }, (e, o) => symlinkSync(o, join(e, "approvals")), // a parent folder, the folder itself
+    (e, o) => symlinkSync(X(o), join(w(e, "approvals/i1/a/_intent"), "attempt-1.json")), (e, o) => symlinkSync(X(o), join(w(e, "approvals/i1"), "_sequence.json")), // a dangling file, the sequence
+    (e) => writeFileSync(join(w(e, "approvals/i1"), "b"), "x"), (e) => w(e, "approvals/i1/_sequence.json")]; // a file where the second stage needs a folder, a folder in place of the sequence: nothing may be written
+  for (const [n, set] of links.entries()) {
+    const e = fixture(audit(start("a", 1), ok("a", 2), start("b", 3), ok("b", 4))), away = mkdtempSync(join(tmpdir(), "ar-away-"));
+    try { set(e, away); const before = regular(e), r = cli(e); assert.deepEqual([r.code, r.out.verdict, readdirSync(away), regular(e)], [1, "FAIL", [], before], `link ${n}`); } finally { gone(e, away); }
+  }
 });
