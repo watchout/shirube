@@ -1,0 +1,40 @@
+{
+  "stage": "nfr-design",
+  "unit": "u1-skeleton",
+  "upstream_ids": [
+    "NFR1.1", "NFR1.2", "NFR1.3", "NFR1.4",
+    "NFR2.1",
+    "NFR3.1", "NFR3.2", "NFR3.3", "NFR3.4",
+    "NFR4.1", "NFR4.2",
+    "NFR5.1", "NFR6.1", "NFR7.1", "NFR8.1", "NFR8.2",
+    "NFR9.1",
+    "NFR10.1", "NFR10.2", "NFR10.3", "NFR10.4",
+    "NFR11.1", "NFR12.1", "NFR13.1"
+  ],
+  "coverage": [
+    { "id": "NFR1.1", "status": "OK", "target": "reliability-design.md: exit code 0/1/2 と、入口で FAIL か観測できずに分ける" },
+    { "id": "NFR1.2", "status": "OK", "target": "reliability-design.md: 計測の exit code 1・2 と、読めた分の出力" },
+    { "id": "NFR1.3", "status": "OK", "target": "observability-design.md: sds-gate-result/1 の log の行と status の説明文" },
+    { "id": "NFR1.4", "status": "OK", "target": "reliability-design.md: schema で 1 行を探し、0 行・2 行以上・log 無しは観測できず" },
+    { "id": "NFR2.1", "status": "OK", "target": "reliability-design.md: 核の関数は入力と時刻の引数だけ、欄の順を固定" },
+    { "id": "NFR3.1", "status": "OK", "target": "performance-design.md: budget.mjs の問い合わせ 1 回 20 秒" },
+    { "id": "NFR3.2", "status": "OK", "target": "performance-design.md: budget.mjs の門の全体 5 分" },
+    { "id": "NFR3.3", "status": "OK", "target": "performance-design.md: budget.mjs の計測の全体 10 分" },
+    { "id": "NFR3.4", "status": "OK", "target": "scalability-design.md: repo ごとにページ単位で全部読み、予算で止める" },
+    { "id": "NFR4.1", "status": "OK", "target": "security-design.md: 固定 commit の再利用 workflow を pull_request_target で呼ぶ" },
+    { "id": "NFR4.2", "status": "OK", "target": "security-design.md: 記録の橋は base の sha からだけ読む" },
+    { "id": "NFR5.1", "status": "Deferred", "target": "code-generation（実装で Node の組込みだけを使うことを確かめる）" },
+    { "id": "NFR6.1", "status": "OK", "target": "logical-components.md: PR ごとの置き方の表（own-code の増分）と、P1 で S1 全体の見積もりを添えて予算を 1 回だけ改める。見積もりは nfr-requirements/tech-stack-decisions.md の大きさの見積もり" },
+    { "id": "NFR7.1", "status": "OK", "target": "logical-components.md: PR ごとの置き方の表（実装の PR 4 本、どれも見積もりの上の端で 400 行・20 file の中、新しい file 300 行・関数 50 行の中に収める）" },
+    { "id": "NFR8.1", "status": "Deferred", "target": "code-generation（試験が先の順で作る）" },
+    { "id": "NFR8.2", "status": "OK", "target": "reliability-design.md: 網羅率の床（scripts/** の全部を数え、行 80% を下回ったら ci.yml の試験の job が失敗する。網羅率を測る job と確かめの command は Node 26。正しく起動することと床を下回った時に止まることを P1 の CI と Code Generation の確かめで見る）" },
+    { "id": "NFR9.1", "status": "OK", "target": "security-design.md: 呼ぶ API を開発の記録に限る" },
+    { "id": "NFR10.1", "status": "OK", "target": "security-design.md: 門の呼出しの job の permissions" },
+    { "id": "NFR10.2", "status": "OK", "target": "security-design.md: 専用の資格情報ができるまでこの Mac から計測を動かさない" },
+    { "id": "NFR10.3", "status": "OK", "target": "security-design.md: ci.yml の計測の job は読取りだけ、一番上は permissions: {}" },
+    { "id": "NFR10.4", "status": "OK", "target": "security-design.md: 作り手は GitHub の API を呼ばない" },
+    { "id": "NFR11.1", "status": "OK", "target": "observability-design.md: sds-metrics/1 の最小の欄" },
+    { "id": "NFR12.1", "status": "OK", "target": "reliability-design.md: UTC の時点と日本時間の日の境目" },
+    { "id": "NFR13.1", "status": "OK", "target": "reliability-design.md: 同じ head で同じ判定、status を 1 つ書き直す" }
+  ]
+}

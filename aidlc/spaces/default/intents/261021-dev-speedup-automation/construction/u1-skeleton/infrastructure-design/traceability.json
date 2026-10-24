@@ -1,0 +1,36 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u1-skeleton",
+  "upstream_ids": [
+    "NFR1.1", "NFR1.2", "NFR1.3", "NFR1.4",
+    "NFR2.1",
+    "NFR3.1", "NFR3.2", "NFR3.3", "NFR3.4",
+    "NFR4.1", "NFR4.2",
+    "NFR8.2",
+    "NFR9.1",
+    "NFR10.1", "NFR10.2", "NFR10.3", "NFR10.4",
+    "NFR11.1", "NFR12.1", "NFR13.1"
+  ],
+  "coverage": [
+    { "id": "NFR1.1", "status": "N/A", "target": "基盤ではなく script の中の作り（exit code 0/1/2、reliability-design.md）" },
+    { "id": "NFR1.2", "status": "N/A", "target": "基盤ではなく計測の script の中の作り（reliability-design.md）" },
+    { "id": "NFR1.3", "status": "OK", "target": "sds-gate-self.yml の commit status sds-gate と workflow の log" },
+    { "id": "NFR1.4", "status": "N/A", "target": "基盤ではなく計測の script の log の読み方（reliability-design.md）。log の保持期間は repo の今の設定のまま" },
+    { "id": "NFR2.1", "status": "N/A", "target": "基盤ではなく核の関数の作り（reliability-design.md）" },
+    { "id": "NFR3.1", "status": "N/A", "target": "基盤ではなく scripts/sds/budget.mjs の値（performance-design.md）" },
+    { "id": "NFR3.2", "status": "OK", "target": "門の job の時間の上限を budget.mjs の 5 分より長くする（予算は script の中で守る）" },
+    { "id": "NFR3.3", "status": "OK", "target": "ci.yml の計測の job の時間の上限を budget.mjs の 10 分より長くする" },
+    { "id": "NFR3.4", "status": "N/A", "target": "基盤ではなく計測の script の読み方（scalability-design.md）" },
+    { "id": "NFR4.1", "status": "OK", "target": "sds-gate-self.yml が固定した shirube の commit の sds-gate.yml を呼ぶ。.shirube/sds-pin.json の sds_commit。U1 の最初の版上げは I2 の後の K（cicd-pipeline.md の U1 の PR の順）" },
+    { "id": "NFR4.2", "status": "N/A", "target": "基盤ではなく記録の橋の読み方（base の sha からだけ読む、security-design.md）" },
+    { "id": "NFR8.2", "status": "OK", "target": "ci.yml の試験の step に --test-coverage-include='scripts/**' --test-coverage-include-all --test-coverage-lines=80、その job は Node 26（infrastructure-specification.md の試験と網羅率、cicd-pipeline.md の確かめの command）" },
+    { "id": "NFR9.1", "status": "N/A", "target": "基盤ではなく script が呼ぶ API の範囲（security-design.md）" },
+    { "id": "NFR10.1", "status": "OK", "target": "sds-gate-self.yml の permissions（statuses: write、contents・pull-requests・issues・actions・checks: read）" },
+    { "id": "NFR10.2", "status": "Deferred", "target": "U2 の段（計測の専用の読取りの資格情報は、作る時に Owner の決定を取る）" },
+    { "id": "NFR10.3", "status": "OK", "target": "ci.yml の permissions: {} と、計測の job の読取りだけの permissions" },
+    { "id": "NFR10.4", "status": "N/A", "target": "基盤ではなく作り手の CLI の作り（GitHub の API を呼ばない、security-design.md）" },
+    { "id": "NFR11.1", "status": "OK", "target": "ci.yml の計測の job の log の sds-metrics/1 の 1 行" },
+    { "id": "NFR12.1", "status": "N/A", "target": "基盤ではなく計測の script の時刻の扱い（reliability-design.md）" },
+    { "id": "NFR13.1", "status": "N/A", "target": "基盤ではなく門の判定の作り（reliability-design.md）" }
+  ]
+}
