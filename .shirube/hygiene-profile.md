@@ -11,8 +11,8 @@ This page is the one place where this repository declares what the hygiene check
   `--ignore-gitleaks-allow`), so no exception is needed; an exception is required only when a real finding is suppressed.
 - large files: only `package-lock.json` (lockfile, built-in exemption). Nothing else is allowed over 100KB.
 - mode: blocking from the first PR (this repository has no report-only period).
-- limits that are internal budgets, not upstream recommendations: new file 300 lines, function 50 lines, complexity 10, PR +400 / 20 files, own code 2,700 lines.
-- own-code budget: raised once from 2,300 to 2,700 lines for the whole of the first complete version (the U1 implementation adds about 570–760 lines on top of the 1,938 in use). The value is a proposal for the Owner to set at the exact head of the protected-surface PR (iyasaka-arc#49 6357471211, 6375005810). No other limit is loosened in the same change. Size counts leave out AI-DLC records (`aidlc/` Markdown, JSON and text) and Markdown under `docs/` (iyasaka-arc#49 6354019047): records, not code.
+- limits that are internal budgets, not upstream recommendations: new file 300 lines, function 50 lines, complexity 10, PR +400 / 20 files, own code 4,000 lines.
+- own-code budget: raised once, from 2,300 to 4,000 lines, for the whole of the first complete version (S1). Basis, the S1-wide estimate (PR #66 comment 6378598176): 1,938 in use + 1,200–1,900 added by U1–U5 (U1 570–760, U2–U5 630–1,140; U6 and U7 live in other repositories, 0 here) = 3,138–3,838 at the end, about 160 lines of margin. The Owner set the value (iyasaka-arc#49 6379138360, under 6357471211 item 2); work that would pass a Unit's upper estimate stops and goes back to arc. No other limit is loosened in the same change. Size counts leave out AI-DLC records (`aidlc/` Markdown, JSON and text) and Markdown under `docs/` (iyasaka-arc#49 6354019047): records, not code.
 
 ```json
 {
@@ -28,7 +28,7 @@ This page is the one place where this repository declares what the hygiene check
     "pr_changed_files": 20,
     "large_file_bytes": 102400,
     "baseline_max_entries": 0,
-    "own_code_lines": 2700
+    "own_code_lines": 4000
   },
   "mode": "blocking",
   "enforce_by": "2026-09-26"
