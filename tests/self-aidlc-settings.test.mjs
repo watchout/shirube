@@ -9,12 +9,9 @@ const root = resolve(import.meta.dirname, "..");
 const read = (p) => readFileSync(resolve(root, p), "utf8");
 const ignored = (p) => spawnSync("git", ["check-ignore", "-q", p], { cwd: root }).status === 0;
 
-test("the committed .claude/settings.json denies the Agent tool, and no .mcp.json exists", () => {
+test("AI-DLC settings: the Agent tool is denied, no .mcp.json exists, the version is pinned, and aidlc.settings.json is valid JSON that names no model id", () => {
   assert.ok(JSON.parse(read(".claude/settings.json")).permissions.deny.includes("Agent"));
   assert.equal(existsSync(resolve(root, ".mcp.json")), false);
-});
-
-test("AI-DLC is pinned in .aidlc-version, and aidlc.settings.json is valid JSON that names no model id", () => {
   assert.match(read(".aidlc-version"), /^\d+\.\d+\.\d+\n?$/);
   assert.doesNotThrow(() => JSON.parse(read("aidlc.settings.json")));
   assert.doesNotMatch(read("aidlc.settings.json"), /"(?:model|modelId|model_id)"\s*:/i, "presets never set a model id");

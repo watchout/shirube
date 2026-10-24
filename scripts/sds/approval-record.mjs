@@ -32,7 +32,7 @@ const inside = (base, p) => { const r = relative(resolve(base), resolve(p)); ret
 
 export function parseAudit(text, ref) {
   return text.split("\n---\n").map((b) => b.trim().replace(/^# .*\n+/, "")).filter((b) => b.includes("**Event**:")).map((raw) => { // the file's title line is not part of an event
-    const f = Object.fromEntries([...raw.matchAll(/^\*\*([^*\n]+)\*\*: (.*)$/gm)].map((m) => [m[1], m[2].trim()]));
+    const f = Object.fromEntries([...raw.matchAll(/^\*\*([^*\n]+)\*\*: (.*)$/gm)].map((m) => [m[1], m[2].trim()]).reverse()); // the first of a repeated field wins: text typed into a later one cannot replace it
     return { event: f.Event, ts: f.Timestamp, f, raw, ref };
   });
 }
@@ -46,8 +46,8 @@ const addRow = (c, stage, unit) => {
 };
 const approve = (row, ...events) => { row.src.push(...events); row.approved = true; };
 const supersede = (c, stage, unit) => { // a reopened stage invalidates the rows downstream of it (all units, or only the reopened unit)
-  const from = c.rank.get(stage);
-  if (from !== undefined) for (const row of c.rows) if (c.rank.get(row.stage) > from && (!unit || row.unit === unit)) row.superseded = true;
+  const from = c.rank.get(stage); need(from !== undefined, `a jump back targets ${stage}, which never started`);
+  for (const row of c.rows) if (c.rank.get(row.stage) > from && (!unit || row.unit === unit)) row.superseded = true;
 };
 
 const HANDLERS = {
@@ -155,7 +155,8 @@ export function writeAll(out, approvals, sequence) { // an approval file that ex
 export function cli(args) {
   try {
     need(typeof args.intent === "string", "--intent is required");
-    need(args.require === undefined || (typeof args.require === "string" && args.require !== ""), "--require needs a stage name (stage or stage:unit)");
+    const odd = Object.keys(args).filter((k) => !["intent", "root", "out", "audit", "require"].includes(k) || (k !== "intent" && (typeof args[k] !== "string" || args[k] === "")));
+    need(odd.length === 0, `unknown option, or an option without a value: ${odd.join(", ")}`);
     const root = args.root ?? process.cwd(), p = plan({ intent: args.intent, shards: readShards(root, args.intent, args.audit) });
     if (typeof args.require === "string") checkRequired(args.require, p);
     const done = writeAll(args.out ?? root, p.approvals, { path: `approvals/${args.intent}/_sequence.json`, value: p.sequence });

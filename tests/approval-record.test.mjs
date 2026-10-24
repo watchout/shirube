@@ -72,7 +72,9 @@ test("NFR2.1 NFR10.4: the same audit gives the same bytes, and the module reads 
 });
 
 const fixture = (text) => { const d = mkdtempSync(join(tmpdir(), "ar-")); mkdirSync(join(d, "aidlc/spaces/default/intents/i1/audit"), { recursive: true }); writeFileSync(join(d, REF), text); return d; };
-const cli = (d, ...extra) => { const r = spawnSync("node", [SCRIPT, "--intent", "i1", "--root", d, "--out", d, ...extra], { encoding: "utf8" }); return { code: r.status, out: r.stdout.trim() ? JSON.parse(r.stdout) : null }; };
+const cli = (d, ...extra) => { const r = spawnSync("node", [SCRIPT, "--intent", "i1", "--root", d, "--out", d, ...extra], { encoding: "utf8", cwd: d }); return { code: r.status, out: r.stdout.trim() ? JSON.parse(r.stdout) : null }; };
+const fails = (d, ...extra) => { const r = cli(d, ...extra); return [r.code, r.out?.verdict, listing(d)]; };
+const gone = (...dirs) => dirs.forEach((d) => rmSync(d, { recursive: true, force: true }));
 const listing = (d) => (existsSync(join(d, "approvals")) ? readdirSync(join(d, "approvals"), { recursive: true }).sort() : []);
 
 test("BR5.5 BR5.7: the CLI writes the approvals and the sequence into the tree, and a second run changes nothing", () => {
@@ -101,19 +103,11 @@ test("BR5.8: an existing approval with different bytes fails the run and nothing
 });
 
 test("BR5.3 BR5.5: an unreadable audit, or a required stage without an approved attempt, fails and writes nothing", () => {
-  const d = fixture("not an audit");
-  const e = fixture(audit(start("a", 1)));
-  try {
-    assert.deepEqual([cli(d).code, listing(d)], [1, []]);
-    const r = cli(e, "--require", "a");
-    assert.deepEqual([r.code, r.out.verdict, listing(e)], [1, "FAIL", []]);
-    assert.match(r.out.reason, /a/);
-  } finally { rmSync(d, { recursive: true, force: true }); rmSync(e, { recursive: true, force: true }); }
+  const d = fixture("not an audit"), e = fixture(audit(start("a", 1)));
+  try { assert.deepEqual([fails(d), fails(e, "--require", "a")], [[1, "FAIL", []], [1, "FAIL", []]]); } finally { gone(d, e); }
 });
 
 // ---- regressions for the audit findings (rounds 1 and 2): bad input is refused before anything is written
-const fails = (d, ...extra) => { const r = cli(d, ...extra); return [r.code, r.out?.verdict, listing(d)]; };
-const gone = (...dirs) => dirs.forEach((d) => rmSync(d, { recursive: true, force: true }));
 const at = (block, iso) => block.replace(/\*\*Timestamp\*\*: .*/, `**Timestamp**: ${iso}`);
 const LC = (n) => confirm(FD, "u1", n), RC = (n) => confirm(FD, "u1", n, "Request changes"), US = (n) => ustart(FD, "u1", n), UC = (n) => udone(FD, "u1", n);
 const GA = "## GATE_APPROVED\n**Event**: GATE_APPROVED\n**Stage**: a\n**User Input**: Approve"; // no Timestamp line at all
@@ -142,7 +136,7 @@ test("BR2.1 BR5.5: --require needs the newest attempt of the stage to be approve
   try {
     assert.deepEqual(fails(a, "--require", "intent-capture"), [1, "FAIL", []], "an older approval does not satisfy a reopened stage");
     assert.deepEqual(fails(b, "--require", "requirements-analysis"), [1, "FAIL", []], "a superseded row does not satisfy it");
-    for (const v of [[], [""]]) assert.deepEqual(fails(c, "--require", ...v), [1, "FAIL", []], "a --require without a stage name is an error, not a pass");
+    for (const v of [["--require"], ["--require", ""], ["--requre", "x"], ["--out", ""], ["--root", ""]]) assert.deepEqual(fails(c, ...v), [1, "FAIL", []], `${v.join(" ")} is an error, not a pass`);
     assert.equal(cli(c, "--require", "intent-capture").code, 0, "the newest attempt approved is enough");
   } finally { gone(a, b, c); }
 });
@@ -159,6 +153,12 @@ test("BR5.2: a confirmation belongs to the attempt it was given in; a change req
   assert.deepEqual(R(start("inc", 1), ok("inc", 2), LC(3), US(4), jump("inc", 5), LC(6), US(7), UC(8)), ["inc#1+", `${FD}:u1#1-x`, `${FD}:u1#2+`], "an attempt given up by a jump back takes no later confirmation");
   const a = rows(LC(1), US(2), LC(3), UC(4)).approvals[0].record;
   assert.deepEqual([a.source_event_digest, a.approved_at], [sha(LC(3), UC(4)), T(4)], "the approval rests on the latest confirmation of its attempt");
+});
+
+test("BR5.3: odd structure fails closed: a repeated field cannot replace the framework's, a jump back to a stage that never started is refused", () => {
+  assert.deepEqual(ids(rows(start("a", 1), start("b", 2), blk("GATE_APPROVED", 3, { Stage: "a", "User Input": "Approve\n**Stage**: b\n**Event**: STAGE_JUMPED" }))), ["a#1+", "b#1-"]);
+  assert.throws(() => rows(start("a", 1), ok("a", 2), jump("zzz", 3)), /never started/);
+  assert.throws(() => rows(start("a", 1), ok("a", 2), blk("GATE_REJECTED", 3, { Stage: "zzz", Reopen: "jump" })), /never started/);
 });
 
 test("BR5.7: names and links that could carry a write out of the approvals folder are refused before anything is written", () => {
