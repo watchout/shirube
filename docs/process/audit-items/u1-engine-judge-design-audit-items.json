@@ -1,7 +1,7 @@
 {
   "schema": "sds-audit-items/1",
   "method_ref": "watchout/shirube@d5b51b3694f49ec58a89cfb1e3449ae1fe3682ed/docs/sds/audit-method.md#3",
-  "scope": "U1 の設計の改版 v1（I1: 段の「済み」を AI-DLC の engine の判断で読む）の設計監査 D1〜D6 と、作業指示が足した 4 項目。監査の対象は docs/design/u1-engine-judge.md（iyasaka-arc#57 の comment 6389578735 の body と同じ bytes の設計の記録）と、本項目集合の file docs/process/audit-items/u1-engine-judge-design-audit-items.json。記法: [DS] = 設計の記録 docs/design/u1-engine-judge.md（本文 SHA-256 65d08d22f0d638c18bb73fc9254ddaf7ca84ab0785628afca6a1efcdf2e782ba）、[WO] = 作業指示 iyasaka-arc#24 の comment 6389581977（本文 SHA-256 d320af505fd3f0c58026b403007d8c7ecd7c9e9d5730162c3e53c072ad85423f）、[OD-A] = OD-SHIRUBE-I1-UNIT-DONE-VIA-ENGINE-PARTS-WITH-BUN-20261025-001（iyasaka-arc#49 の comment 6389500200、8bff5a804725d274039686f2f89ba54e392423743a21093af1c94e79619e742e）、[OD-S] = OD-SHIRUBE-I1-ENGINE-STATE-COPY-DESIGN-REVISION-20261024-001（iyasaka-arc#49 の comment 6381170673、c3a785ee163ff14c4fa00f8eebaaab6134446de895f6901490ef72c388cdd6d6。決定 1 の「写し」と「bun は使わない」は [OD-A] が置換）、[ENG] = AI-DLC 2.11.1 の source（原典 awslabs/aidlc-workflows v2.11.1 の core/tools/ の aidlc-lib.ts・aidlc-orchestrate.ts。Owner の作業場の .claude/tools/ はその写しで、.aidlc-version は 2.11.1）、[U1] = base の main にある U1 の設計の記録（aidlc/spaces/default/intents/261021-dev-speedup-automation/construction/u1-skeleton/ の functional-design/ と nfr-requirements/）、[PR67] = shirube PR #67（I1 の現行の実装。4 回の実装監査はすべて BLOCK。この PR は #67 に触れない）。監査者は [ENG] と [U1] の該当箇所を自分で取り直して読む（作者や設計の宣言値を写さない）。項目集合は作者（shirube）が書いた物で、範囲が弱い・足りないと見えたら blocking_findings に書く。全 10 項目必須。",
+  "scope": "U1 の設計の改版（I1: 段の「済み」を AI-DLC の engine の判断で読む）の設計監査 round 2（D1〜D6 と、作業指示が足した 4 項目と、round 1 の必須指摘 BF-01〜07 の直しの確かめ）。監査の対象は docs/design/u1-engine-judge.md（iyasaka-arc#57 の comment 6389874375 = 改版 v2 の body と同じ bytes。v1 の 6389578735 は置き換え）と、本項目集合の file docs/process/audit-items/u1-engine-judge-design-audit-items.json。記法: [DS] = 設計の記録 docs/design/u1-engine-judge.md（v2、本文 SHA-256 23f385c6930697f6b6ed7c27e93eb111ff56b40862933d32adcfaca8e629fc7f）、[R1] = round 1 の返却 watchout/shirube PR #68 の comment 6389815898（BLOCK、BF-01〜07、本文 SHA-256 239ca53665742159f8f70bde40412b43c55b560f6a4364c186a256b97c6337bf）、[WO] = 作業指示 iyasaka-arc#24 の comment 6389581977（本文 SHA-256 d320af505fd3f0c58026b403007d8c7ecd7c9e9d5730162c3e53c072ad85423f）、[WO2] = round 2 の作業指示 iyasaka-arc#24 の comment 6389877022（366a440ff1e61454ad1ee75eadba3d12f6c6cb9d259893dab0583be68b2e39c8）、[OD-A] = OD-SHIRUBE-I1-UNIT-DONE-VIA-ENGINE-PARTS-WITH-BUN-20261025-001（iyasaka-arc#49 の comment 6389500200、8bff5a804725d274039686f2f89ba54e392423743a21093af1c94e79619e742e）、[OD-S] = OD-SHIRUBE-I1-ENGINE-STATE-COPY-DESIGN-REVISION-20261024-001（iyasaka-arc#49 の comment 6381170673、c3a785ee163ff14c4fa00f8eebaaab6134446de895f6901490ef72c388cdd6d6。決定 1 の「写し」と「bun は使わない」は [OD-A] が置換）、[ENG] = AI-DLC 2.11.1 の source（原典 awslabs/aidlc-workflows v2.11.1 の core/tools/。Owner の作業場の .claude/tools/ はその写しで、.aidlc-version は 2.11.1）、[U1] = base の main にある U1 の設計の記録（aidlc/spaces/default/intents/261021-dev-speedup-automation/construction/u1-skeleton/ の functional-design/ と nfr-requirements/、inception/contract-design/）、[PR67] = shirube PR #67（I1 の現行の実装。4 回の実装監査はすべて BLOCK。この PR は #67 に触れない）。監査者は [ENG] と [U1] の該当箇所を自分で取り直して読む（作者や設計の宣言値を写さない）。改版の扱い: EJ-1〜EJ-10 は round 1 の文を残した（変えたのは EJ-7 の対象だけ: v1 の comment 6389578735・SHA-256 65d08d22…・10300 bytes から、v2 の 6389874375・23f385c6…・17099 bytes へ）。その文が引く v1 の節番号は、v2 では次のように再編されている（v1 §3-1 → v2 §3-1・§3-6、v1 §3-2 → §3-2、v1 §3-3 → §3-3、v1 §3-4 → §3-4、v1 §3-5 → §3-5・§3-6、v1 §4 → §4）。監査者は同じ意味の v2 の節に読み替える。足した EJ-11〜EJ-17 は [R1] の必須指摘 BF-01〜07 の直しの確かめで、各項目に [R1] の required_action と、それに答える v2 の節を書いた（v2 の §0 の表と同じ対応）。項目集合は作者（shirube）が書いた物で、範囲が弱い・足りないと見えたら blocking_findings に書く。全 17 項目必須。",
   "items": [
     {
       "id": "EJ-1",
@@ -35,8 +35,8 @@
     },
     {
       "id": "EJ-7",
-      "criterion": "file の bytes（作業指示が足した項目）: docs/design/u1-engine-judge.md の bytes が、iyasaka-arc#57 の comment 6389578735 の API の `body` と同じ（本文 SHA-256 65d08d22f0d638c18bb73fc9254ddaf7ca84ab0785628afca6a1efcdf2e782ba、10300 bytes）。監査者が GitHub の API から body を取り直して file の bytes と比べる（作者の宣言値を写さない）。比べる対象が 1 file だけであり、設計の判断を作者が変えていない（bytes の同一が、変えていないことの証拠）。",
-      "basis": "[WO] 手順 1・3、SDS S5"
+      "criterion": "file の bytes（作業指示が足した項目）: docs/design/u1-engine-judge.md の bytes が、iyasaka-arc#57 の comment 6389874375（改版 v2）の API の `body` と同じ（本文 SHA-256 23f385c6930697f6b6ed7c27e93eb111ff56b40862933d32adcfaca8e629fc7f、17099 bytes）。監査者が GitHub の API から body を取り直して file の bytes と比べる（作者の宣言値を写さない）。比べる対象が 1 file だけであり、設計の判断を作者が変えていない（bytes の同一が、変えていないことの証拠）。",
+      "basis": "[WO] 手順 1・3、[WO2] 手順 1、SDS S5"
     },
     {
       "id": "EJ-8",
@@ -52,6 +52,41 @@
       "id": "EJ-10",
       "criterion": "CI に bun・engine を入れない（作業指示が足した項目）: [DS] §2・§3-5 が、公開 repo の workflow（.github/workflows/**）・package.json の依存・pin（.shirube/**）を変えず、CI（Node 26、行の網羅率 80%）は本体を偽の adapter で試し、本物の adapter は席の作業場でだけ bun で動く、と書き、互いに矛盾しない。本物の adapter のコードが CI の検査（網羅率・knip・depcruise・jscpd・pr-size・hygiene の新規 file 300 行）の対象に入る時の扱い（bun 固有の import が Node 26 の CI で壊れない、または対象から外す根拠）が書かれている。新しい依存が bun だけで、npm の依存を足さないこと（[OD-A] 決定 1）、門が読むのは I1 が作った記録（JSON）だけであること（[OD-A] 決定 2）が崩れていない。",
       "basis": "[WO] 手順 3、[OD-A] 決定 1・2、iyasaka-arc#49 6336689921、SDS S2"
+    },
+    {
+      "id": "EJ-11",
+      "criterion": "BF-01（engine の判断との同値）の直し: [R1] BF-01 の required_action（engine が既に決める条件と観測する範囲を正確に記述し、成果物欠落・台帳未使用・適用除外・skip・wave の扱いを定める。Shirube が試行境界を再実装しない）に、[DS] §1・§3-1・§3-6 が答えている。確かめること: (a) 「済み」の判断が、engine 自身の関数（`unitMajorWalkBeat`・`unitMajorFinishedWalk`・`unitStageStop`・`unitExempt`・`unitLedgerFor`）の呼び出しに置かれ、作者側で条件を組み立てていない。(b) 成果物欠落・台帳未使用・適用除外・skip・wave（`keepChangedWaveCompletions` を含む台帳）の扱いが、engine の答えのまま status（`approved` / `exempt` / `not_approved`）に写る。(c) round 1 の反例（serial の受領あり・要約の確認 ok・必須成果物なし。v1 は承認済み、engine は work）が v2 で `not_approved` になる。(d) engine の関数は export されていないため、[DS] §3-6 の「写しの末尾に export の 1 行だけを足す」が、原典の file とほかの行を変えない。(e) `unitMajorWalkBeat`・`unitMajorFinishedWalk` が null を返す形（team・swarm・段単位の成果物の形・skeleton の stance 未決 ほか）が「確かめられない」に落ち、承認済みに変換されない。(f) `unitMajorFinishedWalk`（今の段が Unit の段より後）が返す step は固定の `covered` で、Unit ごとの判断は返さない。v2 は block と Unit の並びを借りて `unitStageStop` を自分で呼ぶ。この使い方が engine の意図（開き直しの時に Unit の段を再び判断する）と矛盾しない。(g) 名指された関数と行番号（13295・13336・18423）が原典 2.11.1 と合う（作者の読取りでは合っていた。EJ-8 と合わせて監査者が原典で確かめる）。",
+      "basis": "[R1] BF-01、[DS] §0・§1・§3-1・§3-6、[ENG] aidlc-orchestrate.ts、[OD-A]"
+    },
+    {
+      "id": "EJ-12",
+      "criterion": "BF-02（前の行の選び方）の直し: [R1] BF-02 の required_action（C9 /2 への変更と既存 BR2 群の対応、最初の段と Unit 境界での期待結果、門の規則を保持する範囲と変更する範囲、正負例）に、[DS] §2・§3-4・§4 の 6 が答えている。base の main の rules.md の BR2.1・BR2.4・BR2.5 と契約 C9（contract-summary.md）を監査者が自分で読み、次が [DS] と一致する: (a) intent の最初の段 → PASS（BR2.4）。(b) Unit の段の前 = 同じ Unit の 1 つ前の段（BR2.1）。(c) Unit の最初の段の前 = Inception の最後の行（BR2.5）で、Unit 2 の最初の段の前が Unit 1 の最終段にならない。(d) 足すのは「`exempt` の行は前の行に選ばず、さらに 1 つ前へ進む」だけで、BR2 の規則を変えていない。(e) §4 の 6 の正負例（最初の段・Unit 1 と Unit 2 の最初の段・exempt・not_approved・file 無し・取り消し）が各規則に対応する。",
+      "basis": "[R1] BF-02、[DS] §0・§2・§3-4・§4、[U1] rules.md BR2.1/BR2.4/BR2.5・contract-summary.md C9"
+    },
+    {
+      "id": "EJ-13",
+      "criterion": "BF-03（Construction の段全体の分類）の直し: [R1] BF-03 の required_action（段の分類と状態・承認イベントの参照方法を全対象段で定める。未分類を後工程へ黙って渡さない）に、[DS] §1・§3-1・§4 の 4 が答えている。監査者は原典の stage graph から、phase が construction の全段（Build and Test・CI Pipeline など段単位の段を含む）と、Inception・Ideation・Initialization の各段を取り出し、v2 の分け方（`isPerUnitStage` が真 = Unit の段、偽 = 段単位の段、team・swarm など = 確かめられない）に当てて、分類が漏れる・曖昧な段が無いこと、段単位の段の「`[x]` ∧ `GATE_APPROVED` = approved」「`[S]` = exempt」「`[x]` だけ = 確かめられない」が各段で成り立つこと（承認の出来事を持たない段、特に Initialization の段がどう扱われるか）、I1 が出力する範囲（今の段が Inception の時は Unit の段の行を作らない、など）が書かれていることを確かめる。",
+      "basis": "[R1] BF-03、[DS] §0・§1・§3-1・§4、[ENG] stage graph"
+    },
+    {
+      "id": "EJ-14",
+      "criterion": "BF-04（検証計画と決定的な入力）の直し: [R1] BF-04 の required_action（3-1〜3-5 と試験の対応、Run floor の重複・未完了試行、具体的な期待 n・digest・時刻、C9 の正負例、版違い・途中失敗、engine へ渡す観測の入力範囲、失敗前に部分出力を残さない境界）に、[DS] §3-2・§3-3・§3-4・§3-7・§4 が答えている。確かめること: (a) n の採番（Run floor の初出順、同じ Run floor は同じ番号、完了の無い試行は数えない）、指紋の bytes（audit の block の切り方、正規の JSON）、approvedAt、C9 /2 の行・順序・approvalRef、橋の FAIL が、§4 の試験の期待値（試験に値を書く）に 1 対 1 で対応する。(b) 「同じ入力で 2 回 bytes が同じ」だけでは、同じ誤った n・digest・順序を 2 回出す実装を拒めないこと（round 1 の反例）が、期待値の固定で防がれる。(c) `inputDigest`（intent の audit の shard・aidlc-state.md・runtime-graph.json・inception/ と construction/ の下の file）が、engine が実際に読む入力の範囲と合う。部品が state・質問 file・成果物も読む、という round 1 の指摘に答えている。(d) 途中の失敗（3 行目で engine が例外、読む前後で audit が変わる、既にある file と bytes が違う）で何も置かない境界が、§3-7 と §4 の 8 で一致する。",
+      "basis": "[R1] BF-04、[DS] §0・§3-2〜§3-4・§3-7・§4"
+    },
+    {
+      "id": "EJ-15",
+      "criterion": "BF-05（読取りの安全境界と誤出力の復旧）の直し: [R1] BF-05 の required_action（engine 呼出しの読取り範囲と不変確認、公開可能な理由への変換、既存 file を上書き・削除せずに誤出力から復旧する手順と担当）に、[DS] §3-7・§3-4・§4 の 8・9 が答えている。確かめること: (a) 読む前後の audit の shard と aidlc-state.md の SHA-256 の比較（`WORKSPACE_CHANGED`）。(b) 書く物を一時的な場所に全部作ってから最後にまとめて置く境界。(c) 出す理由が決まった code だけで、例外の文・作業場の絶対 path・秘密を出さない（§4 の 9 の試験）。(d) 誤って作った承認の記録を、消さず書き換えず `attempt-<n>.revoked.json` で取り消す手順、担当（arc の作業指示を受けた shirube の席）、独立の監査の後の統合が書かれ、BR5.8（書き換えない・消さない）と矛盾しない。(e) 記録の橋が取り消しのある試行を承認として読まない（§3-4）。",
+      "basis": "[R1] BF-05、[DS] §0・§3-4・§3-7・§4、[U1] rules.md BR5.8、SDS S5・S9"
+    },
+    {
+      "id": "EJ-16",
+      "criterion": "BF-06（版の宣言と読み込む engine の同一性）の直し: [R1] BF-06 の required_action（実際に解決して読み込む engine を固定版に結ぶ観測方法を一つに定める。宣言値の echo で通さず、宣言が 2.11.1 のまま実物が違う場合と版違いで、全体失敗・無書込みを確かめる計画）に、[DS] §3-5・§4 の 7 が答えている。確かめること: (a) 観測方法が 1 つ（`.claude/tools/` の全 file の SHA-256 を、repo に置く固定の版の一覧と照らす）で、`aidlc --version` や配布キットの版の宣言を証拠にしない。(b) 一覧と 1 file でも違う・足りない・余る場合が、宣言が 2.11.1 のままでも `ENGINE_PIN_MISMATCH` の全体失敗・無書込みになる試験がある。(c) 照合の範囲が実際に読み込む file を覆うか: 作者の読取りでは、`aidlc-orchestrate.ts` から静的に辿れる file は 93 で、`.claude/tools/` には 120 file（TypeScript は 97）。engine が `tools/` の外（skills・scopes・rules など）を読む場合の扱い（作者の読取りでは、`resolveHarnessRoot` は module の位置を先に見る）が書かれているか、書かれていなければ穴として指摘する。(d) 一覧の置き場の名前を作る席が決める（§6）ことが、監査の対象の曖昧さにならない（中身の形は記録のとおり）。",
+      "basis": "[R1] BF-06、[DS] §0・§3-5・§4・§6、SDS S5"
+    },
+    {
+      "id": "EJ-17",
+      "criterion": "BF-07（本物の adapter と既存 CI の接続）の直し: [R1] BF-07 の required_action（本物と偽 adapter の配置・呼出し契約、bun 固有 import を Node 側へ波及させない方法、既存の全検査での扱い。CI・workflow・pin や網羅率の母集団を黙って変更しない）に、[DS] §2・§3-6・§4 が答えている。確かめること: (a) 本物の adapter `scripts/sds/engine-judge.mjs` の配置、300 行の内であること、engine の読込みを `importModule(path)` の引数で受け（既定は動的な `import()`）、本体 `approval-record.mjs` は adapter の返す一覧だけを受ける契約。(b) 読み込む path が実行時に決まり、knip・depcruise の静的な import の解析に engine が入らない。(c) CI（Node 26、網羅率 80% を `scripts/**` の全部で数える、hygiene）が、偽の `importModule` で adapter も本体も試し、本物の engine は CI で読み込まない。(d) `ci.yml`・pin・網羅率の母集団を変えない（[DS] §2）と、(c) の計画が、固定の CI の検査（coverage の include-all・knip・depcruise・jscpd・pr-size・新規 file 300 行）の既存条件で検証できる。(e) 本物の adapter の実行（席の作業場で 1 回）の結果が PR の証拠になる。",
+      "basis": "[R1] BF-07、[DS] §0・§2・§3-6・§4、[OD-A] 決定 2・3、iyasaka-arc#49 6336689921"
     }
   ]
 }
