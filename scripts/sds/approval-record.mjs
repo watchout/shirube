@@ -4,7 +4,7 @@
 // Usage: node approval-record.mjs --intent <name> [--root <checkout>] [--out <dir>] [--audit <dir under root>] [--require stage[:unit],...]
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { dirname, join, relative } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs, report } from "../hygiene/lib.mjs";
 
@@ -14,6 +14,16 @@ const key = (stage, unit) => `${stage}\u0000${unit ?? ""}`;
 const stamp = (value) => `${JSON.stringify(value, null, 2)}\n`;
 const withUnit = (row) => (row.unit ? { unit: row.unit } : {});
 function need(ok, why) { if (!ok) throw new Error(why); }
+// Fail closed (S8): an event or a name that cannot make a valid C2/C9 record is refused before anything is written (first audit BF-01, BF-04).
+const NAME = /^[A-Za-z0-9][A-Za-z0-9_-]*$/, ISO_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
+const name = (what, v) => need(typeof v === "string" && NAME.test(v), `${what} is not a plain name: ${JSON.stringify(v)}`);
+const validTime = (ts) => ISO_UTC.test(ts ?? "") && !Number.isNaN(Date.parse(ts));
+const RECORD_KEYS = ["schema", "intent", "stage", "attempt", "approved_at", "approver_role", "identity_check", "source_event_digest", "source_audit_ref"];
+function checkRecord({ path, record }) {
+  for (const k of RECORD_KEYS) need(record[k] !== undefined && record[k] !== "", `approval record ${path} lacks ${k}`);
+  need(Number.isInteger(record.attempt) && record.attempt >= 1 && validTime(record.approved_at), `approval record ${path} has a wrong attempt or approved_at`);
+}
+const inside = (base, p) => { const r = relative(resolve(base), resolve(p)); return r !== "" && r !== ".." && !r.startsWith(`..${sep}`) && !isAbsolute(r); };
 
 export function parseAudit(text, ref) {
   return text.split("\n---\n").map((b) => b.trim().replace(/^# .*\n+/, "")).filter((b) => b.includes("**Event**:")).map((raw) => { // the file's title line is not part of an event
@@ -24,6 +34,7 @@ export function parseAudit(text, ref) {
 
 // A row is one attempt of one stage (and unit). Stages run once per STAGE_STARTED (units: UNIT_STARTED); a skipped stage has no row.
 const addRow = (c, stage, unit) => {
+  name("stage", stage); if (unit) name("unit", unit);
   const k = key(stage, unit), row = { stage, unit, attempt: (c.count.get(k) ?? 0) + 1, src: [], approved: false, superseded: false };
   c.count.set(k, row.attempt); c.open.set(k, row); c.rows.push(row);
   return row;
@@ -44,13 +55,17 @@ const HANDLERS = {
     if (earlier) c.open.set(k, earlier); else c.open.delete(k);
   },
   UNIT_STARTED: (c, e) => {
+    name("unit", e.f.Unit);
     const row = addRow(c, e.f.Stage, e.f.Unit), k = key(e.f.Stage, e.f.Unit);
     if (UNIT_DESIGN.has(e.f.Stage)) row.confirm = c.confirm.get(k);
     c.confirm.delete(k);
   },
   SUMMARY_CONFIRMATION_RECORDED: (c, e) => {
     if (!e.f.Unit) return;
-    if (/^looks correct$/i.test(e.f.Details ?? "")) c.confirm.set(key(e.f.Stage, e.f.Unit), e); else c.confirm.delete(key(e.f.Stage, e.f.Unit));
+    const k = key(e.f.Stage, e.f.Unit);
+    if (/^looks correct$/i.test(e.f.Details ?? "")) { c.confirm.set(k, e); return; }
+    c.confirm.delete(k);
+    const row = c.open.get(k); if (row && !row.approved) delete row.confirm; // the confirmation this attempt already used is taken back too
   },
   UNIT_COMPLETED: (c, e) => { // a unit design stage has no approval of its own: confirmation and completion, both on this attempt (Q11)
     const row = c.open.get(key(e.f.Stage, e.f.Unit));
@@ -76,14 +91,17 @@ function approvalOf(intent, row) {
 
 export function plan({ intent, shards }) {
   need(intent && shards?.length, "an intent and its audit shards are required");
+  name("intent", intent);
   const events = shards.flatMap((s) => parseAudit(s.text, s.ref));
   need(events.length > 0, "no AI-DLC events were found in the audit");
   events.forEach((e, i) => { e.i = i; });
+  for (const e of events) if (Object.hasOwn(HANDLERS, e.event)) need(validTime(e.ts), `${e.event} has no valid Timestamp (${e.ref})`);
   const c = { rows: [], count: new Map(), open: new Map(), confirm: new Map(), rank: new Map(),
     unitStages: new Set(events.filter((e) => e.f.Unit && ["UNIT_STARTED", "UNIT_COMPLETED", "SUMMARY_CONFIRMATION_RECORDED"].includes(e.event)).map((e) => e.f.Stage)) };
   for (const e of events) if (["STAGE_STARTED", "UNIT_STARTED"].includes(e.event) && !c.rank.has(e.f.Stage)) c.rank.set(e.f.Stage, c.rank.size);
-  for (const e of events) HANDLERS[e.event]?.(c, e);
+  for (const e of events) if (Object.hasOwn(HANDLERS, e.event)) HANDLERS[e.event](c, e);
   const approvals = c.rows.filter((r) => r.approved).map((r) => approvalOf(intent, r));
+  approvals.forEach(checkRecord);
   const entries = c.rows.map((row, i) => ({ order: i + 1, stage: row.stage, ...withUnit(row), attempt: row.attempt, approved: row.approved,
     ...(row.approved ? { approval_ref: approvalOf(intent, row).path } : {}), ...(row.superseded ? { superseded: true } : {}) }));
   return { sequence: { schema: "sds-stage-sequence/1", intent, source_digest: sha(Buffer.concat(shards.map((s) => Buffer.from(s.text)))), entries }, approvals };
@@ -99,12 +117,15 @@ function readShards(root, intent, dir) {
 function checkRequired(spec, p) {
   for (const item of spec.split(",").filter(Boolean)) {
     const [stage, unit] = item.split(":");
-    need(p.sequence.entries.some((e) => e.stage === stage && e.unit === (unit || undefined) && e.approved), `no approved attempt for ${item}`);
+    const newest = p.sequence.entries.filter((e) => e.stage === stage && e.unit === (unit || undefined)).at(-1); // an older approval never counts
+    need(newest?.approved && !newest.superseded, `the newest attempt of ${item} is not approved, or it is superseded`);
   }
 }
 
-function writeAll(out, approvals, sequence) { // an approval file that exists with other bytes is never overwritten; nothing is written then (BR5.8)
+export function writeAll(out, approvals, sequence) { // an approval file that exists with other bytes is never overwritten; nothing is written then (BR5.8)
   const files = [...approvals.map((a) => ({ path: a.path, text: stamp(a.record), keep: true })), { path: sequence.path, text: stamp(sequence.value) }];
+  const outside = files.filter((f) => !inside(join(out, "approvals"), join(out, f.path))).map((f) => f.path);
+  need(outside.length === 0, `a path leaves the output folder: ${outside.join(", ")}`);
   const differs = (f) => existsSync(join(out, f.path)) && readFileSync(join(out, f.path), "utf8") !== f.text;
   const clash = files.filter((f) => f.keep && differs(f)).map((f) => f.path);
   need(clash.length === 0, `an approval record already exists with other bytes: ${clash.join(", ")}`);
