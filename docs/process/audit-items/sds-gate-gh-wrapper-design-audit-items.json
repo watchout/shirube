@@ -10,8 +10,8 @@
     },
     {
       "id": "GWD-2",
-      "criterion": "全受入の検証計画: 記録 §5 が、G1 の受入（拒否する gh で flag が付き PASS、包みを外すと障害が再現、引数の形、実物の gh 2.102.0 での再現）、G2 の受入（pin・uses・files の sha256 の一致）、最終の証拠（G2 の統合の後に shirube#68 の sds-gate が PASS）、enforce_admins の戻しの読み戻しを、それぞれ示す物と状態（実施済み・未実施）つきで並べている。G1 の試験と手元の再現を『直った証拠』としていない。",
-      "basis": "audit-method §3 D2、[WO] §0"
+      "criterion": "全受入の検証計画: 記録 §5 が、G1 の受入（拒否する gh で flag が付き PASS、包みを外すと障害が再現、引数の形、実物の gh 2.102.0 での再現）、G2 の受入（pin・uses・files の sha256 の一致）、最終の証拠、enforce_admins の戻しの読み戻しを、それぞれ示す物と状態（実施済み・未実施）つきで並べている。G1 の試験と手元の再現を『直った証拠』としていない。最終の証拠について、記録 §3.4 が、固定 checker の baseCheck・base_moved・MOVED_GUARD と GitHub の run の再実行の性質に照らして実行できる手順（#68 を main に追従させる担当と順序、#68 の file が round 6 の版と bytes で同じことの確かめ、対応する CI、同じ版の項目集合と checker での再監査と再受領、今の main の caller で新しい run を起こす方法、その run の referenced_workflows が G1 の統合の commit を示し同じ head の sds-gate が success であることの確かめ、古い run の再実行を証拠にしないこと、成り立たない時に止めること）を書き、統合の順と main を止める範囲（§3.3）がその手順と食い違わない。",
+      "basis": "audit-method §3 D2、[WO] §0、設計監査の 1 回目 shirube#70 6404983074 の BF-GWD-ACCEPTANCE-01"
     },
     {
       "id": "GWD-3",
