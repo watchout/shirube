@@ -4,6 +4,7 @@
 状態: Owner の決定 [OD] の後、arc が作業指示 [WO] を出し、shirube の席が PR-G1（shirube#69、head `de5d1833`）を作った。audit-method §2 は R3/R4 に事前監査を求めるが、[WO] の流れ（§0）がこれを抜かした（arc の誤り。同じ抜けは 5 回目）。G1 の実装監査 [IA] は G1-1〜G1-5 が全部 PASS で、止める指摘は事前監査の欠け（BF-G1-PREAUDIT-01）の 1 件だけだった。前例の T154（R3 の事前監査を抜いた aun #46・shirube #55 は、事後の設計監査を通してから統合する）に従い、この記録を後から書いて設計の監査を受ける。
 範囲: G1（`.github/workflows/sds-gate.yml` の包み）と G2（`sds-gate-self.yml` と `.shirube/sds-pin.json` の版の切り替え）の 2 本。G2 はまだ作っていないので、この記録が G2 の事前の設計になる。
 v2（2026-10-26）: 設計監査の 1 回目 [DA1]（GWD-2 FAIL、BF-GWD-ACCEPTANCE-01）を受けて、§3.3 に統合の順と main を止める範囲を、§3.4 に最終の受入（shirube#68）の手順を足し、§5 の最終の行を直した。ほかの節は v1 のまま。
+v3（2026-10-26）: 設計監査の 2 回目 [DA2]（GWD-2 FAIL、BF-GWD-ACCEPTANCE-01 の残り）を受けて、§3.4 の手順 5 を、PR 本文の `audit` の 3 つの値を一緒に新しい依頼と返却に結び直す形に直し、§5 の最終の行と §8・§9 に [DA2] を足した。ほかの節は v2 のまま。
 監査項目との対応: GWD-1 = §1・§2、GWD-2 = §3.4・§5、GWD-3 = §4、GWD-4 = §6、GWD-5 = §7、GWD-6 = §8。
 
 ## 1. Owner の原文と決定 ID
@@ -49,7 +50,7 @@ G1・G2 はどちらも、自分の PR の上では古い門（`@62ff73db`）で
 2. （CI）H' で `test`・`hygiene / hygiene` が成功する。
 3. （shirube）#68 に新しい監査の依頼を出す: target の head = H'、base = 新しい main、項目集合は round 6 と同じ版、checker は同じ版（`0fdf596f…`）。本文に「変わったのは base の追従だけで、#68 の file は round 6 の版と bytes が同じ」と書き、audit-method §2 の 6 のとおり、変わらない根拠は版の一致を確かめて再利用し、base の追従に関わる項目だけを確かめ直すよう頼む。
 4. （devauditor）PASS を返す。
-5. （shirube）同じ版の固定 checker で受領を確かめ（`RECEIPT_ACCEPTED`、head は H' の 1 つ）、PR 本文の `sds-pr` block の `audit.review` を新しい返却に替える。この本文の編集が、今の main の caller（G2 の後の `sds-gate-self.yml`）で新しい sds-gate の run を起こす。
+5. （shirube）同じ版の固定 checker で受領を確かめ（`RECEIPT_ACCEPTED`、head は H' の 1 つ）、PR 本文の `sds-pr` block の `audit` の 3 つの値を、1 回の編集で一緒に替える: `audit.request` = 3 の新しい依頼の URL、`audit.request_sha256` = その依頼の公開本文（GitHub の API が返す comment の body）の SHA-256、`audit.review` = 4 の返却の URL。`gate.mjs` の `audited()` は本文に書かれた依頼だけを読み、新しい依頼を自分では探さない。`audit.review` だけを替えると、門は古い依頼（6393856015）の head と base を照らして FAIL する（[DA2] の反例）。`risk_class`・`changed_paths`・`control_handoff` は変えない。この本文の編集が、今の main の caller（G2 の後の `sds-gate-self.yml`）で新しい sds-gate の run を起こす。
 6. （shirube が確かめ、arc が読み直す）5 で起きた run について: (a) `GET /repos/watchout/shirube/actions/runs/<id>` の `referenced_workflows` が `watchout/shirube/.github/workflows/sds-gate.yml@<G1 の統合の commit>` を示す、(b) その run の head が H'、(c) H' の commit status `sds-gate` が success、の 3 つ。G2 より前に起きた run の再実行は証拠にしない。
 7. （suite-lead）#68 を通常の手順で統合する（enforce_admins は外さない）。
 - 3 の監査を、round 6 の後の新しい回と数えるかの扱いは、OD-SHIRUBE-I1-DESIGN-ROUND6-WHOLE-COPY-20261025-001（round 6 でも不合格なら止める）と audit-method §2 の 6 に照らして監査の席が決める。新しい回で上限に当たると判断された場合は、arc が Owner に伺う。
@@ -75,7 +76,7 @@ G1・G2 はどちらも、自分の PR の上では古い門（`@62ff73db`）で
 | G1-c: 引数の形（flag 済み、flag の無い gh、他の呼出し、特殊文字、終了コード、stdout/stderr、SDS_REAL_GH 無し） | 同じ試験 | 同上 |
 | G1-d: 実物の gh 2.102.0 で、flag なしは同じ文言で exit 1、flag ありと包みありは exit 0 で log と bytes が同一 | 作者の手元の再現（公式の release をチェックサム照合、空の環境・ダミーの token・localhost のみ） | 実施済み（#24 6404631799）。監査者は記録を読む |
 | G2-a: pin と `uses:` が G1 の統合の commit を指し、`files` の sha256 が新しい file と一致 | G2 の差分、kit check | 未実施（G1 の統合の後） |
-| 最終: §3.4 の手順で、#68 を main に追従させ、再監査・受領の後に新しい run を起こし、その run の callee が G1 の統合の commit で、同じ head の `sds-gate` が success | #68 の新しい依頼・返却・受領、run の `referenced_workflows`、commit status | 未実施。**これが直った証拠**。G1 の試験と手元の再現は前提の確認にとどまる。古い run の再実行は証拠にしない |
+| 最終: §3.4 の手順で、#68 を main に追従させ、再監査・受領の後に本文の `audit` の 3 つの値を新しい依頼と返却に結び直して新しい run を起こし、その run の callee が G1 の統合の commit で、同じ head の `sds-gate` が success | #68 の新しい依頼・返却・受領、run の `referenced_workflows`、commit status | 未実施。**これが直った証拠**。G1 の試験と手元の再現は前提の確認にとどまる。古い run の再実行は証拠にしない |
 | 戻した後: 統合の間に外した enforce_admins が true に戻っている | suite-lead の読み戻し（#24） | 未実施 |
 
 ## 6. 秘密・権限・観測・復旧・データ
@@ -99,6 +100,7 @@ G1・G2 はどちらも、自分の PR の上では古い門（`@62ff73db`）で
 - 引く記録: [OD] #49 6404453776（本文 sha256 `8062d996…`）、[WO] #24 6404479439（`b7164d35…`）、[OBS] #24 6394017590、G1 の報告 #24 6404631799、G1 の実装監査 [IA] shirube#69 6404803377、suite-lead の統合の条件 #24 6404494978、T154 #49 6301299856。
 - この設計監査の受領が、G1 の実装監査のやり直し（[IA] の BF-G1-PREAUDIT-01 の解消）と G2 の実装の前提になる。
 - [DA1] 設計監査の 1 回目 shirube#70 6404983074（GWD-2 FAIL、BF-GWD-ACCEPTANCE-01）。v2 はこれへの答え。
+- [DA2] 設計監査の 2 回目 shirube#70 6405137503（GWD-2 FAIL、BF-GWD-ACCEPTANCE-01 の残り = 本文の依頼の結び直し）。v3 はこれへの答え。
 
 ## 9. 参照
 
@@ -108,3 +110,4 @@ G1・G2 はどちらも、自分の PR の上では古い門（`@62ff73db`）で
 - [IA] https://github.com/watchout/shirube/pull/69#issuecomment-6404803377
 - T154 https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6301299856
 - [DA1] https://github.com/watchout/shirube/pull/70#issuecomment-6404983074
+- [DA2] https://github.com/watchout/shirube/pull/70#issuecomment-6405137503
