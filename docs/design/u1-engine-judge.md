@@ -1,10 +1,10 @@
-<!-- arc:shirube-u1-design-revision:engine-judge:v5 -->
-## arc の設計の記録: Shirube U1 の設計の改版 v5（I1: 段の「済み」を AI-DLC の engine の判断で読む）
+<!-- arc:shirube-u1-design-revision:engine-judge:v6 -->
+## arc の設計の記録: Shirube U1 の設計の改版 v6（I1: 段の「済み」を AI-DLC の engine の判断で読む）
 
-適用: R1〜R3、L1〜L6、S2・S4・S5・S8、OD-SHIRUBE-INCLUDE-AIDLC-NO-REINVENT-20261021-001（#49 6309035411）、OD-SHIRUBE-I1-ENGINE-STATE-COPY-DESIGN-REVISION-20261024-001（#49 6381170673）、OD-SHIRUBE-I1-UNIT-DONE-VIA-ENGINE-PARTS-WITH-BUN-20261025-001（#49 6389500200。索引の行 = iyasaka-org main 40e2f18f）、OI-LLM-CONTROL-BY-SCRIPT-MECHANISM-HOOK-MUST-20261024-001。v2（#57 6389874375）への設計監査 round 2 の返却（shirube#68 6390071922、BF-R2-01〜06）と、shirube の席の確認（#24 6389980151・6390213665・6390265024）を受けて全体を書き直した。v2・v3（#57 6390136222）・v4（#57 6390236637）は置き換え（v3・v4 は監査に出す前に席の確認で直した）。round 1 の指摘（BF-01〜07）への答えは保つ。対象 = U1 の Functional Design（entities.md・rules.md）と NFR Requirements の tech-stack-decisions.md。独立の監査の前の案。
+適用: R1〜R3、L1〜L6、S2・S4・S5・S8、OD-SHIRUBE-INCLUDE-AIDLC-NO-REINVENT-20261021-001（#49 6309035411）、OD-SHIRUBE-I1-ENGINE-STATE-COPY-DESIGN-REVISION-20261024-001（#49 6381170673）、OD-SHIRUBE-I1-UNIT-DONE-VIA-ENGINE-PARTS-WITH-BUN-20261025-001（#49 6389500200。索引の行 = iyasaka-org main 40e2f18f）、OI-LLM-CONTROL-BY-SCRIPT-MECHANISM-HOOK-MUST-20261024-001。v2（#57 6389874375）への設計監査 round 2 の返却（shirube#68 6390071922、BF-R2-01〜06）と、shirube の席の確認（#24 6389980151・6390213665・6390265024）を受けて全体を書き直した。v2・v3（#57 6390136222）・v4（#57 6390236637）・v5（#57 6390272104）は置き換え（v3・v4 は監査に出す前に席の確認で直した）。v5 への設計監査 round 3 の返却（shirube#68 6390455033、BF-R3-01〜05）と、席の確認（#24 6390338940）を受けて直した。round 1 の指摘（BF-01〜07）への答えは保つ。対象 = U1 の Functional Design（entities.md・rules.md）と NFR Requirements の tech-stack-decisions.md。独立の監査の前の案。
 
 ### 0. 指摘との対応
-| 指摘 | v5 の答え（節） |
+| 指摘 | v6 の答え（節） |
 |---|---|
 | BF-01 engine と同値でない | engine 自身の関数をそのまま呼ぶ。条件を組み立てない（§3-1、§3-6） |
 | BF-02 橋の前の行 | BR2.1・BR2.4・BR2.5 を保ち、免除の行を飛ばすだけを足す（§3-4） |
@@ -23,6 +23,11 @@
 | 席の確認 6390213665 の 2（子の process が束縛を書きうる） | 束縛を書かせない渡し方にし、`aidlc/.aidlc-sessions/` の束縛の file（`*.binding.json`）を前後の比較に入れる（§3-5） |
 | 席の確認 6390265024 の 1（`.aidlc-sessions/` の全 file を入れると hook の書込みで毎回変わる） | snapshot と前後の比較に入れるのは束縛の file と cursor だけ。transcript・ledger・messages は入れない（§3-5） |
 | 席の確認 6390265024 の 2（`exempt` を飛ばすと最初の段の前の行が無い） | `exempt` を飛ばして前の行が無くなる段を「intent の最初の段」とし、BR2.4 のとおり PASS（§3-4） |
+| BF-R3-01 段全体の skip を Unit の免除へ写せない | Unit の段の一覧を engine の `unitMajorConstructionStageSlugs(scope, state, true)` で決め、段全体が `[S]` の Unit の段は全 Unit の行を `exempt` にする（§3-1） |
+| BF-R3-02 BR2.6 の拒否が Unit の段だけ | 段単位の行にも `started`（Stage Progress の印が `[x]`・`[-]`・`[?]`・`[R]`。開き直しで engine が `[ ]` に戻す）を持ち、橋の確かめを両方に当てる（§3-4） |
+| BF-R3-03 環境と session の固定が足りない | 子の process を `bun --no-env-file`・`.env` の無い一時的な場所を cwd にして起動し、読み込みの後も 2 つの override が残っていることを確かめる。専用の id の名の file（`<id>.helper-of` を含む）と `intents/intents.json` を観測に入れる（§3-5） |
+| BF-R3-04 tools の写し先と scopes などの読込先が違う | `.claude/` の固定の配布物（tools・scopes・aidlc-common・agents・sensors・skills/aidlc・rules）を全部、照らしてから同じ一時的な harness に写し、engine はその写しだけを読む（§3-5、§3-6） |
+| BF-R3-05 返却に sourceAuditRef が無い | `evidence` に、使った block のある audit の shard の相対 path（`sourceAuditRef`）を足す（§3-6） |
 
 ### 1. 事実（AI-DLC 2.11.1、原典 commit 895a35d8。Owner の作業場の `.claude/tools/` と bytes が同じ = #24 6389739676）
 - 作る段階の Unit の段の「止まり」は `aidlc-orchestrate.ts` の `unitStageStop(projectDir, stateContent, k, u, kind, recordPrefix, codekbCtx, ledger)`（13197 行目）が決める（null = 済み）。免除は `unitExempt(k, u, kind, ledger)`（11447）、台帳は `unitLedgerFor(projectDir, slug)`（11410、wave の時の扱いと Guard Policy を含む）、記録の置き場は `engineRelativeRecordDir(projectDir)`（823）、codekb の文脈は `codekbCtxFor(projectDir)`（6785）。どれも export されていない。main は `import.meta.main` の時だけ動く（18423）。
@@ -32,6 +37,9 @@
 - engine は `AIDLC_STAGE_GRAPH`・`AIDLC_SCOPES_DIR`・`AIDLC_HARNESS_DIR`・`AIDLC_RUNTIME_ROOT` などの環境変数で読む先を変える（一覧 = #24 6390213665 の A）。Guard Policy は intent の space の `memory/org.md`・`team.md`・`project.md` も読む。
 - `engineRelativeRecordDir`・`codekbCtxFor` は `engineSelection(projectDir)` で判断する space・intent を決め、chat の束縛（`aidlc/.aidlc-sessions/<chat>.binding.json`）、無ければ cursor（`aidlc/active-space`・`aidlc/spaces/<space>/intents/active-intent`）を使う。名指しの session が無く `AIDLC_SESSION_OVERRIDE_SOURCE` が `payload` でない時は、束縛を書きうる（`resolveChat(..., {bind: true})`）。chat の id は環境変数と process の祖先から探す（#24 6390213665 の確認 1・2）。
 - `resolveBoltDag` は `unit-of-work-dependency.md` を正本にし、`unitKinds` は `state: "ok"` の時だけ返す。
+- engine の driver が歩く Unit の段は `unitMajorConstructionStageSlugs(scope, stateContent, includeCompleted)`（`aidlc-lib.ts` 39959、export）で決まる。段全体の `[S]` はいつも除き、`includeCompleted` が偽なら `[x]` も除く。`unitExempt` は種類の除外と Unit の `UNIT_SKIPPED` だけを見て、段全体の `[S]` は見ない（BF-R3-01）。
+- 開き直し（jump）は、対象の段とその下流の印（`[x]`・`[-]`・`[?]`・`[R]`・`[S]`）を `[ ]` に戻す（`aidlc-jump.ts` 516 行目）。
+- `aidlc-runtime-paths.ts` は読み込まれた時に `dropDotenvNames()`（95 行目）を動かし、bun が cwd の `.env` 群を読んでいれば、そこで名指された変数を環境から消す。bun 1.3 には自動の `.env` の読込みを止める `--no-env-file` がある。`resolveChat` は束縛のほかに `<id>.helper-of` を読む。`codekbCtxFor` は space の `intents/intents.json` を読む。`resolveHarnessRoot` は module の位置の `.claude` を選ぶので、scopes などは写し先の物が読まれる（BF-R3-03・04）。
 
 ### 2. 変えないもの
 - 門の判定 1〜5 と FAIL の扱い、記録の橋の BR2 の決まり（BR2.1・BR2.4・BR2.5・BR2.6 の意味）。門が読むのは main にある記録だけ。公開の repo の CI に bun も engine も入れず、`ci.yml`・pin・網羅率の母集団を変えない。
@@ -40,9 +48,10 @@
 ### 3. 変えるもの
 **3-1 行にする段と「承認済み」の決め方（BR5.1・BR5.2 を置き換える）**
 - 行にする (段, Unit) = stage graph の段のうち、状態の file の Stage Progress に印がある段（intent が選んだ段）。`isPerUnitStage` が真の段は `runtime-graph.json` の Unit ごとに 1 行、偽の段は 1 行。walk の block は使わない。
+- Unit の段のうち、段全体の印が `[S]` の段は、全 Unit の行を `exempt` にする（engine の driver が歩かない段）。`[S]` でない Unit の段は、engine の `unitMajorConstructionStageSlugs(scope, stateContent, true)` が返すこと（driver が歩く段であること）を確かめ、返さない段は「確かめられない」とする。
 - 段の 3 つの分類:
   1. **人の承認の無い段**（phase = `initialization`）: `[x]` → `exempt`。それ以外 → `not_approved`。承認の記録は作らない。
-  2. **作る段階の Unit の段**（`isPerUnitStage` が真）: engine の `unitStageStop` を (段, Unit) ごとに呼ぶ。null で `unitExempt` が真 → `exempt`。null で `unitExempt` が偽 → `approved`。null でない → `not_approved`。引数（kind・recordPrefix・codekbCtx・ledger）は engine の関数（`resolveBoltDag`・`engineRelativeRecordDir`・`codekbCtxFor`・`unitLedgerFor`）で作り、自分で組み立てない。
+  2. **作る段階の Unit の段**（`isPerUnitStage` が真で、段全体が `[S]` でない）: engine の `unitStageStop` を (段, Unit) ごとに呼ぶ。null で `unitExempt` が真 → `exempt`。null で `unitExempt` が偽 → `approved`。null でない → `not_approved`。引数（kind・recordPrefix・codekbCtx・ledger）は engine の関数（`resolveBoltDag`・`engineRelativeRecordDir`・`codekbCtxFor`・`unitLedgerFor`）で作り、自分で組み立てない。
   3. **段単位の人の承認のある段**（上の 2 つ以外。ideation・inception・Build and Test など）: Stage Progress が `[x]` で、audit にその段の `GATE_APPROVED` がある → `approved`。`[S]` → `exempt`。それ以外 → `not_approved`。`[x]` なのに `GATE_APPROVED` が無い → 「確かめられない」。
 - この版の対象 = solo・unit-major・swarm でない intent で、`resolveBoltDag` が `state: "ok"` を返す intent。`none`・`malformed`、team・swarm・段単位の成果物の形（engine の `usesStageLevelPerUnitArtifacts` が真。`aidlc-lib.ts` 39927 行目、export）の intent → 「確かめられない」。
 - 「確かめられない」= 何も書かずに exit code 1（S5）。
@@ -59,32 +68,32 @@
 
 **3-4 段の順の記録（C9 `sds-stage-sequence/2`）と記録の橋**
 - 行の並び = stage graph の段の順。Unit の段は `runtime-graph.json` の Unit の並びで、Unit ごとに Unit の段を続けて並べる（unit-major）。
-- 欄: `order`・`stage`・`unit`（Unit の段だけ）・`status`（`approved` / `exempt` / `not_approved`）・`started`（Unit の段だけ。engine の `unitLifecycleSnapshot(...).open` にその Unit がある、または `approved` = 今の試行で始めた。真偽）・`approvalRef`（`approved` の時だけ、§3-2 の n の file の path）。
+- 欄: `order`・`stage`・`unit`（Unit の段だけ）・`status`（`approved` / `exempt` / `not_approved`）・`started`（真偽。今の試行で始めた。Unit の段 = engine の `unitLifecycleSnapshot(...).open` にその Unit がある、または `approved`。段単位の段 = Stage Progress の印が `[x]`・`[-]`・`[?]`・`[R]` のどれか。開き直しで engine が `[ ]` に戻すので、上流の開き直しの後に始め直していない段は偽になる）・`approvalRef`（`approved` の時だけ、§3-2 の n の file の path）。
 - `sourceDigest` = BR5.6 のまま（audit の shard 全体）。`inputDigest` = §3-5 の snapshot の SHA-256。同じ snapshot からは同じ bytes。
 - 記録の橋（I2）:
   - 前の行の選び方は BR2 のまま（intent の最初の段 = PASS = BR2.4、Unit の段の前は同じ Unit の 1 つ前の段 = BR2.1、Unit の最初の段の前は Inception の最後の行 = BR2.5）。`exempt` の行は前の行に選ばず、同じ決まりで 1 つ前へ進む。
   - 「intent の最初の段」= `exempt` の行を飛ばして 1 つ前へ進むと前の行が無くなる段（Initialization の 3 段が `exempt` なら `intent-capture`）。この段は BR2.4 のとおり PASS。Initialization の段が `exempt` でない（`[x]` でない = `not_approved`）時は、その行が前の行に選ばれて FAIL になる（初期化の済んでいない intent は通さない）。
-  - PR が指す段の行の確かめ（BR2.6 の意味を engine の判断で保つ）: PR が指す Unit の段の行が `approved` でも `started` でもない → FAIL（上流を開き直して再承認しても、下流を今の試行で始めていない＝古い試行の作業）。
+  - PR が指す段の行の確かめ（BR2.6 の意味を engine の判断で保つ。Unit の段にも段単位の段にも当てる）: PR が指す行が `approved` でも `started` でもない → FAIL（上流を開き直して再承認しても、その段を今の試行で始めていない＝古い試行の作業）。
   - 前の行が `approved` で `approvalRef` の file が main にあり、取り消し（§3-7）が無い → 通す。それ以外 → FAIL。
-- 3 つの状態の期待: (a) 上流が `not_approved` → FAIL。(b) 上流を再承認しただけで下流をまだ始めていない（下流の行が `started: false`）→ FAIL。(c) 下流を今の試行で始めた（`started: true`）→ 通す。
+- 3 つの状態の期待（Unit の段と段単位の段の両方）: (a) 上流が `not_approved` → FAIL。(b) 上流を再承認しただけで下流をまだ始めていない（下流の行が `started: false`）→ FAIL。(c) 下流を今の試行で始めた（`started: true`）→ 通す。
 
 **3-5 入力の固定（BF-06・BF-R2-03）**
-- 固定の配布物: 原典 2.11.1 の `.claude/tools/` の全 file（data を含む）の相対 path と SHA-256 の一覧を repo に置く（置き場は kit の決まりに合わせる。中身はこの形）。作業場の `.claude/tools/` の全 file を照らし、1 つでも違う・足りない・余る → `ENGINE_PIN_MISMATCH`。宣言の版は証拠にしない。
-- engine は子の process（bun）で動かし、環境変数を全部消してから、要る物だけを渡す: PATH・HOME、projectDir を決める変数、束縛を書かせないための `AIDLC_SESSION_OVERRIDE_SOURCE=payload` と、束縛を持たない専用の session の id（`AIDLC_SESSION_OVERRIDE`）。ほかの `AIDLC_`・`CLAUDE_`・`KIRO_`・`CODEX_` で始まる変数は渡さない。子の process は作業場の写しの tools（§3-6）だけを読み込み、module の位置から harness root を決める（写しの置き方を `<一時的な場所>/.claude/tools/` にする）。
+- 固定の配布物: 原典 2.11.1 の `.claude/` の下の tools（data を含む）・scopes・aidlc-common・agents・sensors・skills/aidlc・rules の全 file の相対 path と SHA-256 の一覧を repo に置く（置き場は kit の決まりに合わせる。中身はこの形）。作業場のこれらの全 file を照らし、1 つでも違う・足りない・余る → `ENGINE_PIN_MISMATCH`。宣言の版は証拠にしない。照らした物を、そのまま一時的な harness（`<一時的な場所>/.claude/`）に写し、engine はその写しだけを読む（照らした実物と読む先を 1 つにする）。写しに無い物へ fallback しない（欠けていれば照合で止まる）。
+- engine は子の process を `bun --no-env-file` で動かし、cwd は `.env` の無い一時的な harness の root にする。環境変数を全部消してから、要る物だけを渡す: PATH・HOME、projectDir を決める変数、束縛を書かせないための `AIDLC_SESSION_OVERRIDE_SOURCE=payload` と、束縛を持たない専用の session の id（`AIDLC_SESSION_OVERRIDE`）。ほかの `AIDLC_`・`CLAUDE_`・`KIRO_`・`CODEX_` で始まる変数は渡さない。子の process は一時的な harness の写し（§3-6）だけを読み込み、module の位置から harness root を決める。読み込みの後に `AIDLC_SESSION_OVERRIDE` と `AIDLC_SESSION_OVERRIDE_SOURCE` が渡した値のまま残っているかを確かめ、消えていれば何も返さない（`OVERRIDE_DROPPED`）。
 - 判断する intent の固定: 作り手は対象の space と intent を引数で受ける。子の process は export の shim で足した `engineSelection` を呼び、engine が使う space・intent が対象と同じかを確かめる。違えば何も書かない（`SELECTION_MISMATCH`）。この渡し方で束縛を書かないことと、選択が cursor から対象に決まることは、作る席が実物で確かめる（確かめられなければ、この設計の対象外として止める）。
-- 可変の入力の snapshot = intent の audit の shard、`aidlc-state.md`、`runtime-graph.json`、intent の `inception/`・`construction/` の下の全 file（`unit-of-work-dependency.md` を含む）、intent の space の `memory/`・`codekb/` の下の全 file、`aidlc/active-space`・その space の `intents/active-intent`、`aidlc/.aidlc-sessions/` の下の束縛の file（`*.binding.json`）、作業場の `.claude/scopes/` の下の全 file。`aidlc/.aidlc-sessions/` の下のほかの file（transcript・`usage-ledger.json`・messages など、hook が毎回書く物）は engine の判断に使われないので入れない。`.claude/aidlc-common/`・`agents/`・`sensors/`・`skills/aidlc/`・`rules/` は固定の配布物として §3-5 の一覧に入れて照らす（engine が読むかを追わずに、版の物と同じであることを確かめる）。`inputDigest` = この snapshot の「相対 path と SHA-256 の組を path の順に並べた物」の SHA-256。
-- engine を呼ぶ前と後で snapshot（束縛の file を含む）を取り直し、1 つでも違えば何も書かない（`WORKSPACE_CHANGED`）。束縛の file が増える・変わる・消えるのも違いとして扱う。
+- 可変の入力の snapshot = intent の audit の shard、`aidlc-state.md`、`runtime-graph.json`、intent の `inception/`・`construction/` の下の全 file（`unit-of-work-dependency.md` を含む）、intent の space の `memory/`・`codekb/` の下の全 file、`aidlc/active-space`・その space の `intents/active-intent`・`intents/intents.json`、`aidlc/.aidlc-sessions/` の下の束縛の file（`*.binding.json`）と、専用の session の id の名を持つ file（`<id>.helper-of`・`<id>.rules-held.json` など `<id>.` で始まる全 file）。専用の id は作り手が引数で受けた新しい id で、前の snapshot では `<id>.` の file が 1 つも無いことを確かめる。`aidlc/.aidlc-sessions/` の下のほかの file（ほかの chat の transcript・`usage-ledger.json`・messages など）は、専用の id の解決では読まれない（engine は呼び手の id の file だけを読む）ので入れない。scopes は固定の配布物として照らす（上）。`.claude/aidlc-common/`・`agents/`・`sensors/`・`skills/aidlc/`・`rules/` は固定の配布物として §3-5 の一覧に入れて照らす（engine が読むかを追わずに、版の物と同じであることを確かめる）。`inputDigest` = この snapshot の「相対 path と SHA-256 の組を path の順に並べた物」の SHA-256。
+- engine を呼ぶ前と後で snapshot（束縛の file と `<id>.` の file を含む）を取り直し、1 つでも違えば何も書かない（`WORKSPACE_CHANGED`）。束縛の file や `<id>.` の file が増える・変わる・消えるのも違いとして扱う。
 
 **3-6 adapter の契約と CI（BF-01・BF-07・BF-R2-04）**
-- engine を呼ぶ所は `scripts/sds/engine-judge.mjs`（ESM の JS、300 行の内）1 つ。中身: (1) §3-5 の照合、(2) `.claude/tools/` を一時的な場所に写し、`aidlc-orchestrate.ts` の写しの末尾に `export { unitStageStop, unitExempt, unitLedgerFor, engineRelativeRecordDir, codekbCtxFor, engineSelection };`（`usesStageLevelPerUnitArtifacts`・`checkSummaryConfirmationEvidence`・`unitLifecycleSnapshot`・`resolveBoltDag`・`isPerUnitStage` は `aidlc-lib.ts` の export をそのまま使う） の 1 行だけを足す、(3) 子の process で §3-1 の判断と証拠の取り出しを行い、下の型の JSON だけを返す。一時的な場所は終わったら消す。
-- 返す型（`sds-engine-judgment/1`）: `{ inputDigest, sourceDigest, rows: [ { stage, unit|null, kind: "initialization"|"per-unit"|"stage-gate", status, started|null, evidence|null } ] }`。`evidence` は `approved` の時だけ: Unit の段は `{ completedBlock: string（§3-3 の bytes）, completedAt, runFloorOrdinal, summary: object（成功の答えのまま）}`、段単位は `{ gateBlock: string, gateAt, gateOrdinal }`。番号（ordinal）は子の process が §3-2 の決まりで audit の全 shard から数える（engine が刻んだ印を数えるだけで、境目は作らない）。
+- engine を呼ぶ所は `scripts/sds/engine-judge.mjs`（ESM の JS、300 行の内）1 つ。中身: (1) §3-5 の照合、(2) `.claude/tools/` を一時的な場所に写し、`aidlc-orchestrate.ts` の写しの末尾に `export { unitStageStop, unitExempt, unitLedgerFor, engineRelativeRecordDir, codekbCtxFor, engineSelection };`（`unitMajorConstructionStageSlugs` は `aidlc-lib.ts` の export をそのまま使う）（`usesStageLevelPerUnitArtifacts`・`checkSummaryConfirmationEvidence`・`unitLifecycleSnapshot`・`resolveBoltDag`・`isPerUnitStage` は `aidlc-lib.ts` の export をそのまま使う） の 1 行だけを足す、(3) 子の process で §3-1 の判断と証拠の取り出しを行い、下の型の JSON だけを返す。一時的な場所は終わったら消す。
+- 返す型（`sds-engine-judgment/1`）: `{ inputDigest, sourceDigest, rows: [ { stage, unit|null, kind: "initialization"|"per-unit"|"stage-gate", status, started|null, evidence|null } ] }`。`evidence` は `approved` の時だけ: Unit の段は `{ completedBlock: string（§3-3 の bytes）, completedAt, runFloorOrdinal, summary: object（成功の答えのまま）, sourceAuditRef: string（その block のある audit の shard の、作業場の root からの相対 path）}`、段単位は `{ gateBlock: string, gateAt, gateOrdinal, sourceAuditRef: string }`。本体は `sourceAuditRef` を承認の記録の `sourceAuditRef`（C2 の必須の欄）にそのまま入れる。番号（ordinal）は子の process が §3-2 の決まりで audit の全 shard から数える（engine が刻んだ印を数えるだけで、境目は作らない）。
 - 本体（`approval-record.mjs`）はこの JSON だけを受け、承認の記録と C9 を作る（指紋・path・並び）。engine の判断を本体で作り直さない（S2）。
 - engine の読込みは引数で受ける（`importModule(path)`。既定は動的な `import()`）。読む path は実行時に決まるので、knip・depcruise の静的な解析に engine は入らない。
 - CI（Node 26、網羅率 80%、hygiene）は、偽の `importModule` と偽の audit・state で `engine-judge.mjs` と本体を試す。本物の engine は CI で読み込まない。本物での 1 回の実行は、席が Owner の作業場で行い、返った JSON の `inputDigest` と U1 の各行の status、作った file の SHA-256 を PR に証拠として載せる。偽と本物で同じ型の JSON を受けて n・指紋・`approvedAt`・C9 を作れることを契約の試験にする。
 
 **3-7 安全と誤った file の復旧（BF-05）**
 - 書く物は一時的な場所に全部作ってから、最後にまとめて `approvals/` に置く。途中の失敗では何も置かない。既にある file と bytes が違えば何も置かない（BR5.8）。
-- 出す理由は決まった code だけ（`ENGINE_PIN_MISMATCH`・`ENGINE_LOAD_FAILED`・`ENGINE_CALL_FAILED`・`UNSUPPORTED_SHAPE`・`SELECTION_MISMATCH`・`WORKSPACE_CHANGED`・`EVIDENCE_MISSING`・`FILE_CONFLICT`）。例外の文・絶対 path・秘密は出さない（詳しい内容は repo の外の作業場の log にだけ）。
+- 出す理由は決まった code だけ（`ENGINE_PIN_MISMATCH`・`ENGINE_LOAD_FAILED`・`ENGINE_CALL_FAILED`・`UNSUPPORTED_SHAPE`・`SELECTION_MISMATCH`・`OVERRIDE_DROPPED`・`WORKSPACE_CHANGED`・`EVIDENCE_MISSING`・`FILE_CONFLICT`）。例外の文・絶対 path・秘密は出さない（詳しい内容は repo の外の作業場の log にだけ）。
 - 誤って作った承認の記録は消さず書き換えず、同じ場所に `attempt-<n>.revoked.json`（`schema: sds-approval-revocation/1`・対象・理由の code・正しい記録の path（あれば）・決定の記録の URL と sha256）を足す PR で取り消す。足すのは arc の作業指示を受けた shirube の席、独立の監査の後に統合。橋は取り消しのある試行を承認として読まない。
 
 ### 4. 試験（作り直す I1 と I2 の merge の条件）
@@ -92,17 +101,19 @@
 1. Initialization の 3 段が `[x]` で `GATE_APPROVED` が無い → 3 行とも `exempt`、全体は失敗しない（正常な初期化から U1 の記録が作れる）。
 2. Unit の段: 受領と確認あり → `approved`。確認が古い → `not_approved`。飛ばした・種類で当てはまらない → `exempt`。Checkpoints が無効で Functional Design が `[x]`、Code Generation が作業中 → Functional Design の行は `approved` のまま残る（walk の block に頼らない）。Code Generation の行は `started: true`・`not_approved`。
 3. 段単位: `[x]` と `GATE_APPROVED` → `approved`。`[S]` → `exempt`。`[x]` だけ → 「確かめられない」。Build and Test を段単位として扱う。
+3b. skip と除外を分けて: 段全体が `[S]` の Unit の段 → 全 Unit の行が `exempt`（成果物・受領が無くても `not_approved` にしない）。段は歩くが 1 つの Unit が `UNIT_SKIPPED` → その Unit の行だけ `exempt`。種類で当てはまらない Unit → その Unit の行だけ `exempt`。Checkpoints が有効でも無効でも同じ結果。段全体が `[S]` の段の次の段の PR → 橋は `exempt` を飛ばして通す。
 4. 番号・指紋・時刻: `Run floor` が 2 種類（開き直し 1 回）で一番新しい完了が 2 種類目 → n = 2。同じ `Run floor` の完了が 2 行 → 同じ番号。完了の無い試行は数えない。決めた block の bytes と正規の JSON から期待の SHA-256（試験に値を書く）と一致し、鍵の順を変えた JSON でも同じ値。`approvedAt` は `UNIT_COMPLETED` の時刻。
 5. C9: 行の並び（unit-major）・`status`・`started`・`approvalRef`。同じ snapshot で 2 回 → bytes が同じ。作る段階より後へ進んだ intent でも、済んだ Unit の段の行が全部 `approved` で残る。
-6. 橋: Initialization の 3 段が `exempt` の時、`intent-capture` の PR → 前の行が無いので PASS（BR2.4）。Initialization の 1 段が `not_approved` の時、`intent-capture` の PR → FAIL。Unit 2 の最初の段 → Inception の最後の行を見る。前の行が `exempt` → さらに前へ。§3-4 の (a)(b)(c) の 3 状態。取り消しあり → FAIL。
-7. 入力: 一覧と違う tools・`aidlc-common` → 失敗・何も書かない。`AIDLC_STAGE_GRAPH` を親で設定しても子に渡らず結果が変わらない。memory の Guard Policy・`scopes/`・`codekb/` を変えると `inputDigest` が変わる。audit と state を変えずに成果物の file だけを途中で変える → `WORKSPACE_CHANGED`。cursor が別の intent を指す → `SELECTION_MISMATCH`。子の process の前後で `aidlc/.aidlc-sessions/` に束縛の file が増える・変わる → `WORKSPACE_CHANGED`。同じ間に transcript・`usage-ledger.json` だけが変わる → 失敗しない、`inputDigest` も変わらない。`resolveBoltDag` が `malformed` → 「確かめられない」。
+6. 橋: 段単位の段でも (a)(b)(c) の 3 状態（例: Requirements を開き直して再承認しただけで User Stories が `[ ]` → User Stories の PR は FAIL、User Stories を始め直して `[-]` → 通す）。Initialization の 3 段が `exempt` の時、`intent-capture` の PR → 前の行が無いので PASS（BR2.4）。Initialization の 1 段が `not_approved` の時、`intent-capture` の PR → FAIL。Unit 2 の最初の段 → Inception の最後の行を見る。前の行が `exempt` → さらに前へ。§3-4 の (a)(b)(c) の 3 状態。取り消しあり → FAIL。
+7. 入力: 一覧と違う tools・`aidlc-common` → 失敗・何も書かない。`AIDLC_STAGE_GRAPH` を親で設定しても子に渡らず結果が変わらない。memory の Guard Policy・`scopes/`・`codekb/` を変えると `inputDigest` が変わる。audit と state を変えずに成果物の file だけを途中で変える → `WORKSPACE_CHANGED`。cursor が別の intent を指す → `SELECTION_MISMATCH`。子の process の前後で `aidlc/.aidlc-sessions/` に束縛の file が増える・変わる → `WORKSPACE_CHANGED`。同じ間に transcript・`usage-ledger.json` だけが変わる → 失敗しない、`inputDigest` も変わらない。cwd に `.env` を置いて override の名を書いても、`--no-env-file` で消えない（消えた時は `OVERRIDE_DROPPED`）。`<id>.helper-of` が前から在る → 止める。`intents/intents.json` を変えると `inputDigest` が変わる。写しの scopes が照合した物と違う・欠ける → `ENGINE_PIN_MISMATCH`（fallback しない）。
+7b. 承認の記録: 2 つの shard に audit が分かれ、使う `UNIT_COMPLETED` が 2 つ目の shard にある → `sourceAuditRef` がその shard の相対 path になり、C2 の必須の欄がそろった承認の JSON が作れる。`resolveBoltDag` が `malformed` → 「確かめられない」。
 8. 途中の失敗・理由: 3 行目で engine が例外 → 何も置かない。既にある file と bytes が違う → 何も置かない。どの失敗でも、出す文は決まった code だけで、絶対 path を含まない。
 本物の engine で 1 回（席の作業場、PR に証拠）:
 9. Initialization の 3 段 = `exempt`、ideation・inception の段 = `approved`、U1 の設計 4 段 = `approved`、Code Generation = `started: true`・`not_approved`。#24 6381255682・6389980151 の実測と合う。
 
 ### 5. 流れ
 1. iyasaka-org PR #71（bun の決定を索引に足す）は統合済み（main 40e2f18f）。
-2. この v5 を PR #68 に置いて設計監査の round 3（項目集合に BF-R2-01〜06 と席の確認 4 つの確かめを足す。依頼に索引の commit 40e2f18f を書く）。
+2. この v6 を PR #68 に置いて設計監査の round 4（項目集合に BF-R3-01〜05 の確かめを足す。依頼に索引の commit 40e2f18f を書く）。
 3. 合格と受領の後、shirube の席が Owner の作業場で U1 の Functional Design と NFR Requirements を開き直してこの案のとおり直す（要約の確認と承認は Owner）。
 4. 席が PR #67 を作り直し（I1）、実装監査の後に suite-lead が統合。
 
@@ -110,4 +121,4 @@
 - §3-5 の渡し方（`AIDLC_SESSION_OVERRIDE_SOURCE=payload` と専用の session の id）で、engine が束縛を書かず、選択が cursor から対象の intent に決まることを、作る席が実物で 1 回確かめて PR に証拠を載せる。違えば I1 の実装に入らず arc に返す（arc が設計を直す）。
 - 閉じた物: Initialization のほかに `[x]` で `GATE_APPROVED` の無い段は無い（stage の定義で「NO approval gate」は 3 段だけ。#24 6390213665）。tools 以外に engine が読む物の一覧は §1・§3-5 に入れた。
 
-next_action: actor=shirube; what=PR #68 の file を v5 の bytes に置き換え、設計監査の round 3 を依頼する（作業指示 = #24）; blocking=false
+next_action: actor=shirube; what=PR #68 の file を v6 の bytes に置き換え、設計監査の round 4 を依頼する（作業指示 = #24）; blocking=false
