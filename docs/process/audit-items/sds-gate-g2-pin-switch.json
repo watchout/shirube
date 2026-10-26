@@ -1,0 +1,32 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@9cfe421ff4d82032913b6bbb9695df4f16610567/docs/sds/audit-method.md#3",
+  "scope": "門（sds-gate）の直し PR-G2（R4、保護面）の実装監査: shirube 自身の門の caller `.github/workflows/sds-gate-self.yml` の `uses:` と、`.shirube/sds-pin.json` の `sds_commit`・`files` の SHA-256 を、G1（PR #69、包みの追加）の統合の commit に切り替える。G1 の統合までは、shirube 自身の PR の門は旧 pin `62ff73db` の workflow（包みなし）で動き、R2 以上の PR で受領の確かめ直しが必ず FAIL になっていた。対象 = 上の 2 file と本項目集合の file。記法: [WO] = 作業指示 iyasaka-arc#24 の comment 6411530486 の 2（本文 SHA-256 dc543db6da5a510d0b593bafbdbca50cb5cad249dbb1d19aca0687136da2855d）と、G1 の作業指示 v1 6404479439・v2 6404839856・v3 6405010928・v4 6405162040、[OD] = Owner の決定 OD-SHIRUBE-GATE-FIX-ADMIN-ENFORCE-TEMP-OFF-20261026-001（iyasaka-arc#49 の comment 6404453776、本文 SHA-256 8062d996b7e596eea1f3859ef6300d433d97d528f41bf64f57db88a726169c8f）、[DR] = 設計の記録 v3（iyasaka-arc#57 の comment 6405160150、本文 SHA-256 2178fda5b7bb880fe87d0f65b0ade8115484fb37d3654a99edd6bee8f2da0b19）の 3.2・3.3・3.4、[G1M] = G1 の統合の commit 9cfe421ff4d82032913b6bbb9695df4f16610567 と suite-lead の読み戻し（iyasaka-arc#24 の comment 6411576740、本文 SHA-256 20069ef7d58bcfd9aca51a1fc03fd51235788f9b361fe3f03833fd1de9d0978a）、[G1A] = G1 の実装監査の返却（shirube#69 の comment 6405503288）と受領の記録（6405664651）、[DA] = 設計の事前監査の返却（shirube#70 の comment 6405296473）と受領の記録（6405325207）。監査者は commit・file・tree を自分で git と API から取り直す（作者の宣言値を写さない）。全 5 項目必須。作者が項目の文を書いた物で、範囲が弱い・足りないと見えたら blocking_findings に書く。",
+  "items": [
+    {
+      "id": "G2-1",
+      "criterion": "切り替えの中身。PASS: base..head の `.github/workflows/sds-gate-self.yml` の差分が `uses:` の 1 行だけで、`watchout/shirube/.github/workflows/sds-gate.yml@` の後が 40 桁の commit `9cfe421ff4d82032913b6bbb9695df4f16610567`（tag・branch でない）に替わっている（on・permissions・if・with は base と同じ）。`.shirube/sds-pin.json` の差分が、`sds_commit`（同じ commit）と `files[\".github/workflows/sds-gate-self.yml\"]`（head の `sds-gate-self.yml` の bytes から監査者が再計算した SHA-256 と一致する。作者の値 `fdc517f157f24565ab2a029a1ea744592f9384467d6db12ef15f1caa5eac9362` を写さない）の 2 つだけで、schema・kit_version・instructions・protected_paths・adoption・plan_binding_mode・design_binding_mode は base と同じ。`node scripts/sds/kit.mjs check --target .` が head で `OK` を返す。",
+      "basis": "[WO] 2、[DR] 3.2、SDS S5"
+    },
+    {
+      "id": "G2-2",
+      "criterion": "参照先の commit が意図した版。PASS: `9cfe421ff4d82032913b6bbb9695df4f16610567` が watchout/shirube の main 上の PR #69 の統合 commit（親 = `d5b51b3694f49ec58a89cfb1e3449ae1fe3682ed` と `de5d1833dd9e1fd32e49a209e7b01c693fb71184`）で、その commit の `.github/workflows/sds-gate.yml` が、実装監査 [G1A] を受けた head `de5d1833` の同じ file と同一（git blob `a477cc10f93f132ea003fdae37e9d9d9e807c0a1`）。旧 pin `62ff73db52ce8f29f3b982507b5d2e36578ae60f` から新しい pin への、門の callee の差は、その file の追加 32 行だけ。`scripts/` の tree が旧 pin と同一（`8c72f522add1ab2216919bb7b4bb93176d5b6585`）で、固定 checker `scripts/hygiene/audit-admission.mjs` の SHA-256 が `0fdf596fb024b335c1cc6eb5b0d68ebbe1e16da410c94fc74f79a5985e83c38d` のまま、つまり切り替えで門の判定の code は変わらず、増えるのは G1 の包みだけ。切り替えで門の identity の確かめ（tools を `job.workflow_sha` で checkout して commit を確かめる step）が変わらない。",
+      "basis": "[G1M]、[G1A]、[DR] 3.1・3.2、SDS S5"
+    },
+    {
+      "id": "G2-3",
+      "criterion": "範囲・保護面。PASS: base..head の変更が `.github/workflows/sds-gate-self.yml`・`.shirube/sds-pin.json`・本項目集合の file の 3 file だけ。`.github/workflows/sds-gate.yml`・`.github/workflows/ci.yml`・`scripts/**`（固定 checker・`gate.mjs` を含む）・`.shirube/hygiene-profile.md`・試験・required checks・branch protection には触れない。permissions・secrets・外部への通信・新しい依存は増えず、caller が `pull_request_target` で main の定義を使い PR の code を実行しない作りは変わらない。作者は PR を ready にも統合もしない。",
+      "basis": "[WO] 2、[OD] 含まないもの、Protected surface = owner gate（R1）、SDS S9"
+    },
+    {
+      "id": "G2-4",
+      "criterion": "検査・大きさ。PASS: 監査対象の head で `test` と `hygiene / hygiene` が成功している（既存の試験は変更なしで通る）。`pr-size` が PASS し、変更は 2 file の値の置き換えと項目集合 1 file に収まる。この PR が試験を足さない理由（pin と file の整合は kit check と既存の試験が見る）が PR 本文に書かれている。足りないと見えたら blocking_findings に書く。",
+      "basis": "[WO] 2、[DR] 5・7、SDS S8"
+    },
+    {
+      "id": "G2-5",
+      "criterion": "結び・正直さ・独立性。PASS: PR 本文に sds-pr/1 block（risk_class R4、changed_paths が diff と一致、control_handoff = [WO]）と `risk:R4` の label がある。依頼の `input_refs` に、設計の事前監査の返却と受領 [DA]（R4 に要る事前監査。audit-method §2）と G1 の統合の読み戻し [G1M] が入っている。PR 本文が、(i) この PR 自身の sds-gate は main の caller（旧 pin `62ff73db`）で判定されるため、受領の再確認で失敗する見込みで、統合は [OD] の手順（suite-lead が enforce_admins を統合の間だけ外し、戻して読み戻す）に拠ること、(ii) この変更は統合の後に初めて shirube 自身の PR の門に効き、直ったことの最終の証拠は統合の後の shirube#68 の新しい run（[DR] 3.4。referenced_workflows が G1 の統合 commit を示し、同じ head の sds-gate が success）であって、この PR は直ったと主張しないこと、(iii) 統合の前に Owner の exact-head が要ること、(iv) 統合の順（G1 は済み、G2、shirube#70、shirube#68 の追従）と、G2 の統合まで shirube の main に他の PR を入れないこと、を書いている。作者・監査者・統合担当が別の席。秘密・鍵・IP・model 名が無い。",
+      "basis": "[WO] 0・2、[OD]、[DR] 3.3・3.4、distribution §4"
+    }
+  ]
+}
