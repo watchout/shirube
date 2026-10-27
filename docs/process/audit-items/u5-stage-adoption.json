@@ -1,0 +1,42 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@3aac0a0d4d8e11fe12ed4bebf317f25737176585/docs/sds/audit-method.md#3",
+  "scope": "shirube の S1 の U5（R2）: 計画の受付（scripts/sds/plan-admission.mjs）に、道筋が指す Owner の決定の記録が「今の段の済みの条件の採択」であるかの検査（PA-1）を足す。記法: [D] = 設計の記録 docs/design/s1-gate-core.md 版 3（shirube main 3aac0a0d）、[SL23] = docs/design/slice23-control-v1.md（同じ main）§3.3・§3.4、[OD] = iyasaka-arc#49 6437819819（U5 を並べて作る決定）、[Q13] = iyasaka-arc#49 6435170015（門が承認として読むのは shirube-owner-decision/v1 の記録）、[CH] = iyasaka-arc#24 の作業指示 SHIRUBE-U5-20261027、[DONE] = iyasaka-arc#49 6305753673（stage_adoption: S1 DP-SHIRUBE-001）。全 7 項目必須。",
+  "items": [
+    {
+      "id": "SHIRUBE-U5-01",
+      "criterion": "範囲: base..head の変更が scripts/sds/plan-admission.mjs（必要なら scripts/sds/plan-admission-shape.mjs）、tests/plan-admission.test.mjs、tests/fixtures/plan-admission/**、本項目集合の file docs/process/audit-items/u5-stage-adoption.json だけ。.github/**、.shirube/**、kit/**、package.json、scripts/sds/gate.mjs ほかの scripts に触れていない。門（sds-gate）の判定 1〜5 の挙動は変えない。追加は 400 行・20 file の中、own-code の予算 4,000 行の中。",
+      "basis": "[D] §4 の 3・§8、[CH]"
+    },
+    {
+      "id": "SHIRUBE-U5-02",
+      "criterion": "今の段 k の決め方が [SL23] §3.3 のとおり: 道筋（shirube-delivery-plan/v1）の terminal_acceptance.satisfied_predicates から k を決め、terminal_predicates に無い id や接頭辞が S1〜S4 でない時は受け付けない（[D] §2.1 の負例 7）。",
+      "basis": "[SL23] §3.3、[D] §2.1"
+    },
+    {
+      "id": "SHIRUBE-U5-03",
+      "criterion": "PA-1 の判定が [SL23] §3.4 と [D] §2・§2.1 のとおり: owner_outcome.source_refs の URL のどれかが、1 行目が marker `shirube-owner-decision/v1:<ID>` で、本文に `stage_adoption: S<k> <plan_id>` の 1 行（plan_id は受け付ける道筋の plan_id、k は今の段）を持つ comment でなければ、理由 STAGE_ENTRY_WITHOUT_CONDITIONS で受け付けない。marker の無い comment（owner-instruction-capture など）は、stage_adoption の行があっても数えない（[D] §2.1 の負例 5、[Q13]）。",
+      "basis": "[SL23] §3.4、[D] §2・§2.1、[Q13]"
+    },
+    {
+      "id": "SHIRUBE-U5-04",
+      "criterion": "試験: [D] §2.1 の表の正例 1 つ（AUN の道筋 DP-AUN-ROUTE-001・k = S1 と #49 6306226221）と負例 7 つ（決定が無い／採択でない決定 #49 6379138360／別の製品 [DONE]／別の段／marker が無い／読めない 404・権限なし／k が決まらない）が、それぞれ受け付ける・拒む（理由つき）で通る。comment の本文は記録した bytes を fixture に置き、試験は外を読まない（network 無し）。前からある試験はすべて通る。",
+      "basis": "[D] §2.1・§5 の S1-SH-03"
+    },
+    {
+      "id": "SHIRUBE-U5-05",
+      "criterion": "失敗を隠さない: source_refs の comment が読めない（404・権限なし・時間切れ）時は FAIL にし、NOT_CHECKED や PASS にしない。読み取りは GET だけで、書込みをしない。読むのは受付を動かす席の資格情報（gh）で、新しい資格情報や token を足していない。",
+      "basis": "[D] §8、[SL23] §3.4、S5・S8"
+    },
+    {
+      "id": "SHIRUBE-U5-06",
+      "criterion": "置き場: U5 は門（CI）では動かさず、道筋を受け付ける時の CLI（suite-lead の前検査）で動く（[D] §2 の表の S1-SH-03 の行）。門の workflow・pin・判定 4 の読み方は変えていない。既知の弱み（受付が実際に走ったかを機械が見ない、決定の comment の後からの書き換えを見分けない）は [D] §8 のまま、隠したり直したことにしたりしていない。",
+      "basis": "[D] §2・§8"
+    },
+    {
+      "id": "SHIRUBE-U5-07",
+      "criterion": "証拠と独立性: CI の test と hygiene / hygiene が監査対象の head で成功し、run が版付きで示されている。PR 本文の sds-pr/1 block（risk_class R2、changed_paths が diff と一致、control_handoff = [CH] の URL と本文 sha256、audit の依頼と受領）がある。作者（shirube の席）・監査者（devauditor）・統合担当（suite-lead）が別の席。",
+      "basis": "[CH]、distribution.md §4 の判定 1〜3"
+    }
+  ]
+}
