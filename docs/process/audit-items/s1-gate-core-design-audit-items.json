@@ -1,0 +1,37 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@992edaff8ca22721915d8dff5550b932b34dd808/docs/sds/audit-method.md#3",
+  "scope": "Shirube の S1 を品質の門の芯に絞る設計の記録の監査（D1〜D6）: docs/design/s1-gate-core.md（設計の記録、新しい file、作者 arc）と、本項目集合の file docs/process/audit-items/s1-gate-core-design-audit-items.json。記法: [OD] = Owner の決定 OD-SHIRUBE-S1-GATE-CORE-ONLY-AND-SECURITY-IN-S2-20261027-001（iyasaka-arc#49 6430561109、本文 SHA-256 0d381d9ec3e4533a324d2bad24ac31d3d30be6380f04480b6463b4f076412ea0）、[OI] = OI-SHIRUBE-QUALITY-OVER-RECORDS-BUILD-ONLY-NEEDED-20261027-001（#49 6430346631、c4729e90a7f1bd78c19ae87c8974f3af5a2e37a98c36a289211cb0849f084e25）、[DONE] = S1 の完了の条件（#49 6305753673）、[MEAS] = #49 6336035707、[REC] = #49 6315688299。監査者は shirube main の scripts/sds/plan-admission.mjs・.shirube/sds-pin.json・docs/sds/distribution.md §4 と、Owner の AI-DLC の作業場の Shirube の unit-of-work（U1〜U7）を自分で読む。全 6 項目必須。",
+  "items": [
+    {
+      "id": "S1G-1",
+      "criterion": "目的と対象外: 記録 §1 が [OI] の Owner の原文と [OD] を引き、目的（AI-DLC だけでは塞げない 2 つの穴 = 監査なしの統合・工程の飛ばしを、shirube と aun で機械で塞ぐ）と対象外（S1-SH-01〜07 の文、門の判定 1〜5 の決まり、固定 checker、required checks と branch protection の中身、AI-DLC の engine と Guard Policy、S2 の中身、shirube#70 の設計）を書き、[OD] の決めたこと 1〜4 と食い違わない。",
+      "basis": "audit-method §3 D1、[OD]、[OI]"
+    },
+    {
+      "id": "S1G-2",
+      "criterion": "全受入の検証計画: 記録 §5 が S1-SH-01〜07 のそれぞれについて、示す物（負例 PR の FAIL・merge できなかった記録・受付の拒否・実 PR の統合・devauditor の FAIL の分類・W2・branch protection の読み戻し・Owner の手の数）を書き、[DONE] の各行の確かめ方と食い違わない。計測の部品を作らないことで、S1-SH-04・05 の確かめが抜けていない。§2 の表の「今の状態」が shirube main の pin（plan_binding_mode・design_binding_mode が report-only）と distribution.md §4 の判定 1〜5 の記述と一致する。",
+      "basis": "audit-method §3 D2、[DONE]、[MEAS]"
+    },
+    {
+      "id": "S1G-3",
+      "criterion": "代替案と影響: 記録 §7 が、少なくとも (a) 今の計画のまま、(b) S1 にセキュリティの制御を入れる、(c) S1-SH-03 を外す、(d) 計測の部品を S1 に残す、を採らなかった理由つきで書き、理由が [OD]・[OI] と食い違わない。記録 §3 が外す物（I1〜I4・A・K・U2・U3・U4 の一部・U7）と、PR #67・#68 の扱い（#67 は閉じる、#68 は shirube#70 §3.4 のとおり門の直しの最後の確かめに使って統合する）を書き、#70 の手順と食い違わず、S1-SH-06 がこの縮小の後も満たされる根拠（branch protection と sds-gate の必須）が事実と合う。",
+      "basis": "audit-method §3 D3"
+    },
+    {
+      "id": "S1G-4",
+      "criterion": "承認の根拠と権限: 記録 §2 の「承認の根拠の置き場」が、S1-SH-03 の根拠を control source に公開された shirube-owner-decision/v1 の記録とし、受付が見るのは在りか・marker・本文 SHA-256 だけ（本人確認は後の版）と書いている。[REC] の文の解釈を含むことを明示し、Owner の確認を aidlc-shirube の開き直しで取ると書いている（解釈を確定事項として扱っていない）。§8 が、門の資格情報を変えないこと、U5 が GET だけで書込みをしないこと、PR の code を checkout・実行しないこと、読めない時に FAIL にすること（NOT_CHECKED にしない）、revert での戻し方を書いている。",
+      "basis": "audit-method §3 D4、[REC]、SDS S5・S8・S9"
+    },
+    {
+      "id": "S1G-5",
+      "criterion": "予算と範囲と順: 記録 §4 が、作る物を U5 の 1 本（R2、400 行・20 file の中、保護面に触れない）と aun への配布（Owner の exact-head 1 回）に限り、この記録の PR を G2（shirube#71）・shirube#70・#68 の確かめと統合の後に入れ、#70 §3.3 の main を止める範囲を崩さないと書いている。§8 が own-code の予算 4,000 行の中であることを書いている。§5 の S1-SH-07 が、上限（[MEAS] の 6 回）と、既に使った手・これからの見込みを数で書き、上限を超えうることを隠さず、数え方の扱いを Owner に確かめると書いている（数え方を黙って変えていない）。",
+      "basis": "audit-method §3 D5、OD-SHIRUBE-OWN-CODE-BUDGET-4000-FOR-S1-20261024-001"
+    },
+    {
+      "id": "S1G-6",
+      "criterion": "検証可能性と独立性: この PR の変更が scope の 2 file だけ（code・試験・.github/**・.shirube/** に触れていない）。CI が成功している。PR 本文の sds-pr/1 block（risk_class R1、changed_paths）がある。記録が引く [OD]・[OI] には comment の URL と本文の SHA-256 が付き、ほかの決定にも comment の URL が付いている。§6 が aidlc-shirube で開き直す段（範囲の段から）と、[REC] の読みの確認を要件の段の問いにすることを書いている。設計の作者（arc）、PR の作者（shirube の席）、監査者（devauditor）、統合担当（suite-lead）が別の席。",
+      "basis": "audit-method §2・§3 D6"
+    }
+  ]
+}
