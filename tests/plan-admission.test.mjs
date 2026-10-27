@@ -161,18 +161,19 @@ test("CLI: a plan that is blocked exits 1 with its reason: GitHub unreadable, a 
 });
 
 test("CLI: wrong arguments and unreadable files exit 2 with an error, and GitHub is never called", () => {
-  const rows = [
-    ["no arguments", []], ["a flag without its value", ["--plan"]], ["a stray argument", ["--plan", "plan.json", "extra"]],
-    ["an unknown flag", ["--plan", "plan.json", "--other", "x"]], ["a repeated flag", ["--plan", "plan.json", "--plan", "plan.json"]],
-    ["no --plan", ["--self-pin", "pin.json"]], ["a plan that cannot be read", ["--plan", "missing.json"]],
-    ["a plan that is not JSON", ["--plan", "bad.json"]], ["a pin that cannot be read", ["--plan", "plan.json", "--self-pin", "missing.json"]],
+  const usage = /^usage: plan-admission\.mjs --plan/, missing = /ENOENT.*missing\.json/;
+  const rows = [ // the reason says what was wrong: the usage line for the arguments, the cause for a file
+    ["no arguments", [], usage], ["a flag without its value", ["--plan"], usage], ["a stray argument", ["--plan", "plan.json", "extra"], usage],
+    ["an unknown flag", ["--plan", "plan.json", "--other", "x"], usage], ["a repeated flag", ["--plan", "plan.json", "--plan", "plan.json"], usage],
+    ["no --plan", ["--self-pin", "pin.json"], usage], ["a plan that cannot be read", ["--plan", "missing.json"], missing],
+    ["a plan that is not JSON", ["--plan", "bad.json"], /JSON/], ["a pin that cannot be read", ["--plan", "plan.json", "--self-pin", "missing.json"], missing],
   ];
-  for (const [name, argv] of rows) {
+  for (const [name, argv, reason] of rows) {
     const calls = [];
     const { code, result } = runCli(argv, { read: reads(files), api: getter(decision(AUN), calls) });
     assert.equal(code, 2, name);
     assert.equal(result.verdict, "ERROR", name);
-    assert.equal(typeof result.reason, "string", name);
+    assert.match(result.reason, reason, name);
     assert.deepEqual(calls, [], name);
   }
 });
