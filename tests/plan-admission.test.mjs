@@ -5,7 +5,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { planAdmission } from "../scripts/sds/plan-admission.mjs";
+import { planAdmission, runCli } from "../scripts/sds/plan-admission.mjs";
 import { PIN_FIELDS, REASON } from "../scripts/sds/plan-admission-shape.mjs";
 
 const { base, pin } = JSON.parse(readFileSync(new URL("./fixtures/plan-admission/cases.json", import.meta.url), "utf8"));
@@ -41,9 +41,15 @@ test("the same input gives the same output and is left untouched", () => {
   assert.deepEqual(planAdmission(input, { actualSelfPin: pin }), first);
 });
 
-test("the pin's fields and the reasons come from the shape module, and no clock, environment, randomness or network is read (S3, S4)", () => {
+// The CLI entry (iyasaka-arc#24 6454398380) lives in the same file, below this heading. The core above it keeps every rule it had; the CLI part is the one place
+// that reads arguments, files and GitHub, and not even it reads a clock, randomness or the network by itself.
+const CLI_HEADING = "// ---- CLI";
+test("the pin's fields and the reasons come from the shape module, and the core reads no clock, environment, randomness or network (S3, S4)", () => {
+  assert.equal(source.split(CLI_HEADING).length, 2, "exactly one CLI section");
+  const [core] = source.split(CLI_HEADING);
   assert.doesNotMatch(source, new RegExp(`"(?:${[...PIN_FIELDS, ...Object.values(REASON)].join("|")})"`));
-  assert.doesNotMatch(source, /Date\.now|new Date\(|Math\.random|randomUUID|process\.|fetch\(|globalThis/);
+  assert.doesNotMatch(core, /Date\.now|new Date\(|Math\.random|randomUUID|process\.|fetch\(|globalThis|execFileSync\(|readFileSync\(/);
+  assert.doesNotMatch(source, /Date\.now|new Date\(|Math\.random|randomUUID|fetch\(|globalThis/);
   for (const [, from] of source.matchAll(/from "([^"]+)"/g)) assert.match(from, /^(node:|\.\.\/hygiene\/lib\.mjs$|\.\/)/);
 });
 
@@ -122,4 +128,64 @@ test("PA-1 runs only when the caller passes api; without it the verdict is what 
 test("the recorded owner decisions are the bytes that were published (design §9.1)", () => {
   const digests = { [AUN]: "44095e3060618975ac1e4bc7fe5ea5739b19f3ca7a2d09e9189c731e01edece5", [BUDGET]: "b3678290324f793f0b6ec14a284d349e6e83ca4862d7c994f09e42f0849c3b5c", [SHIRUBE]: "8c6f8542888d5cd0302146f5d6f10bb097ab9fe12893fee533f670984a5a4893" };
   for (const [id, digest] of Object.entries(digests)) assert.equal(createHash("sha256").update(decision(id)).digest("hex"), digest, id);
+});
+
+// The CLI (iyasaka-arc#24 6454398380): `runCli(argv, { read, api })` is arguments -> files -> planAdmission -> exit code, with the readers handed in. Nothing here touches
+// the network or the disk; the real `gh` is not run in CI (a known weakness, said in the PR body).
+const reads = (files) => (path) => { if (!(path in files)) throw new Error(`ENOENT: no such file, open '${path}'`); return files[path]; };
+const files = { "plan.json": JSON.stringify(stagePlan()), "pin.json": JSON.stringify(pin), "bad.json": "{not json" };
+const ARGS = ["--plan", "plan.json", "--self-pin", "pin.json"];
+const getter = (body, calls = []) => (path) => { calls.push(path); if (body === undefined) throw new Error("gh: Not Found (HTTP 404)"); return { body }; };
+
+test("CLI: a plan that is admitted prints PASS and exits 0, having read the plan, the pin and one comment", () => {
+  const calls = [];
+  const { code, result } = runCli(ARGS, { read: reads(files), api: getter(decision(AUN), calls) });
+  assert.equal(code, 0);
+  assert.deepEqual(result, { decision: "PLAN_ADMISSION", verdict: "PASS", reason: "PLAN_ADMITTED", findings: [] });
+  assert.deepEqual(calls, [`repos/watchout/iyasaka-arc/issues/comments/${AUN}`]);
+});
+
+test("CLI: a plan that is blocked exits 1 with its reason: GitHub unreadable, a decision that adopts nothing, or no pin", () => {
+  const read = reads(files);
+  const rows = [
+    ["the comment cannot be read", ARGS, getter(undefined), REASON.STAGE_ENTRY_WITHOUT_CONDITIONS],
+    ["the comment adopts nothing", ARGS, getter(decision(BUDGET)), REASON.STAGE_ENTRY_WITHOUT_CONDITIONS],
+    ["no --self-pin: the pin is the caller's to give", ["--plan", "plan.json"], getter(decision(AUN)), REASON.SELF_APPLICATION_DRIFT],
+  ];
+  for (const [name, argv, api, reason] of rows) {
+    const { code, result } = runCli(argv, { read, api });
+    assert.equal(code, 1, name);
+    assert.equal(result.verdict, "BLOCK", name);
+    assert.equal(result.reason, reason, name);
+  }
+});
+
+test("CLI: wrong arguments and unreadable files exit 2 with an error, and GitHub is never called", () => {
+  const rows = [
+    ["no arguments", []], ["a flag without its value", ["--plan"]], ["a stray argument", ["--plan", "plan.json", "extra"]],
+    ["an unknown flag", ["--plan", "plan.json", "--other", "x"]], ["a repeated flag", ["--plan", "plan.json", "--plan", "plan.json"]],
+    ["no --plan", ["--self-pin", "pin.json"]], ["a plan that cannot be read", ["--plan", "missing.json"]],
+    ["a plan that is not JSON", ["--plan", "bad.json"]], ["a pin that cannot be read", ["--plan", "plan.json", "--self-pin", "missing.json"]],
+  ];
+  for (const [name, argv] of rows) {
+    const calls = [];
+    const { code, result } = runCli(argv, { read: reads(files), api: getter(decision(AUN), calls) });
+    assert.equal(code, 2, name);
+    assert.equal(result.verdict, "ERROR", name);
+    assert.equal(typeof result.reason, "string", name);
+    assert.deepEqual(calls, [], name);
+  }
+});
+
+test("CLI: run as a program it prints one JSON line and exits with the code (here wrong arguments, so GitHub is never called)", () => {
+  const program = spawnSync(process.execPath, [fileURLToPath(new URL("../scripts/sds/plan-admission.mjs", import.meta.url)), "--plan"], { encoding: "utf8" });
+  assert.equal(program.status, 2);
+  assert.equal(program.stdout.trimEnd().split("\n").length, 1);
+  assert.equal(JSON.parse(program.stdout).verdict, "ERROR");
+});
+
+test("CLI: the GitHub reader is `gh api <path>` and nothing else: no method, no field, no input, no new credential", () => {
+  const cli = source.split(CLI_HEADING)[1];
+  assert.match(cli, /execFileSync\("gh", \["api", path\]/);
+  assert.doesNotMatch(cli, /"-X"|"--method"|"-f"|"-F"|"--field"|"--raw-field"|"--input"|"--header"|"-H"|GH_TOKEN|GITHUB_TOKEN|process\.env/);
 });
