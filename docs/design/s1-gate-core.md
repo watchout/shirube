@@ -17,8 +17,8 @@ Owner の言葉（[OI]）: 「とりあえず記録よりも品質維持だと�
 | 穴（完了の条件） | 使う物 | 今の状態 | S1 ですること |
 |---|---|---|---|
 | 監査なしの統合（S1-SH-01） | 判定 1 risk_class・2 変更 path・3 監査の受領 | shirube では止める形（branch protection の必須、[#49 6389465250](https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6389465250)）。CI での受領の読み直しの障害は G1（統合済み）と G2（shirube#71、Owner の exact-head 待ち）で直る | 新しい code は無い。aun に配る（§4 の 3） |
-| 道筋に無い作業（S1-SH-02） | 判定 4 plan binding | 実装済み、shirube の pin で `report-only` | 新しい code は無い。aun に配る。止める形への切り替えは [MEAS] の目安（記録だけの期間に実際の PR 10 件以上・誤った FAIL 0）を満たした後に Owner が repo ごとに決める |
-| Inception が先（S1-SH-03） | 計画の受付（`scripts/sds/plan-admission.mjs`） | 形と意味の検査はある。「今の段の済みの条件を Owner が採択した記録」への参照の検査は無い | U5 だけを作る: 道筋（`shirube-delivery-plan/v1`）が、その製品の Inception の済みの条件の採択を記録した Owner の決定（control source に公開された `shirube-owner-decision/v1` の comment、URL と本文 SHA-256）を指していなければ受け付けない |
+| 道筋に無い作業（S1-SH-02） | 判定 4 plan binding | 実装済み、shirube の pin で `report-only`。判定 4 は pin の `delivery_plan.control_source` が指す issue の道筋の comment を読む。shirube の pin にはまだその欄が無い | 新しい code は無い。aun に配る時、pin の `delivery_plan.control_source` を aun の repo の issue（aun#3）にし、AUN の道筋の comment をそこに置く（§8 のとおり、aun の門は aun の repo しか読めないため）。止める形への切り替えは [MEAS] の目安（記録だけの期間に実際の PR 10 件以上・誤った FAIL 0）を満たした後に Owner が repo ごとに決める |
+| Inception が先（S1-SH-03） | 計画の受付（`scripts/sds/plan-admission.mjs`） | 形と意味の検査はある。「今の段の済みの条件を Owner が採択した記録」への参照の検査は無い | U5 だけを作る: 道筋（`shirube-delivery-plan/v1`）が、その製品の Inception の済みの条件の採択を記録した Owner の決定（control source に公開された `shirube-owner-decision/v1` の comment、URL と本文 SHA-256）を指していなければ受け付けない。U5 は門（CI）では動かさず、道筋を受け付ける時の CLI（suite-lead の前検査、T129）で動き、Owner の決定はその席の資格情報で読む |
 
 **承認の根拠の置き場**: S1-SH-03 の「採択」の根拠は、AI-DLC の audit から作る承認の記録ではなく、control source に公開された Owner の決定の記録（`shirube-owner-decision/v1`）とする。これは権限の置き場の決まり（R1: 権限は control source に publish された決定だけ）と同じ置き場で、受付が確かめるのは記録の在りか・marker・本文 SHA-256 の一致だけ（本人確認は CF-AUTH-01 で後の版）。[REC] の「門が承認として読むのは Shirube が GitHub に公開する承認の記録の 1 種類だけ」は、S1 ではこの 1 種類を `shirube-owner-decision/v1` の記録と読む。**この読みは [REC] の文の解釈を含むので、aidlc-shirube の開き直し（§6）で Owner の確認を取る。**
 
@@ -63,7 +63,12 @@ S1 の作業の単位が 7 つから U1（済みの分）・U5・U6 に減り、
 
 ## 8. 秘密・権限・復旧・予算
 
-- 門の資格情報は今のまま（`github.token`、読むだけ）。U5 は control source の comment を GET で読むだけで、書込みをしない。PR の head の code を checkout も実行もしない（判定 4・5 と同じ）。
+- 門の資格情報は今のまま（`github.token`、読むだけ）。読む所と資格情報:
+  - 判定 1〜3: PR の repo の中（label・diff・PR の comment）だけ。aun でも `github.token` で読める。
+  - 判定 4: pin の `delivery_plan.control_source` が指す issue。GitHub の workflow の `github.token` はその workflow の repo だけを読める（GitHub の仕様。aun では U6 の導入の時に 1 回測る）ので、aun では道筋をこの issue に置く。iyasaka-arc（private）の comment を aun の門から読む作りにはしない。読取り用の token を足す案は資格情報と workflow の変更（保護面）なので、S1 では採らない。
+  - U5: 門では動かない。道筋を受け付ける席が CLI で動かし、control source の comment を GET で読むだけで、書込みをしない。
+  - どれも PR の head の code を checkout も実行もしない（判定 4・5 と同じ）。
+- 既知の弱み（隠さない）: 門は道筋の本文の `status: ADMITTED` と本文の SHA-256 を読むだけで、受付（U5 を含む）が実際に走ったかは機械で確かめない（今の判定 4 の作りのまま。後からの書き換えは SHA-256 で止まる）。受付の結果の記録を門が確かめる形は、後の版の候補として S2 の検討に入れる。
 - 失敗を隠さない: 参照が読めない時は受付を FAIL にする（NOT_CHECKED にしない）。
 - 戻し方: U5 は revert で戻せる。aun への導入は、使い始める前なら kit の file を消す PR で戻せる。
 - 予算: own-code の上限 4,000 行（OD-SHIRUBE-OWN-CODE-BUDGET-4000-FOR-S1-20261024-001）の中。U5 の追加は 1 本 400 行の中。この記録は docs だけ。

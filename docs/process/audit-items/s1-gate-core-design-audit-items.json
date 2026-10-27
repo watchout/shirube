@@ -20,7 +20,7 @@
     },
     {
       "id": "S1G-4",
-      "criterion": "承認の根拠と権限: 記録 §2 の「承認の根拠の置き場」が、S1-SH-03 の根拠を control source に公開された shirube-owner-decision/v1 の記録とし、受付が見るのは在りか・marker・本文 SHA-256 だけ（本人確認は後の版）と書いている。[REC] の文の解釈を含むことを明示し、Owner の確認を aidlc-shirube の開き直しで取ると書いている（解釈を確定事項として扱っていない）。§8 が、門の資格情報を変えないこと、U5 が GET だけで書込みをしないこと、PR の code を checkout・実行しないこと、読めない時に FAIL にすること（NOT_CHECKED にしない）、revert での戻し方を書いている。",
+      "criterion": "承認の根拠と権限: 記録 §2 の「承認の根拠の置き場」が、S1-SH-03 の根拠を control source に公開された shirube-owner-decision/v1 の記録とし、受付が見るのは在りか・marker・本文 SHA-256 だけ（本人確認は後の版）と書いている。[REC] の文の解釈を含むことを明示し、Owner の確認を aidlc-shirube の開き直しで取ると書いている（解釈を確定事項として扱っていない）。§8 が、判定 1〜3・判定 4・U5 のそれぞれがどの repo の何を、どの資格情報で読むかを書き、aun の門の github.token で読めない所（iyasaka-arc の private の comment）を門から読む作りにしていない（判定 4 の道筋は aun の repo の issue に置き、U5 は門ではなく受付の CLI で動く）こと、既知の弱み（門は道筋の status: ADMITTED の宣言と SHA-256 を読むだけで、受付が走ったかは確かめない）を隠していないこと、門の資格情報を変えないこと、U5 が GET だけで書込みをしないこと、PR の code を checkout・実行しないこと、読めない時に FAIL にすること（NOT_CHECKED にしない）、revert での戻し方を書いている。",
       "basis": "audit-method §3 D4、[REC]、SDS S5・S8・S9"
     },
     {
