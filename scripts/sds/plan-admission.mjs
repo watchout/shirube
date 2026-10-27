@@ -1,5 +1,9 @@
 // PLAN_ADMISSION (KIT-ADF E, iyasaka-arc#57 6230190519 §1): the form check plus the meaning check and the verdict, rewritten from what
 // ADF 561baebe buildDeliveryPlanValidationReport(document, { actualSelfPin }).decisions.PLAN_ADMISSION decides. The caller passes the pin (S4).
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { parseArgs } from "../hygiene/lib.mjs";
 import { refOf } from "./design-gate.mjs";
 import { checkPlanShape, PIN_FIELDS, REASON } from "./plan-admission-shape.mjs";
 import { currentStage } from "./stage.mjs";
@@ -151,4 +155,35 @@ export function planAdmission(document, { actualSelfPin, api } = {}) {
   const rank = (f) => { const i = PRIORITY.indexOf(f.reason); return i === -1 ? PRIORITY.length : i; };
   const first = findings.reduce((best, f) => (best === undefined || rank(f) < rank(best) ? f : best), undefined);
   return { decision: "PLAN_ADMISSION", verdict: first ? "BLOCK" : "PASS", reason: first ? first.reason : "PLAN_ADMITTED", findings };
+}
+
+// ---- CLI (iyasaka-arc#24 6454398380): `node scripts/sds/plan-admission.mjs --plan <plan.json> [--self-pin <pin.json>]` prints the verdict as one JSON line.
+// Exit 0 = PASS, 1 = BLOCK, 2 = the arguments or a file could not be read. PA-1 reads the owner decisions through `gh api <path>`: a GET, with the login of whoever runs it (S9).
+// This is the one part of the file that reads arguments, files and GitHub; the core above it reads nothing (S4).
+const EXIT = { PASS: 0, BLOCK: 1, ERROR: 2 };
+const readText = (path) => readFileSync(path, "utf8");
+const github = (path) => JSON.parse(execFileSync("gh", ["api", path], { encoding: "utf8", timeout: 20000, maxBuffer: 8000000 })); // same reader as gate.mjs, whose file is outside this change
+
+function flags(argv) {
+  const args = parseArgs(argv), keys = Object.keys(args);
+  const sound = typeof args.plan === "string" && argv.length === keys.length * 2 && keys.every((k) => ["plan", "self-pin"].includes(k) && typeof args[k] === "string");
+  if (!sound) throw new Error("usage: plan-admission.mjs --plan <plan.json> [--self-pin <pin.json>]");
+  return args;
+}
+
+// arguments -> files -> planAdmission -> exit code. The readers of files and of GitHub are handed in, so a test touches neither.
+export function runCli(argv, { read = readText, api = github } = {}) {
+  try {
+    const args = flags(argv), pin = args["self-pin"] === undefined ? undefined : JSON.parse(read(args["self-pin"]));
+    const result = planAdmission(JSON.parse(read(args.plan)), { actualSelfPin: pin, api });
+    return { code: result.verdict === "PASS" ? EXIT.PASS : EXIT.BLOCK, result };
+  } catch (error) {
+    return { code: EXIT.ERROR, result: { decision: "PLAN_ADMISSION", verdict: "ERROR", reason: error.message } };
+  }
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const { code, result } = runCli(process.argv.slice(2));
+  process.stdout.write(`${JSON.stringify(result)}\n`);
+  process.exitCode = code;
 }
