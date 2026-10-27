@@ -1,10 +1,16 @@
 // PLAN_ADMISSION (KIT-ADF E, iyasaka-arc#57 6230190519 §1): the form check plus the meaning check and the verdict, rewritten from what
 // ADF 561baebe buildDeliveryPlanValidationReport(document, { actualSelfPin }).decisions.PLAN_ADMISSION decides. The caller passes the pin (S4).
+import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { parseArgs } from "../hygiene/lib.mjs";
+import { refOf } from "./design-gate.mjs";
 import { checkPlanShape, PIN_FIELDS, REASON } from "./plan-admission-shape.mjs";
+import { currentStage } from "./stage.mjs";
 
-const { SELF_APPLICATION_DRIFT: DRIFT, DELIVERY_GRAPH_INCOMPLETE: GRAPH, CRITICAL_PATH_INVALID: PATH } = REASON;
+const { SELF_APPLICATION_DRIFT: DRIFT, DELIVERY_GRAPH_INCOMPLETE: GRAPH, CRITICAL_PATH_INVALID: PATH, STAGE_ENTRY_WITHOUT_CONDITIONS: ENTRY } = REASON;
 // Reasons from most to least decisive: the verdict names the first one that was found.
-const PRIORITY = [DRIFT, REASON.STALE_BASELINE, REASON.PLAN_STATUS_NOT_ADMITTED, REASON.OWNER_OUTCOME_INCOMPLETE, GRAPH, PATH, REASON.UNKNOWN_FIELD, REASON.INVALID_DELIVERY_PLAN];
+const PRIORITY = [DRIFT, REASON.STALE_BASELINE, REASON.PLAN_STATUS_NOT_ADMITTED, REASON.OWNER_OUTCOME_INCOMPLETE, ENTRY, GRAPH, PATH, REASON.UNKNOWN_FIELD, REASON.INVALID_DELIVERY_PLAN];
 const array = (v) => (Array.isArray(v) ? v : []);
 const record = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
 const text = (v) => typeof v === "string" && v.trim() !== "";
@@ -91,12 +97,56 @@ function selfPin(doc, actualSelfPin, out) {
   if (!wholePin(actualSelfPin) || !samePin(s.expected, actualSelfPin) || !samePin(s.observed, actualSelfPin)) add(out, DRIFT, "self_application", "The declared pins must equal the externally observed pin.");
 }
 
-export function planAdmission(document, { actualSelfPin } = {}) {
+// PA-1 (iyasaka-arc#24 SHIRUBE-U5-20261027; docs/design/slice23-control-v1.md §3.3, §3.4): a plan may work on its current stage only if an owner decision that
+// adopts that stage is among its source refs: a comment whose first line is the marker and which has the line `stage_adoption: S<k> <plan_id>`. The caller passes
+// `api`, a GET of one path made with its own credentials (S4, S9); this module reads nothing itself. A ref that cannot be read counts as absent (S8).
+const MARKER = /^<!--\s*shirube-owner-decision\/v1:[^\s>]+\s*-->\s*$/;
+const STAGE_PATH = "terminal_acceptance.satisfied_predicates";
+
+function readBody(ref, api) {
+  try {
+    const body = api(`repos/${ref[1]}/issues/comments/${ref[2]}`)?.body;
+    return typeof body === "string" ? body : undefined;
+  } catch { return undefined; }
+}
+
+function adopts(body, line) {
+  const lines = body.split(/\r?\n/);
+  return MARKER.test(lines[0]) && lines.some((l) => l.trimEnd() === line);
+}
+
+// The current stage (stage.mjs, §3.3): a string; null when the plan is closed; undefined when it cannot be decided. The last two are findings.
+function stageOf(doc, out) {
+  try {
+    const stage = currentStage(doc);
+    if (stage === null) add(out, ENTRY, STAGE_PATH, "Every acceptance ID is already accepted: the plan is closed and a new stage must be adopted.");
+    return stage;
+  } catch (error) {
+    add(out, ENTRY, STAGE_PATH, `The current stage cannot be decided: ${error?.message}.`);
+    return undefined;
+  }
+}
+
+function adoption(doc, api, out) {
+  const stage = stageOf(doc, out);
+  if (typeof stage !== "string") return;
+  const line = `stage_adoption: ${stage} ${doc.plan_id}`, refs = array(doc.owner_outcome?.source_refs).map((url) => refOf(url)).filter(Boolean);
+  let unread = 0;
+  for (const ref of refs) {
+    const body = readBody(ref, api);
+    if (body === undefined) unread += 1;
+    else if (adopts(body, line)) return;
+  }
+  add(out, ENTRY, "owner_outcome.source_refs", `No source ref is an owner decision that adopts ${stage} of ${doc.plan_id}${unread > 0 ? ` (${unread} of ${refs.length} could not be read)` : ""}.`);
+}
+
+export function planAdmission(document, { actualSelfPin, api } = {}) {
   const findings = checkPlanShape(document);
   if (record(document)) {
     const ids = array(document.owner_outcome?.terminal_predicates).map((e) => e?.id).filter(text), predicates = new Set(ids);
     const nodes = graph(document, ids, predicates, findings), path = array(document.critical_path?.step_ids);
     sourceRef(document, findings);
+    if (api !== undefined) adoption(document, api, findings); // PA-1 runs only when the caller reads the owner decisions; without `api` the verdict is ADF's
     status(document, findings);
     stepOrder(document, path, nodes, findings);
     nextAction(document, frontmost(path, nodes), predicates, findings);
@@ -105,4 +155,35 @@ export function planAdmission(document, { actualSelfPin } = {}) {
   const rank = (f) => { const i = PRIORITY.indexOf(f.reason); return i === -1 ? PRIORITY.length : i; };
   const first = findings.reduce((best, f) => (best === undefined || rank(f) < rank(best) ? f : best), undefined);
   return { decision: "PLAN_ADMISSION", verdict: first ? "BLOCK" : "PASS", reason: first ? first.reason : "PLAN_ADMITTED", findings };
+}
+
+// ---- CLI (iyasaka-arc#24 6454398380): `node scripts/sds/plan-admission.mjs --plan <plan.json> [--self-pin <pin.json>]` prints the verdict as one JSON line.
+// Exit 0 = PASS, 1 = BLOCK, 2 = the arguments or a file could not be read. PA-1 reads the owner decisions through `gh api <path>`: a GET, with the login of whoever runs it (S9).
+// This is the one part of the file that reads arguments, files and GitHub; the core above it reads nothing (S4).
+const EXIT = { PASS: 0, BLOCK: 1, ERROR: 2 };
+const readText = (path) => readFileSync(path, "utf8");
+const github = (path) => JSON.parse(execFileSync("gh", ["api", path], { encoding: "utf8", timeout: 20000, maxBuffer: 8000000 })); // same reader as gate.mjs, whose file is outside this change
+
+function flags(argv) {
+  const args = parseArgs(argv), keys = Object.keys(args);
+  const sound = typeof args.plan === "string" && argv.length === keys.length * 2 && keys.every((k) => ["plan", "self-pin"].includes(k) && typeof args[k] === "string");
+  if (!sound) throw new Error("usage: plan-admission.mjs --plan <plan.json> [--self-pin <pin.json>]");
+  return args;
+}
+
+// arguments -> files -> planAdmission -> exit code. The readers of files and of GitHub are handed in, so a test touches neither.
+export function runCli(argv, { read = readText, api = github } = {}) {
+  try {
+    const args = flags(argv), pin = args["self-pin"] === undefined ? undefined : JSON.parse(read(args["self-pin"]));
+    const result = planAdmission(JSON.parse(read(args.plan)), { actualSelfPin: pin, api });
+    return { code: result.verdict === "PASS" ? EXIT.PASS : EXIT.BLOCK, result };
+  } catch (error) {
+    return { code: EXIT.ERROR, result: { decision: "PLAN_ADMISSION", verdict: "ERROR", reason: error.message } };
+  }
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const { code, result } = runCli(process.argv.slice(2));
+  process.stdout.write(`${JSON.stringify(result)}\n`);
+  process.exitCode = code;
 }
