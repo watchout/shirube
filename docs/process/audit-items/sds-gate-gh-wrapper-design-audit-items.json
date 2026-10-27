@@ -1,0 +1,37 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@d5b51b3694f49ec58a89cfb1e3449ae1fe3682ed/docs/sds/audit-method.md#3",
+  "scope": "門（sds-gate）の直し PR-G1・PR-G2 の設計の監査（D1〜D6、事前監査を後から行う = T154 の前例、iyasaka-arc#49 6301299856）: docs/design/sds-gate-gh-wrapper.md（設計の記録、新しい file、作者 arc）と、本項目集合の file docs/process/audit-items/sds-gate-gh-wrapper-design-audit-items.json。監査の対象は設計で、G1 の実装（shirube#69、head de5d1833dd9e1fd32e49a209e7b01c693fb71184）は設計との一致を見る材料。G2 は未実装で、この記録が G2 の事前の設計になる。記法: [OD] = Owner の決定 OD-SHIRUBE-GATE-FIX-ADMIN-ENFORCE-TEMP-OFF-20261026-001（iyasaka-arc#49 6404453776、本文 SHA-256 8062d996b7e596eea1f3859ef6300d433d97d528f41bf64f57db88a726169c8f）、[WO] = 作業指示 iyasaka-arc#24 6404479439（b7164d352d04186f8fca0ab8230d1473415965edc9c3aa8d03d43bc1d93c0c5f）、[OBS] = 障害の調べ iyasaka-arc#24 6394017590、[IA] = G1 の実装監査 shirube#69 6404803377。監査者は gh の原典（cli/cli v2.102.0 の pkg/cmd/api/api.go）と runner の image の記録（actions/runner-images の tag ubuntu24/20261012.334）を自分で取り直して読む。全 6 項目必須。",
+  "items": [
+    {
+      "id": "GWD-1",
+      "criterion": "目的と対象外: 設計の記録が、Owner の原文と決定 ID（[OD]、branch protection の決定 #49 6389465250、T154）を引き、目的（R2 以上の PR で判定 3 が CI の上で受領を確かめ直す時に必ず FAIL になる障害を直し、判定 1〜3 の止め方は変えない）と対象外（固定 checker と gate.mjs の変更、判定の決まり、status の形、required checks と branch protection の中身、enforce_admins を外す手順そのもの、kodama の pin）を書いている。原因の説明が [OBS] と gh の原典・runner の image の記録で裏づけられる。",
+      "basis": "audit-method §3 D1、[OD]、[OBS]"
+    },
+    {
+      "id": "GWD-2",
+      "criterion": "全受入の検証計画: 記録 §5 が、G1 の受入（拒否する gh で flag が付き PASS、包みを外すと障害が再現、引数の形、実物の gh 2.102.0 での再現）、G2 の受入（pin・uses・files の sha256 の一致）、最終の証拠、enforce_admins の戻しの読み戻しを、それぞれ示す物と状態（実施済み・未実施）つきで並べている。G1 の試験と手元の再現を『直った証拠』としていない。最終の証拠について、記録 §3.4 が、固定 checker の baseCheck・base_moved・MOVED_GUARD と GitHub の run の再実行の性質に照らして実行できる手順（#68 を main に追従させる担当と順序、#68 の file が round 6 の版と bytes で同じことの確かめ、対応する CI、同じ版の項目集合と checker での再監査と再受領、PR 本文の `audit` の 3 つの値（`request` = 新しい依頼の URL、`request_sha256` = その公開本文の SHA-256、`review` = その依頼への返却の URL）を 1 回の編集で一緒に結び直すこと、今の main の caller で新しい run を起こす方法、その run の referenced_workflows が G1 の統合の commit を示し同じ head の sds-gate が success であることの確かめ、古い run の再実行を証拠にしないこと、成り立たない時に止めること）を書き、統合の順と main を止める範囲（§3.3）がその手順と食い違わない。",
+      "basis": "audit-method §3 D2、[WO] §0、設計監査の 1 回目 shirube#70 6404983074 と 2 回目 6405137503 の BF-GWD-ACCEPTANCE-01"
+    },
+    {
+      "id": "GWD-3",
+      "criterion": "代替案: 記録 §4 が、少なくとも (a) 固定 checker と gate.mjs に flag を足す、(b) 環境変数で拒否を止める、(c) runner の gh の版を下げる、(d) 記録を読まずに別の API で確かめる、(e) sds-gate を一時的に必須から外す、(f) 包みを別の script file にする、を採らなかった理由つきで書き、理由が事実（固定 checker の identity・gh の原典・Owner の選択）と食い違わない。",
+      "basis": "audit-method §3 D3"
+    },
+    {
+      "id": "GWD-4",
+      "criterion": "秘密・権限・観測・復旧・データ: 記録 §6 が、門の資格情報が github.token のままで包みが GH_TOKEN を新しい所へ渡さないこと、PR の head の code を checkout も実行もしないこと、包みが出力と終了コードを変えないこと、失敗を隠す記述を足さないこと、G1・G2 を revert で戻せること、enforce_admins を統合の直後に戻して読み戻すこと、作業の記録の bytes が flag の有無で変わらないことを書いている。G1 の実装（shirube#69）がこれと食い違わない。",
+      "basis": "audit-method §3 D4、SDS S5・S8・S9"
+    },
+    {
+      "id": "GWD-5",
+      "criterion": "予算と範囲: 記録 §7 が、G1 の変更の量（workflow 32 行・試験 1 file・項目集合 1 file、PR 400 行の上限の中）、own-code の予算 4,000 行の中であること、G2 が 2 file の置き換えだけであること、この記録を docs だけの PR（R1）に置くことを書いている。",
+      "basis": "audit-method §3 D5、OD-SHIRUBE-OWN-CODE-BUDGET-4000-FOR-S1-20261024-001"
+    },
+    {
+      "id": "GWD-6",
+      "criterion": "検証可能性と独立性: この PR の変更が scope の 2 file だけ（code・試験・.github/**・.shirube/** に触れていない）。CI が成功している。PR 本文の sds-pr/1 block（risk_class R1、changed_paths）がある。記録が引く [OD]・[WO]・[OBS]・[IA]・T154 の参照に comment の URL が付き、[OD]・[WO] には本文の SHA-256 が付いている。設計の作者（arc）、PR の作者（shirube の席）、監査者（devauditor）、統合担当（suite-lead）が別の席。この監査の受領が、G1 の実装監査のやり直しと G2 の実装の前提になると書いている。",
+      "basis": "audit-method §2・§3 D6"
+    }
+  ]
+}

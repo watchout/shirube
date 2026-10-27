@@ -62,6 +62,38 @@ jobs:
         run: |
           # Runs under the runner's bash -e: a FAIL from the gate is captured, never ends the step before the status.
           set -euo pipefail
+          # gh >= 2.97 refuses to print a raw (non-JSON) API response that carries terminal escape sequences unless
+          # --allow-escape-sequences is given. A job log always does (the runner colours its step headings), so the
+          # receipt re-check of an R2+ PR (`gh api .../actions/jobs/<id>/logs`, in gate.mjs and the pinned
+          # audit-admission.mjs, both through PATH) failed every time (iyasaka-arc#24 6394017590). JSON responses are not
+          # affected. The wrapper below is the real gh, except that `gh api <path ending in /logs>` also gets the flag,
+          # and only when this gh has it. Every other call, its arguments, output and exit status are passed through.
+          gh_real="$(command -v gh)"
+          gh_wrap="$(mktemp -d)"
+          trap 'rm -rf "$gh_wrap"' EXIT
+          cat > "$gh_wrap/gh" <<'GH_WRAPPER'
+          #!/bin/sh
+          set -eu
+          real="${SDS_REAL_GH:?SDS_REAL_GH is not set}"
+          flag=--allow-escape-sequences
+          if [ "${1-}" = api ]; then
+            logs=""; given=""
+            for arg in "$@"; do
+              case "$arg" in
+                "$flag") given=1 ;;
+                -*) ;;
+                */logs) logs=1 ;;
+              esac
+            done
+            if [ -n "$logs" ] && [ -z "$given" ] && "$real" api --help 2>&1 | grep -q -e "$flag"; then
+              exec "$real" "$@" "$flag"
+            fi
+          fi
+          exec "$real" "$@"
+          GH_WRAPPER
+          chmod 0755 "$gh_wrap/gh"
+          export SDS_REAL_GH="$gh_real"
+          export PATH="$gh_wrap:$PATH"
           head="$(gh api "repos/$REPO/pulls/$PR" --jq .head.sha)"
           test -n "$head"
           code=0

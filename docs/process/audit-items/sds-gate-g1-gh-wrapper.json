@@ -1,0 +1,32 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@d5b51b3694f49ec58a89cfb1e3449ae1fe3682ed/docs/sds/audit-method.md#3",
+  "scope": "門（sds-gate）の直し PR-G1（R4、保護面）の実装監査: 再利用 workflow .github/workflows/sds-gate.yml の step『Run sds-gate and report a commit status on the PR head』に、本物の gh を包む小さな script を足す。R2 以上の PR で門が受領を CI の上で確かめ直す時、CI の gh（2.102.0）が job の log（色の指定の制御文字を含む生の応答）を `--allow-escape-sequences` なしでは拒み、必ず FAIL になる障害への直し。対象 = 上の workflow、試験 tests/sds-gate-gh-wrap.test.mjs、本項目集合の file。記法: [WO] = 作業指示 iyasaka-arc#24 の comment 6404479439（本文 SHA-256 b7164d352d04186f8fca0ab8230d1473415965edc9c3aa8d03d43bc1d93c0c5f）、[OD] = Owner の決定 OD-SHIRUBE-GATE-FIX-ADMIN-ENFORCE-TEMP-OFF-20261026-001（iyasaka-arc#49 の comment 6404453776、本文 SHA-256 8062d996b7e596eea1f3859ef6300d433d97d528f41bf64f57db88a726169c8f）、[OBS] = 障害の調べ iyasaka-arc#24 の comment 6394017590（本文 SHA-256 ddfa055d9474e6c8b57aad2dfe8fea75fbf3795526f4c4b5b40707f0a67d2bf4）、[RUN] = 失敗した門の実行 https://github.com/watchout/shirube/actions/runs/40166235946（job 121087750404。拒否された log は test job 121083874860）、[GH] = 原典 cli/cli v2.102.0（commit fc4b137cdef0a6bd28fd461b7cf9c84a5812a8cd）の pkg/cmd/api/api.go、[IMG] = runner image の記録 actions/runner-images の tag ubuntu24/20261012.334 の images/ubuntu/Ubuntu2404-Readme.md（GitHub CLI 2.102.0）。監査者は [GH]・[IMG]・[RUN] を自分で取り直して読む（作者の宣言値を写さない）。全 5 項目必須。作者が項目の文を書いた物で、範囲が弱い・足りないと見えたら blocking_findings に書く。",
+  "items": [
+    {
+      "id": "G1-1",
+      "criterion": "wrapper の振る舞い。PASS: step の中の wrapper が、`gh api` の引数に『`-` で始まらず `/logs` で終わる物』があり、かつ `--allow-escape-sequences` がまだ引数に無く、かつ本物の gh の `api --help` にその flag が載る時だけ、末尾に flag を足して本物の gh を exec する。それ以外の呼出し（引数・stdout・stderr・終了コード）は変えない。本物の gh の path は PATH を替える前に `command -v gh` で決めて SDS_REAL_GH で渡し、wrapper 自身を呼び戻さない。SDS_REAL_GH が無ければ何も呼ばずに失敗する（fail closed）。POSIX sh で書かれ（dash で動く）、一時的な directory は step の終わりに消える。",
+      "basis": "[WO] 1、[OD]、SDS S8"
+    },
+    {
+      "id": "G1-2",
+      "criterion": "原因に効き、門を弱めない。PASS: [RUN]・[OBS] の障害が [GH] と [IMG] から説明できる（拒否されるのは JSON でない生の応答だけで、flag と拒否は同じ版で入った。runner の gh は 2.102.0）。gate.mjs と固定 checker が呼ぶ api の呼出し先のうち JSON でない応答は `/logs` だけ（監査者が呼出し先を読んで確かめる）。変更は gh への引数に flag を足すだけで、gate.mjs・audit-admission.mjs・判定の決まり・status の投稿は変わらず、FAIL を捕まえて最後に `exit \"$code\"` する形、失敗を隠す記述（`|| true`・`continue-on-error`）が無いまま。flag の有無で log の bytes は同じで、checker が log から取り出す commit の判断は変わらない。",
+      "basis": "[WO] 1、[OBS]、[GH]、[IMG]、SDS S5・S8"
+    },
+    {
+      "id": "G1-3",
+      "criterion": "範囲・保護面・callee identity。PASS: base..head の変更が `.github/workflows/sds-gate.yml`、試験 1 file、本項目集合の file だけ。`sds-gate-self.yml`・`.shirube/sds-pin.json`・`ci.yml`・固定 checker `scripts/hygiene/audit-admission.mjs`・`scripts/sds/gate.mjs`・required checks・branch protection には触れない。wrapper の text は再利用 workflow の自分の commit（tools を checkout して identity を確かめた commit と同じ）の file から来て、PR の head から来ない。permissions・secrets・外部への通信・新しい依存は増えず、GH_TOKEN を新しい所へ渡さない。",
+      "basis": "[WO] 1・『変えない物』、[OD] 含まないもの、Protected surface = owner gate（R1）、SDS S9"
+    },
+    {
+      "id": "G1-4",
+      "criterion": "試験が障害を捕まえる。PASS: 新しい試験が workflow の本物の text を取り出して動かし、(a) gh 2.97 以降の拒否を模した stub で、log の取得に flag が付いて gate が PASS し status が success になる、(b) wrapper を外した変異で障害（log が拒否され gate が FAIL し status が failure）が再現する、(c) 引数の形（flag 済み・flag の無い gh・他の呼出し・特殊文字・終了コード・stdout/stderr・SDS_REAL_GH 無し）を確かめる。既存の試験は変更なしで通る。CI の test と hygiene が監査対象の head で成功している。試験は GitHub を呼ばない。",
+      "basis": "[WO] 1・『試験を付ける』、SDS S8"
+    },
+    {
+      "id": "G1-5",
+      "criterion": "範囲・大きさ・独立性・正直さ。PASS: pr-size が PASS し、PR 本文の sds-pr/1 block（risk_class R4、changed_paths が diff と一致、control_handoff = [WO]）と risk:R4 の label がある。PR 本文が、(i) この PR 自身の sds-gate は固定された古い workflow（sds-gate-self.yml の pin）で動くため、受領の再確認で失敗する見込みで、統合は [OD] の手順（suite-lead が enforce_admins を統合の間だけ外し、すぐ戻して読み戻す）に拠ること、(ii) 直ったことの最終の証拠は G2 の統合の後の PR #68 の sds-gate の PASS であり、この PR の試験と実物の gh での再現は前提の確認にとどまること、(iii) 統合の前に Owner の exact-head が要ること、を書き、『直った』と主張していない。作者・監査者・統合担当が別の席。秘密・鍵・IP・model 名が無い。",
+      "basis": "[WO] 0・3、[OD]、distribution §4"
+    }
+  ]
+}
