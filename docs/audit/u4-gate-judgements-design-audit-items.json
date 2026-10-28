@@ -1,0 +1,37 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@6847393a51b337e5f1a7ed9967ea16d78de41c12/docs/sds/audit-method.md#3",
+  "scope": "Shirube U4（門の判定 5 を、変更 path が設計の置き場の中かまで広げる）の設計の記録の事前監査（D1〜D6）: docs/design/u4-gate-judgements.md（設計の記録、新しい file、作者 arc、版 1）と、本項目集合の file docs/audit/u4-gate-judgements-design-audit-items.json。実装は本監査の合格の後なので、code の差分は無い。記法: [NV] = Owner の決定 OD-SHIRUBE-NEXT-VERSION-START-U4-20261028-001（iyasaka-arc#49 6463776044、本文 SHA-256 b0cd543f8198be0da69ebc00e378df94578b4c7056f7deb5cc84e104d64d3d14）、[M] = shirube main 6847393a51b337e5f1a7ed9967ea16d78de41c12 の scripts/sds/gate.mjs・scripts/sds/design-gate.mjs・scripts/hygiene/lib.mjs・docs/design/sds-gate-judgment-5.md・templates/PULL_REQUEST_TEMPLATE.md・docs/sds/consumers.json、[REQ] = aidlc-shirube の取り組み 261021-dev-speedup-automation の要件 FR6.1・FR6.2・FR7.3 と作業の単位 U4（設計の記録 §1 の引用で照らす）、[S] = ~/.claude/rules/engineering-standards.md の S3・S4・S6・S8。監査者は [M] を自分で読む。全 6 項目必須。",
+  "items": [
+    {
+      "id": "U4-D1",
+      "criterion": "目的と対象外: 記録 §1 の目的（判定 5 が形だけを見て、承認済みの設計を指すか・変更 path が置き場の中かを確かめ、最初は記録だけ）が [REQ] の FR6.1 と一致し、意味のずれを門で見ないこと（FR6.2）と、止める形への切り替えを含まないこと（FR7.3）が書かれている。§2 の今の形が [M] と一致する（判定 5 が読む欄と 5.1〜5.8、判定 2 の paths が判定 5 に渡っていないこと、sds-design の block が製品設計にしか無いこと、判定ごとの段階の今の決まり）。",
+      "basis": "audit-method §3 D1、[NV]、[REQ]、[M]"
+    },
+    {
+      "id": "U4-D2",
+      "criterion": "検証の計画: §4 の T1〜T15 が入力と期待を書いた形で、T2 が今の本体で PASS になる負例として Red → Green を示す。外れた path の出し方（全部・並びの固定・rename の両方）、placements が無い時に FAIL にしないこと、placements の形の誤り、glob の書き方が matchesAny と同じこと、承認の種類 base_branch の成功・失敗・読めない時、今の承認の種類の試験がそのまま通ること、report-only と blocking の違い、今の判定 1〜5 の試験を弱めないことを、それぞれ確かめる試験がある。",
+      "basis": "audit-method §3 D2、[M] の tests"
+    },
+    {
+      "id": "U4-D3",
+      "criterion": "代替案: 記録 §6 が、少なくとも (a) 置き場を製品設計に書く、(b) 作る単位の承認を監査の依頼と返却の読み直しで確かめる、(c) 判定の段階を 1 つの欄にまとめる、(d) 置き場を作業指示の文から読む、(e) placements が無い時に FAIL、を採らなかった理由つきで書き、理由が [M]（監査の依頼の期限、判定ごとの段階の今の決まり）と [S] の S3 と食い違わない。",
+      "basis": "audit-method §3 D3、[M]、[S]"
+    },
+    {
+      "id": "U4-D4",
+      "criterion": "秘密・権限・観測・復旧: (a) 資格情報を作らない。(b) 門の読み取りに足すのは compare 1 回で、読めない時は FAIL（S8）。(c) design-gate は時刻・環境・網を読まず、呼び手が渡す（S4）。(d) 戻し方（revert と pin の sds_commit）がある。(e) 判定 3 を必須にしていない repo で統合済みが監査済みを意味しないこと・広すぎる glob・意味のずれを門で見ないことを、弱みとして隠していない。",
+      "basis": "audit-method §3 D4、[S] の S4・S8"
+    },
+    {
+      "id": "U4-D5",
+      "criterion": "予算・範囲・新旧の同居: §3.6 の置き方が保護面（.github/**・.shirube/**）に触れず、placements と kind が任意の欄で今の block がそのまま読める（S6）。§5 の PR の分け方（設計の記録 R1 → 実装 R2 → shirube と aun の pin の版上げ）が [NV] と合い、Owner の手が無い。実装 PR が追加 400 行・20 file の内の見積もりで、新しい外部の依存を足さない。判定 5 の設計の記録（docs/design/sds-gate-judgment-5.md）の書き足しを同じ実装 PR に含める（R3）。",
+      "basis": "audit-method §3 D5、[NV]、[S] の S6"
+    },
+    {
+      "id": "U4-D6",
+      "criterion": "検証可能性と独立性: この PR の変更が scope の 2 file だけ（code・試験・.github/**・.shirube/** に触れていない）。CI が成功している。PR 本文の sds-pr block（risk_class R1、changed_paths）がある。記録が引く [NV] に comment の URL と本文の SHA-256 がある。設計の作者（arc）、PR の作者（shirube の席）、監査者（devauditor）、統合担当（suite-lead）が別の席。",
+      "basis": "audit-method §3 D6、[NV]"
+    }
+  ]
+}
