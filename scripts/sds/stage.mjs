@@ -25,3 +25,4 @@ export function currentStage(plan) {
   const open = stages.filter((_, i) => !done.includes(terminal[i]));
   return open.length === 0 ? null : `S${Math.min(...open)}`;
 }
+// S1-SH-01 negative PR (iyasaka-arc#24): never merged.
