@@ -1,9 +1,12 @@
 # Shirube U4 — 門の判定 5 を、変更 path が設計の置き場の中かまで広げる（設計の記録）
 
+版 4（2026-10-29。版 3 との違い: 設計監査 3 回目（shirube#75 6465949944）の BF-U4-04（作る単位の設計の承認を門の機械の確かめから外したのが、要件 FR6.1 と合わない）を、Owner の決定 [U4A] で直した。U4 は FR6.1 の一部を作る作業の単位で、作る単位の設計の承認の機械の確かめは次の作業の単位に移す（要件の変更、§1.1）。門の振る舞いは版 3 と同じ（`unit_design` は `NOT_CHECKED`、PASS にしない）。変えたのは §1・§1.1（新）・§5 の 0b（新）・§8 の文と、要件の記録を合わせる段取り。版 3 = iyasaka-arc#57 6465425185）。
+
 版 3（2026-10-28。版 2 との違い: 設計監査 2 回目（shirube#75 6465338055）の 2 つの指摘を直した。BF-U4-01 = 統合済みの設計の監査を固定の checker（開いた PR の今の受領だけを見る）で確かめ直す形はやめ、作る単位の設計の承認は門では確かめず `NOT_CHECKED` と記録し（PASS にしない）、今の決まりどおり統合する席が統合の直前に確かめる形（`kind: "unit_design"`、§3.2）にした。機械で確かめる形は後の版の候補（§8）。BF-U4-03 = 判定 5 の規範（`distribution.md` §4 と判定 5 の設計の記録）を変える部分を R3 の PR（Owner の exact-head）に分けた（§5）。版 1 → 版 2 の違い: 1 回目の指摘 BF-U4-01・BF-U4-02 の直し（承認の確かめ方、自己用の caller と pin の版上げ、kit の mode の引き継ぎ）。版 2 = iyasaka-arc#57 6464797192）。設計の作者 = arc。作る席 = shirube の席、監査 = devauditor、統合 = suite-lead。
 
 適用 ID:
 - OD-SHIRUBE-NEXT-VERSION-START-U4-20261028-001（[iyasaka-arc#49 6463776044](https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6463776044)、本文 SHA-256 `b0cd543f8198be0da69ebc00e378df94578b4c7056f7deb5cc84e104d64d3d14`。次の版を今から U4 で始める。以下 [NV]）
+- OD-SHIRUBE-U4-PATH-CHECK-FIRST-UNIT-DESIGN-APPROVAL-NEXT-UNIT-20261029-001（[iyasaka-arc#49 6481509642](https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6481509642)、本文 SHA-256 `3167a28237b09da288390c4fb7fe0cc47fde3a598c1dbeed430a4a13545c2d34`。U4 は置き場の確かめを先に出し、作る単位の設計の承認の機械の確かめは次の作業の単位に回す。以下 [U4A]）
 - OD-SHIRUBE-REQUIREMENTS-MEASURES-AND-FAIL-CLASSIFICATION-20261022-001（#49 6336035707。止める判定に LLM を使わない、門の FAIL は devauditor が分類する）
 - OD-SHIRUBE-TF-Q7-B-LATER-VERSIONS-IN-SAME-INTENT-20261027-001（#49 6437072374。後の版も同じ取り組みの記録で扱う）
 - OD-KIT-UPGRADE-STANDING-AND-INCEPTION-WHILE-WAITING-20261021-001（[#49 6308341298](https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6308341298)、本文 SHA-256 `d2d1a8e4da93411d6baa1cca8ef2338d6b9822db15eb43489b9d3dabeb43bf94`。kit の版上げの PR の決まり。以下 [KIT]）
@@ -12,8 +15,8 @@
 
 ## 1. 目的と対象外
 
-**目的**（[REQ] の FR6.1）: 門の判定 5 が、形だけを見て次の 2 つを確かめる。当たらない時、または確かめられない時は FAIL（最初は記録だけ）。門が確かめない物は `NOT_CHECKED` と記録し、PASS にしない。
-1. PR が指す設計の記録のその版が承認済みか（Owner の決定で承認する設計は今の 5.3・5.4。作る単位の設計は門では確かめず `NOT_CHECKED`、統合する席が確かめる、§3.2）。
+**目的**（[REQ] の FR6.1 のうち U4 で作る部分。[U4A] による。§1.1）: 門の判定 5 が、形だけを見て次の 2 つを確かめる。当たらない時、または確かめられない時は FAIL（最初は記録だけ）。門が確かめない物は `NOT_CHECKED` と記録し、PASS にしない。
+1. PR が指す設計の記録のその版が承認済みか（Owner の決定で承認する設計は今の 5.3・5.4。作る単位の設計は門では確かめず `NOT_CHECKED`、統合する席が確かめる、§3.2。機械の確かめは次の作業の単位、§1.1）。
 2. PR の変更 path が、その設計の記録に書いた置き場の中か。外れた path を出す。
 
 設計どおりの振る舞いかという意味のずれは、今までどおり独立の監査（監査の規格 v1 の I7）と受入の試験で見る（[REQ] の FR6.2）。門は意味を見ない。止める判定に LLM を使わない。
@@ -21,6 +24,21 @@
 あわせて U4 の残り 2 つを入れる: PR の雛形に「AI-DLC の記録」と「直す元の PR」の欄を足す、配布先の一覧に shirube を足す。版上げで判定 5 が黙って止まらないよう、kit が pin の 2 つの mode を残す直しも入れる（§3.6）。
 
 **対象外**: 判定 5 を止める形にすること（pin の `design_binding_mode` は `report-only` のまま。切り替えは repo ごとに Owner が決める、[REQ] の FR7.3）、判定 1〜4 の決まり、固定 checker、required checks・branch protection、計測の部品（U2）、承認の記録の作り手（I1〜I4・K）。
+
+### 1.1 要件の変更（[U4A]）と、U4 が満たさない所
+
+U4 は [REQ] の FR6.1 の**一部だけを作る**作業の単位です。採択済みの要件に全部適合した設計としては扱いません。
+
+| 要件・受入 | 今の文（[REQ]） | [U4A] の後 | U4 での門の振る舞い |
+|---|---|---|---|
+| FR6.1（承認） | 門が、PR が指す設計の版が承認済みかを機械で確かめ、当たらなければ FAIL | Owner の決定で承認する設計（`kind` 無し・`owner_decision`）は、U4 でも今の 5.3・5.4 のまま確かめる。作る単位の設計（`unit_design`）の承認の機械の確かめは、次の作業の単位（U4 の続き）に移す | `unit_design` は `5.3u NOT_CHECKED` で PASS にしない。承認は統合する席が統合の直前に確かめる（§3.2） |
+| FR6.1（置き場） | 変更 path が設計の置き場の中かを機械で確かめ、外れたら FAIL | 変えない | 5.9（§3.3） |
+| 受入の正例（承認済みかつ置き場の中なら FR6 は PASS） | すべての設計に当てる | Owner の決定で承認する設計に当てる。作る単位の設計の正例は、次の作業の単位の受入に移す | `unit_design` で置き場の中・ほかも通る時、`design_binding.result` = `NOT_CHECKED`（T8） |
+| 受入の負例（置き場の外なら FAIL） | 変えない | 変えない | FAIL `5.9`（T2・T9） |
+
+- 要件の記録（aidlc-shirube の取り組み `261021-dev-speedup-automation` の `requirements.md` の FR6.1 と受入の例）は、次の版の範囲・要件の段を aidlc-shirube で開き直す時に、上の表のとおりに書き換える（[NV] の 3。Owner の手は要約の確認と段の承認、§5 の 0b）。書き換えるまでの正本は [U4A]（control source）で、この設計の記録は食い違いをここに書いて隠さない（R3）。
+- 次の作業の単位の設計とその時期は決まっていない（[U4A] の含まないもの）。候補の形は §8。
+- 役目の分け方: 門 = 置き場と、Owner の決定で承認する設計の承認を確かめる。統合する席 = 作る単位の設計の承認を確かめる（§3.2 の読み方、`distribution.md` 115 行）。独立の監査 = 意味のずれ（FR6.2）。
 
 ## 2. 今の形（[M]）
 
@@ -121,13 +139,14 @@ U4 の実装の PR（R2）は保護面に触れず（`.github/**`・`.shirube/**
 | 順 | PR | 区分 | 中身 | Owner の手 |
 |---|---|---|---|---|
 | 0 | この設計の記録（docs だけ） | R1 | この file と項目集合 | 無し（事前の設計監査） |
+| 0b | aidlc-shirube の要件の記録を合わせる | ― | `requirements.md` の FR6.1 と受入の例を §1.1 の表のとおりに書き換える（次の版の範囲・要件の段の開き直しの中で、aidlc-shirube の会話が行う） | 要約の確認と段の承認（AI-DLC の会話の手。下の 2 回とは別に数える、OD-SHIRUBE-REQUIREMENTS-MEASURES-AND-FAIL-CLASSIFICATION-20261022-001） |
 | 1 | 判定 5 の規範の改版 | R3 | `docs/sds/distribution.md` の §4 の判定 5 の行（5.3u・5.9）、115 行の統合する席の確かめ（作る単位の設計の読み方、§3.2）、§3.6 の mode の引き継ぎ、shirube 自身の版上げの手順、`docs/design/sds-gate-judgment-5.md` の書き足し。T15 | **exact-head 1 回**（R3） |
 | 2a | U4 の実装 その 1 | R2 | 5.9・雛形・一覧・kit の mode の引き継ぎと shirube 自身への書き込みを止める直し（§3.1・§3.3〜§3.6）、T1〜T7・T19〜T22 | 無し（1 の統合の後） |
 | 2b | U4 の実装 その 2 | R2 | 5.3u（§3.2）、T8〜T14・T16〜T18 | 無し（2a の統合の後） |
 | 3 | shirube 自身の版上げ | R4（保護面） | `.github/workflows/sds-gate-self.yml` の `uses` の commit と、`.shirube/sds-pin.json` の `sds_commit` と `files` の自己用の caller の指紋を、2b の統合 commit に一緒に上げる。2 つの mode と `protected_paths` は変えない。手で書く（kit は使わない、§3.6） | **exact-head 1 回**（`.github/**`・`.shirube/**` の変更） |
 | 4 | aun の版上げ | ― | 2a 以降の kit で `kit.mjs upgrade --target <aun>`。差分は kit の file だけ、kit check が OK、2 つの mode が残る | 無し（[KIT] の版上げの決まり。mode は変えない） |
 
-- U4 で Owner の手は 2 回（1 の R3 と 3 の R4）。
+- U4 で Owner の手は 2 回（1 の R3 と 3 の R4）。0b の AI-DLC の会話の要約の確認と段の承認は別に数える。
 - 1 の確かめ: R3 の事前の設計監査は、この記録（0）の監査が兼ねる（1 はこの記録の §3・§5 を文書に写す PR）。1 の実装監査で、写した文がこの記録と食い違わないことを見る。
 - 3 の確かめ: 統合の前に、workflow-contract の今の試験（pin と `uses` の commit が同じ）が通る。統合の後に、次の shirube の PR の `sds-gate-self` の実行が新しい commit の再利用の workflow を呼んだこと（実行の記録の workflow の参照）と、`design_binding` に 5.9 の印が出ることを読み戻して #24 に書く。
 - 4 の確かめ: 版上げの PR で、pin の `plan_binding_mode`・`design_binding_mode` が前と同じ、`.github/workflows/sds-gate.yml`（aun の caller）の `uses` が新しい commit、kit check が OK。
@@ -157,7 +176,7 @@ U4 の実装の PR（R2）は保護面に触れず（`.github/**`・`.shirube/**
 
 ## 8. 既知の弱み
 
-- 作る単位の設計の承認は、門では確かめない（`NOT_CHECKED`）。確かめるのは統合する席と独立の監査（I7）で、人の手順の抜けは機械では止まらない。後の版の候補: 設計の記録の PR の head での `sds-gate` の実行の記録（GitHub Actions が作る check run で、個人の資格情報では作れない）と、その実行が呼んだ再利用の workflow の版を読み、その版の門が設計の記録の PR にも監査の受領を求めていたことを確かめる形（判定 3 の範囲を設計の記録の PR に広げる規範の変更と組で、R3）。
+- 作る単位の設計の承認は、門では確かめない（`NOT_CHECKED`）。確かめるのは統合する席と独立の監査（I7）で、人の手順の抜けは機械では止まらない（U4 が FR6.1 の一部の実装である所、§1.1）。次の作業の単位（[U4A] の 1）の候補: 設計の記録の PR の head での `sds-gate` の実行の記録（GitHub Actions が作る check run で、個人の資格情報では作れない）と、その実行が呼んだ再利用の workflow の版を読み、その版の門が設計の記録の PR にも監査の受領を求めていたことを確かめる形（判定 3 の範囲を設計の記録の PR に広げる規範の変更と組で、R3）。
 - 設計の記録の PR に `audit` を書き忘れて統合した版は、統合する席の確かめで止まる（統合しない）。記録だけの段階のうちは、門の JSON では `NOT_CHECKED` のままなので、統合する席の確かめが唯一の止め。
 - `placements` は作者が書く。広すぎる glob（`**`）を書けば何でも通る。広さは設計監査（D5 の範囲）で見る。
 - 意味のずれ（設計と違う動き）は門では見つからない。独立の監査と受入の試験の仕事のまま。
