@@ -139,3 +139,33 @@ PR（`watchout/shirube`）: #51（head `acc76dae`、統合 `7f50460c`）、#54�
 | A1（PR #51、6 項目） | https://github.com/watchout/shirube/pull/51#issuecomment-6290045511 | `bb8d8d378c906e3ceaecb8dab5415e54daa8ed5f61f3f519a1739fc6eb098556` |
 | A2（PR #54、7 項目） | https://github.com/watchout/shirube/pull/54#issuecomment-6291237236 | `e1dea6c2108a59a68b18767cc431f3bcda4b31bbcfc51663e82d2fd28ee1c7c4` |
 | 文書（PR #55、6 項目） | https://github.com/watchout/shirube/pull/55#issuecomment-6293586996 | `454aace857338fa8755516a9995ea193656a9d37f9edd2b2d1ebe00cd2211d98` |
+
+## 11. U4 による書き足し（設計の記録 `u4-gate-judgements.md` 版 4。実装は U4 の実装の PR = R2 の 2a・2b）
+
+記号: [DR] = `docs/design/u4-gate-judgements.md` 版 4（shirube#75、設計監査 4 回目 PASS = shirube#75 6481982956）。[U4A] = Owner の決定 OD-SHIRUBE-U4-PATH-CHECK-FIRST-UNIT-DESIGN-APPROVAL-NEXT-UNIT-20261029-001（iyasaka-arc#49 6481509642、本文 SHA-256 `3167a28237b09da288390c4fb7fe0cc47fde3a598c1dbeed430a4a13545c2d34`）。
+この節は意味を足さず、[DR] §3.1〜§3.3・§3.7 を判定 5 の契約に写す。§1〜§10 は U4 の前（main `c05e8ed0`）の記述として変えない。§5 の「5.9 は使わない」は、この節の 5.9 が code に入るまでの実装の記述である。判定 5 の 5.1〜5.8 の意味、段階（§4 の 1、`design_binding_mode`）、§8 の blocking の前の未決 2 点 (a)(b)、判定 1〜4、固定した checker は変えない。
+
+### 11.1 契約に足す欄（どれも任意。無ければ今までどおり読む）
+
+| 欄 | 型と意味 | 誤りの時 |
+|---|---|---|
+| block の `placements` | 空でない文字列の配列。1 つずつが glob で、書き方は `scripts/hygiene/lib.mjs` の `matchesAny`（`protected_paths` と同じ）。この設計に従う PR が変えてよい path の全部（その設計の PR が触るなら、試験・項目集合の置き場も書く） | 配列でない・空の文字列を含む → 5.1 |
+| block の `approval.kind` | `owner_decision`（欄が無い時もこれ。今の 5.3・5.4）か `unit_design`（作る単位の設計の記録）。`unit_design` の時の `approval` は `{ "kind": "unit_design" }` だけ | 知らない値 → 5.1。`owner_decision`（`kind` が無いのも同じ）の設計に `unit_design` の欄を混ぜる、または `design_pr` だけを書く → 5.1 |
+| PR の `design_binding.design_pr` | `unit_design` の時に必須。その設計の版を統合した PR の番号（同じ repo）。門は読まず、結果の JSON に写すだけ（統合する席が読む） | `unit_design` で無い → 5.1 |
+
+### 11.2 足す確かめ
+
+- **5.9 置き場**: 判定 2 が確かめた変更 path（rename は旧と新の両方）を判定 5 に渡し、block に `placements` があれば、1 つずつが `matchesAny(path, placements)` に当たるかを見る。当たらない path が 1 つでもあれば FAIL（reason `5.9 paths outside the design placements: <path, ...>`。外れた path を全部、並びを固定して出す）。`placements` が無い block は FAIL にせず `5.9 NOT_CHECKED: the design names no placements`（今ある block に新しい FAIL を足さない）。5.9 は 5.1 が通った時だけ見る。
+- **5.3u 作る単位の設計**: `approval.kind` が `unit_design` の時、門はその版の承認（設計監査の合格）を確かめない。5.3・5.4 の代わりに `5.3u NOT_CHECKED: the approval of a unit design is checked by the merging seat, not by the gate` の印を出し、5.9 などほかの確かめは今までどおり行う。`design_binding.result` は、FAIL の確かめが 1 つでもあれば FAIL、無ければ `NOT_CHECKED`（理由に 5.3u と、5.9 が通ったこと）。**`unit_design` の時は PASS にならない**。門は `design_pr` の PR・監査・固定の checker を呼ばない（呼ぶと、統合済みの PR を開いた PR 専用の checker に当てることになり、必ず拒まれる）。
+- `report-only` の間は、5.9 の FAIL も 5.3u の `NOT_CHECKED` も verdict を変えない。`blocking` の時の `NOT_CHECKED` の扱いは今の判定 5 のまま。blocking への切り替えは Owner が repo ごとに決める。
+
+### 11.3 統合する席の確かめと、要件との関係
+
+- 作る単位の設計の承認は、統合する席が統合の直前に確かめる。4 つ（`design_pr` が統合済み／その本文の `sds-pr` の `audit` の返却が PASS で作者の受領がある／依頼が `design_pr` とその統合した head を名指す／その head の設計の file の SHA-256 が今の PR の `design_sha256` と同じ）と、確かめたことを merge の記録に書くこと、合わない時は merge しないことは `docs/sds/distribution.md` §4.1 の判定 5 の行に書く（ここには繰り返さない、S3）。
+- 後の PR の承認の元になる設計の記録の PR（R1）は、監査の依頼を出した後に、自分の PR 本文の `sds-pr` の block に `audit` を書いてから統合する（`distribution.md` §4.1）。
+- U4 は要件 FR6.1 の一部だけを作る。作る単位の設計の承認の機械の確かめは次の作業の単位に移した（[U4A]、[DR] §1.1）。aidlc-shirube の要件の記録は次の版の範囲・要件の段を開き直す時に合わせ、それまでの正本は [U4A] である。
+
+### 11.4 試験の計画（[DR] §4）と実測
+
+受入は [DR] §4 の T1〜T22。判定 5 の code と試験は 2a（T1〜T7、T19〜T22）と 2b（T8〜T14、T16〜T18）で入り、この節を書く PR は文書の文の照合（T15、`tests/workflow-contract.test.mjs`）だけを持つ。
+実測: この節の PR は文書と T15 だけで、5.3u・5.9 の code は無い。挙動の実測は 2a・2b の後。

@@ -166,3 +166,28 @@ test("BR7.2 NFR8.2 NFR10.3: ci.yml floors scripts/** coverage at 80% on Node 26,
   assert.match(measure, /if: \$\{\{ hashFiles\('scripts\/sds\/metrics\/cli\.mjs'\) != '' \}\}[\s\S]*run: node scripts\/sds\/metrics\/cli\.mjs --repos watchout\/shirube /);
   assert.doesNotMatch(measure, /secrets\./);
 });
+
+// U4 T15 (docs/design/u4-gate-judgements.md §3.2, §4): the merging seat's four checks of a unit design are written in distribution.md §4.1, as sentences.
+const UNIT_DESIGN_CHECKS = [["1a", ["design_pr", "統合済み"]], ["1b", ["design_pr", "audit", "返却", "PASS", "受領"]], ["1c", ["依頼", "design_pr", "統合した head", "名指"]], ["1d", ["design_sha256", "SHA-256"]]];
+const judgment5Row = (t) => t.split("\n").find((l) => l.startsWith("| 設計の版の承認・未決の答え・主要な接続の順（判定 5")) ?? "";
+const sentenceOf = (row, tag) => row.match(new RegExp(`\\(${tag}\\)[^。]*。`))?.[0] ?? "";
+const missingChecks = (t) => UNIT_DESIGN_CHECKS.filter(([tag, words]) => !words.every((w) => sentenceOf(judgment5Row(t), tag).includes(w))).map(([tag]) => tag);
+
+test("T15: distribution.md §4.1 tells the merging seat the four checks of a unit design, and to record them and not merge on any mismatch", () => {
+  const dist = file("docs/sds/distribution.md"), row = judgment5Row(dist);
+  assert.notEqual(row, "", "the judgment 5 row of §4.1 exists");
+  assert.deepEqual(missingChecks(dist), []);
+  assert.match(row, /kind: "unit_design"/);
+  assert.match(row, /\(1a\)〜\(1d\) の 1 つでも合わなければ merge しない/);
+  assert.match(row, /merge の記録に書き/);
+  assert.match(dist, /作る単位の設計の記録の PR（R1）は、監査の依頼を出した後に、自分の PR 本文の `sds-pr` の block に `audit`[^。]*書いてから統合する/);
+});
+
+for (const [tag, words] of UNIT_DESIGN_CHECKS) test(`T15 mutation: check (${tag}) is reported missing when its sentence, or any key word of it, is removed`, () => {
+  const dist = file("docs/sds/distribution.md"), row = judgment5Row(dist), sentence = sentenceOf(row, tag);
+  assert.notEqual(sentence, "", `sentence (${tag}) exists`);
+  for (const weaker of ["", ...words.map((w) => sentence.replaceAll(w, ""))]) {
+    assert.notEqual(weaker, sentence, "the mutation must change the sentence");
+    assert.deepEqual(missingChecks(dist.replace(row, () => row.replace(sentence, () => weaker))), [tag]);
+  }
+});
