@@ -24,9 +24,10 @@ function ready(nodes, id) { // 5.5: not COMPLETE, and every dependency is
   const n = find(nodes, id);
   return Boolean(n) && n.lifecycle_status !== "COMPLETE" && Array.isArray(n.depends_on) && n.depends_on.every((d) => find(nodes, d)?.lifecycle_status === "COMPLETE");
 }
+const globs = (x) => x === undefined || (Array.isArray(x) && x.every(text)); // 5.1: placements, when present, is a list of non-empty strings
 function shaped(b) { // 5.1
   return object(b) && b.schema === "sds-design/1" && text(b.design_id) && Number.isInteger(b.version) && Array.isArray(b.open_decisions)
-    && object(b.approval) && object(b.main_connection) && text(b.main_connection.first_node) && (b.placements === undefined || (Array.isArray(b.placements) && b.placements.every(text)));
+    && object(b.approval) && object(b.main_connection) && text(b.main_connection.first_node) && globs(b.placements);
 }
 function answered(b) { // 5.2
   const open = (d) => !(text(d?.answer) && ref(d?.decided_ref));
