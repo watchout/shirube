@@ -1,0 +1,37 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@f44aa521beb0baac34bf3445f88620816f222865/docs/sds/audit-method.md",
+  "scope": "Shirube U4 の 2a（R2）の実装監査: 5.9 置き場の確かめ・placements の型・PR の雛形・配布先の一覧・kit の mode の引き継ぎと shirube 自身への書き込みを止める直し（[DR] §3.1・§3.3〜§3.6、§4 の T1〜T7・T19〜T22）と、本項目集合の file docs/audit/u4-2a-impl-audit-items.json。記法: [DR] = 設計の記録 docs/design/u4-gate-judgements.md（版 4、shirube main 86c03be337ab22c2e5b9a1e811d476c22922fe44 の bytes、SHA-256 df9a617c1d7bced2a50644dbb4577961508fb41f0dbcb80e6604ff1733cf68ce）、[BUD] = Owner の決定 OD-SHIRUBE-GATE5-BUDGET-150-TO-250-20261030-001（iyasaka-arc#49 6510635862、本文 SHA-256 e6038fa1c82c421efdb579a67af6fb9faee2cebbc82d86116e182189e2cf6f88。判定 5 の予算 250 行）、[N] = 1 段目の規範（shirube#76、distribution.md §4 の判定 5 の 5.9・5.3u）。全 6 項目必須。",
+  "items": [
+    {
+      "id": "U4A-1",
+      "criterion": "範囲: 変更 path が scripts/sds/design-gate.mjs・scripts/sds/gate.mjs・scripts/sds/kit.mjs・templates/PULL_REQUEST_TEMPLATE.md・docs/sds/consumers.json・tests/**・docs/audit/u4-2a-impl-audit-items.json だけ。.github/**・.shirube/**・docs/sds/distribution.md・docs/design/** に触れていない。5.3u（kind: unit_design と design_pr、[DR] §3.2）の code は入っていない（2b の物）。新しい外部の依存が無い。追加 400 行・20 file の中。PR 本文の sds-pr block が risk_class R2、changed_paths が diff と一致、control_handoff が作業指示の comment の URL と本文 SHA-256 を持つ。CI が成功している。",
+      "basis": "[DR] §3.7・§5 の 2a"
+    },
+    {
+      "id": "U4A-2",
+      "criterion": "5.9 の振る舞い（[DR] §3.3）: 判定 2 が確かめた変更 path（rename は旧と新の両方）が判定 5 に渡り、block の placements があれば matchesAny（scripts/hygiene/lib.mjs、protected_paths と同じ書き方。新しい glob の書き方を作らない）で 1 つずつ照らす。当たらない path が 1 つでもあれば FAIL、理由は `5.9 paths outside the design placements: <path, ...>` で外れた path を全部、並びを固定して出す。placements が無い block は FAIL にせず `5.9 NOT_CHECKED: the design names no placements` の印。5.9 は 5.1 が通った時だけ見る。T1〜T5・T7 が通り、T2・T4 は今の main の本体で失敗する（Red → Green を PR か監査の返却で示す）。",
+      "basis": "[DR] §3.3・§4 の T1〜T5・T7、[N]"
+    },
+    {
+      "id": "U4A-3",
+      "criterion": "型と既存の判定: placements が文字列の配列でない・空の文字列を含む時は FAIL 5.1（T6）。判定 1〜5 の今の試験と kit の今の試験が期待を弱めずに全部通る（T21）。report-only の時に 5.9 の FAIL が verdict を変えず記録され、blocking の時は止まる（今の段の扱いのまま）。design-gate.mjs は時刻・環境・網を読まない（S4）。",
+      "basis": "[DR] §3.1・§3.7・§4 の T6・T21、S4"
+    },
+    {
+      "id": "U4A-4",
+      "criterion": "kit（[DR] §3.6）: apply と upgrade が、前の pin の plan_binding_mode と design_binding_mode を protected_paths・adoption と同じく新しい pin に引き継ぎ、前の pin に無い欄は書かず、値を変えない（T19。今の main の kit で消えることを Red で示す）。--target が shirube 自身の checkout（on: workflow_call を持つ .github/workflows/sds-gate.yml）の時は何も書かずに止まり、理由を出す（T20）。",
+      "basis": "[DR] §3.6・§4 の T19・T20"
+    },
+    {
+      "id": "U4A-5",
+      "criterion": "雛形と一覧（[DR] §3.4・§3.5、T22）: PR の雛形の「What this PR does」に aidlc_record の行、sds-pr block の例に任意の fixes_pr、判定 5 の説明に placements・kind: unit_design・design_pr と、設計の PR に audit を書く段落がある。docs/sds/consumers.json に watchout/shirube の行（state adopted、adoption = iyasaka-arc#49 6379461383 の URL と、その本文 SHA-256 を API の本文から測った値、hygiene_profile は今の一覧の値の種類のうち shirube の .shirube/hygiene-profile.md に合う物）があり、今の形の検査を通る。",
+      "basis": "[DR] §3.4・§3.5・§4 の T22"
+    },
+    {
+      "id": "U4A-6",
+      "criterion": "予算（[BUD]）: この PR が scripts/** に足す行（試験を除く。空行と comment を除いた数え方は hygiene の own_code と同じ）が 60 行以下で、判定 5 の program（design-gate.mjs・gate.mjs の判定 5 の部分・kit.mjs の mode の部分）の合計が 250 行以下。hygiene の own_code の合計が .shirube/hygiene-profile.md の総枠（4,000）以下。数えた値と数え方を PR 本文に書いている。",
+      "basis": "[BUD]、OD-SHIRUBE-OWN-CODE-BUDGET-4000-FOR-S1-20261024-001、[DR] §5 の見積もり"
+    }
+  ]
+}

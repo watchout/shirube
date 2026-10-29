@@ -26,7 +26,7 @@ function ready(nodes, id) { // 5.5: not COMPLETE, and every dependency is
 }
 function shaped(b) { // 5.1
   return object(b) && b.schema === "sds-design/1" && text(b.design_id) && Number.isInteger(b.version) && Array.isArray(b.open_decisions)
-    && object(b.approval) && object(b.main_connection) && text(b.main_connection.first_node);
+    && object(b.approval) && object(b.main_connection) && text(b.main_connection.first_node) && (b.placements === undefined || (Array.isArray(b.placements) && b.placements.every(text)));
 }
 function answered(b) { // 5.2
   const open = (d) => !(text(d?.answer) && ref(d?.decided_ref));
@@ -53,11 +53,16 @@ function connected(b, plan, bound, risk) { // 5.5, 5.6, 5.7
   if (!Array.isArray(nodes)) return [bad("5.5", "the plan has no delivery_graph.nodes")];
   return [...(ready(nodes, first) ? [] : [bad("5.5", `first_node ${first} is not a node that can start now`)]), ...bounded(first, nodes, bound, risk)];
 }
+function placed(b, paths, matches) { // 5.9: every changed path is inside the design's placements; the caller passes the glob matcher (the one of protected_paths) and the paths (judgment 2's)
+  if (b.placements === undefined) return paths === undefined ? [] : [note("5.9", "NOT_CHECKED", "the design names no placements")];
+  const outside = Array.isArray(paths) && typeof matches === "function" ? [...new Set(paths)].filter((p) => !matches(p, b.placements)).sort() : null;
+  return outside === null ? [bad("5.9", "the changed paths or the glob matcher are not given, so the placements cannot be checked")] : outside.length === 0 ? [] : [bad("5.9", `paths outside the design placements: ${outside.join(", ")}`)];
+}
 export const failed = (findings) => findings.filter((f) => !NOTES.has(f)); // the findings that are failures, not notes
 const result = (findings) => ({ verdict: failed(findings).length === 0 ? "PASS" : "FAIL", findings });
 
 export function designGate(block, input) {
-  const { approvalBody, plan, boundNodeId, riskIndex } = input ?? {};
+  const { approvalBody, plan, boundNodeId, riskIndex, changedPaths, matches } = input ?? {};
   if (!shaped(block)) return result([bad("5.1", "the block needs schema sds-design/1 and the fields and types of the design contract")]);
-  return result([...answered(block), ...approved(block, approvalBody), ...connected(block, plan, boundNodeId, riskIndex)]);
+  return result([...answered(block), ...approved(block, approvalBody), ...connected(block, plan, boundNodeId, riskIndex), ...placed(block, changedPaths, matches)]);
 }
