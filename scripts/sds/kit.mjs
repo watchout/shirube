@@ -66,9 +66,9 @@ function confined(target, p) {
   const real = (() => { try { return realpathSync(cur); } catch { return null; } })(); // writes must land inside --target; a dangling or outward link is refused up front
   need(real && (real === root || real.startsWith(root + sep)), `${p} resolves outside --target through a symlink: refused`);
 }
-// apply and upgrade keep what an existing pin already records: its protected paths, its adoption and its two stage modes (only the Owner changes a mode).
+// apply and upgrade keep what an existing pin already records: its protected paths, its adoption, its two stage modes (only the Owner changes a mode) and its delivery_plan (the route judgement 4 reads, set by hand in a repo's pin).
 // shirube itself is never a target: its sds-gate.yml is the reusable workflow (on: workflow_call), which apply would overwrite with a caller (distribution.md section 5).
-const MODES = ["plan_binding_mode", "design_binding_mode"], REUSABLE = ".github/workflows/sds-gate.yml";
+const KEPT = ["plan_binding_mode", "design_binding_mode", "delivery_plan"], REUSABLE = ".github/workflows/sds-gate.yml";
 function isShirube(target) { // the workflow's trigger structure as the YAML reader sees it (a quoted key, a flow form, a word inside a string or a comment read as YAML says); unreadable is refused, never guessed
   const file = join(target, REUSABLE);
   if (!existsSync(file)) return false;
@@ -89,7 +89,7 @@ export function apply({ target, commit, protected: prot, adoption, "adoption-sha
   for (const [p, s] of Object.entries(files)) write(p, s);
   for (const p of instructions) write(p, withBlock(existsSync(join(target, p)) ? readFileSync(join(target, p), "utf8") : "", block));
   const pin = { schema: "sds-pin/1", sds_commit: commit, kit_version: KIT_VERSION, files: Object.fromEntries(Object.entries(files).map(([p, s]) => [p, digest(s)])),
-    instructions, protected_paths: protectedPaths, adoption: adopted, ...Object.fromEntries(MODES.filter((k) => old[k] !== undefined).map((k) => [k, old[k]])) };
+    instructions, protected_paths: protectedPaths, adoption: adopted, ...Object.fromEntries(KEPT.filter((k) => old[k] !== undefined).map((k) => [k, old[k]])) };
   write(PIN, `${JSON.stringify(pin, null, 2)}\n`);
   return { command: "apply", sds_commit: commit, written, adoption: adopted ? "RECORDED" : "NOT_RECORDED" };
 }

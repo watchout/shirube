@@ -189,3 +189,12 @@ U4 の 2a（shirube#77）と 2b の実装で、arc が設計の作者として�
 3. `matchesAny` は `design-gate.mjs` に引数で渡す（import は `node:crypto` だけ）。確かめられない時は FAIL。`placements: []` は 5.1 を通り、変更 path があれば全部 5.9 で FAIL になる。
 4. 判定 5 に変更 path が渡されない呼び方では、5.9 を黙って飛ばさず `5.9 NOT_CHECKED: changed paths were not given` の印を出す（2b）。
 5. kit が shirube 自身を見分けるのは、`.github/workflows/sds-gate.yml` の `on` のトリガーの構造（判定 4 と同じ YAML reader で読む。YAML 1.1 で `on` が `true` と読まれる場合を含む）。読めない時は書かない（2a の実装監査 1 回目 BF-U4A-01）。
+
+## 10. 2c で足した直し（kit が `delivery_plan` を引き継ぐ）
+
+U4 の 4（aun の版上げ）の作業指示を書く前に、arc が手元で試して見つけた漏れの直し（iyasaka-arc#24 の 2c の作業指示）。§3・§4 の判定の意味は変えない。
+
+1. kit の `apply`（`upgrade` も同じ関数）は、前の pin の `delivery_plan`（判定 4 が読む、その repo の道筋の置き場 `control_source`）も、§3.6 の 2 つの mode と同じく、値を変えずに新しい pin に引き継ぐ。前の pin に無ければ書かない。
+2. 漏れた理由: §3.6 は 2 つの mode だけを挙げ、§5 の 4 の確かめも 2 つの mode・`uses`・kit check だけだった。aun の pin は U6（aun#50）で `delivery_plan` を手で足している。2b までの kit で aun を `upgrade` すると `delivery_plan` が消え、kit check は OK のまま通る。消えると、道筋に結ぶ aun の PR の判定 4 は `4.3a the base pin has no delivery_plan.control_source` になり、判定 5 の 5.5・5.6 も NOT_CHECKED になる（arc が shirube main `1cd35a4e` の kit で、aun main `95edaee` の写しに対して確かめた）。
+3. §5 の 4 の確かめに、pin の `delivery_plan` が前と同じであることを足す。U4 の 4 は 2c の統合の後に、2c の統合 commit の kit で行う。版上げの PR の監査は、版上げのたびに使う項目集合（aun の `docs/audit/sds-kit-upgrade-audit-items.json`）で行い、base の pin の欄が 1 つも消えないことを見る。
+4. `docs/sds/distribution.md` §3 の mode の引き継ぎの文にこの欄の名前を足すのは、次に distribution.md を改める PR（R3）で行う。それまでの規範の文と kit の違いは、この節に書いて明示する（kit は規範より 1 欄多く守るだけで、規範に反する振る舞いは無い）。
