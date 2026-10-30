@@ -180,3 +180,12 @@ U4 の実装の PR（R2）は保護面に触れず（`.github/**`・`.shirube/**
 - 設計の記録の PR に `audit` を書き忘れて統合した版は、統合する席の確かめで止まる（統合しない）。記録だけの段階のうちは、門の JSON では `NOT_CHECKED` のままなので、統合する席の確かめが唯一の止め。
 - `placements` は作者が書く。広すぎる glob（`**`）を書けば何でも通る。広さは設計監査（D5 の範囲）で見る。
 - 意味のずれ（設計と違う動き）は門では見つからない。独立の監査と受入の試験の仕事のまま。
+## 9. 実装の時に決めた読み（2a・2b）
+
+U4 の 2a（shirube#77）と 2b の実装で、arc が設計の作者として答えた読み（iyasaka-arc#24 6511256242 と 2b の作業指示）。§3・§4 の意味は変えない。
+
+1. T21 の「そのまま通る」は「期待を弱めない」の意味。`placements` の無い block で T5 の `5.9 NOT_CHECKED` の印が増え、既存の試験の完全一致の期待に `5.9` を足すのは、弱めたことにならない。
+2. 行の数え方は hygiene の own_code と同じ（空行と comment も数える）。判定 5 の予算は、U4 の PR が `scripts/**` に足した行（`git diff --numstat` の追加）の合計が U4 の枠 100 行（250 − 150、OD-SHIRUBE-GATE5-BUDGET-150-TO-250-20261030-001）以内かで見る。2a = 25 行、2b は 40 行以下。
+3. `matchesAny` は `design-gate.mjs` に引数で渡す（import は `node:crypto` だけ）。確かめられない時は FAIL。`placements: []` は 5.1 を通り、変更 path があれば全部 5.9 で FAIL になる。
+4. 判定 5 に変更 path が渡されない呼び方では、5.9 を黙って飛ばさず `5.9 NOT_CHECKED: changed paths were not given` の印を出す（2b）。
+5. kit が shirube 自身を見分けるのは、`.github/workflows/sds-gate.yml` の `on` のトリガーの構造（判定 4 と同じ YAML reader で読む。YAML 1.1 で `on` が `true` と読まれる場合を含む）。読めない時は書かない（2a の実装監査 1 回目 BF-U4A-01）。

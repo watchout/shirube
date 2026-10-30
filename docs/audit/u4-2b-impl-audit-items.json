@@ -1,0 +1,42 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@f44aa521beb0baac34bf3445f88620816f222865/docs/sds/audit-method.md",
+  "scope": "Shirube U4 の 2b（R2）の実装監査: 5.3u 作る単位の設計（[DR] §3.2、§4 の T8〜T14・T16〜T18）、変更 path が渡されない時の 5.9 の印、kit/instructions-block.md の判定 5 の説明、設計の記録への §9 の書き足し、本項目集合の file docs/audit/u4-2b-impl-audit-items.json。記法: [DR] = 設計の記録 docs/design/u4-gate-judgements.md（版 4、shirube main 8e097456a324bc11f5c2cb6770ff1939278daad2 の bytes、SHA-256 df9a617c1d7bced2a50644dbb4577961508fb41f0dbcb80e6604ff1733cf68ce）、[A] = arc の答え iyasaka-arc#24 6511256242、[BUD] = Owner の決定 OD-SHIRUBE-GATE5-BUDGET-150-TO-250-20261030-001（iyasaka-arc#49 6510635862、本文 SHA-256 e6038fa1c82c421efdb579a67af6fb9faee2cebbc82d86116e182189e2cf6f88）、[N] = 規範（shirube#76、distribution.md §4 の判定 5 の 5.3u と §4.1 の統合する席の確かめ）、[2A] = 2a（shirube#77、統合 8e097456）。全 7 項目必須。",
+  "items": [
+    {
+      "id": "U4B-1",
+      "criterion": "範囲: 変更 path が scripts/sds/design-gate.mjs・scripts/sds/gate.mjs・kit/instructions-block.md・docs/design/u4-gate-judgements.md・tests/**・docs/audit/u4-2b-impl-audit-items.json だけ。.github/**・.shirube/**・docs/sds/distribution.md・docs/design/sds-gate-judgment-5.md・scripts/sds/kit.mjs に触れていない。新しい外部の依存が無い。追加 400 行・20 file の中。PR 本文の sds-pr block が risk_class R2、changed_paths が diff と一致、control_handoff が作業指示の comment の URL と本文 SHA-256 を持つ。CI が成功している。",
+      "basis": "[DR] §3.7・§5 の 2b"
+    },
+    {
+      "id": "U4B-2",
+      "criterion": "5.3u の振る舞い（[DR] §3.2）: block の approval.kind が unit_design の時、approval は {kind} だけで、PR 本文の design_binding に design_pr（同じ repo の PR 番号）が要る（無ければ FAIL 5.1、T11）。門は承認を確かめず、5.3・5.4 の代わりに `5.3u NOT_CHECKED: the approval of a unit design is checked by the merging seat, not by the gate` の印を出す。design_binding.result は FAIL の確かめが 1 つでもあれば FAIL、無ければ NOT_CHECKED で、PASS にならない（T8・T9・T10）。T8 は今の main の本体で失敗することを示している（Red → Green）。",
+      "basis": "[DR] §3.2・§4 の T8〜T11、[N]"
+    },
+    {
+      "id": "U4B-3",
+      "criterion": "門が承認の元に触れないこと と 既存の読み方: unit_design の時、門は design_pr の PR・監査・固定の checker を呼ばない（呼ばれたら失敗する偽物の口を渡しても通る、T12）。owner_decision の block に unit_design の欄を混ぜる・design_pr だけを書くと FAIL 5.1（T13）。kind が無い・owner_decision の時は今の 5.3・5.4 の試験がそのまま通る（T16）。kind が知らない値なら FAIL 5.1（T17）。owner_decision の block で design_binding_mode が blocking の時に 5.9 が FAIL なら門が止まる（T18）。report-only の時は 5.9 の FAIL と 5.3u だけの NOT_CHECKED が verdict を変えずに記録される（T14）。判定 1〜5 と kit の今の試験が期待を弱めずに全部通る。",
+      "basis": "[DR] §3.2・§4 の T12〜T14・T16〜T18・T21"
+    },
+    {
+      "id": "U4B-4",
+      "criterion": "変更 path が渡されない時の 5.9（[A] の 4）: 判定 5 に changedPaths が渡されない呼び方で、5.9 を黙って飛ばさず `5.9 NOT_CHECKED: changed paths were not given` の印を出す。それを確かめる試験が 1 件以上あり、2a の振る舞い（placements の無い block の印、外れた path の FAIL）は変わらない。",
+      "basis": "[A] の 4、[DR] §9 の 4"
+    },
+    {
+      "id": "U4B-5",
+      "criterion": "kit/instructions-block.md（[A] の 3）: 判定 5 の説明の文に 5.9（変更 path が設計の置き場の中か）と 5.3u（作る単位の設計の承認は門で確かめず、統合する席が確かめる。PASS にならない）が、規範 [N] と同じ意味で書かれている。規範に無い意味を足していない。",
+      "basis": "[A] の 3、[N]"
+    },
+    {
+      "id": "U4B-6",
+      "criterion": "設計の記録の §9: docs/design/u4-gate-judgements.md の変更は、末尾に作業指示の §9 の節を bytes を変えずに足すことだけ（作業指示に書いた SHA-256 と一致）。§1〜§8 は 1 文字も変えていない。",
+      "basis": "作業指示の 3、R3（設計と実装を黙って食い違わせない）"
+    },
+    {
+      "id": "U4B-7",
+      "criterion": "予算（[BUD]、数え方は [DR] §9 の 2）: この PR が scripts/** に足した行（git diff --numstat の追加、空行と comment も数える）が 40 行以下で、[2A] の 25 行と合わせて U4 の枠 100 行以内。hygiene の own_code の合計が .shirube/hygiene-profile.md の総枠（4,000）以下。数えた値と数え方を PR 本文に書いている。",
+      "basis": "[BUD]、[DR] §9 の 2"
+    }
+  ]
+}

@@ -54,8 +54,14 @@ function connected(b, plan, bound, risk) { // 5.5, 5.6, 5.7
   if (!Array.isArray(nodes)) return [bad("5.5", "the plan has no delivery_graph.nodes")];
   return [...(ready(nodes, first) ? [] : [bad("5.5", `first_node ${first} is not a node that can start now`)]), ...bounded(first, nodes, bound, risk)];
 }
+function kinded(b, designPr) { // 5.1: approval.kind is owner_decision (or absent) or unit_design; only a unit design has design_pr and its approval is {kind} alone
+  const kind = b.approval.kind;
+  if (kind !== undefined && kind !== "owner_decision" && kind !== "unit_design") return [bad("5.1", `approval.kind ${show(kind)} is not owner_decision or unit_design`)];
+  const fits = kind === "unit_design" ? Object.keys(b.approval).length === 1 && Number.isInteger(designPr) && designPr > 0 : designPr === undefined;
+  return fits ? [] : [bad("5.1", "a unit design has approval {kind} alone and a design_pr (a PR number); design_pr is for nothing else")];
+}
 function placed(b, paths, matches) { // 5.9: every changed path is inside the design's placements; the caller passes the glob matcher (the one of protected_paths) and the paths (judgment 2's)
-  if (b.placements === undefined) return paths === undefined ? [] : [note("5.9", "NOT_CHECKED", "the design names no placements")];
+  if (b.placements === undefined) return [note("5.9", "NOT_CHECKED", paths === undefined ? "changed paths were not given" : "the design names no placements")];
   const outside = Array.isArray(paths) && typeof matches === "function" ? [...new Set(paths)].filter((p) => !matches(p, b.placements)).sort() : null;
   return outside === null ? [bad("5.9", "the changed paths or the glob matcher are not given, so the placements cannot be checked")] : outside.length === 0 ? [] : [bad("5.9", `paths outside the design placements: ${outside.join(", ")}`)];
 }
@@ -63,7 +69,11 @@ export const failed = (findings) => findings.filter((f) => !NOTES.has(f)); // th
 const result = (findings) => ({ verdict: failed(findings).length === 0 ? "PASS" : "FAIL", findings });
 
 export function designGate(block, input) {
-  const { approvalBody, plan, boundNodeId, riskIndex, changedPaths, matches } = input ?? {};
+  const { approvalBody, plan, boundNodeId, riskIndex, changedPaths, matches, designPr } = input ?? {};
   if (!shaped(block)) return result([bad("5.1", "the block needs schema sds-design/1 and the fields and types of the design contract")]);
-  return result([...answered(block), ...approved(block, approvalBody), ...connected(block, plan, boundNodeId, riskIndex), ...placed(block, changedPaths, matches)]);
+  const wrong = kinded(block, designPr), unit = block.approval.kind === "unit_design";
+  if (wrong.length > 0) return result(wrong);
+  const approval = unit ? [note("5.3u", "NOT_CHECKED", "the approval of a unit design is checked by the merging seat, not by the gate")] : approved(block, approvalBody); // 5.3u: never PASS for a unit design
+  const r = result([...answered(block), ...approval, ...connected(block, plan, boundNodeId, riskIndex), ...placed(block, changedPaths, matches)]);
+  return unit && r.verdict === "PASS" ? { ...r, verdict: "NOT_CHECKED" } : r;
 }

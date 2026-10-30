@@ -23,7 +23,7 @@ const failed = (r) => r.findings.filter((f) => !/^5\.\d (N\/A|NOT_CHECKED)/.test
 const answered = (body, over = {}) => [block({ approval: { ref: REF, sha256: sha(body) }, ...over }), input({ approvalBody: body })];
 
 test("T5-01 everything binds: PASS and no findings", () => {
-  assert.deepEqual(designGate(block(), input()), { verdict: "PASS", findings: [] });
+  assert.deepEqual(designGate(block(), input()), { verdict: "PASS", findings: [{ reason: "5.9", message: "5.9 NOT_CHECKED: changed paths were not given" }] }); // the caller gave no changed paths: the 5.9 note, nothing else
 });
 
 for (const [name, answer, decided_ref] of [["empty", "", REF], ["blank", "  \n", REF], ["not a string", 1, REF], ["no decided_ref", "A", ""],
@@ -31,7 +31,7 @@ for (const [name, answer, decided_ref] of [["empty", "", REF], ["blank", "  \n",
   test(`T5-02 an open decision with ${name} FAILs 5.2 and names its id`, () => {
     const r = designGate(block({ open_decisions: [{ id: "D0", answer: "A", decided_ref: REF }, { id: "D1", answer, decided_ref }] }), input());
     assert.equal(r.verdict, "FAIL");
-    assert.deepEqual(r.findings.map((f) => [f.reason, f.id]), [["5.2", "D1"]]);
+    assert.deepEqual(r.findings.map((f) => [f.reason, f.id]), [["5.2", "D1"], ["5.9", undefined]]); // 5.9: no changed paths given
   });
 }
 
@@ -66,14 +66,14 @@ test("T5-06 at R2 or above the bound node is first_node or has it as a transitiv
 test("T5-07 below R2 the same plan passes and the findings say 5.6 N/A", () => {
   const r = designGate(block(), input({ boundNodeId: "N4", riskIndex: 1 }));
   assert.equal(r.verdict, "PASS");
-  assert.deepEqual(r.findings.map((f) => f.reason), ["5.6"]);
+  assert.deepEqual(r.findings.map((f) => f.reason), ["5.6", "5.9"]); // 5.9: no changed paths given
   assert.match(r.findings[0].message, /^5\.6 N\/A/);
 });
 
 test("T5-08 without a plan 5.5 and 5.6 are NOT_CHECKED and the verdict comes from 5.1-5.4 alone", () => {
   const r = designGate(block(), input({ plan: null }));
   assert.equal(r.verdict, "PASS");
-  assert.deepEqual(r.findings.map((f) => f.reason), ["5.5", "5.6"]);
+  assert.deepEqual(r.findings.map((f) => f.reason), ["5.5", "5.6", "5.9"]); // 5.9: no changed paths given
   assert.ok(r.findings.every((f) => /^5\.\d NOT_CHECKED/.test(f.message)));
   const bad = designGate(block({ open_decisions: [{ id: "D1", answer: "", decided_ref: REF }] }), input({ plan: null }));
   assert.equal(bad.verdict, "FAIL");
