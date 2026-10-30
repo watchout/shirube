@@ -61,9 +61,10 @@ function kinded(b, designPr) { // 5.1: approval.kind is owner_decision (or absen
   return fits ? [] : [bad("5.1", "a unit design has approval {kind} alone and a design_pr (a PR number); design_pr is for nothing else")];
 }
 function placed(b, paths, matches) { // 5.9: every changed path is inside the design's placements; the caller passes the glob matcher (the one of protected_paths) and the paths (judgment 2's)
-  if (b.placements === undefined) return [note("5.9", "NOT_CHECKED", paths === undefined ? "changed paths were not given" : "the design names no placements")];
-  const outside = Array.isArray(paths) && typeof matches === "function" ? [...new Set(paths)].filter((p) => !matches(p, b.placements)).sort() : null;
-  return outside === null ? [bad("5.9", "the changed paths or the glob matcher are not given, so the placements cannot be checked")] : outside.length === 0 ? [] : [bad("5.9", `paths outside the design placements: ${outside.join(", ")}`)];
+  const none = Array.isArray(paths) ? [] : [note("5.9", "NOT_CHECKED", "changed paths were not given")]; // never skipped silently, with placements or without
+  if (b.placements === undefined) return none.length > 0 ? none : [note("5.9", "NOT_CHECKED", "the design names no placements")];
+  const outside = none.length === 0 && typeof matches === "function" ? [...new Set(paths)].filter((p) => !matches(p, b.placements)).sort() : null;
+  return [...none, ...(outside === null ? [bad("5.9", "the changed paths or the glob matcher are not given, so the placements cannot be checked")] : outside.length === 0 ? [] : [bad("5.9", `paths outside the design placements: ${outside.join(", ")}`)])];
 }
 export const failed = (findings) => findings.filter((f) => !NOTES.has(f)); // the findings that are failures, not notes
 const result = (findings) => ({ verdict: failed(findings).length === 0 ? "PASS" : "FAIL", findings });

@@ -41,10 +41,18 @@ test("T16 kind absent or owner_decision keeps reading 5.3 and 5.4 as before", ()
 test("T17 an unknown kind FAILs 5.1 (a PASS must never come from a spelling)", () => {
   for (const kind of ["x", "UNIT_DESIGN", "unit-design", "", 1, null, ["unit_design"], {}]) assert.deepEqual(reasons(designGate(block({ approval: { kind, ref: REF, sha256: sha(BODY) } }), input({ designPr: undefined }))), ["5.1"], JSON.stringify(kind));
 });
-test("§9 item 4 without changed paths the 5.9 note is given, not skipped; with placements the check still FAILs closed", () => {
-  const r = designGate(block(), input({ changedPaths: undefined, approvalBody: BODY, designPr: undefined }));
-  assert.deepEqual([r.verdict, r.findings.find((f) => f.reason === "5.9")?.message], ["PASS", "5.9 NOT_CHECKED: changed paths were not given"]);
-  assert.deepEqual(bad(designGate(block({ placements: ["docs/**"] }), input({ changedPaths: undefined, approvalBody: BODY, designPr: undefined }))), ["5.9"]);
+const NOPATHS = "5.9 NOT_CHECKED: changed paths were not given";
+test("§9 item 4 / BF-U4B-01 without changed paths the 5.9 note is always given; with placements the check also FAILs (it cannot be checked), without them the note stands alone", () => {
+  const owner = (over = {}) => block({ approval: { kind: "owner_decision", ref: REF, sha256: sha(BODY) }, ...over });
+  const cases = [["owner_decision, no placements", owner(), { approvalBody: BODY, designPr: undefined }, "PASS", []], ["owner_decision, placements", owner({ placements: ["docs/**"] }), { approvalBody: BODY, designPr: undefined }, "FAIL", ["5.9"]],
+    ["kind absent, no placements", block(), { approvalBody: BODY, designPr: undefined }, "PASS", []], ["kind absent, placements", block({ placements: ["docs/**"] }), { approvalBody: BODY, designPr: undefined }, "FAIL", ["5.9"]],
+    ["unit_design, no placements", unit(), {}, "NOT_CHECKED", []], ["unit_design, placements", unit({ placements: ["docs/**"] }), {}, "FAIL", ["5.9"]]];
+  for (const [name, b, over, verdict, fails] of cases) for (const changedPaths of [undefined, null, "docs/a.md", {}]) {
+    const r = designGate(b, input({ changedPaths, ...over }));
+    assert.deepEqual([r.verdict, bad(r), r.findings.filter((f) => f.reason === "5.9").map((f) => f.message).filter((m) => m === NOPATHS)], [verdict, fails, [NOPATHS]], `${name} / ${JSON.stringify(changedPaths)}`);
+  }
+  const given = designGate(block(), input({ changedPaths: ["docs/a.md"], approvalBody: BODY, designPr: undefined }));
+  assert.deepEqual(given.findings.filter((f) => f.reason === "5.9").map((f) => f.message), ["5.9 NOT_CHECKED: the design names no placements"]); // paths given: the other note, as in 2a
 });
 
 // Through the gate (the PR names design_pr; the gate copies it and reads nothing about it).
