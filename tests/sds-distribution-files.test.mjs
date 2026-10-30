@@ -30,6 +30,11 @@ test("T22 docs/sds/consumers.json keeps the five-key shape, and has shirube as a
     ["adopted", "Owner", "https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6379461383", "cc806f3339a39d03182ba598ce10eb2ee7a25865262929d98077cf5bfc1f4556"]);
   assert.equal(file("docs/sds/consumers.json"), `${JSON.stringify(list, null, 2)}\n`); // written the way the other rows are
 });
+test("U4B-5 the kit's instruction block explains 5.9 (changed paths inside the placements) and 5.3u (a unit design is NOT_CHECKED, never PASS, and the merge seat checks its design PR's audit)", () => {
+  const line = file("kit/instructions-block.md").split("\n").find((l) => l.includes("design binding"));
+  for (const word of ["placements", "5.9", "unit_design", "5.3u", "NOT_CHECKED", "never PASS", "merge seat", "§4.1"]) assert.ok(line?.includes(word), word);
+  assert.match(line, /5\.9[^;]*;[^;]*5\.3u|5\.9.*5\.3u/);
+});
 test("status lists shirube among the consumers it reads", () => {
   const rows = status(() => { throw new Error("gh: Not Found (HTTP 404)"); });
   assert.ok(rows.some((r) => r.repo === "watchout/shirube" && r.verdict === "READ"));

@@ -86,8 +86,8 @@ function designBlock(d, api) { // 5.0 to 5.0c: the one sds-design block of the f
   need(found.length === 1, `5.0c the design file needs exactly one json sds-design block, not ${found.length}`);
   try { return JSON.parse(found[0][1]); } catch { return found[0][1]; }
 }
-function approvalOf(block, api) { // null when approval.ref has no valid shape: designGate reports 5.3
-  const m = refOf(block?.approval?.ref);
+function approvalOf(block, api) { // null when approval.ref has no valid shape (designGate reports 5.3), and for a unit design, whose approval the gate does not read (5.3u)
+  const m = block?.approval?.kind === "unit_design" ? null : refOf(block?.approval?.ref);
   return m ? read("the approval comment", () => api(`repos/${m[1]}/issues/comments/${m[2]}`).body) : null;
 }
 function planOf(binding, b, { api, parse }) { // judgment 4's plan, read again only when judgment 4 passed, with judgment 4's own reader (S3)
@@ -99,8 +99,9 @@ function judged(d, block, input) { // designGate, and 5.8: the PR names the desi
   return differs ? [...findings, { reason: "5.8", message: `5.8 the PR names ${d.design_id}@${d.version}, the block is ${block.design_id}@${block.version}` }] : findings;
 }
 function outcome(mode, d, findings) {
-  const bad = failed(findings);
-  return { mode, result: bad.length === 0 ? "PASS" : "FAIL", design_id: d.design_id, version: d.version, ...(bad.length > 0 && { reason: bad[0].message }), findings };
+  const bad = failed(findings), unit = findings.find((f) => f.reason === "5.3u"); // a unit design's approval is not checked, so it is never PASS
+  return { mode, result: bad.length > 0 ? "FAIL" : unit ? "NOT_CHECKED" : "PASS", design_id: d.design_id, version: d.version, ...(Number.isInteger(d.design_pr) && { design_pr: d.design_pr }),
+    ...(bad.length > 0 ? { reason: bad[0].message } : unit && { reason: `${unit.message}; the other checks (5.9 included) did not fail` }), findings };
 }
 function designBinding(mode, { pr, effective, binding, paths }, io) {
   if (mode === undefined || mode === "off") return { mode: mode ?? null, result: "NOT_CHECKED", reason: mode === "off" ? "design_binding_mode is off" : "the base pin has no design_binding_mode" };
@@ -108,7 +109,7 @@ function designBinding(mode, { pr, effective, binding, paths }, io) {
     need(["report-only", "blocking"].includes(mode), `design_binding_mode must be off, report-only or blocking, not ${show(mode)}`);
     need(pr.design_binding, "5.0 no design_binding");
     const d = pr.design_binding, block = designBlock(d, io.api), b = pr.delivery_plan_binding;
-    return outcome(mode, d, judged(d, block, { approvalBody: approvalOf(block, io.api), plan: planOf(binding, b, io), boundNodeId: b?.node_id, riskIndex: RISKS.indexOf(effective), changedPaths: paths, matches: matchesAny })); // 5.9: judgment 2's paths and the protected_paths matcher
+    return outcome(mode, d, judged(d, block, { approvalBody: approvalOf(block, io.api), plan: planOf(binding, b, io), boundNodeId: b?.node_id, riskIndex: RISKS.indexOf(effective), changedPaths: paths, matches: matchesAny, designPr: d.design_pr })); // 5.9: judgment 2's paths and the protected_paths matcher
   } catch (error) { return { mode, result: "FAIL", reason: error.message }; }
 }
 function judgment5(mode, input, io) { // like judgment 4: a FAIL stops the gate unless the stage is report-only

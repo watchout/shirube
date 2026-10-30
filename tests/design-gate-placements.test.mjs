@@ -27,11 +27,11 @@ test("T3 every outside path is named, sorted and once, whatever the order it cam
   const r = designGate(block({ placements: ["docs/**"] }), input(["z.mjs", "docs/a.md", "b.mjs", "a/c.mjs", "b.mjs"]));
   assert.deepEqual(bad(r).map((f) => f.message), [`${OUT}a/c.mjs, b.mjs, z.mjs`]);
 });
-test("T5 without placements nothing FAILs: 5.9 NOT_CHECKED when the caller gave paths, and no 5.9 at all when it gave none", () => {
+test("T5 without placements nothing FAILs: 5.9 NOT_CHECKED when the caller gave paths, and NOT_CHECKED 'changed paths were not given' when it gave none", () => {
   const r = designGate(block(), input(["anything.mjs"]));
   assert.deepEqual([r.verdict, reasons(r).includes("5.9"), r.findings.find((f) => f.reason === "5.9")?.message], ["PASS", true, "5.9 NOT_CHECKED: the design names no placements"]);
   assert.deepEqual(bad(r), []);
-  assert.equal(reasons(designGate(block(), { approvalBody: BODY, plan: null, boundNodeId: "N1", riskIndex: 1 })).includes("5.9"), false);
+  assert.equal(designGate(block(), { approvalBody: BODY, plan: null, boundNodeId: "N1", riskIndex: 1 }).findings.find((f) => f.reason === "5.9")?.message, "5.9 NOT_CHECKED: changed paths were not given");
 });
 test("T6 placements that are not a list of non-empty strings FAIL 5.1 and 5.9 is not looked at (it needs 5.1 first)", () => {
   for (const placements of ["docs/**", [1], [""], ["docs/**", "  "], {}, null, [["docs/**"]]]) {
