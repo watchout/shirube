@@ -1,9 +1,9 @@
 {
   "schema": "sds-pin/1",
-  "sds_commit": "9cfe421ff4d82032913b6bbb9695df4f16610567",
+  "sds_commit": "ff8ffe806ea3a27cca6b0a5f12933f87bc32881f",
   "kit_version": "0.1.0",
   "files": {
-    ".github/workflows/sds-gate-self.yml": "fdc517f157f24565ab2a029a1ea744592f9384467d6db12ef15f1caa5eac9362"
+    ".github/workflows/sds-gate-self.yml": "f4cdbfd70126c9ec76f725ec15f6d345e3a65225cf33c88a8eed5c97a42d5b4e"
   },
   "instructions": [],
   "protected_paths": [".github/workflows/**", ".shirube/**", "CODEOWNERS", ".github/CODEOWNERS", "docs/CODEOWNERS", ".claude/settings.json", ".aidlc-version", "aidlc.settings.json"],
