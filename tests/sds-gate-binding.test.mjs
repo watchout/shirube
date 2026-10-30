@@ -204,12 +204,12 @@ function designRun(comments) { // the design binding of a new-form PR, with the 
   return [r.plan_binding.result, r.plan_binding.generation, r.design_binding.result, r.design_binding.findings?.map((f) => f.reason)];
 }
 test("T4-55 judgment 5 gets the plan that judgment 4 resolved for a new-form PR (the PR names no comment_ref)", () => {
-  assert.deepEqual(designRun([[2, planBody({ generation: 2 })]]), ["PASS", 2, "PASS", ["5.6"]]); // 5.5 would mean the plan did not arrive
+  assert.deepEqual(designRun([[2, planBody({ generation: 2 })]]), ["PASS", 2, "PASS", ["5.6", "5.9"]]); // 5.5 would mean the plan did not arrive; 5.9 NOT_CHECKED (this design names no placements)
 });
 for (const [name, first] of [["an older generation", planBody({ generation: 1, onlyN0: true })], ["another plan_id", planBody({ plan_id: "DP-OTHER-001", generation: 9, onlyN0: true })]]) {
   test(`T4-56 judgment 5 reads the block judgment 4 chose, not the first block of the comment (${name} comes first)`, () => {
-    assert.deepEqual(designRun([[2, first + planBody({ generation: 2 })]]), ["PASS", 2, "PASS", ["5.6"]]);
-    assert.deepEqual(designRun([[2, planBody({ generation: 2 }) + first]]), ["PASS", 2, "PASS", ["5.6"]]); // the order does not matter
+    assert.deepEqual(designRun([[2, first + planBody({ generation: 2 })]]), ["PASS", 2, "PASS", ["5.6", "5.9"]]);
+    assert.deepEqual(designRun([[2, planBody({ generation: 2 }) + first]]), ["PASS", 2, "PASS", ["5.6", "5.9"]]); // the order does not matter
   });
 }
 test("T4-53 FAIL reasons are plain text with no tokens or credentials", () => {

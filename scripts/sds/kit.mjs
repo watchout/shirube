@@ -11,6 +11,7 @@ import { dirname, join, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "../hygiene/lib.mjs";
 import { DEFAULT_PROTECTED } from "./gate.mjs";
+import { parseYaml } from "./yaml.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const KIT_VERSION = "0.1.0";
@@ -65,8 +66,18 @@ function confined(target, p) {
   const real = (() => { try { return realpathSync(cur); } catch { return null; } })(); // writes must land inside --target; a dangling or outward link is refused up front
   need(real && (real === root || real.startsWith(root + sep)), `${p} resolves outside --target through a symlink: refused`);
 }
-// apply and upgrade keep what an existing pin already records: its protected paths and its adoption.
+// apply and upgrade keep what an existing pin already records: its protected paths, its adoption and its two stage modes (only the Owner changes a mode).
+// shirube itself is never a target: its sds-gate.yml is the reusable workflow (on: workflow_call), which apply would overwrite with a caller (distribution.md section 5).
+const MODES = ["plan_binding_mode", "design_binding_mode"], REUSABLE = ".github/workflows/sds-gate.yml";
+function isShirube(target) { // the workflow's trigger structure as the YAML reader sees it (a quoted key, a flow form, a word inside a string or a comment read as YAML says); unreadable is refused, never guessed
+  const file = join(target, REUSABLE);
+  if (!existsSync(file)) return false;
+  let on;
+  try { const workflow = parseYaml(readFileSync(file, "utf8")); on = workflow?.on ?? workflow?.true; } catch (error) { throw new Error(`${REUSABLE} cannot be read as YAML (${error.message}): nothing written`); } // YAML 1.1 reads the key on as true
+  return (typeof on === "string" ? [on] : Array.isArray(on) ? on : Object.keys(on ?? {})).includes("workflow_call");
+}
 export function apply({ target, commit, protected: prot, adoption, "adoption-sha256": adoptionSha, "adopted-at": adoptedAt }, source = gitSource) {
+  need(!isShirube(target), `--target is a shirube checkout (its ${REUSABLE} is the reusable workflow, on: workflow_call): nothing written; raise shirube's own version by hand (distribution.md section 5)`);
   const { files, block } = render(commit, source);
   const old = readPin(target);
   const protectedPaths = protectedList(prot, old.protected_paths ?? []);
@@ -78,7 +89,7 @@ export function apply({ target, commit, protected: prot, adoption, "adoption-sha
   for (const [p, s] of Object.entries(files)) write(p, s);
   for (const p of instructions) write(p, withBlock(existsSync(join(target, p)) ? readFileSync(join(target, p), "utf8") : "", block));
   const pin = { schema: "sds-pin/1", sds_commit: commit, kit_version: KIT_VERSION, files: Object.fromEntries(Object.entries(files).map(([p, s]) => [p, digest(s)])),
-    instructions, protected_paths: protectedPaths, adoption: adopted };
+    instructions, protected_paths: protectedPaths, adoption: adopted, ...Object.fromEntries(MODES.filter((k) => old[k] !== undefined).map((k) => [k, old[k]])) };
   write(PIN, `${JSON.stringify(pin, null, 2)}\n`);
   return { command: "apply", sds_commit: commit, written, adoption: adopted ? "RECORDED" : "NOT_RECORDED" };
 }

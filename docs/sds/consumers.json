@@ -68,5 +68,15 @@
     },
     "hygiene_profile": "product",
     "state": "planned"
+  },
+  {
+    "repo": "watchout/shirube",
+    "adopter": "Owner",
+    "adoption": {
+      "ref": "https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6379461383",
+      "sha256": "cc806f3339a39d03182ba598ce10eb2ee7a25865262929d98077cf5bfc1f4556"
+    },
+    "hygiene_profile": "product",
+    "state": "adopted"
   }
 ]

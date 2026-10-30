@@ -182,7 +182,7 @@ const EMPTY_ANSWER = designFile(block({ open_decisions: [{ id: "D1", question: "
 test("through the gate everything binds, so design_binding PASSes and copies design_id and version", () => {
   const r = run5(PLANNED);
   assert.deepEqual([r.verdict, r.design_binding?.result, r.design_binding?.design_id, r.design_binding?.version], ["PASS", "PASS", "aun-product-design", 1]);
-  assert.deepEqual(r.design_binding?.findings?.map((f) => f.reason), ["5.6"]); // 5.6 N/A at R1
+  assert.deepEqual(r.design_binding?.findings?.map((f) => f.reason), ["5.6", "5.9"]); // 5.6 N/A at R1; 5.9 NOT_CHECKED (this design names no placements)
 });
 test("T5-10 no design_binding, report-only: the verdict stays PASS and design_binding FAILs 5.0", () => {
   const r = run5({ dbind: undefined });
@@ -237,10 +237,10 @@ test("the plan reaches designGate only when judgment 4 passed", () => {
   const withPlan = run5({ ...PLANNED, design: onN1 });
   assert.equal(withPlan.plan_binding.result, "PASS"); assert.deepEqual(failed(withPlan.design_binding ?? { findings: [] }), ["5.5"]);
   const off = run5({ design: onN1 }); // plan_binding_mode off: no plan
-  assert.deepEqual([off.design_binding?.result, off.design_binding?.findings?.map((f) => f.reason)], ["PASS", ["5.5", "5.6"]]);
+  assert.deepEqual([off.design_binding?.result, off.design_binding?.findings?.map((f) => f.reason)], ["PASS", ["5.5", "5.6", "5.9"]]);
   const broken = run5({ ...PLANNED, design: onN1, prBlock: { ...PLANNED.prBlock, control_handoff: { ref: HANDOFF_REF, sha256: "0".repeat(64) } } }); // judgment 4 FAILs
   assert.equal(broken.plan_binding.result, "FAIL");
-  assert.deepEqual([broken.design_binding?.result, broken.design_binding?.findings?.map((f) => f.reason)], ["PASS", ["5.5", "5.6"]]);
+  assert.deepEqual([broken.design_binding?.result, broken.design_binding?.findings?.map((f) => f.reason)], ["PASS", ["5.5", "5.6", "5.9"]]);
 });
 
 const SAME = { design_ref: DESIGN_REF, design_sha256: sha(DESIGN), design_id: "aun-product-design", version: 1 };
@@ -278,7 +278,7 @@ test("designGate gets the effective risk and the bound node: from R2 the bound n
   const at = (o, id) => run5({ ...o, design: first(id) }, accepted).design_binding;
   assert.deepEqual(failed(at(R2, "N3")), ["5.6"]); // the PR is bound to N2; N3 is not an ancestor of it
   assert.equal(at(R2, "N2").result, "PASS"); // bound to first_node itself
-  assert.deepEqual([at(PLANNED, "N3").result, at(PLANNED, "N3").findings.map((f) => f.reason)], ["PASS", ["5.6"]]); // R1: 5.6 N/A
+  assert.deepEqual([at(PLANNED, "N3").result, at(PLANNED, "N3").findings.map((f) => f.reason)], ["PASS", ["5.6", "5.9"]]); // R1: 5.6 N/A; 5.9 NOT_CHECKED (no placements)
 });
 
 // F01 of the first audit, through the gate: what the gate reads from JSON (the PR's design_binding, the design block's refs, the pin) is a string or it is nothing.

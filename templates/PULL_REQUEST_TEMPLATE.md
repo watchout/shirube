@@ -10,6 +10,7 @@
 - execution context: <!-- reuse the existing Issue/PR: actor, target head, allowed scope, required evidence; no duplicate start form for a routine change -->
 - 採用版: <!-- policy commit + declaration reference the repository adopts -->
 - lifecycle_ref: <!-- adopted procedure commit + applicable sections/reused evidence; candidate: https://github.com/watchout/shirube/blob/7fa597393d32738a548d9d882b6b930689b96a60/docs/process/ai-dlc.md (requires audit/adoption) -->
+- aidlc_record: <!-- path of the AI-DLC record this PR follows (under aidlc/); "none" if there is none -->
 
 ## Machine-readable facts (sds-gate reads exactly one block like this; docs/sds/distribution.md §4)
 
@@ -18,12 +19,13 @@
   "schema": "sds-pr/1",
   "risk_class": "R1",
   "changed_paths": ["<every path in the diff; for a rename, both the old and the new path>"],
+  "fixes_pr": "<URL of the PR this one fixes>",
   "audit": { "request": "<R2+: request comment URL>", "request_sha256": "<request body sha256>", "review": "<review comment URL>" },
   "design_binding": { "design_ref": "<https://github.com/watchout/REPO/blob/40-HEX-COMMIT/PATH.md>", "design_sha256": "<sha256 of that file's bytes>", "design_id": "<design_id>", "version": 1 }
 }
 ```
 
-Also set exactly one label `risk:R0`..`risk:R4` equal to `risk_class`. Delete `audit` below R2. Delete `design_binding` unless this R2+ PR depends on a design version (judgment 5; its stage is the base pin's `design_binding_mode`). A change to a protected path (`.shirube/sds-pin.json` on the base branch) counts as R4. sds-gate does not check Owner approval: for R3/R4 the merging seat confirms the owner decision for the exact head before merging.
+Also set exactly one label `risk:R0`..`risk:R4` equal to `risk_class`. Delete `audit` below R2. Delete `fixes_pr` unless this PR fixes an earlier PR (the gate does not read it). Delete `design_binding` unless this R2+ PR depends on a design version (judgment 5; its stage is the base pin's `design_binding_mode`). A design may list `placements` (globs, written like `protected_paths`); judgment 5.9 checks that every changed path is inside them. A design whose `approval.kind` is `unit_design` (a unit design record, approved by an independent design audit, not by an Owner decision) is named by the PR that merged it in `design_binding.design_pr`; the gate records 5.3u NOT_CHECKED for it and the merging seat checks the audit (docs/sds/distribution.md §4.1). The PR that merges such a design record writes its own `audit` in its block, after the audit request and before it is merged. A change to a protected path (`.shirube/sds-pin.json` on the base branch) counts as R4. sds-gate does not check Owner approval: for R3/R4 the merging seat confirms the owner decision for the exact head before merging.
 
 ## The four questions (anti-bloat v5 §9)
 

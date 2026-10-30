@@ -102,13 +102,13 @@ function outcome(mode, d, findings) {
   const bad = failed(findings);
   return { mode, result: bad.length === 0 ? "PASS" : "FAIL", design_id: d.design_id, version: d.version, ...(bad.length > 0 && { reason: bad[0].message }), findings };
 }
-function designBinding(mode, { pr, effective, binding }, io) {
+function designBinding(mode, { pr, effective, binding, paths }, io) {
   if (mode === undefined || mode === "off") return { mode: mode ?? null, result: "NOT_CHECKED", reason: mode === "off" ? "design_binding_mode is off" : "the base pin has no design_binding_mode" };
   try {
     need(["report-only", "blocking"].includes(mode), `design_binding_mode must be off, report-only or blocking, not ${show(mode)}`);
     need(pr.design_binding, "5.0 no design_binding");
     const d = pr.design_binding, block = designBlock(d, io.api), b = pr.delivery_plan_binding;
-    return outcome(mode, d, judged(d, block, { approvalBody: approvalOf(block, io.api), plan: planOf(binding, b, io), boundNodeId: b?.node_id, riskIndex: RISKS.indexOf(effective) }));
+    return outcome(mode, d, judged(d, block, { approvalBody: approvalOf(block, io.api), plan: planOf(binding, b, io), boundNodeId: b?.node_id, riskIndex: RISKS.indexOf(effective), changedPaths: paths, matches: matchesAny })); // 5.9: judgment 2's paths and the protected_paths matcher
   } catch (error) { return { mode, result: "FAIL", reason: error.message }; }
 }
 function judgment5(mode, input, io) { // like judgment 4: a FAIL stops the gate unless the stage is report-only
@@ -131,7 +131,7 @@ export function gate({ repo, pr: number, head }, api = github, now = Date.now(),
   const request = RISKS.indexOf(effective) >= 2 ? audited(pr, ctx, api, now, verify) : null;
   const binding = planBinding(mode, { pr, ctx, paths, request }, { api, parse, controlSource, block });
   if (binding.result === "FAIL" && mode !== "report-only") throw Object.assign(new Error(`4 plan binding: ${binding.reason}`), { binding });
-  const design = judgment5(design_binding_mode, { pr, effective, binding }, { api, parse });
+  const design = judgment5(design_binding_mode, { pr, effective, binding, paths }, { api, parse });
   return { check: "sds-gate", verdict: "PASS", head: ctx.head, risk_class: declared, effective_risk: effective, protected_touched: protectedTouched, owner_approval: "NOT_CHECKED_BY_MACHINE", authorization: "NONE", plan_binding: binding, design_binding: design };
 }
 export const failure = (error, args) =>
