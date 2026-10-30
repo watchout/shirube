@@ -111,8 +111,10 @@ test("T18 an owner_decision design (kind named) in blocking mode stops the gate 
   assert.throws(() => run({ mode: "blocking", files: [{ filename: "src/a.mjs" }] }), /^Error: 5 design binding: 5\.9 /);
   assert.equal(run({ mode: "blocking" }).out.design_binding.result, "NOT_CHECKED"); // NOT_CHECKED does not stop the gate
 });
-test("the design record ends with section 9 exactly as the work order gave it (SHA-256 of the 9 lines)", () => {
+test("the design record carries section 9 exactly as the work order gave it (SHA-256 of the 9 lines); section 10 (2c) follows it", () => {
   const lines = readFileSync(new URL("../docs/design/u4-gate-judgements.md", import.meta.url), "utf8").split("\n");
-  assert.equal(sha(`${lines.slice(-10, -1).join("\n")}\n`), "706808d817c5adf87b2a202ba3c8de83354a072c80202738f41874ac3d4cd5d0");
-  assert.match(lines.at(-10), /^## 9\. 実装の時に決めた読み（2a・2b）$/);
+  const at = lines.findIndex((l) => /^## 9\. 実装の時に決めた読み（2a・2b）$/.test(l));
+  assert.ok(at >= 0, "section 9 heading");
+  assert.equal(sha(`${lines.slice(at, at + 9).join("\n")}\n`), "706808d817c5adf87b2a202ba3c8de83354a072c80202738f41874ac3d4cd5d0");
+  assert.match(lines[at + 10], /^## 10\. 2c で足した直し/); // the blank line after section 9 is the first line of the appended section 10
 });

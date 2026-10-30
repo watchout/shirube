@@ -32,6 +32,31 @@ test("T19 upgrade on the command line is the same function: the modes survive it
   assert.equal(out.sds_commit, HEAD);
   assert.deepEqual([pinOf(dir).plan_binding_mode, pinOf(dir).design_binding_mode], ["report-only", "report-only"]);
 });
+// T21 (U4 2c, docs/design/u4-gate-judgements.md section 10): a version bump also keeps the pin's delivery_plan (the place judgement 4 reads the repo's route from). aun's pin has one, written by hand in U6.
+const PLAN = { control_source: "https://github.com/watchout/aun/issues/3" };
+test("T21 apply keeps delivery_plan of the old pin, value for value; a pin without it, and a first apply, get no new field", () => {
+  for (const plan of [PLAN, { control_source: "https://example.test/c", extra: { n: [1, 2], s: "x" } }]) {
+    const dir = dirWith({ "AGENTS.md": "# A\n", ".shirube/sds-pin.json": JSON.stringify({ schema: "sds-pin/1", sds_commit: A, protected_paths: [], adoption: null, delivery_plan: plan }) });
+    apply({ target: dir, commit: B, protected: "none" });
+    assert.deepEqual(pinOf(dir).delivery_plan, plan);
+    assert.equal(pinOf(dir).sds_commit, B);
+  }
+  const without = dirWith({ "AGENTS.md": "# A\n", ".shirube/sds-pin.json": JSON.stringify({ schema: "sds-pin/1", sds_commit: A, protected_paths: [], adoption: null }) });
+  apply({ target: without, commit: B, protected: "none" });
+  const first = dirWith({ "AGENTS.md": "# A\n" }); apply({ target: first, commit: A, protected: "none" }); // a first apply has no old pin: no plan is invented
+  for (const dir of [without, first]) assert.equal("delivery_plan" in pinOf(dir), false);
+});
+test("T21 an aun-shaped pin goes through upgrade on the command line with its five hand-set fields unchanged, and kit check says OK", () => {
+  const old = { schema: "sds-pin/1", sds_commit: A, protected_paths: ["db/aun/migrations/**"], adoption: { ref: "https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6435099223", sha256: "3".repeat(64), adopted_at: "2026-10-27T06:09:42Z" },
+    plan_binding_mode: "report-only", design_binding_mode: "report-only", delivery_plan: PLAN };
+  const dir = dirWith({ "AGENTS.md": "# A\n", ".shirube/sds-pin.json": JSON.stringify(old) });
+  const kit = join(ROOT, "scripts/sds/kit.mjs");
+  assert.equal(JSON.parse(execFileSync(process.execPath, [kit, "upgrade", "--target", dir, "--commit", HEAD, "--protected", "none"], { encoding: "utf8" })).sds_commit, HEAD);
+  const pin = pinOf(dir);
+  for (const k of ["adoption", "plan_binding_mode", "design_binding_mode", "delivery_plan"]) assert.deepEqual(pin[k], old[k], k);
+  assert.ok(old.protected_paths.every((p) => pin.protected_paths.includes(p)));
+  assert.equal(JSON.parse(execFileSync(process.execPath, [kit, "check", "--target", dir], { encoding: "utf8" })).verdict, "OK");
+});
 // T20 (BF-U4A-01): "shirube itself" is decided by the workflow's trigger structure (on: ... workflow_call), read by the one YAML reader, not by the text.
 const reusable = readFileSync(join(ROOT, ".github/workflows/sds-gate.yml"), "utf8"); // the real one: the check must read what shirube really has
 const SHIRUBE = { "the real reusable workflow": reusable, "a double-quoted key": reusable.replace("\n  workflow_call:", '\n  "workflow_call":'), "a single-quoted key": reusable.replace("\n  workflow_call:", "\n  'workflow_call':"),

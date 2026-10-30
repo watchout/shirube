@@ -1,0 +1,27 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@f44aa521beb0baac34bf3445f88620816f222865/docs/sds/audit-method.md",
+  "scope": "Shirube U4 の 2c（R2）の実装監査: kit の apply・upgrade が前の pin の delivery_plan を引き継ぐ直し（[DR] §10）、設計の記録への §10 の書き足し、本項目集合の file docs/audit/u4-2c-impl-audit-items.json。記法: [DR] = 設計の記録 docs/design/u4-gate-judgements.md（shirube main 1cd35a4eba1099eb0784f7818588a3de5f300582 の bytes、SHA-256 6a18e0c701d77bdd03a14282ff9fb5d6960567159b8c8a0afe69dc29f8b04fb4）の末尾に作業指示の §10 を足した物、[KIT] = Owner の決定 OD-KIT-UPGRADE-STANDING-AND-INCEPTION-WHILE-WAITING-20261021-001（iyasaka-arc#49 6308341298、本文 SHA-256 d2d1a8e4da93411d6baa1cca8ef2338d6b9822db15eb43489b9d3dabeb43bf94）、[U6] = aun#50（aun の pin に delivery_plan を手で足した導入の PR）、[BUD] = Owner の決定 OD-SHIRUBE-GATE5-BUDGET-150-TO-250-20261030-001（iyasaka-arc#49 6510635862）。全 4 項目必須。",
+  "items": [
+    {
+      "id": "U4C-1",
+      "criterion": "範囲: 変更 path が scripts/sds/kit.mjs・tests/**・docs/design/u4-gate-judgements.md・docs/audit/u4-2c-impl-audit-items.json だけ。.github/**・.shirube/**・docs/sds/distribution.md・scripts/sds/gate.mjs・scripts/sds/design-gate.mjs・kit/** に触れていない。新しい外部の依存が無い。PR 本文の sds-pr block が risk_class R2、changed_paths が diff と一致、control_handoff が作業指示の comment の URL と本文 SHA-256 を持つ。CI が成功している。",
+      "basis": "作業指示の 1"
+    },
+    {
+      "id": "U4C-2",
+      "criterion": "引き継ぎの振る舞い（[DR] §10 の 1）: apply（upgrade も同じ関数）が、前の pin の delivery_plan を値のまま（深い一致）新しい pin に残す。前の pin に無い時と、前の pin が無い最初の apply では delivery_plan を書かない。2 つの mode・protected_paths・adoption の今の引き継ぎは変わらない（T19 の今の試験が期待を弱めずに通る）。これを確かめる試験があり、そのうち 1 件は今の main（1cd35a4e）の kit で失敗することを示している（Red → Green）。aun の pin と同じ形（2 つの mode・delivery_plan・adoption・protected_paths を持つ pin）を command line の upgrade で上げて、その 5 つの欄が全部同じ値で残り、kit check が OK になる試験がある。",
+      "basis": "[DR] §10 の 1・2、[U6]"
+    },
+    {
+      "id": "U4C-3",
+      "criterion": "設計の記録と説明: docs/design/u4-gate-judgements.md の変更は、末尾に作業指示の §10 の節を bytes を変えずに足すことだけ（作業指示に書いた SHA-256 と一致）。§1〜§9 は 1 文字も変えていない。kit.mjs の引き継ぐ欄を述べた comment（今の 69 行目）が delivery_plan を含む形に直っている。",
+      "basis": "作業指示の 2、R3（設計と実装を黙って食い違わせない）"
+    },
+    {
+      "id": "U4C-4",
+      "criterion": "予算（数え方は [DR] §9 の 2）: この PR が scripts/** に足した行（git diff --numstat の追加、空行と comment も数える）が 10 行以下で、2a（25 行）・2b（22 行、統合の差分 ff8ffe80^1..ff8ffe80）と合わせて U4 の枠 100 行以内。hygiene の own_code の合計が .shirube/hygiene-profile.md の総枠（4,000）以下。数えた値と数え方を PR 本文に書いている。",
+      "basis": "[DR] §9 の 2、[BUD]"
+    }
+  ]
+}
