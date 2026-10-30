@@ -1,0 +1,32 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@f44aa521beb0baac34bf3445f88620816f222865/docs/sds/audit-method.md",
+  "scope": "Shirube U4 の 3（R4、保護面）= shirube 自身の門の版上げの実装監査: .github/workflows/sds-gate-self.yml の uses の commit と .shirube/sds-pin.json の sds_commit・files の自己用の caller の指紋を、2b の統合 commit ff8ffe806ea3a27cca6b0a5f12933f87bc32881f に一緒に上げる（[DR] §3.6・§5 の 3）。本項目集合の file docs/audit/u4-self-bump-audit-items.json を含む。記法: [DR] = 設計の記録 docs/design/u4-gate-judgements.md（版 4 + §9、shirube main ff8ffe806ea3a27cca6b0a5f12933f87bc32881f）。全 5 項目必須。",
+  "items": [
+    {
+      "id": "U4S-1",
+      "criterion": "範囲: 変更 path が .github/workflows/sds-gate-self.yml・.shirube/sds-pin.json・docs/audit/u4-self-bump-audit-items.json だけ。PR に label risk:R4 が付き、sds-pr block の risk_class が R4、changed_paths が diff と一致、control_handoff が作業指示の comment の URL と本文 SHA-256 を持つ。CI が成功している。",
+      "basis": "[DR] §5 の 3、distribution.md §4 の判定 1・2"
+    },
+    {
+      "id": "U4S-2",
+      "criterion": "workflow: .github/workflows/sds-gate-self.yml の差分は、uses: watchout/shirube/.github/workflows/sds-gate.yml@ の commit を 9cfe421ff4d82032913b6bbb9695df4f16610567 から ff8ffe806ea3a27cca6b0a5f12933f87bc32881f（40 桁）に替える 1 行だけ。ほかの行（on・permissions・with・コメント）は 1 文字も変わっていない。",
+      "basis": "[DR] §5 の 3"
+    },
+    {
+      "id": "U4S-3",
+      "criterion": "pin: .shirube/sds-pin.json の sds_commit が ff8ffe806ea3a27cca6b0a5f12933f87bc32881f、files の .github/workflows/sds-gate-self.yml の値が、この PR の head の同じ file の bytes から計算した SHA-256 と一致する（宣言値を信じず、監査の席が計算し直す）。schema・kit_version（main の kit.mjs の KIT_VERSION と同じ 0.1.0）・instructions・protected_paths・adoption・plan_binding_mode・design_binding_mode は変わっていない。kit の apply・upgrade を使わず手で書いている（[DR] §3.6）。",
+      "basis": "[DR] §3.6・§5 の 3、OD-KIT-UPGRADE-STANDING-AND-INCEPTION-WHILE-WAITING-20261021-001（mode は変えない）"
+    },
+    {
+      "id": "U4S-4",
+      "criterion": "試験: tests/workflow-contract.test.mjs の今の試験（pin の sds_commit と uses の commit が同じ、permissions、pull_request_target で PR の code を checkout しない）が、この PR の head で期待を変えずに通る。",
+      "basis": "[DR] §5 の「3 の確かめ」"
+    },
+    {
+      "id": "U4S-5",
+      "criterion": "統合の後の確かめの計画: PR 本文に、統合の後に次の shirube の PR の sds-gate-self の実行が新しい commit の再利用の workflow を呼んだこと（実行の記録の workflow の参照）と、design_binding に 5.9 の印が出ることを読み戻して iyasaka-arc#24 に書く手順が書かれている。",
+      "basis": "[DR] §5 の「3 の確かめ」"
+    }
+  ]
+}
