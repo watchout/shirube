@@ -1,0 +1,27 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@661454efeed2c951bc0ca9252b9c5074ad8345b4/docs/sds/audit-method.md",
+  "scope": "Shirube U4 の続きの 2c（R2）の実装監査: 配布する説明文 kit/instructions-block.md の「design binding」の行の 5.3u の文と、その試験 tests/sds-distribution-files.test.mjs の U4B-5、本項目集合の file docs/audit/u4c-impl-2c-audit-items.json。記法: [N] = 規範（shirube main の docs/sds/distribution.md §4 の判定 5 の 5.3u。shirube#82 で改め、2b = shirube#84 で門の code がそれに追いついた）、[ANS] = arc の答え iyasaka-arc#24 6556681629（2c を挟み、3 は 2c の統合 commit に上げる）、[WO] = この作業指示の comment。全 4 項目必須。",
+  "items": [
+    {
+      "id": "U4C2C-1",
+      "criterion": "範囲: 変更 path が kit/instructions-block.md・tests/sds-distribution-files.test.mjs・docs/audit/u4c-impl-2c-audit-items.json の 3 つだけ。scripts/**・.github/**・.shirube/**・docs/sds/**・docs/design/**・templates/**・scripts/hygiene/** に触れていない。新しい外部の依存が無い。kit/instructions-block.md の変更が、[WO] の old の文を new の文に置き換える 1 か所だけ（行のほかの文、ほかの行は bytes が同じ）。PR 本文の sds-pr block が risk_class R2、changed_paths が diff と一致、control_handoff が [WO] の URL と本文 SHA-256 を持つ。CI が成功している。",
+      "basis": "audit-method、[WO]"
+    },
+    {
+      "id": "U4C2C-2",
+      "criterion": "説明文が規範と食い違わない: 新しい文が [N] の 5.3u の (a)〜(j) と結果の扱い（全部通れば失敗を出さず、当たらない・読めない時は FAIL）と同じ意味で、[N] に無い条件を足していない・[N] の条件を落としていない（設計の PR の統合、設計の file の指紋、監査席の Approve と依頼・返却の結び付き、段が design の依頼と全部 PASS の返却、項目集合が設計の file を名指すこと、block の audit が同じこと、編集の履歴）。判定 5 が blocking になるまで統合する席が手で確かめる（§4.1）ことも残っている。行に「NOT_CHECKED, never PASS」の古い文が残っていない。",
+      "basis": "[N]、[ANS]"
+    },
+    {
+      "id": "U4C2C-3",
+      "criterion": "試験: U4B-5 が新しい文の語（placements・5.9・unit_design・5.3u・(a)-(j)・Approve・edit history・FAIL・merge seat・§4.1）を確かめ、行に NOT_CHECKED と never PASS が無いことを確かめ、5.9 と 5.3u の並びの確かめを残している。古い文に戻すと U4B-5 が落ちる（作者が PR 本文に Red → Green を書いている）。ほかの試験を弱めていない。",
+      "basis": "[WO]"
+    },
+    {
+      "id": "U4C2C-4",
+      "criterion": "配布への響き: kit/instructions-block.md は配布先の CLAUDE.md・AGENTS.md の block の元なので、この PR の後に kit の版上げ（aun・onza）をすると配布先の説明文が新しい文になる。この PR が配布先の repo・pin・mode を変えず、版上げは別の PR（3 = shirube 自身、4 = aun）で行うことが PR 本文に書かれている。",
+      "basis": "[ANS]、OD-KIT-UPGRADE-STANDING-AND-INCEPTION-WHILE-WAITING-20261021-001"
+    }
+  ]
+}
