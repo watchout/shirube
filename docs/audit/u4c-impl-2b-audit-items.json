@@ -1,0 +1,37 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@661454efeed2c951bc0ca9252b9c5074ad8345b4/docs/sds/audit-method.md",
+  "scope": "Shirube U4 の続きの 2b（R2）の実装監査: 5.3u の (j) 編集の履歴の照合（scripts/sds/design-gate.mjs）と GraphQL の材料の読み取り（scripts/sds/gate.mjs）、試験 tests/design-gate-unit-approval.test.mjs（と、T1 の期待の替えに要る時だけ tests/design-gate-unit.test.mjs）、本項目集合の file docs/audit/u4c-impl-2b-audit-items.json。記法: [DR] = 設計の記録 docs/design/u4-unit-design-approval.md（版 5、shirube main 661454efeed2c951bc0ca9252b9c5074ad8345b4 の bytes、SHA-256 8cc4e2544bb7751b657e39cd07d5926b32610ce8bbac23076b7d0b43ddd3e486、設計監査 5 回目 PASS = shirube#81 6552062192）、[2A] = 2a の統合（shirube#83、head dcf1dfc7a90448bf1a9acfffe36851c1b5cc24de。scripts/** に足した行 = design-gate.mjs 35・gate.mjs 19 の 54 行）、[BUD] = Owner の決定 OD-SHIRUBE-GATE5-BUDGET-250-TO-350-20261101-001（iyasaka-arc#49 6555256180、本文 SHA-256 3cb7b8d906cabc379d297e2d0d8a03f4071f378eb12e7e8ed05c38c6a4978950）。全 6 項目必須。",
+  "items": [
+    {
+      "id": "U4C2B-1",
+      "criterion": "範囲: 変更 path が scripts/sds/design-gate.mjs・scripts/sds/gate.mjs・tests/design-gate-unit-approval.test.mjs・docs/audit/u4c-impl-2b-audit-items.json と、T1 の期待の替えに要る時だけ tests/design-gate-unit.test.mjs。.github/**・.shirube/**・docs/sds/**・docs/design/**・templates/**・kit/**・scripts/hygiene/** に触れていない。GraphQL は query 1 つだけで、mutation の code が無い。新しい外部の依存が無い。追加 400 行・20 file の中（pr-size.mjs と同じ数え方）。PR 本文の sds-pr block が risk_class R2、changed_paths が diff と一致、control_handoff が作業指示の comment の URL と本文 SHA-256 を持つ。CI が成功している。",
+      "basis": "audit-method、[DR] §3.5・§5 の 2b"
+    },
+    {
+      "id": "U4C2B-2",
+      "criterion": "(j) の照合: approval.kind が unit_design の時、design-gate.mjs が [DR] §3.1 の (j) のとおり、GraphQL の nodes(ids: [A の node_id, 返却の node_id]) の答えで次を全部持つ。(1) A は lastEditedAt が null かつ userContentEdits.totalCount が 0 の時だけ通す（監査席自身の編集も受けない）。(2) 返却は、lastEditedAt が null かつ totalCount が 0 の時か、lastEditedAt が A の submitted_at 以前・hasNextPage が false・どの版も editor.login が X（editor が null の版は FAIL）・どの版も deletedAt が null・どの版の editedAt も A の submitted_at 以前の全部がそろう時だけ通す。(3) 食い違い（lastEditedAt があるのに版が 0、版があるのに lastEditedAt が null）・null の node・応答の errors・__typename と databaseId が REST で読んだ物と違う時は FAIL。(4) 依頼の comment の履歴は読まない。reason は 5.3u で始まり、何が当たらないかを書く。",
+      "basis": "[DR] §3.1 の (j)"
+    },
+    {
+      "id": "U4C2B-3",
+      "criterion": "PASS への切り替えと失敗の扱い: 2a の NOT_CHECKED（reason「5.3u (a)-(i) passed; the edit history check (j) is not implemented yet」）が無くなり、(a)〜(j) が全部通れば 5.3u は失敗を出さず、ほかの確かめ（5.1・5.2・5.5〜5.9）も通れば design_binding.result が PASS になる。GraphQL の読み取りの失敗は FAIL で、NOT_CHECKED にしない。(a)・(b) が当たらない時は GraphQL の口を呼ばない。",
+      "basis": "[DR] §3.1・§3.2・§5 の 2b、§4 の T1・T20・T22"
+    },
+    {
+      "id": "U4C2B-4",
+      "criterion": "読み取りと判断の分け方: gate.mjs が GraphQL を REST の口（api）と別の口（例 query）として持ち、query は 1 つで nodes(ids:) を読むだけ、mutation を使わない。PR の code を checkout も実行もしない。design-gate.mjs の照合は純粋な関数で、import が node:crypto だけのまま、時刻・環境・網を読まない（lastEditedAt・editedAt・submitted_at は API の値を比べるだけ）。試験は GraphQL の口を偽物に替えて通る。",
+      "basis": "[DR] §3.2"
+    },
+    {
+      "id": "U4C2B-5",
+      "criterion": "試験: [DR] §4 の T30〜T34、T20・T22 の GraphQL の部分、T1 の PASS の期待（2a の NOT_CHECKED から替える）が、それぞれ負例と対照を持って書かれ、通る。T30（BF-U4C-04 の 3 回目の反例）が FAIL になり、A の書き換えだけ・Rold の書き換えだけの片方ずつでも FAIL になる。T33 の前者（X が A の前に直した）は 5.3u が失敗を出さない対照になっている。2a の試験（T2〜T29）は弱めずにそのまま通る。",
+      "basis": "[DR] §4"
+    },
+    {
+      "id": "U4C2B-6",
+      "criterion": "予算（[BUD]）: この PR が scripts/** に足した行（git diff --numstat の追加、空行と comment も数え、削除で相殺しない）が、U4 の続きの枠 100 行から [2A] が足した 54 行を引いた 46 行以下。hygiene の own_code の合計が .shirube/hygiene-profile.md の総枠（4,000）以下。数えた値と数え方を PR 本文に書いている。",
+      "basis": "[BUD]、[DR] §5 の見積もり"
+    }
+  ]
+}
