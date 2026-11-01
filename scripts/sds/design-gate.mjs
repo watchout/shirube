@@ -67,7 +67,6 @@ function placed(b, paths, matches) { // 5.9: every changed path is inside the de
   return [...none, ...(outside === null ? [bad("5.9", "the changed paths or the glob matcher are not given, so the placements cannot be checked")] : outside.length === 0 ? [] : [bad("5.9", `paths outside the design placements: ${outside.join(", ")}`)])];
 }
 const COMMENT = /^https:\/\/github\.com\/(watchout\/[\w.-]+)\/(?:pull|issues)\/(\d+)#issuecomment-\d+$/, RECEIVER = "watchout"; // 5.3u (docs/design/u4-unit-design-approval.md §3.1): RECEIVER is the account the pinned checker takes requests from (a test compares)
-const HELD = Object.assign(note("5.3u", "", ""), { message: "5.3u (a)-(i) passed; the edit history check (j) is not implemented yet" }); // a note, never a failure
 const digest = (s) => createHash("sha256").update(String(s)).digest("hex");
 const parsed = (s) => { try { return JSON.parse(s); } catch { return null; } };
 export const fenced = (s) => parsed(/^```json\r?\n([\s\S]*?)^```/m.exec(s)?.[1]); // a comment's first json block
@@ -91,12 +90,18 @@ function audited(a, e) { // (e)-(i): the first that does not hold, or null
     [fresh(e.review, a.user?.login, b.review_digest, a) && passed(fenced(e.review.body), a, k, e), "(f) the return the Approve names is not an untouched all-PASS return of the audit seat"], [scoped(rq, e), "(g) the audited item set does not name the design file"],
     [e.files.some((f) => f.path === e.path || f.from === e.path), "(h) the design file is not changed by design_pr"], [printed(b, e), "(i) the audit in the design PR block is not the one the Approve names"]].find(([ok]) => !ok)?.[1] ?? null;
 }
-function unitWhy(e) { // (a)-(i): the first fact that does not hold, or null; (j), the edit history, is 2b
+const quiet = (n) => n?.lastEditedAt === null && n.userContentEdits?.totalCount === 0 && size(n.userContentEdits.nodes, (k) => k === 0); // (j): a node nobody has edited
+const upto = (t, at) => typeof t === "string" && t <= at; // an ISO time not after at (a list or a number is no time: [] would compare as before every string)
+const mine = (n, who, at) => { const u = n.userContentEdits; return upto(n.lastEditedAt, at) && u?.pageInfo?.hasNextPage === false && size(u.nodes, (k) => k > 0 && k === u.totalCount) && u.nodes.every((v) => v?.editor?.login === who && v.deletedAt === null && upto(v.editedAt, at)); }; // only the seat's edits, every one before the Approve
+const same = (n, type, row) => n?.__typename === type && Number.isInteger(row.id) && n.databaseId === row.id; // the node is the object the gate read through REST
+const pair = (h) => (h?.errors === undefined && size(h?.data?.nodes, (k) => k === 2) ? h.data.nodes : []); // the two nodes of an answer that has no errors
+const edited = (a, e) => { const [x, y] = pair(e.history); return same(x, "PullRequestReview", a) && same(y, "IssueComment", e.review) && quiet(x) && (quiet(y) || (y.lastEditedAt !== null && mine(y, a.user.login, a.submitted_at))); }; // (j): the Approve never edited, the return edited only by the seat before the Approve
+function unitWhy(e) { // (a)-(j): the first fact that does not hold, or null
   if (e.designRepo !== e.repo) return "(a) design_ref is in another repository than this PR";
   if (typeof e.merged !== "string") return `(b) design_pr ${e.pr} is not merged`;
   if (e.got !== e.want) return "(c) the design file at the merged head differs from design_sha256";
   const a = approve(e), later = (r) => r.user?.login === a?.user?.login && r.commit_id === e.head && r.state === "CHANGES_REQUESTED" && r.submitted_at > a.submitted_at && r.submitted_at <= e.merged;
-  return a === null || e.reviews.some(later) ? "(d) no APPROVED review of the merged head binds a request and a review of design_pr, or its author asked for changes after it" : audited(a, e);
+  return a === null || e.reviews.some(later) ? "(d) no APPROVED review of the merged head binds a request and a review of design_pr, or its author asked for changes after it" : audited(a, e) ?? (edited(a, e) ? null : "(j) the Approve or the return has an edit history the audit seat did not leave, or the history cannot be read as one");
 }
 export const failed = (findings) => findings.filter((f) => !NOTES.has(f)); // the findings that are failures, not notes
 const result = (findings) => ({ verdict: failed(findings).length === 0 ? "PASS" : "FAIL", findings });
@@ -107,7 +112,6 @@ export function designGate(block, input) {
   const wrong = kinded(block, designPr), unit = block.approval.kind === "unit_design";
   if (wrong.length > 0) return result(wrong);
   const why = unit ? unitWhy(evidence()) : null; // evidence() is read only now that 5.1 passed
-  const approval = !unit ? approved(block, approvalBody) : why === null ? [HELD] : [bad("5.3u", why)]; // 5.3u: never PASS for a unit design until (j)
-  const r = result([...answered(block), ...approval, ...connected(block, plan, boundNodeId, riskIndex), ...placed(block, changedPaths, matches)]);
-  return unit && r.verdict === "PASS" ? { ...r, verdict: "NOT_CHECKED" } : r;
+  const approval = !unit ? approved(block, approvalBody) : why === null ? [] : [bad("5.3u", why)];
+  return result([...answered(block), ...approval, ...connected(block, plan, boundNodeId, riskIndex), ...placed(block, changedPaths, matches)]);
 }

@@ -21,6 +21,8 @@ function github(path) {
   const body = execFileSync("gh", ["api", path], { encoding: "utf8", timeout: 20000, maxBuffer: 8000000 });
   return path.endsWith("/logs") ? body : JSON.parse(body);
 }
+const QUERY = "query($ids:[ID!]!){nodes(ids:$ids){__typename ...on PullRequestReview{databaseId}...on IssueComment{databaseId}...on Comment{lastEditedAt userContentEdits(first:100){totalCount pageInfo{hasNextPage}nodes{editor{login}editedAt deletedAt}}}}}"; // 5.3u (j): the one GraphQL query, a read of two nodes
+function graphql(ids) { return JSON.parse(execFileSync("gh", ["api", "graphql", "-f", `query=${QUERY}`, ...ids.flatMap((id) => ["-f", `ids[]=${id}`])], { encoding: "utf8", timeout: 20000, maxBuffer: 8000000 })); }
 function need(ok, why) { if (!ok) throw new Error(why); }
 function block(body) {
   const blocks = [...(body ?? "").matchAll(/^```json sds-pr\r?\n([\s\S]*?)^```\s*$/gm)];
@@ -87,7 +89,7 @@ function approvalOf(block, api) { // null when approval.ref has no valid shape (
   const m = block?.approval?.kind === "unit_design" ? null : refOf(block?.approval?.ref);
   return m ? read("the approval comment", () => api(`repos/${m[1]}/issues/comments/${m[2]}`).body) : null;
 }
-function unitEvidence(d, m, repo, api) { // 5.3u (a)-(i): what design-gate judges, read with GETs only; (a) and (b) are judged on the PR alone, so when one fails nothing else is read
+function unitEvidence(d, m, repo, api, query) { // 5.3u (a)-(j): what design-gate judges, read with GETs and one GraphQL query; (a) and (b) are judged on the PR alone, so when one fails nothing else is read
   const get = (what, path) => read(what, () => api(path)), pr = get("the design PR", `repos/${repo}/pulls/${d.design_pr}`);
   const e = { repo, pr: d.design_pr, designRepo: m[1], want: d.design_sha256, path: m[3], head: pr.head?.sha, merged: pr.merged_at, body: pr.body ?? "" };
   if (m[1] !== repo || typeof pr.merged_at !== "string") return e;
@@ -96,6 +98,7 @@ function unitEvidence(d, m, repo, api) { // 5.3u (a)-(i): what design-gate judge
   const a = approve(e), comment = (url) => get(url, `repos/${repo}/issues/comments/${url.split("-").pop()}`);
   if (a === null) return e;
   Object.assign(e, { request: comment(a.bind.request), review: comment(a.bind.review) });
+  e.history = read("the edit history", () => query([a.node_id, e.review.node_id]));
   const path = fenced(e.request.body)?.item_set?.path;
   return typeof path === "string" ? { ...e, item: at(path).toString("utf8") } : e;
 }
@@ -108,9 +111,9 @@ function judged(d, block, input) { // designGate, and 5.8: the PR names the desi
   return differs ? [...findings, { reason: "5.8", message: `5.8 the PR names ${d.design_id}@${d.version}, the block is ${block.design_id}@${block.version}` }] : findings;
 }
 function outcome(mode, d, findings) {
-  const bad = failed(findings), unit = findings.find((f) => f.reason === "5.3u"); // a unit design's approval is not checked, so it is never PASS
-  return { mode, result: bad.length > 0 ? "FAIL" : unit ? "NOT_CHECKED" : "PASS", design_id: d.design_id, version: d.version, ...(Number.isInteger(d.design_pr) && { design_pr: d.design_pr }),
-    ...(bad.length > 0 ? { reason: bad[0].message } : unit && { reason: `${unit.message}; the other checks (5.9 included) did not fail` }), findings };
+  const bad = failed(findings);
+  return { mode, result: bad.length > 0 ? "FAIL" : "PASS", design_id: d.design_id, version: d.version, ...(Number.isInteger(d.design_pr) && { design_pr: d.design_pr }),
+    ...(bad.length > 0 && { reason: bad[0].message }), findings };
 }
 function designBinding(mode, { pr, effective, binding, paths, repo }, io) {
   if (mode === undefined || mode === "off") return { mode: mode ?? null, result: "NOT_CHECKED", reason: mode === "off" ? "design_binding_mode is off" : "the base pin has no design_binding_mode" };
@@ -118,7 +121,7 @@ function designBinding(mode, { pr, effective, binding, paths, repo }, io) {
     need(["report-only", "blocking"].includes(mode), `design_binding_mode must be off, report-only or blocking, not ${show(mode)}`);
     need(pr.design_binding, "5.0 no design_binding");
     const d = pr.design_binding, block = designBlock(d, io.api), b = pr.delivery_plan_binding;
-    return outcome(mode, d, judged(d, block, { approvalBody: approvalOf(block, io.api), plan: planOf(binding, b, io), boundNodeId: b?.node_id, riskIndex: RISKS.indexOf(effective), changedPaths: paths, matches: matchesAny, designPr: d.design_pr, evidence: () => unitEvidence(d, named(d), repo, io.api) })); // 5.9: judgment 2's paths and the protected_paths matcher; 5.3u's evidence is read when designGate asks
+    return outcome(mode, d, judged(d, block, { approvalBody: approvalOf(block, io.api), plan: planOf(binding, b, io), boundNodeId: b?.node_id, riskIndex: RISKS.indexOf(effective), changedPaths: paths, matches: matchesAny, designPr: d.design_pr, evidence: () => unitEvidence(d, named(d), repo, io.api, io.query ?? graphql) })); // 5.9: judgment 2's paths and the protected_paths matcher; 5.3u's evidence is read when designGate asks
   } catch (error) { return { mode, result: "FAIL", reason: error.message }; }
 }
 function judgment5(mode, input, io) { // like judgment 4: a FAIL stops the gate unless the stage is report-only
@@ -126,7 +129,7 @@ function judgment5(mode, input, io) { // like judgment 4: a FAIL stops the gate 
   if (design.result === "FAIL" && design.mode !== "report-only") throw Object.assign(new Error(`5 design binding: ${design.reason}`), { binding: input.binding, design_binding: design });
   return design;
 }
-export function gate({ repo, pr: number, head }, api = github, now = Date.now(), verify = verifyAudit, parse = parseYaml) {
+export function gate({ repo, pr: number, head }, api = github, now = Date.now(), verify = verifyAudit, parse = parseYaml, query) {
   const p = api(`repos/${repo}/pulls/${number}`);
   need(!head || p.head.sha === head, `the PR head moved from ${head} to ${p.head.sha}; the newer run reports it`);
   const ctx = { repo, pr: Number(number), head: p.head.sha, base: p.base.sha };
@@ -141,7 +144,7 @@ export function gate({ repo, pr: number, head }, api = github, now = Date.now(),
   const request = RISKS.indexOf(effective) >= 2 ? audited(pr, ctx, api, now, verify) : null;
   const binding = planBinding(mode, { pr, ctx, paths, request }, { api, parse, controlSource, block });
   if (binding.result === "FAIL" && mode !== "report-only") throw Object.assign(new Error(`4 plan binding: ${binding.reason}`), { binding });
-  const design = judgment5(design_binding_mode, { pr, effective, binding, paths, repo }, { api, parse });
+  const design = judgment5(design_binding_mode, { pr, effective, binding, paths, repo }, { api, parse, query });
   return { check: "sds-gate", verdict: "PASS", head: ctx.head, risk_class: declared, effective_risk: effective, protected_touched: protectedTouched, owner_approval: "NOT_CHECKED_BY_MACHINE", authorization: "NONE", plan_binding: binding, design_binding: design };
 }
 export const failure = (error, args) =>
