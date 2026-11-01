@@ -1,6 +1,6 @@
 # Shirube U4 の続き — 作る単位の設計の承認を、門が機械で確かめる（設計の記録）
 
-版 4（2026-11-01。版 3 との違い: 設計監査 3 回目（shirube#81 6541598943）の BF-U4C-04 の残りを直した。版 3 は Approve の本文と依頼・返却の今の bytes を照らしたが、Approve の本文がその Approve を付けた時の bytes のままかを確かめず、依頼・返却についても「Approve より後に変わっていない」ことしか見ていなかった。そのため、書き込める者が、前からある依頼と返却を Approve の前に設計の段の PASS の形に書き換えておき、Approve の後に Approve の本文をその組に結び直すと通った。版 4 は、GitHub の編集の履歴（GraphQL の `userContentEdits`・`lastEditedAt`。誰が・いつ編集したか）を読み、(1) Approve の本文に編集が 1 つも無いこと、(2) 返却の comment の編集が全部監査席の account により Approve より前に行われたことを確かめる（§3.1 の (j)）。依頼の bytes は、こうして監査席が書いたままと分かった返却の `request_digest` で結ばれる。版 3 = iyasaka-arc#57 6541468792。版 3 で直した所（版 2 との違い）: 設計監査 2 回目（shirube#81 6541419356）の 2 つの指摘を直した。BF-U4C-04 = Approve と、Approve の時に確かめた依頼・返却の bytes を結んでいなかったので、Approve の後・統合の前に依頼と返却を差し替えて、設計の監査をしていない PASS を通せた。BF-U4C-05 = 名指した設計の file が、その設計監査の範囲だったことを確かめていなかったので、同じ PR・同じ head の別の設計だけを監査した PASS を流用できた。版 3 は、(1) 監査席の Approve の本文の JSON（承認の時の依頼と返却の URL と指紋、checker の指紋）を証拠の起点にし、今の依頼・返却の bytes がその指紋と同じで、どちらも Approve より後に編集されていないことを確かめる。(2) 名指した設計の file が設計の PR の変更 file に入っていて、監査の依頼が固定した項目集合（その head の file、指紋つき）の範囲の文がその path を名指すことを確かめる。版 2 = iyasaka-arc#57 6541285902。版 1 との違い（版 2 で直した BF-U4C-01〜03）: 門の実行の記録を読む形をやめ、監査席の exact-head の Approve と依頼・返却の結び付きを読む形にした。作る単位の設計の記録の PR を R2 にする規範の変更はやめた。作者の受領は門が確かめたと書かない。版 1 = iyasaka-arc#57 6541065968）
+版 5（2026-11-01。版 4 との違い: 設計監査 4 回目（shirube#81 6551919404）の BF-U4C-06 を直した。版 4 は実装を 1 本の R2 の PR とし、code 約 80 行と試験 約 380 行の合計 460 行で、PR の大きさの上限（追加 400 行、`.shirube/hygiene-profile.md` の `pr_added_lines`）を超えていた。版 5 は実装を 2 本に分ける（§5 の 2a・2b）。2a は (a)〜(i) を作り、(j) ができるまでは (a)〜(i) が全部通っても 5.3u を `NOT_CHECKED` のままにする（PASS を出さない）。2b が (j) を足し、そこで初めて PASS を出す。各 PR の範囲・試験・追加行の内訳・依存を書き、作る席が `pr-size.mjs` と同じ数え方で測ってから出す。上限・試験・項目は変えない。あわせて、門の 5.3u が PASS を出すまで統合する席が今の手の照合を続けることを §3.3 に書いた。版 4 = iyasaka-arc#57 6551742424。版 4 で直した所（版 3 との違い）: 設計監査 3 回目（shirube#81 6541598943）の BF-U4C-04 の残りを直した。版 3 は Approve の本文と依頼・返却の今の bytes を照らしたが、Approve の本文がその Approve を付けた時の bytes のままかを確かめず、依頼・返却についても「Approve より後に変わっていない」ことしか見ていなかった。そのため、書き込める者が、前からある依頼と返却を Approve の前に設計の段の PASS の形に書き換えておき、Approve の後に Approve の本文をその組に結び直すと通った。版 4 は、GitHub の編集の履歴（GraphQL の `userContentEdits`・`lastEditedAt`。誰が・いつ編集したか）を読み、(1) Approve の本文に編集が 1 つも無いこと、(2) 返却の comment の編集が全部監査席の account により Approve より前に行われたことを確かめる（§3.1 の (j)）。依頼の bytes は、こうして監査席が書いたままと分かった返却の `request_digest` で結ばれる。版 3 = iyasaka-arc#57 6541468792。版 3 で直した所（版 2 との違い）: 設計監査 2 回目（shirube#81 6541419356）の 2 つの指摘を直した。BF-U4C-04 = Approve と、Approve の時に確かめた依頼・返却の bytes を結んでいなかったので、Approve の後・統合の前に依頼と返却を差し替えて、設計の監査をしていない PASS を通せた。BF-U4C-05 = 名指した設計の file が、その設計監査の範囲だったことを確かめていなかったので、同じ PR・同じ head の別の設計だけを監査した PASS を流用できた。版 3 は、(1) 監査席の Approve の本文の JSON（承認の時の依頼と返却の URL と指紋、checker の指紋）を証拠の起点にし、今の依頼・返却の bytes がその指紋と同じで、どちらも Approve より後に編集されていないことを確かめる。(2) 名指した設計の file が設計の PR の変更 file に入っていて、監査の依頼が固定した項目集合（その head の file、指紋つき）の範囲の文がその path を名指すことを確かめる。版 2 = iyasaka-arc#57 6541285902。版 1 との違い（版 2 で直した BF-U4C-01〜03）: 門の実行の記録を読む形をやめ、監査席の exact-head の Approve と依頼・返却の結び付きを読む形にした。作る単位の設計の記録の PR を R2 にする規範の変更はやめた。作者の受領は門が確かめたと書かない。版 1 = iyasaka-arc#57 6541065968）
 
 適用 ID:
 - OD-SHIRUBE-U4-CONTINUATION-DESIGN-APPROVAL-CHECK-START-20261031-001（[iyasaka-arc#49 6540758548](https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6540758548)、本文 SHA-256 `d3fc3353e1beda01ad93a453cfd81fb6b49216070b7f9cc981e09a9ec6634a8b`。U4 の続きを今から作る。以下 [U4C]）
@@ -86,7 +86,7 @@
 
 ### 3.3 統合する席の手順（`distribution.md` 117 行）
 
-- `unit_design` の時の (1a)〜(1d) の手での照合を、「門の JSON の `design_binding` を読み、5.3u の失敗が無く `result` が PASS であること」に替える（F1・F2 の判断を門の 1 か所にする、S3）。判定 5 が `report-only` の間は、merge 担当が merge の直前にこれを確かめ、FAIL なら merge しない（作者に戻す。設計の版が承認を持たない時は、設計の PR を監査し直して新しい版にする）。`blocking` の後は門が止める。
+- `unit_design` の時の (1a)〜(1d) の手での照合を、「門の JSON の `design_binding` を読み、5.3u の失敗が無く `result` が PASS であること」に替える（F1・F2 の判断を門の 1 か所にする、S3）。替えるのは、その repo の pin が呼ぶ門が 5.3u で PASS を出せるようになってから（shirube は §5 の 3、aun は §5 の 4 の後）。それまでは門の 5.3u が `NOT_CHECKED` なので、統合する席は今の (1a)〜(1d) を続ける（新旧が同居する間の手順。S6）。判定 5 が `report-only` の間は、merge 担当が merge の直前にこれを確かめ、FAIL なら merge しない（作者に戻す。設計の版が承認を持たない時は、設計の PR を監査し直して新しい版にする）。`blocking` の後は門が止める。
 - F3（作者の受領）は、作る単位の設計の記録の PR 自身を統合する時に、統合する席がその統合の直前に確かめる（今の T129 の条件のまま。122 行に、設計の記録の PR は統合の前に作者の受領と監査席の Approve がそろうことと、その設計監査の項目集合の `scope` に設計の file の path を書くことを書く）。後の PR の門と merge 担当は、F3 を確かめ直さない。
 - 117 行の「5.3u は門の段階に関わらず承認を確かめないので、判定 5 が blocking になってもこの確かめは続く」は、門が F1・F2 を確かめるようになるので消す。
 
@@ -104,13 +104,13 @@ block の形（`approval` は `{ "kind": "unit_design" }` だけ）、PR の `de
 | `templates/PULL_REQUEST_TEMPLATE.md` | 判定 5 の説明の文に、設計の記録の PR は段が `design` の監査を受け、その項目集合の `scope` に設計の file の path を書き、監査席の Approve と作者の受領の後に統合すること |
 | 試験 | §4 |
 
-実装の PR（R2）は保護面（`.github/**`・`.shirube/**`）に触れず、規範の文書も変えない（R3 の PR で先に変える）。
+実装の PR 2a・2b（R2）は保護面（`.github/**`・`.shirube/**`）に触れず、規範の文書も変えない（R3 の PR で先に変える）。
 
 ## 4. 試験
 
 | # | 場合 | 期待 |
 |---|---|---|
-| T1 | 正例: shirube#75 の [OBS] の形（統合済み、H の設計の file が `design_sha256` と同じ、Approve の本文が依頼と返却の指紋を持ち今の bytes と同じ、どちらも Approve より前から編集なし、依頼が `design` 段で `design_pr`@H を対象、項目集合の `scope` が P を名指す、P が変更 file にある、block の `audit` が Approve の本文と同じ、Approve と返却に編集の履歴が無い） | 5.3u は失敗を出さず、ほかも通れば `result` = PASS。**今の本体では `NOT_CHECKED`**（Red → Green） |
+| T1 | 正例（2b の後）: shirube#75 の [OBS] の形（統合済み、H の設計の file が `design_sha256` と同じ、Approve の本文が依頼と返却の指紋を持ち今の bytes と同じ、どちらも Approve より前から編集なし、依頼が `design` 段で `design_pr`@H を対象、項目集合の `scope` が P を名指す、P が変更 file にある、block の `audit` が Approve の本文と同じ、Approve と返却に編集の履歴が無い） | 5.3u は失敗を出さず、ほかも通れば `result` = PASS。**今の本体では `NOT_CHECKED`**（Red → Green は 2b で。2a の後は reason が「(j) が無い」の `NOT_CHECKED`） |
 | T2 | `design_pr` が統合されていない | FAIL `5.3u` |
 | T3 | H の設計の file の SHA-256 が `design_sha256` と違う | FAIL `5.3u` |
 | T4 | 当たる Approve が無い（review が無い・`commit_id` が H でない・`submitted_at` が T より後・本文の JSON が無い） | FAIL `5.3u` |
@@ -129,9 +129,9 @@ block の形（`approval` は `{ "kind": "unit_design" }` だけ）、PR の `de
 | T17 | P が `design_pr` の変更 file に無い（その PR より前から H にあった設計） | FAIL `5.3u` |
 | T18 | block の `audit` が Approve の本文の `request`・`request_digest`・`review` と違う、block が無い | FAIL `5.3u` |
 | T19 | review の一覧・変更 file の一覧で、当たる物が 2 頁目にある | 見つけて判断する |
-| T20 | 読み取りの失敗（PR・変更 file・review・file・comment・GraphQL のどれか。GraphQL の応答の `errors`、null の node、`__typename`・`databaseId` の食い違いを含む） | FAIL（`NOT_CHECKED` にしない） |
+| T20 | 読み取りの失敗（PR・変更 file・review・file・comment・GraphQL のどれか。GraphQL の応答の `errors`、null の node、`__typename`・`databaseId` の食い違いを含む） | FAIL（`NOT_CHECKED` にしない）。GraphQL の場合は 2b で足す |
 | T21 | `design_ref` の repo が今の PR の repo と違う | FAIL `5.3u` |
-| T22 | (a)・(b) が当たらない時、それより後の材料を読まない | 呼ばれたら失敗する偽物の口（REST と GraphQL の両方）を渡しても、FAIL の reason が (a)・(b) |
+| T22 | (a)・(b) が当たらない時、それより後の材料を読まない | 呼ばれたら失敗する偽物の口（REST と GraphQL の両方。GraphQL の口は 2b で足す）を渡しても、FAIL の reason が (a)・(b) |
 | T23 | `kind` が無い・`owner_decision` | 今の 5.3・5.4 の試験がそのまま通る |
 | T24 | `report-only` で 5.3u が FAIL / `blocking` で 5.3u が FAIL | 前者は門が止まらず FAIL を記録、後者は止まる（今の判定 5 と同じ） |
 | T25 | `design-gate.mjs` が時刻・環境・網を読まない | import が `node:crypto` だけのまま（今の試験の形） |
@@ -152,16 +152,17 @@ block の形（`approval` は `{ "kind": "unit_design" }` だけ）、PR の `de
 | 0 | この設計の記録（docs だけ） | R1 | この file と項目集合 | 無し（事前の設計監査） |
 | 0b | aidlc-shirube の要件の記録を合わせる | ― | §1.2 のとおり、[U4] §5 の 0b と一緒に書き換える | 要約の確認と段の承認（AI-DLC の会話の手。下の 2 回とは別に数える） |
 | 1 | 判定 5 の規範の改版 | R3 | `distribution.md` の §4 の判定 5 の行（5.3u）、117 行（§3.3）、122 行（作者の受領と Approve、項目集合の `scope` に設計の path）、§8 の手順の項、`sds-gate-judgment-5.md` の書き足し、PR の雛形の文。T28 | **exact-head 1 回**（R3。[U4C] の 2） |
-| 2 | U4 の続きの実装 | R2 | §3.1〜§3.2、T1〜T27・T29〜T34 | 無し（1 の統合の後） |
-| 3 | shirube 自身の版上げ | R4（保護面） | 自己用の caller の `uses` の commit と pin の `sds_commit`・`files` の指紋を、2 の統合 commit に一緒に上げる（[U4] §5 の 3 と同じ手順、kit は使わない） | **exact-head 1 回**（`.github/**`・`.shirube/**`） |
-| 4 | aun の版上げ | ― | 2 以降の kit で `kit.mjs upgrade --target <aun>`。差分は kit の file だけ、kit check OK、pin の 2 つの mode と `delivery_plan` が前と同じ | 無し（[KIT]） |
+| 2a | U4 の続きの実装 その 1（(a)〜(i)） | R2 | §3.1 の (a)〜(i) と §3.2 の REST の読み取り。(a)〜(i) が全部通っても、(j) が無い間は 5.3u を `NOT_CHECKED`（reason `5.3u (a)-(i) passed; the edit history check (j) is not implemented yet`）にし、PASS を出さない。1 つでも当たらなければ FAIL。試験 T2〜T19・T21・T23〜T29 と、T20・T22 の REST の部分、T1 の 2a の形（期待 = 上の `NOT_CHECKED`） | 無し（1 の統合の後） |
+| 2b | U4 の続きの実装 その 2（(j)） | R2 | §3.1 の (j) と §3.2 の GraphQL の読み取り（別の口）。(a)〜(j) が全部通れば 5.3u は失敗を出さず、ほかも通れば PASS。試験 T30〜T34 と、T20・T22 の GraphQL の部分、T1 を PASS の期待に替える | 無し（2a の統合の後） |
+| 3 | shirube 自身の版上げ | R4（保護面） | 自己用の caller の `uses` の commit と pin の `sds_commit`・`files` の指紋を、2b の統合 commit に一緒に上げる（2a だけの commit には上げない）（[U4] §5 の 3 と同じ手順、kit は使わない） | **exact-head 1 回**（`.github/**`・`.shirube/**`） |
+| 4 | aun の版上げ | ― | 2b 以降の kit で `kit.mjs upgrade --target <aun>`。差分は kit の file だけ、kit check OK、pin の 2 つの mode と `delivery_plan` が前と同じ | 無し（[KIT]） |
 
 - Owner の手は 2 回（1 の R3 と 3 の R4）。0b は別に数える。
 - 1 の確かめ: R3 の事前の設計監査は、この記録（0）の監査が兼ねる（1 はこの記録の §3 を文書に写す PR）。1 の実装監査で、写した文がこの記録と食い違わないことを見る。
 - 3 の確かめ: 統合の後、次の shirube の PR の `sds-gate-self` の実行が新しい commit を呼んだことと、`design_binding` の 5.3u の出方を読み戻して #24 に書く。GraphQL の編集の履歴が workflow の token（`contents`・`pull-requests`・`issues` の read）で読めることは、ここで初めて実物で確かめる（§2 の測定は `watchout` の token）。読めなければ 5.3u は FAIL（`report-only` なので止まらない）として出るので、止める形に替える前に分かる。その時は作る席が止めて arc に返す。
 - 4 の確かめ: aun の最初の `unit_design` の PR（aun の u1 の設計の記録の次の改版。段が `design` の監査（項目集合の `scope` に設計の path）と Approve を受けて統合し、その後の実装の PR が名指す）で、5.3u が PASS になることを読み戻す。
 
-見積もり: 2 は code 約 80 行（`gate.mjs` の材料の読み取り 約 35、`design-gate.mjs` の照合 約 45）・試験 約 380 行。追加 400 行・20 file の内。新しい外部の依存は無い。判定 5 の内訳の予算（250 行、OD-SHIRUBE-GATE5-BUDGET-150-TO-250-20261030-001）の残りを作る席が `git diff --numstat` で測り、超える見込みなら作る前に止めて arc に返す（arc が Owner に伺う）。
+見積もり（追加行。`pr-size.mjs` と同じく、削除で相殺せず、試験の file も数える）: 2a = `gate.mjs` +25（REST の材料の読み取り）、`design-gate.mjs` +35（(a)〜(i) の照合）、新しい試験の file `tests/design-gate-unit-approval.test.mjs` +250、今の試験の file の置き換え（[U4] の T8・T10 の期待）+10、合計 約 320 行・4 file。2b = `gate.mjs` +12（GraphQL の口と query 1 つ）、`design-gate.mjs` +15（(j) の照合と PASS への切り替え）、試験 +90（T30〜T34、T20・T22 の GraphQL、T1 の期待の替え）、合計 約 117 行・3 file。どちらも追加 400 行・20 file の内。作る席は PR を出す前に、その branch で `node scripts/hygiene/pr-size.mjs`（固定の profile）を流して PASS を確かめ、400 行を超える見込みなら作る前に止めて arc に返す（上限・試験・項目は変えない。分け方を arc が直す）。新しい外部の依存は無い。判定 5 の内訳の予算（250 行、OD-SHIRUBE-GATE5-BUDGET-150-TO-250-20261030-001）の残りを作る席が `git diff --numstat` で測り、超える見込みなら作る前に止めて arc に返す（arc が Owner に伺う）。
 
 ## 6. 採らなかった案
 
@@ -184,7 +185,7 @@ block の形（`approval` は `{ "kind": "unit_design" }` だけ）、PR の `de
 
 - 資格情報は作らない。門が足す読み取りは、PR・PR の変更 file・contents・issue の comment・PR の review の GET と、編集の履歴を読む GraphQL の query 1 つ（mutation なし）で、呼出し側が既に持つ `contents: read`・`pull-requests: read`・`issues: read` の内（workflow の権限は変えない）。workflow の token で GraphQL が読めることは未測定で、§5 の 3 の確かめで初めて見る。
 - API の呼び出しが、`unit_design` を名指す PR だけ 8 回ほど増える（PR・変更 file の一覧・review の一覧・file 2 つ・comment 2 つ・GraphQL 1 つ）。
-- 戻し方: 1（R3）・2 は PR の revert（1 の revert は R3）。3 は自己用の caller と pin を前の commit に戻す PR（保護面）。4 は aun の pin の `sds_commit` を戻す版上げの PR。
+- 戻し方: 1（R3）・2a・2b は PR の revert（1 の revert は R3。2b だけを戻すと 5.3u は `NOT_CHECKED` に戻る）。3 は自己用の caller と pin を前の commit に戻す PR（保護面）。4 は aun の pin の `sds_commit` を戻す版上げの PR。
 - 表・記録は書かない。
 
 ## 8. 既知の弱み
