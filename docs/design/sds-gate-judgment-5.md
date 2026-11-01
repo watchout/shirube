@@ -169,3 +169,59 @@ PR（`watchout/shirube`）: #51（head `acc76dae`、統合 `7f50460c`）、#54�
 
 受入は [DR] §4 の T1〜T22。判定 5 の code と試験は 2a（T1〜T7、T19〜T22）と 2b（T8〜T14、T16〜T18）で入り、この節を書く PR は文書の文の照合（T15、`tests/workflow-contract.test.mjs`）だけを持つ。
 実測: この節の PR は文書と T15 だけで、5.3u・5.9 の code は無い。挙動の実測は 2a・2b の後。
+
+## 12. U4 の続きによる書き足し（設計の記録 `u4-unit-design-approval.md` 版 5。実装は U4 の続きの実装の PR = R2 の 2a・2b）
+
+記号: [DR2] = `docs/design/u4-unit-design-approval.md` 版 5（shirube#81、設計監査 5 回目 PASS = shirube#81 6552062192、統合 commit `6cee6721`）。[U4C] = Owner の決定 OD-SHIRUBE-U4-CONTINUATION-DESIGN-APPROVAL-CHECK-START-20261031-001（iyasaka-arc#49 6540758548、本文 SHA-256 `d3fc3353e1beda01ad93a453cfd81fb6b49216070b7f9cc981e09a9ec6634a8b`）。[APV] = Q-AUDIT-AUTO-APPROVE-20261008（iyasaka-arc#52 6049850367、本文 SHA-256 `0c456b1202c4a693637c0d7e29b764341611d78cc9a3550e5d9ff9ec41f1b41e`。監査席が、独立監査 PASS と同版の checker の機械受領がそろった PR の対象 head に GitHub の Approve を付ける。Approve は統合の承認ではない）。
+この節は意味を足さず、[DR2] §1.1・§3.1〜§3.3・§5 を判定 5 の契約に写す。§11.2 の「5.3u 作る単位の設計」の項と §11.3 の最初の項（統合する席の 4 つの確かめ）は、今の code（5.3u が承認を確かめず `NOT_CHECKED`）の記述で、U4 の続きの実装（2b）が入った後は、この節の 12.2〜12.4 に替わる。§1〜§11 は変えない。5.1〜5.9 の意味（5.3u の `unit_design` の時の確かめを除く）、段階（§4 の 1、`design_binding_mode`）、§8 の blocking の前の未決 2 点 (a)(b)、判定 1〜4、固定した checker は変えない。
+
+### 12.1 承認として確かめる事実
+
+作る単位の設計の版が「承認済み」とは、次の 3 つがそろうこと。門は F1・F2 を機械で確かめ、F3 は確かめない。
+
+| 事実 | 中身 | 門の確かめ |
+|---|---|---|
+| F1 統合 | その版が `design_pr` の PR で統合された | する（12.2 の (a)〜(c)） |
+| F2 設計監査の PASS | 名指した設計の file（path と bytes）を範囲にし、`design_pr` のその head を対象にした、段が `design` の独立の監査が PASS で返り、監査席がその依頼と返却の bytes を確かめて、その head に Approve を付けた | する（12.2 の (d)〜(j)） |
+| F3 作者の受領 | 設計の PR の作者が、その返却への受領を書いた | しない。設計の PR の統合の条件として、統合する席がその統合の直前に確かめる（`distribution.md` §4.1） |
+
+### 12.2 5.3u の確かめ（[DR2] §3.1）
+
+`approval.kind` が `unit_design` の時、門は 5.3・5.4 の代わりに次の (a)〜(j) を確かめる。読むのは GitHub の読み取りだけ（REST の GET = PR・PR の変更 file の一覧・contents・issue の comment 2 つ・PR の review の一覧、GraphQL の query 1 つ = Approve と返却の編集の履歴。mutation は使わない）。PR の code は checkout も実行もしない。
+
+- (a) `design_ref` の repo が、今の PR の repo と同じ（`design_pr` は同じ repo の PR の番号）。
+- (b) `design_pr` の PR が統合済み（`merged_at` がある）。その `head.sha` を H、`merged_at` を T とする。
+- (c) `design_ref` の path（以下 P）の file を H で読み、bytes の SHA-256 が今の PR の `design_sha256` と同じ。
+- (d) Approve を選ぶ: `design_pr` の PR の review を全頁読み、`commit_id` が H、`submitted_at` ≤ T、`state` が `APPROVED` で、本文に JSON の block がちょうど 1 つあり、その block が `request`・`request_digest`・`review`・`review_digest`・`verdict: "RECEIPT_ACCEPTED"`・`checker_sha256` を持ち、`request` と `review` がどちらも `design_pr` の PR 自身の comment の URL である review のうち、`submitted_at` が最も新しい 1 つを A とする。無ければ FAIL（取り下げて `DISMISSED` になった Approve はここで外れる）。A の投稿者を X（監査席）とする。X が H に A より後（T 以前）に `CHANGES_REQUESTED` の review を出していれば FAIL。
+- (e) 監査の依頼（A の `request` の comment）: 投稿者が依頼の受付の account（固定の checker と同じ値）、本文の SHA-256 が A の `request_digest` と同じ、`updated_at` が A の `submitted_at` 以前（Approve より後に編集されていない）。本文の JSON の block が `sds-audit-request/1`、`audit_stage` が `design`、`targets` に今の repo の `design_pr` の PR と H の 1 つ、`item_set` が対象の `id`・`path`・`sha256` を持ち、`verifier_sha256` が A の `checker_sha256` と同じで、`reviewer.github` が X と同じ。
+- (f) 監査の返却（A の `review` の comment）: 投稿者が X、本文の SHA-256 が A の `review_digest` と同じ、`updated_at` が A の `submitted_at` 以前。本文の JSON の block が `sds-audit-review/1`、`request_digest` が A の `request_digest` と同じ、`targets` が依頼の対象と H、`blocking_findings` が空の配列、`items` が空でなく全部の `result` が `PASS`。
+- (g) 監査の範囲: 依頼の `item_set.path` の file を H で読み、bytes の SHA-256 が `item_set.sha256` と同じで、JSON の `scope`（文字列）が P をそのままの文字列で含む。
+- (h) 設計の PR の変更: `design_pr` の PR の変更 file の一覧（全頁、rename は旧と新の両方）に P がある。
+- (i) 設計の PR の block: `design_pr` の PR 本文の `sds-pr` の block の `audit` が、A の `request`・`request_digest`・`review` と同じ。
+- (j) 編集の履歴: GraphQL の query 1 つで、A と返却の comment の `lastEditedAt` と `userContentEdits`（`totalCount`・`pageInfo.hasNextPage`・各版の `editor.login`・`editedAt`・`deletedAt`）を読み、node の `__typename` と `databaseId` が REST で読んだ物と同じことも確かめる。A は `lastEditedAt` が null で `totalCount` が 0（監査席自身の編集も受けない）。返却は、`lastEditedAt` が null で `totalCount` が 0 か、`lastEditedAt` が A の `submitted_at` 以前、`hasNextPage` が false（版が 100 を超えれば FAIL）、どの版も `editor.login` が X（`editor` が null の版があれば FAIL）、どの版も `deletedAt` が null（消された版は FAIL）、どの版の `editedAt` も A の `submitted_at` 以前、の全部が当たる。食い違い（`lastEditedAt` があるのに版が 0、版があるのに `lastEditedAt` が null）、node が読めない、応答に `errors` がある時は FAIL。依頼の comment の履歴は読まない（依頼の今の bytes は (e) で A の `request_digest` と、(f) で返却の `request_digest` と同じ）。
+
+- (a)〜(j) が全部通れば 5.3u は失敗を出さない。ほかの確かめ（5.1・5.2・5.5〜5.9）も通れば `design_binding.result` は PASS。
+- 1 つでも当たらなければ FAIL（reason は `5.3u` で始まり、何が当たらないかを書く）。読めない時（API の失敗）は FAIL（`5.0a` と同じく `NOT_CHECKED` にしない）。
+- 段階は今のまま（`report-only` は全体の verdict を変えず、`blocking` は FAIL で止める）。
+- 門は `design_pr` に固定の checker を当てない（統合した PR は開いていないので、checker は必ず拒む）。監査の受け入れの判断（項目集合・証拠の照合）は監査席の checker と Approve の 1 か所にあり、門は返却の verdict と、Approve・依頼・返却・項目集合・変更 file の結び付き（段・PR・head・path・account・指紋・時刻）だけを読み、項目の意味や証拠を監査し直さない。
+
+### 12.3 2a の間と 2b の後（[DR2] §5）
+
+- **2a の後・2b の前**: (a)〜(i) と REST の読み取りだけが入る。(a)〜(i) が全部通っても、(j) が無いので、5.3u は `NOT_CHECKED`（reason `5.3u (a)-(i) passed; the edit history check (j) is not implemented yet`）を出し、`design_binding.result` を PASS にしない。1 つでも当たらなければ FAIL。
+- **2b の後**: (j) と GraphQL の読み取りが入り、(a)〜(j) が全部通れば 5.3u は失敗を出さず、ほかも通れば PASS になる。
+- **2a の前（今の code）**: §11.2 のとおり、承認を確かめず `NOT_CHECKED` の印だけを出す。
+- 各 repo の pin が 2b 以降の門を呼ぶまで、その repo の 5.3u は NOT_CHECKED のままで、統合する席の手の確かめ（`distribution.md` §4.1）が続く（新旧が同居する間の手順）。呼ぶようになった後は、門の JSON の `design_binding` を読む形に替わる。
+
+### 12.4 統合する席の確かめと、設計の記録の PR の条件
+
+- 統合する席の手順の置き換えの条件・順序と、F3 の扱いは `distribution.md` §4.1 の判定 5 の行に書く（ここには繰り返さない、S3）。
+- 設計の記録の PR は、段が `design` の監査を受け、その項目集合の `scope` に設計の file の path を書き、統合の前に作者の受領と監査席の Approve がそろう（`distribution.md` §4.1 の表の下の段落。5.3u の (d)・(g) が読む）。
+
+### 12.5 既知の弱み（[DR2] §8）
+
+F3（作者の受領）は門が確かめない（形が決まっていないので、機械で読めない）。Approve は監査席の手順（[APV]）に依り、門は条件を確かめ直さない（返却の verdict と Approve の本文の `verdict` を読む）。書き込める者は他人の comment や review の本文も編集できるので、Approve の本文の編集は 1 つでも FAIL、返却の監査席以外の編集と Approve より後の編集も FAIL、依頼は返却が結んだ bytes と同じ物だけを受ける。これは GitHub の編集の履歴が、編集した者と時刻を残すことに依る（他人が編集した版と消された版の履歴の形は観測していないので、消された版はそれだけで FAIL、`editor` が null の版も FAIL）。GraphQL を workflow の token で読めるかは、自己用の版上げ（3）の後に初めて分かる（読めなければ FAIL で、PASS にはならない）。監査席の account は依頼の `reviewer.github` と Approve の投稿者が同じことで確かめる（固定の checker も同じ信頼の置き方）。範囲は項目集合の `scope` の文字列で見て、書き方の意味は見ない。統合の時の状態を承認とし、統合の後の編集と取り下げは FAIL になる。意味は見ない（独立の監査と受入の試験の仕事）。
+
+### 12.6 試験の計画（[DR2] §4）と実測
+
+受入は [DR2] §4 の T1〜T34。code の試験は 2a（(a)〜(i)）と 2b（(j)）で入り、この節を書く PR は文書の文の照合（T28、`tests/workflow-contract.test.mjs`）だけを持つ。
+実測: この節の PR は文書と T28 だけで、5.3u の code は無い。挙動の実測は 2a・2b の後。

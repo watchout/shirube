@@ -1,0 +1,37 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@6cee672144fe0a87f2105e5a0d13403b3d482e8e/docs/sds/audit-method.md",
+  "scope": "Shirube U4 の続きの 1 段目 = 判定 5 の規範の改版（R3）の実装監査: docs/sds/distribution.md・docs/design/sds-gate-judgment-5.md・templates/PULL_REQUEST_TEMPLATE.md の書き足しと、tests/workflow-contract.test.mjs の文の照合の試験（T28）、本項目集合の file docs/audit/u4c-normative-impl-audit-items.json。記法: [DR] = 設計の記録 docs/design/u4-unit-design-approval.md（版 5、shirube main 6cee672144fe0a87f2105e5a0d13403b3d482e8e、SHA-256 8cc4e2544bb7751b657e39cd07d5926b32610ce8bbac23076b7d0b43ddd3e486、設計監査 5 回目 PASS = shirube#81 6552062192）、[U4C] = Owner の決定 OD-SHIRUBE-U4-CONTINUATION-DESIGN-APPROVAL-CHECK-START-20261031-001（iyasaka-arc#49 6540758548、本文 SHA-256 d3fc3353e1beda01ad93a453cfd81fb6b49216070b7f9cc981e09a9ec6634a8b）。R3 の事前の設計監査は [DR] の監査が兼ねる（[DR] §5 の「1 の確かめ」）。この監査は、写した文が [DR] と食い違わないかを見る。全 6 項目必須。",
+  "items": [
+    {
+      "id": "U4CN-1",
+      "criterion": "範囲: この PR の変更 path が docs/sds/distribution.md・docs/design/sds-gate-judgment-5.md・templates/PULL_REQUEST_TEMPLATE.md・tests/workflow-contract.test.mjs・docs/audit/u4c-normative-impl-audit-items.json だけで、scripts/**・kit/**・.github/**・.shirube/**・docs/sds/consumers.json に触れていない。PR 本文の sds-pr block が risk_class R3 で、changed_paths が diff と一致し、control_handoff が作業指示の comment の URL と本文 SHA-256 を持つ。CI が成功している。",
+      "basis": "audit-method、[DR] §3.5・§5 の 1"
+    },
+    {
+      "id": "U4CN-2",
+      "criterion": "判定 5 の行: distribution.md §4 の判定 5 の説明に、5.3u（approval.kind が unit_design の時、門は [DR] §3.1 の (a)〜(j) を確かめる。読むのは GitHub の読み取りだけ。全部通れば 5.3u は失敗を出さない。(j) を作る前（[DR] §5 の 2a の後・2b の前）は (a)〜(i) が全部通っても NOT_CHECKED で PASS にしない。1 つでも当たらなければ FAIL、読めなければ FAIL で NOT_CHECKED にしない。門は design_pr に固定の checker を当てず、項目の意味を監査し直さない）が、[DR] §3.1・§5 と同じ意味で書かれている。owner_decision と kind 無しの 5.3・5.4、5.9 の読み方は変えていない。",
+      "basis": "[DR] §3.1・§3.2・§5、[U4C]"
+    },
+    {
+      "id": "U4CN-3",
+      "criterion": "統合する席の手順: distribution.md §4.1 の判定 5 の行（今の (1a)〜(1d)）に、unit_design の時の手の照合を「門の JSON の design_binding を読み、5.3u の失敗が無く result が PASS であること」に替えること、替えるのはその repo の pin が呼ぶ門が 5.3u で PASS を出せるようになってから（shirube は [DR] §5 の 3、aun は §5 の 4 の後）で、それまでは今の (1a)〜(1d) を続けること、report-only の間は merge 担当が merge の直前に確かめて FAIL なら merge しないことが、[DR] §3.3 と同じ意味で書かれている。「5.3u は門の段階に関わらず承認を確かめないので、判定 5 が blocking になってもこの確かめは続く」の文が、[DR] §3.3 のとおり消えるか、上の同居の間の手順に置き換わっている。",
+      "basis": "[DR] §3.3"
+    },
+    {
+      "id": "U4CN-4",
+      "criterion": "設計の記録の PR の統合の前の条件: distribution.md の作る単位の設計の記録の PR（R1）の段落に、段が design の監査を受けること、その監査の項目集合の scope に設計の file の path を書くこと、統合の前に作者の受領と監査席の Approve がそろうこと（F3 は統合する席がその統合の直前に確かめ、後の PR の門と merge 担当は確かめ直さないこと）が、[DR] §1.1・§3.3 と同じ意味で書かれている。templates/PULL_REQUEST_TEMPLATE.md の判定 5 の説明の文が同じことを言い、PR の雛形のほかの文を変えていない。distribution.md §8 に、U4 の続きの PR の順（1 = この R3、2a・2b = R2、3 = shirube 自身の版上げ R4、4 = aun の版上げ）が [DR] §5 と同じに書かれている。",
+      "basis": "[DR] §1.1・§3.3・§3.5・§5"
+    },
+    {
+      "id": "U4CN-5",
+      "criterion": "判定 5 の設計の記録: docs/design/sds-gate-judgment-5.md に、5.3u の確かめ（[DR] §3.1 の (a)〜(j)。(j) は監査席の Approve と返却の編集の履歴を GraphQL で読み、Approve の本文に編集が 1 つも無いこと、返却の版が全部監査席の account による Approve より前の物で消された版が無いこと）と、2a の間の NOT_CHECKED と 2b の後の PASS の区別が足され、既存の 5.1〜5.9 の意味と、判定 5 を blocking にする前に決める点（§4.1）を変えていない。",
+      "basis": "[DR] §3.1・§3.2・§5"
+    },
+    {
+      "id": "U4CN-6",
+      "criterion": "T28: tests/workflow-contract.test.mjs と同じ形の文の照合の試験が、distribution.md に、統合する席が門の JSON の 5.3u を読む手順（と、それまで (1a)〜(1d) を続けること）と、設計の記録の PR が統合の前に作者の受領と Approve をそろえ、項目集合の scope に設計の path を書くことが書かれていることを確かめ、どれか 1 つを消した文では失敗する（負例）。既存の試験の期待を弱めていない。",
+      "basis": "[DR] §4 の T28"
+    }
+  ]
+}
