@@ -191,3 +191,45 @@ for (const [tag, words] of UNIT_DESIGN_CHECKS) test(`T15 mutation: check (${tag}
     assert.deepEqual(missingChecks(dist.replace(row, () => row.replace(sentence, () => weaker))), [tag]);
   }
 });
+
+// U4 continuation T28 (docs/design/u4-unit-design-approval.md §4, §5 step 1): the R3 sentences of distribution.md, each with a mutation that removes it or one of its key words.
+const TEXT = { all: (t) => t, row41: judgment5Row, row4: (t) => t.split("\n").find((l) => l.startsWith("| 5 design binding |")) ?? "", item9: (t) => t.split("\n").find((l) => l.startsWith("9. 作る単位の設計の承認の機械の確かめ")) ?? "" };
+const GATE_READS = [ // [tag, scope, anchor in the sentence, key words]
+  ["5.3u-checks", "row4", "次の (a)〜(j) を確かめる", ["(a)〜(j)", "確かめる", "§3.1"]],
+  ["5.3u-fail-closed", "row4", "1 つでも当たらなければ FAIL", ["1 つでも当たらなければ FAIL", "読めない時は FAIL", "`NOT_CHECKED` にしない"]],
+  ["5.3u-no-checker", "row4", "門は `design_pr` に固定の checker を当てず", ["固定の checker を当てず", "監査し直さない"]],
+  ["5.3u-before-j", "row4", "(j) を作る前", ["(a)〜(i)", "5.3u NOT_CHECKED", "PASS にしない"]],
+  ["seat-keeps-1a-1d", "row41", "5.3u で PASS を出せるようになる前", ["5.3u", "NOT_CHECKED", "blocking", "この確かめは続く"]],
+  ["seat-reads-gate-json", "row41", "5.3u で PASS を出せるようになった後", ["5.3u", "`design_binding`", "`result`", "PASS", "替える"]],
+  ["seat-report-only", "row41", "`report-only` の間は、merge 担当", ["merge の直前", "FAIL", "merge せず", "作者に戻す"]],
+  ["seat-f3", "row41", "作者の受領は門が確かめず", ["作者の受領", "門が確かめず", "統合する席", "確かめ直さない"]],
+  ["design-pr-stage", "all", "設計の監査は、段が `design` の依頼で受ける", ["`audit_stage` が `design`"]],
+  ["design-pr-scope", "all", "その依頼が固定する項目集合の `scope` に", ["`scope`", "設計の file の path"]],
+  ["design-pr-receipt-approve", "all", "統合の前に、作者の受領と、監査席が", ["作者の受領", "Approve", "そろう"]],
+];
+const sentenceIn = (scope, anchor) => scope.split("。").find((s) => s.includes(anchor)) ?? "";
+const missingReads = (t) => GATE_READS.filter(([, scope, anchor, words]) => { const s = sentenceIn(TEXT[scope](t), anchor); return s === "" || !words.every((w) => s.includes(w)); }).map(([tag]) => tag);
+const ITEM9_WORDS = ["1 = 本書 §4・§4.1・§8", "R3", "2a = ", "2b = ", "(j)", "R4", "4 = aun の版上げ", "PASS を出さない"];
+const missingItem9 = (t) => { const l = TEXT.item9(t); return l === "" ? ["item9"] : ITEM9_WORDS.filter((w) => !l.includes(w)); };
+
+test("T28: distribution.md writes the 5.3u check, the merging seat's switch to the gate JSON, the design record PR's conditions, and the order of the U4 continuation", () => {
+  const dist = file("docs/sds/distribution.md");
+  assert.deepEqual(missingReads(dist), []);
+  assert.deepEqual(missingItem9(dist), []);
+  assert.match(file("docs/design/sds-gate-judgment-5.md"), /^## 12\. U4 の続きによる書き足し/m);
+  assert.match(file("templates/PULL_REQUEST_TEMPLATE.md"), /design-stage audit[^.]*`scope`[^.]*Approve/);
+});
+for (const [tag, scope, anchor, words] of GATE_READS) test(`T28 mutation: sentence (${tag}) is reported missing when it, or any key word of it, is removed`, () => {
+  const dist = file("docs/sds/distribution.md"), sentence = sentenceIn(TEXT[scope](dist), anchor);
+  assert.notEqual(sentence, "", `sentence (${tag}) exists`);
+  for (const weaker of ["", ...words.map((w) => sentence.replaceAll(w, ""))]) {
+    assert.notEqual(weaker, sentence, "the mutation must change the sentence");
+    assert.deepEqual(missingReads(dist.replace(sentence, () => weaker)), [tag]);
+  }
+});
+test("T28 mutation: item 9 of §8 is reported missing when it, or any key word of it, is removed", () => {
+  const dist = file("docs/sds/distribution.md"), line = TEXT.item9(dist);
+  assert.notEqual(line, "", "item 9 exists");
+  for (const w of ITEM9_WORDS) assert.deepEqual(missingItem9(dist.replace(line, () => line.replaceAll(w, ""))), [w]);
+  assert.deepEqual(missingItem9(dist.replace(line, () => "")), ["item9"]);
+});
