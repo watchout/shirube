@@ -137,6 +137,34 @@ test("T24 a 5.3u FAIL is recorded and does not stop the gate in report-only, and
   assert.deepEqual([run(ev).out.verdict, run(ev).out.design_binding.result], ["PASS", "FAIL"]);
   assert.throws(() => run(ev, { mode: "blocking" }), /^Error: 5 design binding: 5\.3u \(b\)/);
 });
+// Audit round 1 (shirube#83 6556307897): BF-U4C2A-01 and BF-U4C2A-02. The return is compared by value, and a list is a list (no string or object that has a length).
+const viaGate = (ws) => ws.map((w) => run(w).out.design_binding);
+test("BF-U4C2A-01 the return's targets are compared by value: the same pair in the other key order is accepted; no list, a count, an id or a head that differs is not", () => {
+  const t = (over) => ({ id: "T", head: HEAD, ...over }), reordered = world({ review: { targets: [{ head: HEAD, id: "T" }] } });
+  assert.deepEqual([out(reordered), viaGate([reordered])[0].result], [HELD, "NOT_CHECKED"]); // control, in the pure function and through the gate
+  const odd = [[], [t(), t()], [t({ id: "Z" })], [t({ head: "f".repeat(40) })], "T", { length: 1, 0: t() }, null, undefined].map((targets) => world({ review: { targets } }));
+  assert.deepEqual(odd.map(out), odd.map(() => no("(f)")));
+  assert.deepEqual(viaGate(odd).map((d) => [d.result, d.reason.startsWith("5.3u (f)")]), odd.map(() => ["FAIL", true]));
+});
+test("BF-U4C2A-02 blocking_findings and items must be lists: a string, an object with a length, null or no field FAILs (f); a list with a null item FAILs; [] findings and a list of PASS pass", () => {
+  const odd = ["", "abc", { length: 0 }, null, undefined], pass = [{ id: "D1", result: "PASS" }];
+  const bad = [...odd.map((blocking_findings) => ({ blocking_findings })), ...[...odd.slice(1), pass[0].result, { length: 1 }, [null]].map((items) => ({ items }))].map((review) => world({ review }));
+  assert.deepEqual(bad.map(out), bad.map(() => no("(f)")));
+  assert.deepEqual(viaGate(bad).map((d) => [d.result, d.reason.startsWith("5.3u (f)")]), bad.map(() => ["FAIL", true]));
+  assert.deepEqual([world({ review: { blocking_findings: [], items: pass } })].map(out), [HELD]); // control: the shape the seat writes
+});
+test("a request whose targets or item_set is not a list or an object FAILs (e), and never throws", () => {
+  const requests = [{ targets: "T" }, { targets: { length: 1 } }, { targets: null }, { targets: undefined }, { item_set: null }, { item_set: "x" }, { reviewer: null }];
+  assert.deepEqual(requests.map((request) => out(world({ request }))), requests.map(() => no("(e)")));
+});
+test("every field of the request, the return and the Approve body, set in turn to null, a string, a number, a list or an object, FAILs and never throws", () => {
+  const odd = [null, "x", 0, 1, [], {}, [null], [{}], { length: 1 }, undefined], b = GOOD.bind;
+  const fields = { request: ["schema", "audit_stage", "targets", "item_set", "verifier_sha256", "reviewer"], review: ["schema", "request_digest", "targets", "blocking_findings", "items"] };
+  for (const [kind, keys] of Object.entries(fields)) for (const key of keys) for (const v of odd.filter((x) => !(key === "blocking_findings" && Array.isArray(x) && x.length === 0))) { // [] is the value a good return has
+    assert.equal(out(world({ [kind]: { [key]: v } }))[0], "FAIL", `${kind}.${key} = ${JSON.stringify(v)}`);
+  }
+  for (const key of Object.keys(b)) for (const v of odd) assert.equal(out(apart(GOOD, { body: fence({ ...b, [key]: v }) }))[0], "FAIL", `approve.${key} = ${JSON.stringify(v)}`);
+});
 test("T27 the account the gate takes requests from is the one the pinned checker takes", () => {
   const read = (f) => readFileSync(new URL(f, import.meta.url), "utf8");
   assert.equal(/RECEIVER = "([^"]+)"/.exec(read("../scripts/sds/design-gate.mjs"))[1], /c\.user\?\.login === "([^"]+)"/.exec(read("../scripts/hygiene/audit-admission.mjs"))[1]);

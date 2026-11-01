@@ -79,7 +79,9 @@ export function approve(e) { // (d): the newest APPROVED on the merged head, mad
 }
 const fresh = (c, who, want, a) => c?.user?.login === who && digest(c.body) === want && c.updated_at <= a.submitted_at; // the comment the Approve names, untouched since
 const target = (j, e) => { const t = (Array.isArray(j?.targets) ? j.targets : []).filter((x) => x?.repo === e.repo && x?.pr === e.pr && x?.head === e.head); return t.length === 1 && j.item_set?.target === t[0].id ? t[0].id : null; };
-const passed = (j, a, k, e) => j?.schema === "sds-audit-review/1" && j.request_digest === a.bind.request_digest && JSON.stringify(j.targets) === JSON.stringify([{ id: k, head: e.head }]) && j.blocking_findings?.length === 0 && j.items?.length > 0 && j.items.every((i) => i?.result === "PASS"); // (f)
+const size = (x, ok) => Array.isArray(x) && ok(x.length); // a real list whose length passes ok: a string or an object with a length is not one
+const only = (t, k, h) => size(t, (n) => n === 1) && t[0]?.id === k && t[0].head === h; // the one target, compared by value (the order of its keys is nothing)
+const passed = (j, a, k, e) => j?.schema === "sds-audit-review/1" && j.request_digest === a.bind.request_digest && only(j.targets, k, e.head) && size(j.blocking_findings, (n) => n === 0) && size(j.items, (n) => n > 0) && j.items.every((i) => i?.result === "PASS"); // (f)
 const asked = (j, k, b, a) => j?.schema === "sds-audit-request/1" && j.audit_stage === "design" && k !== null && j.verifier_sha256 === b.checker_sha256 && j.reviewer?.github === a.user?.login; // (e)
 const scoped = (j, e) => { const set = parsed(e.item); return digest(e.item) === j?.item_set?.sha256 && typeof set?.scope === "string" && set.scope.includes(e.path); }; // (g)
 const printed = (b, e) => { const p = parsed(/^```json sds-pr\r?\n([\s\S]*?)^```\s*$/m.exec(e.body)?.[1])?.audit; return p?.request === b.request && p.request_sha256 === b.request_digest && p.review === b.review; }; // (i)
