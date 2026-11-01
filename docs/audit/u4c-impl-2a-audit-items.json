@@ -1,0 +1,37 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@661454efeed2c951bc0ca9252b9c5074ad8345b4/docs/sds/audit-method.md",
+  "scope": "Shirube U4 の続きの 2a（R2）の実装監査: 5.3u の (a)〜(i) の照合（scripts/sds/design-gate.mjs）と REST の材料の読み取り（scripts/sds/gate.mjs）、試験 tests/design-gate-unit-approval.test.mjs と tests/design-gate-unit.test.mjs の期待の置き換え、本項目集合の file docs/audit/u4c-impl-2a-audit-items.json。記法: [DR] = 設計の記録 docs/design/u4-unit-design-approval.md（版 5、shirube main 661454efeed2c951bc0ca9252b9c5074ad8345b4 の bytes、SHA-256 8cc4e2544bb7751b657e39cd07d5926b32610ce8bbac23076b7d0b43ddd3e486、設計監査 5 回目 PASS = shirube#81 6552062192）、[N] = 規範（shirube#82、統合 661454ef。distribution.md §4 の判定 5 の 5.3u と §4.1 の統合する席の手順）、[BUD] = Owner の決定 OD-SHIRUBE-GATE5-BUDGET-250-TO-350-20261101-001（iyasaka-arc#49 6555256180、本文 SHA-256 3cb7b8d906cabc379d297e2d0d8a03f4071f378eb12e7e8ed05c38c6a4978950）。(j)（編集の履歴、GraphQL）は 2b の物で、この PR には入らない。全 6 項目必須。",
+  "items": [
+    {
+      "id": "U4C2A-1",
+      "criterion": "範囲: 変更 path が scripts/sds/design-gate.mjs・scripts/sds/gate.mjs・tests/design-gate-unit-approval.test.mjs・tests/design-gate-unit.test.mjs・docs/audit/u4c-impl-2a-audit-items.json だけ。.github/**・.shirube/**・docs/sds/**・docs/design/**・templates/**・kit/**・scripts/hygiene/** に触れていない。GraphQL の口・query・mutation の code が無い（(j) は 2b）。新しい外部の依存が無い。追加 400 行・20 file の中（pr-size.mjs と同じ数え方）。PR 本文の sds-pr block が risk_class R2、changed_paths が diff と一致、control_handoff が作業指示の comment の URL と本文 SHA-256 を持つ。CI が成功している。",
+      "basis": "audit-method、[DR] §3.5・§5 の 2a"
+    },
+    {
+      "id": "U4C2A-2",
+      "criterion": "(a)〜(i) の照合: approval.kind が unit_design の時、design-gate.mjs が [DR] §3.1 の (a) repo が同じ、(b) design_pr が統合済み（H = head.sha、T = merged_at）、(c) H の設計の file の SHA-256 が design_sha256 と同じ、(d) Approve A の選び方（commit_id = H、submitted_at ≤ T、APPROVED、本文の json block がちょうど 1 つで欄がそろい verdict が RECEIPT_ACCEPTED、request・review が design_pr 自身の comment の URL、最も新しい 1 つ、A の後の CHANGES_REQUESTED で FAIL）、(e) 依頼（投稿者 = 受付の account、指紋 = A の request_digest、updated_at ≤ A、audit_stage design、targets・item_set・verifier_sha256・reviewer.github）、(f) 返却（投稿者 = A の投稿者、指紋 = A の review_digest、updated_at ≤ A、request_digest・targets・blocking_findings が空・items が空でなく全部 PASS）、(g) 項目集合の H での指紋と scope が P を含む、(h) P が design_pr の変更 file（rename は旧と新）にある、(i) 設計の PR の sds-pr block の audit が A の request・request_digest・review と同じ、を [DR] と同じ意味で照合し、1 つでも当たらなければ reason が 5.3u で始まる FAIL を出す。owner_decision と kind 無しの 5.3・5.4、5.1・5.2・5.5〜5.9 の読み方を変えていない。",
+      "basis": "[DR] §3.1、[N]"
+    },
+    {
+      "id": "U4C2A-3",
+      "criterion": "PASS を出さない形と失敗の扱い: (a)〜(i) が全部通っても 5.3u は NOT_CHECKED で、reason が「5.3u (a)-(i) passed; the edit history check (j) is not implemented yet」であり、design_binding.result を PASS にする経路が無い。読み取りの失敗（PR・変更 file・review・file・comment）は FAIL で NOT_CHECKED にしない。(a)・(b) が当たらない時は、それより後の材料を読まない（呼ばれたら失敗する偽物の口を渡しても reason が (a)・(b)）。段階は今のまま（report-only は全体の verdict を変えず、blocking は FAIL で止める）。",
+      "basis": "[DR] §3.1・§3.2・§5 の 2a、§4 の T1・T20・T22・T24"
+    },
+    {
+      "id": "U4C2A-4",
+      "criterion": "読み取りと判断の分け方: gate.mjs が REST の GET だけで材料を読み（review と変更 file の一覧は全頁）、PR の code を checkout も実行もしない。design-gate.mjs の照合は純粋な関数で、import が node:crypto だけのまま、時刻・環境・網を読まない。依頼の受付の account（watchout）は門の側の 1 か所にだけ置かれ、固定の checker の file を読んで値が同じことを確かめる試験がある（T27）。門が design_pr に固定の checker を当てない（checker の口を呼ばれたら失敗する偽物にしても通る、T26）。項目の意味や証拠を監査し直していない（S3）。",
+      "basis": "[DR] §3.1 の末尾・§3.2、§4 の T25〜T27"
+    },
+    {
+      "id": "U4C2A-5",
+      "criterion": "試験: [DR] §4 の T2〜T19・T21・T23〜T29、T20・T22 の REST の部分、T1 の 2a の形（期待 = U4C2A-3 の NOT_CHECKED と reason）が、それぞれ負例と対照を持って書かれ、通る。BF-U4C-01（T7）・BF-U4C-04 の 2 回目（T8〜T11）・BF-U4C-05（T15）の反例が FAIL になる。[U4] の T8・T10（unit_design は常に NOT_CHECKED）の期待は T29 のとおり T1・T2・T7・T4 の形に置き換わり、弱めていない。置き換えた試験の名前が PR 本文に並ぶ。今の判定 1〜5 と kit の試験が全部通る。",
+      "basis": "[DR] §4"
+    },
+    {
+      "id": "U4C2A-6",
+      "criterion": "予算（[BUD]）: この PR が scripts/** に足した行（git diff --numstat の追加、空行と comment も数え、削除で相殺しない）が 60 行以下。hygiene の own_code の合計が .shirube/hygiene-profile.md の総枠（4,000）以下。数えた値と数え方を PR 本文に書いている。",
+      "basis": "[BUD]、[DR] §5 の見積もり"
+    }
+  ]
+}

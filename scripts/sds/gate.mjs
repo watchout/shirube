@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import { matchesAny, parseArgs } from "../hygiene/lib.mjs";
 import { verifyAudit } from "../hygiene/audit-admission.mjs";
 import { planBinding, planBlock, comment } from "./plan-binding.mjs";
-import { refOf, hex, show, designGate, failed } from "./design-gate.mjs";
+import { refOf, hex, show, designGate, failed, approve, fenced } from "./design-gate.mjs";
 import { parseYaml } from "./yaml.mjs";
 
 const RISKS = ["R0", "R1", "R2", "R3", "R4"];
@@ -29,14 +29,11 @@ function block(body) {
   need(v.schema === "sds-pr/1" && Array.isArray(v.changed_paths), "the block needs schema sds-pr/1 and changed_paths");
   return v;
 }
-function files(repo, pr, api) {
+function pages(path, api) { // every page of a list, 100 to a page
   const out = [];
-  for (let page = 1; ; page += 1) {
-    const batch = api(`repos/${repo}/pulls/${pr}/files?per_page=100&page=${page}`);
-    out.push(...batch.map((f) => ({ path: f.filename, from: f.previous_filename })));
-    if (batch.length < 100) return out;
-  }
+  for (let page = 1; ; page += 1) { const batch = api(`${path}?per_page=100&page=${page}`); out.push(...batch); if (batch.length < 100) return out; }
 }
+const files = (repo, pr, api) => pages(`repos/${repo}/pulls/${pr}/files`, api).map((f) => ({ path: f.filename, from: f.previous_filename }));
 // The kit's own paths always stay protected; the base pin can only add to them. Only a missing pin
 // (HTTP 404) falls back to the defaults; any other read or parse failure fails closed.
 function protectedPaths(ctx, api) {
@@ -90,6 +87,18 @@ function approvalOf(block, api) { // null when approval.ref has no valid shape (
   const m = block?.approval?.kind === "unit_design" ? null : refOf(block?.approval?.ref);
   return m ? read("the approval comment", () => api(`repos/${m[1]}/issues/comments/${m[2]}`).body) : null;
 }
+function unitEvidence(d, m, repo, api) { // 5.3u (a)-(i): what design-gate judges, read with GETs only; (a) and (b) are judged on the PR alone, so when one fails nothing else is read
+  const get = (what, path) => read(what, () => api(path)), pr = get("the design PR", `repos/${repo}/pulls/${d.design_pr}`);
+  const e = { repo, pr: d.design_pr, designRepo: m[1], want: d.design_sha256, path: m[3], head: pr.head?.sha, merged: pr.merged_at, body: pr.body ?? "" };
+  if (m[1] !== repo || typeof pr.merged_at !== "string") return e;
+  const at = (path) => Buffer.from(get(path, `repos/${repo}/contents/${path.split("/").map(encodeURIComponent).join("/")}?ref=${e.head}`).content ?? "", "base64");
+  Object.assign(e, { got: createHash("sha256").update(at(m[3])).digest("hex"), reviews: read("the reviews", () => pages(`repos/${repo}/pulls/${d.design_pr}/reviews`, api)), files: read("the changed files", () => files(repo, d.design_pr, api)) });
+  const a = approve(e), comment = (url) => get(url, `repos/${repo}/issues/comments/${url.split("-").pop()}`);
+  if (a === null) return e;
+  Object.assign(e, { request: comment(a.bind.request), review: comment(a.bind.review) });
+  const path = fenced(e.request.body)?.item_set?.path;
+  return typeof path === "string" ? { ...e, item: at(path).toString("utf8") } : e;
+}
 function planOf(binding, b, { api, parse }) { // judgment 4's plan, read again only when judgment 4 passed, with judgment 4's own reader (S3)
   const ref = binding.comment_ref ?? b?.comment_ref, digest = binding.comment_sha256 ?? b?.comment_sha256; // the new form has the gate's own resolved comment
   return binding.result === "PASS" ? read("the plan comment", () => { const p = planBlock(comment(ref, digest, "5", api), binding.plan_id, binding.generation, parse); need(p, "the plan block judgment 4 chose is not in the comment"); return p; }) : null;
@@ -103,13 +112,13 @@ function outcome(mode, d, findings) {
   return { mode, result: bad.length > 0 ? "FAIL" : unit ? "NOT_CHECKED" : "PASS", design_id: d.design_id, version: d.version, ...(Number.isInteger(d.design_pr) && { design_pr: d.design_pr }),
     ...(bad.length > 0 ? { reason: bad[0].message } : unit && { reason: `${unit.message}; the other checks (5.9 included) did not fail` }), findings };
 }
-function designBinding(mode, { pr, effective, binding, paths }, io) {
+function designBinding(mode, { pr, effective, binding, paths, repo }, io) {
   if (mode === undefined || mode === "off") return { mode: mode ?? null, result: "NOT_CHECKED", reason: mode === "off" ? "design_binding_mode is off" : "the base pin has no design_binding_mode" };
   try {
     need(["report-only", "blocking"].includes(mode), `design_binding_mode must be off, report-only or blocking, not ${show(mode)}`);
     need(pr.design_binding, "5.0 no design_binding");
     const d = pr.design_binding, block = designBlock(d, io.api), b = pr.delivery_plan_binding;
-    return outcome(mode, d, judged(d, block, { approvalBody: approvalOf(block, io.api), plan: planOf(binding, b, io), boundNodeId: b?.node_id, riskIndex: RISKS.indexOf(effective), changedPaths: paths, matches: matchesAny, designPr: d.design_pr })); // 5.9: judgment 2's paths and the protected_paths matcher
+    return outcome(mode, d, judged(d, block, { approvalBody: approvalOf(block, io.api), plan: planOf(binding, b, io), boundNodeId: b?.node_id, riskIndex: RISKS.indexOf(effective), changedPaths: paths, matches: matchesAny, designPr: d.design_pr, evidence: () => unitEvidence(d, named(d), repo, io.api) })); // 5.9: judgment 2's paths and the protected_paths matcher; 5.3u's evidence is read when designGate asks
   } catch (error) { return { mode, result: "FAIL", reason: error.message }; }
 }
 function judgment5(mode, input, io) { // like judgment 4: a FAIL stops the gate unless the stage is report-only
@@ -132,7 +141,7 @@ export function gate({ repo, pr: number, head }, api = github, now = Date.now(),
   const request = RISKS.indexOf(effective) >= 2 ? audited(pr, ctx, api, now, verify) : null;
   const binding = planBinding(mode, { pr, ctx, paths, request }, { api, parse, controlSource, block });
   if (binding.result === "FAIL" && mode !== "report-only") throw Object.assign(new Error(`4 plan binding: ${binding.reason}`), { binding });
-  const design = judgment5(design_binding_mode, { pr, effective, binding, paths }, { api, parse });
+  const design = judgment5(design_binding_mode, { pr, effective, binding, paths, repo }, { api, parse });
   return { check: "sds-gate", verdict: "PASS", head: ctx.head, risk_class: declared, effective_risk: effective, protected_touched: protectedTouched, owner_approval: "NOT_CHECKED_BY_MACHINE", authorization: "NONE", plan_binding: binding, design_binding: design };
 }
 export const failure = (error, args) =>
