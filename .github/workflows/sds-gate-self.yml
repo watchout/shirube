@@ -16,6 +16,6 @@ permissions:
 jobs:
   sds-gate:
     if: ${{ github.event_name == 'pull_request_target' || github.event.issue.pull_request }}
-    uses: watchout/shirube/.github/workflows/sds-gate.yml@ff8ffe806ea3a27cca6b0a5f12933f87bc32881f
+    uses: watchout/shirube/.github/workflows/sds-gate.yml@4d314163f783b40c42ab5d0816cb2ebd48b5e2cd
     with:
       pr: ${{ github.event.pull_request.number || github.event.issue.number }}
