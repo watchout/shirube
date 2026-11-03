@@ -1,5 +1,5 @@
-<!-- arc:shirube-u1-design-revision:engine-judge:v11 -->
-## arc の設計の記録: Shirube U1 の設計の改版 v10（I1: 段の「済み」を AI-DLC の engine の判断で読む。v8 = §7 の追補で aun・onza に広げ、門の判定 6 として入れる。v9 = §7 の事前の設計監査 1 回目の指摘 3 つを直した版。v10 = 2 回目の指摘 1 つ（試験 19）を直した版。v11 = 3 回目の指摘 1 つ（試験 18 の onza の期待）を直した版。直した所は §7.10〜§7.12）
+<!-- arc:shirube-u1-design-revision:engine-judge:v12 -->
+## arc の設計の記録: Shirube U1 の設計の改版 v12（I1: 段の「済み」を AI-DLC の engine の判断で読む。v8 = §7 の追補で aun・onza に広げ、門の判定 6 として入れる。v9 = §7 の事前の設計監査 1 回目の指摘 3 つを直した版。v10 = 2 回目の指摘 1 つ（試験 19）を直した版。v11 = 3 回目の指摘 1 つ（試験 18 の onza の期待）を直した版。v12 = 4 回目の所見 OBS-R4-02（試験 9 の shirube の期待）と OBS-R4-03（題の版の表記）を直した版。直した所は §7.10〜§7.13）
 
 適用: R1〜R3、L1〜L6、S2・S4・S5・S8、OD-SHIRUBE-INCLUDE-AIDLC-NO-REINVENT-20261021-001（#49 6309035411）、OD-SHIRUBE-I1-ENGINE-STATE-COPY-DESIGN-REVISION-20261024-001（#49 6381170673）、OD-SHIRUBE-I1-UNIT-DONE-VIA-ENGINE-PARTS-WITH-BUN-20261025-001（#49 6389500200。索引の行 = iyasaka-org main 40e2f18f）、OI-LLM-CONTROL-BY-SCRIPT-MECHANISM-HOOK-MUST-20261024-001、OD-SHIRUBE-I1-DESIGN-ROUND6-WHOLE-COPY-20261025-001（#49 6393696963。索引の行 = iyasaka-org main 79ec8cd1）。v6（#57 6390523968）への設計監査 round 5 の返却（shirube#68 6392576496、BF-R5-01・02）と Owner の決定（入力を 1 つずつ数えて写し原典の一覧と照らす形をやめ、丸ごと写して指紋と engine の版を残す）を受けて §3-5 を書き直した。round 4 の返却（shirube#68 6392358644）は受付の BLOCK で、設計の中身を見ていない。v6 の答えのうち §3-5 に関わらない物は保つ。以下は v6 までの経緯。v2（#57 6389874375）への設計監査 round 2 の返却（shirube#68 6390071922、BF-R2-01〜06）と、shirube の席の確認（#24 6389980151・6390213665・6390265024）を受けて全体を書き直した。v2・v3（#57 6390136222）・v4（#57 6390236637）・v5（#57 6390272104）は置き換え（v3・v4 は監査に出す前に席の確認で直した）。v5 への設計監査 round 3 の返却（shirube#68 6390455033、BF-R3-01〜05）と、席の確認（#24 6390338940）を受けて直した。round 1 の指摘（BF-01〜07）への答えは保つ。対象 = U1 の Functional Design（entities.md・rules.md）と NFR Requirements の tech-stack-decisions.md。独立の監査の前の案。
 
@@ -117,7 +117,7 @@
 7b. 承認の記録: 2 つの shard に audit が分かれ、使う `UNIT_COMPLETED` が 2 つ目の shard にある → `sourceAuditRef` がその shard の相対 path になり、C2 の必須の欄がそろった承認の JSON が作れる。`resolveBoltDag` が `malformed` → 「確かめられない」。
 8. 途中の失敗・理由: 3 行目で engine が例外 → 何も置かない。既にある file と bytes が違う → 何も置かない。どの失敗でも、出す文は決まった code だけで、絶対 path を含まない。
 本物の engine で 1 回（席の作業場、PR に証拠）:
-9. Initialization の 3 段 = `exempt`、ideation・inception の段 = `approved`、U1 の設計 4 段 = `approved`、Code Generation = `started: true`・`not_approved`。#24 6381255682・6389980151 の実測と合う。
+9. shirube の作業場で作り手を動かし、**全部の行が engine の答えと同じ**になる（§7.8 の 19 の比べ方。v12 で、実測の値を期待に書く形をやめた）。照らしの値（監査の席と席が観測した値。試験の期待にはしない。扱いは §7.8 の 19 の照らしと同じ）: Initialization の 3 段 = `exempt`、ideation・inception の段 = `approved`、U1 の設計 4 段 = `approved`（#24 6381255682・6389980151 の実測、shirube#87 6597771127）、U1 の Code Generation = `not_approved`・`started: false`（shirube#87 6597771127 の OBS-R4-02。直接の snapshot も ledger も open が空。2026-10-24〜25 の実測の `started: true` とは違う）。作る時に engine の答えが照らしの値と違う行があれば、作る席は違う行と engine の部品の答えを PR 本文に書く。照らしで `approved` の行が `approved` でなくなっていた時（段の開き直しの疑い）だけ、作らずに止めて arc に返す。engine の答えを照らしの値に合わせて書き換えず、`started` を手で書き換えない。
 
 ### 5. 流れ
 1. Owner の決定 OD-SHIRUBE-I1-DESIGN-ROUND6-WHOLE-COPY-20261025-001 の索引の行は統合済み（iyasaka-org main 79ec8cd1）。
@@ -267,4 +267,13 @@ v7 の §1〜§6 は v7 のまま残す（§3-1〜§3-7 の作り手の作りは
 | BF-U8D-04 試験 18 と項目集合 U8D-6 が onza の U1 の Code Generation を `started: true` と期待し、「全部の行が engine の答えと同じ」と同時に満たせない（実測は `started: false`）。1 回目の返却の U8D-2 は「Code Generation の `ledger.open` は空、正例の `started: true` は工程の開始の後に別に確かめる」と書いていた | §7.8 の 18: 期待を engine の答えだけにし、`started: true` の期待を消した。照らしの値を返却の文から写し直した（U1 の設計の 4 段 = `approved`、U1 の code-generation = `not_approved`・`started: false`）。§7.6: 正例は、onza の席が engine の上で U1 の Code Generation を始めた後の PR で観測すると書き、観測の手順を足した（`started` を手で書き換えない） |
 | 同じ種類の所（arc が見直した） | (1) §7.1 の「onza の席が U1 の Code Generation を回している」は席の作業を書いていて、engine の記録（未開始）と違って読めた → 両方を分けて書いた。(2) §7.8 の 19 の照らしの「違えば止めて返す」は、作業場が進むと変わる値（例: aidlc-aun の記録が追いつくと u2 の行が変わる）でも作る席を止める → 違いは PR に書いて止めず、承認済みの行が承認でなくなった時だけ止める形にした（18 も同じ）。(3) v7 §4 の 9（shirube の作業場、U1 の Code Generation = `started: true`）も、2026-10-24〜25 の実測を書いた行で、同じ種類。v7 の文は変えず、I1 の PR で 9 を動かす前に shirube の席が engine の今の答えを読み、9 と違えば作らずに arc に返す（設計を先に直す）。(4) 照らしの値は、どれも返却の文の観測をそのまま写した（arc が手で書き足した値は無い） |
 
-next_action: actor=shirube; what=この v11 の 2 つの file を shirube#87 に置き直し、事前の設計監査の 4 回目を頼む（Owner の決定の記録と索引の行の統合の後。作業指示 = iyasaka-arc#24 の追補）; blocking=false
+
+#### 7.13 版 12 で直した所（事前の設計監査 4 回目 = shirube#87 6597771127 の所見。4 回目は PASS）
+
+| 所見 | 直した所 |
+|---|---|
+| OBS-R4-02 shirube の作業場の U1 の Code Generation が `not_approved`・`started: false` で、v7 §4 の 9 の `started: true` と今は一致しない。§7.12 (3) の「9 と違えば作らずに arc に返す」に当たる | §4 の 9 を §7.8 の 19 と同じ比べ方（engine の答えのままを期待にし、観測の値は照らしにとどめ、`approved` の行が `approved` でなくなった時だけ止める）に直した。照らしの値は返却の文と #24 の実測を写しただけで、arc が手で書き足した値は無い |
+| OBS-R4-03 題の「v10」は古い表記 | 題を v12 にした |
+| 同じ種類の所（arc が見直した） | 本物の engine で動かす試験（9・18・19）は、3 つとも「全部の行が engine の答えと同じ」と「照らしの値は期待にしない」の同じ形になった。偽の入力の試験（1〜8・10〜17・20）は決めた入力に決めた期待を書く形のままで、作業場の進み具合に左右されない |
+
+next_action: actor=shirube; what=この v12 の 2 つの file を shirube に置く PR（R1、docs だけ）を作り、事前の設計監査を頼む（作業指示 = iyasaka-arc#24 の追補）; blocking=false
