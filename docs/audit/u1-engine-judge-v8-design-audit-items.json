@@ -1,0 +1,43 @@
+{
+ "schema": "sds-audit-items/1",
+ "method_ref": "watchout/shirube@5356af4fcf03ddf386e7823c2a5f15d8384603bd/docs/sds/audit-method.md#3",
+ "scope": "Shirube の次の目標（AI-DLC で承認した段の作業だけが統合される）の設計の記録の事前監査 4 回目（D1〜D6）: docs/design/u1-engine-judge.md（設計の記録、作者 arc、版 11。v7 の §1〜§6 は v7 のまま残し、§7 に aun・onza に広げる追補を足した版 8 に、1 回目の返却 shirube#87 6593957425 の指摘 BF-U8D-01〜03 の直し（版 9、§7.10）、2 回目の返却 shirube#87 6594420177 の指摘 BF-U8D-03 の直し（版 10、§7.11）と、3 回目の返却 shirube#87 6594750285 の指摘 BF-U8D-04 の直し（版 11、§7.12）を入れた版。見る所は §7 と、§7.2 が置き換えると言う v7 の所）と、本項目集合の file docs/audit/u1-engine-judge-v8-design-audit-items.json。実装は本監査の合格の後なので、code の差分は無い。記法: [NG] = Owner の決定 OD-SHIRUBE-NEXT-GOAL-GATE-READS-AIDLC-APPROVAL-START-20261103-001（iyasaka-arc#49 6588894545）、[V7] = shirube main 5356af4fcf03ddf386e7823c2a5f15d8384603bd の docs/design/u1-engine-judge.md（v7、file の SHA-256 98b0c987a0d5b6821bece46edb59d5f9246e863e30bb5ed5554e980d92960c1b）、[CMP] = arc の照らし合わせ iyasaka-arc#57 6589245832、[M] = shirube main 5356af4f の scripts/sds/gate.mjs・scripts/sds/design-gate.mjs・scripts/sds/plan-binding.mjs・kit/・docs/sds/distribution.md、[U1FD] = shirube main 5356af4f の aidlc/spaces/default/intents/261021-dev-speedup-automation/construction/u1-skeleton/functional-design/（entities.md の C1・C2・C9、rules.md の BR1〜BR5）、[PIN] = aun feature/bootstrap と onza main の .shirube/sds-pin.json と .github/pull_request_template.md、[WS] = Owner の作業場 ~/Developer/aidlc-owner/aun と ~/Developer/aidlc-owner/onza（同じ Mac。読めない時はその旨を返す）、[MEAS] = OD-SHIRUBE-REQUIREMENTS-MEASURES-AND-FAIL-CLASSIFICATION-20261022-001（#49 6336035707）、[R1] = 1 回目の返却 shirube#87 6593957425、[R2] = 2 回目の返却 shirube#87 6594420177、[R3] = 3 回目の返却 shirube#87 6594750285。全 6 項目必須。",
+ "items": [
+  {
+   "id": "U8D-1",
+   "stage": "design",
+   "criterion": "目的・範囲・v7 との関係（§7.0・§7.2）: §7.0 の目的と済みの条件と対象外が [NG] の決定 1・3 と含まないものの字のとおりで、足した事・減らした事が無い。§7.2 の表が、v7 のうち §7 で置き換える所を全部挙げ（v7 §2 の判定 1〜5 の文、v7 §2・§3-7 の承認の記録の置き場と書く先、v7 §5、U1 の C1 の intent の決まり）、それ以外の v7 の文（§3-1〜§3-7 の作り手の作り）を変えていない。[CMP] の食い違い 3 つが §7.3・§7.4・§7.5 のどれで埋まるかが追える。",
+   "basis": "[NG]、[V7]、[CMP]"
+  },
+  {
+   "id": "U8D-2",
+   "stage": "design",
+   "criterion": "事実（§7.1）: 門の判定 1〜5 と mode、配布キットの PR の雛形の aidlc_record が散文の 1 行で sds-pr の block に欄が無いこと、U1 の記録の判定・C1・C2・C9、aun・onza が非公開で AI-DLC の記録を repo に持たないこと、3 つの作業場の AIDLC_VERSION と unit-major・solo、aun の作業場の作る段の進み（u1 の設計の 4 段だけ）、onza の作業場の進み（U1 の設計の 4 段が承認済み。onza の席は U1 の Code Generation の作業を進めているが、engine の記録では U1 の code-generation の行は始まっていない = `started: false`。席の作業と engine の記録を分けて書いている）、own code の数（2,178 / 4,000）が、[M]・[U1FD]・[PIN]・[WS] と一致する。[WS] を読めない時は、読めないことと、読めなかった事実の行を返す。",
+   "basis": "[M]、[U1FD]、[PIN]、[WS]、[R3] BF-U8D-04"
+  },
+  {
+   "id": "U8D-3",
+   "stage": "design",
+   "criterion": "置き場と記録の PR（§7.3）: 3 つの repo の approvals/ の path が C2・C9 と同じで、保護面にしない代わりに判定 6 の R6.1〜R6.4 が記録の PR を機械で縛る。作り手が Owner の作業場に書かず、書く先が引数の checkout の root。記録の PR を作る席と、独立の監査の作り直しの照合が script（record-compare.mjs、決まった code の出力 sds-record-compare/1）で決まり、比べる物（行の (stage, unit) の並びの完全な一致と order の連番、免除の両向きの一致、承認と approvalRef、始めた、attempt の bytes）が [R1] の BF-U8D-01 の 3 つの反例（中の行を exempt にする・中の行を消して order を振り直す・中の行を先頭に動かす）を止め、作業場が進んだ場合は通し、開き直した場合は止める。照合の担い手が監査の席のままで、照合の時も元の作業場に書かない。",
+   "basis": "[U1FD] C2・C9・BR5.8、[V7] §3-4〜§3-7、[R1] BF-U8D-01"
+  },
+  {
+   "id": "U8D-4",
+   "stage": "design",
+   "criterion": "PR と段の結び付け・判定 6 の決まり（§7.4・§7.5）: aidlc_record が sds-pr/1 の足すだけの欄で、PR の種類（記録の PR・配布キットだけの PR・ほかの PR）の分け方が決定的で、配布キットだけの PR は (a) 変更 path が base の pin の files の鍵か pin で、かつ (b) 判定 1 の protected_touched が真の時だけ（PR が自分で免除を書けず、宣言の risk でも決まらない）。[R1] の BF-U8D-02 の反例（保護面でない .claude/skills/sds-audit/SKILL.md だけを変える R1 の PR）が kit_only にならない。免除の理由の文が、判定 3 の監査と配布キットの版上げの決まりに合い、門が確かめない Owner の exact-head を根拠にしていない。R6.1〜R6.5 の各決まりに反例が通らない（記録と作業を混ぜる、今ある attempt を書き換える、R1 の記録の PR、path と中身の食い違い、_sequence.json の中の食い違い、sequence の無い intent）。判定 6 の段階が pin の record_binding_mode で、report-only の FAIL が門の結果を変えない。判定 4・5・6 の見る事実の表が [M] の今の判定 4・5 と一致し、同じ事実を 2 回見ず、5.3u と 6 が互いを置き換えない。",
+   "basis": "[U1FD] BR1〜BR4、[M] gate.mjs・design-gate.mjs、[V7] §3-4、[R1] BF-U8D-01・BF-U8D-02"
+  },
+  {
+   "id": "U8D-5",
+   "stage": "design",
+   "criterion": "済みの条件の満たし方（§7.6）と未決（§7.9）: onza の正例の道筋が、作業場の段の記録と v7 §3-4 の橋の決まりから成り立つ。今の U1 の code-generation の行を `started: true` と書かず、正例は onza の席が engine の上で U1 の Code Generation を始めた後の PR で観測すると書き、その観測の手順があり、`started` を手で書き換えない（[R3] BF-U8D-04）。aun の作る段が AI-DLC で回っていない Unit の PR が判定 6 で FAIL になることを、門の誤りではなく [MEAS] の分類の「PR の不備」と書き、aun の正例のための進め方を Owner に伺うと書いている（arc が自分で決めていない）。負例の出し方がある。§7.9 の 1 を閉じた根拠が [R1] の観測と合い、照合の担い手を替える案を採らない。",
+   "basis": "[NG] 決定 3、[MEAS]、[WS]、[R3] BF-U8D-04"
+  },
+  {
+   "id": "U8D-6",
+   "stage": "design",
+   "criterion": "作る順・Owner の手・試験・予算（§7.7・§7.8・§7.5 の置き場）: PR の順（I1 → A → I2 → I3 → K → aun・onza の記録 → I4）と依存が §7.3〜§7.5 を過不足なく分け、I1 が record-compare.mjs を含み、I3（判定の決まりの文を変える）と K（版の固定・workflow を変える。repo ごと）に統合の前の Owner の exact-head が [NG] の決定 4 のとおり付く。Owner の手の数が §7.7 の末尾と一致する。§7.8 の試験 10〜20 が R6.0〜R6.5・段階・判定 5 との並び・照合・本物の作業場での確かめを覆い、試験 10 に [R1] の BF-U8D-02 の負例と正しい版上げの正例が、試験 13・20 に BF-U8D-01 の 3 つの反例と正しい前進の正例があり、試験 18・19 が、Unit ごとの期待を手で並べず、試験が作り手とは別に engine の部品を直接呼んで作った期待の行と作り手の行が全部同じことを確かめる形で、engine の免除を not_approved に、未承認を exempt に書き換えない。照らしの値が [R1]・[R2]・[R3] で監査の席が観測した値（aun の u1 の設計の 4 段 = approved・started: true、u2 の同じ 4 段 = not_approved・started: false、u6 の functional-design = exempt・started: false、onza の U1 の設計の 4 段 = approved、onza の U1 の code-generation = not_approved・started: false）と同じで、照らしの値を試験の期待にしていない（違いは PR に書き、承認済みの行が承認でなくなった時だけ止める）。試験 18 に `started: true` の期待が無い（[R3] BF-U8D-04）。試験 20 に正しい免除が通る正例がある（BF-U8D-03）。v7 §4 の 1〜9 を変えていない。own code の見込み（約 710 行、合計 約 2,890 / 4,000）が §7.1 の数と合い、予算を変えない。",
+   "basis": "[NG] 決定 2・4、[V7] §4・§5、[M]、[R1] BF-U8D-01〜03、[R2] BF-U8D-03、[R3] BF-U8D-04"
+  }
+ ]
+}
