@@ -1,6 +1,6 @@
 # Shirube 作る単位の完成検査（unit-done）の芯 — 設計の記録
 
-版 3（2026-11-03）。設計の作者 = arc。版 1 = iyasaka-arc#57 6597113797（aun だけに置く形）。版 2 = iyasaka-arc#57 6598922223（判定の芯と aun の分に分けた。事前の設計監査 1 回目 = shirube#90 6599617868 で BLOCK、指摘 6 件）。版 3 は、その 6 件と同じ種類の所と、aun の分の記録の事前の設計監査 1 回目（aun#89 6599987095）の BF-UDA-01 のうち芯にもあった同じ種類の所を直した版（直した所は §10）。
+版 4（2026-11-03）。設計の作者 = arc。版 4 は、事前の設計監査 2 回目（shirube#90 6601271636）の BF-UDC-06・07 と、その同じ種類の所を直した版（直した所は §11）。版 1 = iyasaka-arc#57 6597113797（aun だけに置く形）。版 2 = iyasaka-arc#57 6598922223（判定の芯と aun の分に分けた。事前の設計監査 1 回目 = shirube#90 6599617868 で BLOCK、指摘 6 件）。版 3 = shirube#90 の 1 回目の 6 件と同じ種類の所と、aun の分の記録の事前の設計監査 1 回目（aun#89 6599987095）の BF-UDA-01 のうち芯にもあった同じ種類の所を直した版（直した所は §10）。
 
 適用 ID:
 - OD-SUITE-UNIT-DONE-CHECK-IN-SHIRUBE-GATE-KIT-20261103-001（[iyasaka-arc#49 6597452196](https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6597452196)。以下 [KIT]。最初から Shirube に作り、配布キットで aun・onza・shirube に同じ版で配る。各 repo は CI の job で判定の芯を呼び、対応表だけを持つ）
@@ -15,7 +15,7 @@
 
 **目的**（[ALL]・[CI] のまま）: 作る単位を「済み」にできるのは、完成検査の項目が全部「満たした」の時だけにする。完成検査は CI の後に走る status で、1 つでも満たさなければ、その単位を閉じる PR を統合できない（必須の検査にするのは Owner の設定、§5）。Owner に回すのは、それが通った PR だけ。
 
-**持つこと**: 判定は LLM を使わない script が決める。判定の核は時計・乱数・file・ネットワークを読まない（S4）。確かめられない項目は「観測できず」で、満たしたに数えない（S5）。照らす相手の集まり（受入の基準・設計の場合・届ける計画の「できた」・見せるもの）は、対応表を書く人とは別の記録から決め、対応表の側の集まりだけで照らさない（S5。§3.5）。判定の決まりは shirube の 1 か所に置き、各 repo は同じ版を呼ぶ（S3）。
+**持つこと**: 判定は LLM を使わない script が決める。判定の核は時計・乱数・file・ネットワークを読まない（S4）。確かめられない項目は「観測できず」で、満たしたに数えない（S5）。照らす相手の集まり（受入の基準・設計の場合・届ける計画の「できた」・見せるもの）は、対応表を書く人とは別の記録から決め、対応表の側の集まりだけで照らさない（S5。§3.5）。どの単位を照らすか（単位の名前・置き場・道筋の node）も、arc が書く handoff から決め、対応表の値はそれと同じことを確かめるだけに使う（§3.2・§3.5 の 4）。判定の決まりは shirube の 1 か所に置き、各 repo は同じ版を呼ぶ（S3）。
 
 **対象外**（PR ごとの独立の監査が見る）: 試験が受入の基準・条件の中身を本当に確かめているかの意味の判断、設計と実装の意味のずれ、誤りの文や log に秘密・本文が入っていないか。完成検査は「その条件を独立の監査が見ることになっているか」と「監査が PASS したか」だけを見る。門（sds-gate）の判定 1〜6 の決まりは変えない。各 repo の対応表の中身（aun の分の記録が持つ）。OmotenasuAI（arc-omo の受け持ち）への当てはめ。
 
@@ -70,11 +70,17 @@ PR の head で次を見る。
 | (a) | (b) | 扱い |
 |---|---|---|
 | なし | なし | 対象外。status `success`（説明 `not a unit-closing PR`）。ほかを読まない |
-| あり | あり | 対象。§3.4 を全部見る。加えて、対応表の `plan_id`・`node_id` が PR の `delivery_plan_binding` と handoff の `plan_binding` と同じ（違えば FAIL） |
+| あり | あり | 対象。§3.4 を全部見る。加えて、下の「単位の決め方」を全部満たす（1 つでも違えば FAIL） |
 | あり | なし | FAIL（対応表を変えるのは単位を閉じる PR だけ） |
 | なし | あり | FAIL（単位を閉じる PR は必ず完成検査を通る） |
 
 handoff が読めない（marker が無い・YAML が壊れている・2 つある）時は、(b) を「なし」とせず `unobserved` にして FAIL にする。
+
+**単位の決め方**（版 4。照らす単位は handoff だけで決め、対応表から選ばない）:
+- 単位の名前（`unit`）・置き場の名前（`unit_dir`）・道筋（`plan_id`・`node_id`）は、単位を閉じる PR の handoff の `unit_done.unit`・`unit_done.unit_dir` と `plan_binding` の値。どれかが無い・空 → `unobserved` で FAIL。
+- 対応表の `unit`・`unit_dir`・`plan_id`・`node_id` と、PR の `delivery_plan_binding` の `plan_id`・`node_id` が、handoff の値と全部同じ。1 つでも違えば FAIL（説明に違う欄を出す）。対応表の値で照らす相手を選び替えることはできない。
+- 1 つの単位と 1 つの node は 1 対 1: default branch に統合された単位を閉じる PR（§3.3 の 4 で読む PR のうち、handoff が `completes_unit: true` の物）の handoff に、(i) 同じ `unit` で違う `node_id`、(ii) 同じ `node_id` で違う `unit`、(iii) 同じ `unit` で違う `unit_dir` のどれかがあれば FAIL（説明にその PR の番号を出す）。読めない統合済みの handoff があれば `unobserved`。
+- 単位が記録に在る: 写しの story map に、その `unit` を `Unit ID` の欄に持つ行が 1 つ以上あり、届ける計画にその単位の節がちょうど 1 つある（§3.5 の 2・5。無ければ K3・K8・K9 が `unobserved`）。
 
 ### 3.3 事実の集め方
 
@@ -88,7 +94,7 @@ handoff が読めない（marker が無い・YAML が壊れている・2 つあ�
    - 1 つの名前の行が 2 組以上ある・欠けた番号がある・戻した指紋が違う → その事実は `unobserved`（試験の出力が同じ形の行を出して偽ろうとしても、本物の行と 2 組になって通らない）。
    - 名指した job の結論（job の API の `conclusion` と、同じ名前の check run の `conclusion`）が `success` でない → その事実を使う項目は `unmet`。
    - 網羅率の事実 `coverage` は `{"schema":"sds-unit-done-coverage/1","exit_code":<整数>,"lines_threshold":<整数>}`。
-4. **単位の PR の集まり**: default branch に統合された PR を全部（`state=closed`、100 件ずつ）読み、`sds-pr` の block の `delivery_plan_binding` が対応表の `plan_id`・`node_id` の物を選ぶ。
+4. **単位の PR の集まり**: default branch に統合された PR を全部（`state=closed`、100 件ずつ）読み、`sds-pr` の block の `delivery_plan_binding` が handoff の `plan_id`・`node_id`（§3.2 の単位の決め方）の物を選ぶ。あわせて、統合された PR のうち `sds-pr` の `control_handoff` が `completes_unit: true` の handoff を指す物の handoff を読む（§3.2 の 1 対 1 の確かめ）。
 5. **PR ごとの事実**: PR（`merged_at`・`base.ref`・`head.sha`・本文）、commit の一覧（古い順、250 件まで。超えれば `unobserved`）、1 つ目の commit の変更 file、review、PR 本文の `sds-pr` の `audit`（`request`・`request_sha256`・`review`）と、その 2 つの comment の本文と編集の履歴。
 6. **handoff と写しと設計の記録**: 単位を閉じる PR の handoff（§3.5 の 4 の `unit_done`）、PR の head の `acceptance/_source/` と対応表と設計の記録。
 - 読めない（404 以外の失敗・時間切れ・上限）→ その事実は `unobserved`。例外を投げて job を緑にしない（S8）。
@@ -112,15 +118,15 @@ handoff が読めない（marker が無い・YAML が壊れている・2 つあ�
 
 1. **写し**: 配布先の `acceptance/_source/` に、承認済みの AI-DLC の記録 3 つ（stories・story map・届ける計画）を bytes のまま写し、`acceptance/_source/manifest.json`（`sds-unit-done-sources/1`、各 file の `role`・`path`・元の作業場での path・SHA-256）を置く。核は写しの SHA-256 が manifest と同じことを確かめる（違えば K3・K8・K9 は `unobserved`）。写しが Owner の作業場の今の file と同じかは CI から見えないので、写しを足す・変える PR の監査で確かめる（§7）。
 2. **単位のストーリーと受入の基準**（AI-DLC 2.11.1 の記録の形。版 2 は aun の書き方 1 つに決め打ちしていた）:
-   - story map: 1 行目の欄の名前に `Unit ID` がある表の、1 つ目の欄が `USx.y` の行。`Unit ID` の欄を `;` で区切り、前後の空白を除いた物のどれかが対応表の `unit` と同じ行が、単位のストーリー（AI-DLC 2.11.1 の `units-generation` は 1 つの欄に複数の Unit を `;` で書く形を認める）。
+   - story map: 1 行目の欄の名前に `Unit ID` がある表の、1 つ目の欄が `USx.y` の行。`Unit ID` の欄を `;` で区切り、前後の空白を除いた物のどれかが handoff の `unit_done.unit` と同じ行が、単位のストーリー（AI-DLC 2.11.1 の `units-generation` は 1 つの欄に複数の Unit を `;` で書く形を認める）。そういう行が 1 つも無い（記録に無い単位）→ K3 は `unobserved`（説明 `unit not in story map`）。
    - stories: `### USx.y` の見出しから、次の `###` 以上の見出しの前までをそのストーリーの節とし、節の中の `ACx.y.z`（そのストーリーと同じ `x.y` で始まる物だけ。前後が英数字でない所で区切る）を全部取る。箇条書きでも表でも同じに取る（aun = 字下げした箇条書き、onza = Given/When/Then の表）。ほかのストーリーの AC を指す文は数えない。
    - **単位が受け持つ AC**: profile の `sources.story_map_ac_column` が欄の名前を名指す時（onza = `その Unit が受け持つ受入の基準`）は、その欄から取る。行の `Unit ID` が 2 つ以上なら、欄の中の `<unit>:` で始まる区切り（区切りは `。` の後の `U<数字>:`）、1 つなら欄の全部。`ACx.y.z` と `ACx.y.a〜ACx.y.b`（同じ `x.y` の番号の範囲。間を全部数える）を取り、どれもそのストーリーの節にあること（無い ID があれば `unobserved`）。区切りに AC の ID が 1 つも無い時は、その区切りの文（前後の空白を除く）を、そのストーリーの**条件**（ID `story:<USx.y>`）として K9 の照らす相手に足す。名指さない時（aun）は、そのストーリーの節の AC が全部その単位の物。
    - 完全さ: 単位のストーリーの 1 つずつに、AC が 1 つ以上あるか、条件が 1 つあること。どちらも無いストーリーがあれば K3 は `unobserved`（そのストーリーの ID を出す）。同じ AC の ID が 2 つのストーリーに出れば `unobserved`。
    - 2026-11-03 に Owner の作業場の今の file で、この決まりのとおり数えた値（arc が手元の script で数えた）: aun U2 = ストーリー 8・AC 36（4 列目の欄は無い。箇条書き）。onza U1 = ストーリー 6・AC 19（US1.1 = 3・US2.1 = 4・US3.1 = 4・US3.2 = 4・US5.1 = 4）と、AC の ID の無い条件 1 つ（US3.3 の「GATE の見分け（U1 では GATE の件は見るだけで答える欄を出さない）」）。監査の席の数え（shirube#90 6599617868）の「AC 27」は 6 ストーリーの AC を全部数えた値（6 + 5 + 5 + 4 + 3 + 4）で、story map の 4 列目が U2・U3・U4・U6 に回した 8 つを含む。4 列目を読まない形（版 2）では、onza U1 はほかの単位の AC の試験を求められて誤って FAIL になる。
 3. **設計の場合の ID**: 設計の記録の、profile の `design_cases.section` で始まる見出しの行から、次の同じ深さの見出しの前まで。ID は `design_cases.id_pattern` で、前後が英数字でない所で区切り、同じ ID は 1 つに数える。位置で場合と参照を見分けない（版 1 で u7 の記録で試し、位置の決まりでは場合を 1 つも取れなかった）。取った一覧は出力に必ず出す。
-4. **handoff の `unit_done`**: 単位を閉じる PR の handoff（arc が書く。対応表を書く実装の席とは別の作者）に、`unit_done: { design_records: [<path>, ...] }` を置く。K4 の設計の記録の集まりはこれで決まり、対応表の側から増やしも減らしもできない。handoff に `unit_done` が無い・空 → K4 は `unobserved`。
+4. **handoff の `unit_done`**: 単位を閉じる PR の handoff（arc が書く。対応表を書く実装の席とは別の作者）に、`unit_done: { unit: <単位の名前>, unit_dir: <置き場の名前>, design_records: [<path>, ...] }` を置く。照らす単位（§3.2 の単位の決め方）と K4 の設計の記録の集まりはこれで決まり、対応表の側から選び替えも増やしも減らしもできない。`unit`・`unit_dir` が無い・空 → 単位を閉じる PR は `unobserved` で FAIL。`design_records` が無い・空 → K4 は `unobserved`。
 5. **届ける計画の「できた」**: 写しの届ける計画（`bolt-plan.md`）から取る。AI-DLC 2.11.1 はこの file の見出しと欄の名前を決めておらず、aun と onza で違う（aun = `## Bolt u2 u2-exchange-records`・`- **できたと言える条件**:`・`- **見せるもの**:`・共通の「できた」の行あり。onza = `## B1 細い一本（U1）〔walking skeleton〕`・`- **済みの条件**:`・`- **見せる物**:`・共通の行なし）。そこで、読む所の名前は profile の `sources.delivery_plan`（§3.7）に置き、読み方は 1 つにする。
-   - 単位の節: `## ` で始まる見出しのうち、`unit_heading`（`{unit}`・`{unit_dir}` を対応表の値に置き換えた文字列）を含む物がちょうど 1 つ。その見出しから次の `## ` の前まで。
+   - 単位の節: `## ` で始まる見出しのうち、`unit_heading`（`{unit}`・`{unit_dir}` を handoff の `unit_done` の値に置き換えた文字列）を含む物がちょうど 1 つ。その見出しから次の `## ` の前まで。
    - 欄の項目: 行頭の `- **<名前>`（名前は `dod_labels` か `common_label`）で始まり `**:` を含む行の、`**:` の後の文（空でなければ 1 項目）と、続く字下げした `- ` の行（字下げの無い行の前まで）の 1 行ずつ。
    - 単位の条件: 単位の節の `dod_labels` の欄の項目。ID は `dod-1`〜の順の番号。
    - 共通の「できた」: `common_label` が null でない時、file の中に `common_label` の欄がちょうど 1 つあり、その項目。ID は `common-1`〜の順の番号。null の時は無い。
@@ -133,7 +139,8 @@ handoff が読めない（marker が無い・YAML が壊れている・2 つあ�
 
 - 各項目は `met`・`unmet`・`unobserved`・`excepted`・`not_applicable`（K8 で計画に見せるものが無い時だけ）のどれか。`unobserved` を `met` に数えない。
 - 外れ: 対応表の `exceptions` に、項目の ID・対象（PR の番号か AC・条件の ID）・Owner の決定の ID と URL（`https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-<数字>`）と本文の SHA-256 を書いた物だけ、その対象を `excepted` にする。欄が欠けた外れは無効で、元の答えのまま。Owner の決定が本当にあるかは CI から見えない（iyasaka-arc は非公開）ので、単位を閉じる PR の監査と Owner の exact-head で確かめる。
-- 総合: 全部 `met`（K8 は `not_applicable` も可）→ `PASS`。`met` と `excepted` だけ → `PASS_WITH_EXCEPTIONS`。それ以外 → `FAIL`。
+- `not_applicable` は K8 だけが出す値で、ほかの項目が `not_applicable` なら、その項目は `unmet` に数える（核の入口で直す。説明 `not_applicable outside K8`）。
+- 総合（版 4。項目ごとの値の集まりで決める）: 全部が `met` か K8 の `not_applicable` → `PASS`。全部が `met`・`excepted`・K8 の `not_applicable` のどれかで、`excepted` が 1 つ以上 → `PASS_WITH_EXCEPTIONS`。`unmet`・`unobserved` が 1 つでもある → `FAIL`。この 3 つで全部の場合を覆い、重ならない。
 - status: `PASS` → `success`（説明 `PASS`）、`PASS_WITH_EXCEPTIONS` → `success`（説明 `PASS_WITH_EXCEPTIONS <件数>`、summary の先頭に外れの一覧）、`FAIL` → `failure`（説明に最初の `unmet`・`unobserved` の項目）、対象外 → `success`、CI 待ち → `pending`。
 - 同じ事実の JSON からは同じ答えの bytes（S4）。
 
@@ -195,8 +202,12 @@ handoff（単位を閉じる PR の control_handoff。今の形に 1 つの欄�
 completes_unit: true
 plan_binding: {plan_id: DP-AUN-ROUTE-001, node_id: <道筋の node の ID>}
 unit_done:
+  unit: U2
+  unit_dir: u2-exchange-records
   design_records: [docs/design/u2-exchange-records.md]
 ```
+
+- 対応表の `unit`・`unit_dir`・`plan_id`・`node_id` は handoff の値を写す欄で、照らす単位を選ぶのには使わない（§3.2 の単位の決め方。違えば FAIL）。
 
 - 試験の名前は「試験の file の path `::` junit の suite の名前を `::` でつないだ物 `::` 試験の名前」。junit の読み手は Node の組込みの機能だけで書く（新しい外部の依存を足さない）。
 - profile の欄が欠けた・形が違う → 対象の PR は全部 `FAIL`（説明 `profile`）。profile が無い配布先で対象の PR が出たら `FAIL`。対応表の `schema` が `sds-unit-done-checklist/2` でない → `FAIL`。
@@ -205,8 +216,8 @@ unit_done:
 
 どの PR も、1 つ目の commit を試験だけにし、その commit で落ちる出力を PR 本文に貼る。
 
-- 核（T）: T-1 全部 met → `PASS`。T-2 junit に落ちた試験 1 つ → K1 unmet。T-3 skip・todo 1 つ → K1 unmet。T-4 試験 0 件 → K1 unmet。T-5 名指した job が `failure` → K1 unmet。T-6 網羅率の `exit_code` 1・`lines_threshold` 79 → K2 unmet（それぞれ）。T-7 対応表に無い AC → K3 unmet（ID を出す）。T-7b 対応表に、集まりに無い AC → K3 unmet。T-8 対応表の試験の名前が junit に無い → K3 unmet。T-9 設計の場合の ID が対応表に無い・`design_refs` の理由が空 → K4 unmet。T-9b handoff の `design_records` が空・無い → K4 unobserved。T-9c 対応表の `design_records` が handoff より 1 つ少ない・1 つ多い → K4 unmet。T-9d 設計の記録の節から ID が 0 → K4 unobserved。T-10 `code_paths` を変えた PR の 1 つ目の commit が `code_paths` を含む → K5 unmet（番号を出す）。T-10b 1 つ目の commit が docs だけ・空 → K5 unmet。T-10c 1 つ目の commit が試験 1 つだけ → K5 met。T-11 docs だけの PR → K5 の対象外。T-12 K6 の (a)〜(e) の 1 つずつが欠ける → K6 unmet（どれかを出す）。T-12b 返却が監査の席以外の account に編集されている → K6 unmet。T-12c Approve が統合の head と別の head・統合の後 → K6 unmet。T-13 node を名指した PR が `prs` に無い → K7 unmet。`prs` にあって名指していない PR が `unbound_prs` に無い・理由が空 → K7 unmet。T-14 事実が `unobserved` → 総合 `FAIL`。T-15 写しの指紋が manifest と違う → K3・K8・K9 unobserved。T-16 外れ → `excepted`、総合 `PASS_WITH_EXCEPTIONS`。T-17 外れの欄が欠ける → 無効で元の答え。T-18 同じ事実で 2 回 → 答えの bytes が同じ。T-19 計画に見せるものがあり `demo` が空 → K8 unmet。計画に見せるものが無く `demo` が空 → K8 not_applicable で総合 PASS。T-20 計画の条件が対応表の `conditions` に無い → K9 unmet。T-20b `text_sha256` が違う → K9 unmet。T-20c `audit` の理由が空 → K9 unmet。T-20d `k` が指す K が unmet → K9 unmet。核の file に `Date.now`・引数なしの `new Date()`・`Math.random`・`randomUUID`・`node:fs`・`fetch`・`child_process` が無い。
-- 見分け（V）: V-1〜V-4 §3.2 の表の 4 つの行。V-5 対応表の `node_id` が PR の `delivery_plan_binding` と違う → FAIL。V-6 handoff が読めない（marker が無い・YAML が壊れている）→ (b) は「なし」でなく `unobserved` で FAIL。
+- 核（T）: T-1 全部 met → `PASS`。T-2 junit に落ちた試験 1 つ → K1 unmet。T-3 skip・todo 1 つ → K1 unmet。T-4 試験 0 件 → K1 unmet。T-5 名指した job が `failure` → K1 unmet。T-6 網羅率の `exit_code` 1・`lines_threshold` 79 → K2 unmet（それぞれ）。T-7 対応表に無い AC → K3 unmet（ID を出す）。T-7b 対応表に、集まりに無い AC → K3 unmet。T-8 対応表の試験の名前が junit に無い → K3 unmet。T-9 設計の場合の ID が対応表に無い・`design_refs` の理由が空 → K4 unmet。T-9b handoff の `design_records` が空・無い → K4 unobserved。T-9c 対応表の `design_records` が handoff より 1 つ少ない・1 つ多い → K4 unmet。T-9d 設計の記録の節から ID が 0 → K4 unobserved。T-10 `code_paths` を変えた PR の 1 つ目の commit が `code_paths` を含む → K5 unmet（番号を出す）。T-10b 1 つ目の commit が docs だけ・空 → K5 unmet。T-10c 1 つ目の commit が試験 1 つだけ → K5 met。T-11 docs だけの PR → K5 の対象外。T-12 K6 の (a)〜(e) の 1 つずつが欠ける → K6 unmet（どれかを出す）。T-12b 返却が監査の席以外の account に編集されている → K6 unmet。T-12c Approve が統合の head と別の head・統合の後 → K6 unmet。T-13 node を名指した PR が `prs` に無い → K7 unmet。`prs` にあって名指していない PR が `unbound_prs` に無い・理由が空 → K7 unmet。T-14 事実が `unobserved` → 総合 `FAIL`。T-15 写しの指紋が manifest と違う → K3・K8・K9 unobserved。T-16 外れ → `excepted`、総合 `PASS_WITH_EXCEPTIONS`。T-16b K5 が有効な外れで `excepted`・K8 が `not_applicable`・ほかが全部 `met` → `PASS_WITH_EXCEPTIONS`。T-16c T-16b に K3 の `unmet` を足す → `FAIL`（説明は K3）。T-16d K8 以外の項目が `not_applicable` → その項目は `unmet` で `FAIL`。T-16e 総合の分岐の境目の組（全部 `met`／`met` と K8 の `not_applicable`／`met` と `excepted`／`met` と `excepted` と K8 の `not_applicable`／それぞれに `unmet` を 1 つ足す／`unobserved` を 1 つ足す）で、どの組も 3 つの分岐のちょうど 1 つに当たる。T-17 外れの欄が欠ける → 無効で元の答え。T-18 同じ事実で 2 回 → 答えの bytes が同じ。T-19 計画に見せるものがあり `demo` が空 → K8 unmet。計画に見せるものが無く `demo` が空 → K8 not_applicable で総合 PASS。T-20 計画の条件が対応表の `conditions` に無い → K9 unmet。T-20b `text_sha256` が違う → K9 unmet。T-20c `audit` の理由が空 → K9 unmet。T-20d `k` が指す K が unmet → K9 unmet。核の file に `Date.now`・引数なしの `new Date()`・`Math.random`・`randomUUID`・`node:fs`・`fetch`・`child_process` が無い。
+- 見分け（V）: V-1〜V-4 §3.2 の表の 4 つの行。V-5 対応表の `node_id` が PR の `delivery_plan_binding` と違う → FAIL。V-6 handoff が読めない（marker が無い・YAML が壊れている）→ (b) は「なし」でなく `unobserved` で FAIL。V-7 aun の実物の写し（U2 の 8 ストーリー・AC 36）で、plan_id・node_id・unit_dir・写し 3 つ・manifest を変えず、対応表の `unit` だけを実在する U5 にする → FAIL（`unit` が handoff と違う）。照らす相手は U5 の物（US7.2・AC 4 つ）にならず、U2 の 36 のまま。V-8 対応表の `unit_dir` だけを違える → FAIL。V-9 handoff の `unit_done` に `unit` か `unit_dir` が無い → `unobserved` で FAIL。V-10 統合済みの単位を閉じる PR の handoff が、同じ `unit` を違う `node_id` で閉じている・同じ `node_id` を違う `unit` で閉じている・同じ `unit` を違う `unit_dir` で閉じている → それぞれ FAIL（その PR の番号を出す）。統合済みの handoff が読めない → `unobserved`。V-11 handoff の `unit` が story map のどの行にも無い（記録に無い単位。例 `U9`）→ K3 `unobserved`（`unit not in story map`）。handoff の `unit` が在るが、届ける計画にその節が無い → K8・K9 `unobserved`。V-12 正しい組（handoff と対応表が同じ U2）で、X-1 と同じく U2 = ストーリー 8・AC 36・共通 5・単位の条件 5 を照らす（直しで照らす相手が変わらない）。onza U1 も同じに X-2・X-9b の値のまま。
 - 取り出し（X）: X-1 aun の写しの形（字下げの箇条書き）で、U2 のストーリー 8・AC 36。X-2 onza の写しの形（Given/When/Then の表、`;` で区切った Unit の欄、4 列目の受け持つ AC の欄）で、U1 のストーリー 6・AC 19 と条件 1 つ（`story:US3.3`）。4 列目で U2・U3・U4・U6 に回した AC（AC1.1.2 ほか 8 つ）を U1 に数えない。X-2b 4 列目の範囲 `AC3.2.1〜AC3.2.4` を 4 つに数える。範囲の端がストーリーの節に無い・`x.y` が違う範囲 → unobserved。X-2c 4 列目の区切りに AC の ID が無い → 条件になり、対応表の `conditions` に無ければ K9 unmet。X-3 story map の欄 `U1; U3` の行が U1 にも U3 にも入る。X-4 1 つのストーリーだけ AC が 0（ほかは取れる）→ K3 unobserved でそのストーリーの ID を出す。X-5 ほかのストーリーの AC を指す文（例: US1.1 の節に `AC2.1.3 を参照`）を US1.1 の AC に数えない。X-6 同じ AC の ID が 2 つのストーリーの節に出る → unobserved。X-7 story map に無いストーリーの AC を取らない。X-8 設計の節の中の ID を全部取り、節の外の ID を取らない。X-9 aun の届ける計画の写しと aun の profile の値から、共通の「できた」5 つと U2 の単位の条件 5 つと「見せるもの」ありを取る。X-9b onza の届ける計画の写しと onza の profile の値から、共通なし・U1 の単位の条件 5 つ・「見せる物」ありを取り、`（U1）` が `（U10）` の見出しに当たらない。X-9c 欄の名前の行に `**:` の後の文がある形（aun の 10/27 の版の書き方）で、その文を 1 項目に数える。X-10 単位の節が無い・2 つ、`common_label` の欄が無い・2 つ、単位の条件が 0 → K8・K9 unobserved。
 - CI の集め手（G）: G-1 事実の行を戻して指紋が合う。G-2 同じ名前の行が 2 組・番号の欠け・指紋の違い → unobserved。G-3 偽の API で、run が completed でない → `pending`。G-4 偽の API が 403・500・時間切れ → unobserved（例外で終わらない）。G-5 junit の入れ子の suite の名前を `::` でつなぐ。G-6 同じ head の別の PR の run（`pull_requests` に対象が無い）を選ばない。G-7 試した commit の親が今の base と違う（base が動いた）→ 全部 unobserved。G-8 事実の行の試した commit が job の間で違う → unobserved。G-9 fork の PR → unobserved。G-10 job の結論が success でも check run が failure → unmet。
 - PR の集め手（P）: P-1 偽の API で、統合済みの PR の一覧から node を名指した物を選ぶ（100 件を超える頁を含む）。P-2 commit が 250 件を超える → K5 の対象の PR は unobserved。P-3 依頼の本文の指紋が違う・依頼の作者が `watchout` でない・依頼の `reviewer.github` が違う・返却の作者が違う・返却の対象の head が統合の head と違う・返却の target が 2 つ → K6 unmet。P-3b Approve の本文が文だけ（JSON 無し）でも、(a)〜(e) がそろえば K6 met。P-3c 単位を閉じる PR 自身が `prs` にある → K7 unmet。P-4 引数で受ける形にした `passed`・`quiet`・`mine` を 5.3u から今と同じ値で呼び、門の今の試験が全部そのまま通る。
@@ -223,15 +234,15 @@ PR ごとの見込みの行数（`scripts/**`・`configs/**`・`.github/workflow
 | PR | 中身 | 見込みの行数（code + 試験） | 区分 | 依存 |
 |---|---|---|---|---|
 | PR-D | この記録と監査の項目集合を shirube に置く | 0（docs だけ） | R1 | ― |
-| PR-1a | `judge.mjs` と試験 T | 150〜170 + 190〜210 = 340〜380 | R2 | PR-D |
+| PR-1a | `judge.mjs` と試験 T | 155〜175 + 200〜220 = 355〜395 | R2 | PR-D |
 | PR-1b | `extract.mjs` のストーリー・story map・単位が受け持つ AC・ストーリーの条件（§3.5 の 2）と試験 X-1〜X-7 | 100〜120 + 130〜150 = 230〜270 | R2 | PR-D |
 | PR-1c | `extract.mjs` の届ける計画・設計の場合・写しの指紋（§3.5 の 1・3・5）と試験 X-8〜X-10 | 70〜90 + 90〜110 = 160〜200 | R2 | PR-1b |
 | PR-1d | `collect-ci.mjs` と試験 G | 120〜140 + 190〜220 = 310〜360 | R2 | PR-1a |
-| PR-1e | `collect-pr.mjs`、`plan-binding.mjs` の handoff の読み手の export、`design-gate.mjs` の `passed`・`quiet`・`mine` を今 Approve の JSON から読んでいる値（依頼の SHA-256・target の id・監査の席の login・Approve の時刻）を引数で受ける形にして export する直し（5.3u は今と同じ値を渡す）と試験 V・P | 120〜150 + 160〜190 = 280〜340 | R2 | PR-1a |
+| PR-1e | `collect-pr.mjs`（§3.2 の単位の決め方と 1 対 1 の確かめを含む）、`plan-binding.mjs` の handoff の読み手の export、`design-gate.mjs` の `passed`・`quiet`・`mine` を今 Approve の JSON から読んでいる値（依頼の SHA-256・target の id・監査の席の login・Approve の時刻）を引数で受ける形にして export する直し（5.3u は今と同じ値を渡す）と試験 V・P | 140〜170 + 190〜220 = 330〜390 | R2 | PR-1a |
 | PR-2 | `main.mjs`、`.github/workflows/unit-done.yml`・`kit/unit-done-caller.yml`・`kit/unit-done-emit.sh`・`kit.mjs` の render の条件・`docs/sds/distribution.md` に完成検査の節、試験 E・W | 100〜130 + 150〜180 = 250〜310 | R4（workflow・kit） | PR-1c・PR-1d・PR-1e |
 
 - file は各 PR で 20 以内、新しい file は 300 行以内（[SH] の hygiene profile）。上の端を超えそうな時は、作る席が作らずに止めて arc に返す。
-- own code: 今 2,178 行（shirube#87 6597771127）。次の目標の見込み約 710 行と合わせ、この記録の分は 660〜800 行で、合計の見込みは 3,550〜3,690 行 / 4,000 行。予算は変えない。
+- own code: 今 2,178 行（shirube#87 6597771127）。次の目標の見込み約 710 行と合わせ、この記録の分は 685〜825 行で、合計の見込みは 3,575〜3,715 行 / 4,000 行。予算は変えない。
 - PR-1e が門の file（`plan-binding.mjs`・`design-gate.mjs`）を触るのは、export と、上の 3 つの関数が値を引数で受ける形への直しだけで、門の判定と試験の期待は変えない（門の試験が全部そのまま通ることを PR 本文に書く）。PR-1e の本文には、作る席の手元で読むだけの API を使い、aun#78・#79 に K6 の (a)〜(e) を当てた結果を示す（workflow は要らない）。
 - **Owner の手**: PR-2 の exact-head 1 回（workflow を足す保護面。[KIT] の決定 4）。配布先への版上げと必須の検査は aun の分の記録が持つ。shirube 自身が自分の単位にこれを当てる時期は [KIT] の「含まないもの」のとおり別に伺う。
 
@@ -257,6 +268,7 @@ PR ごとの見込みの行数（`scripts/**`・`configs/**`・`.github/workflow
 - 統合した席が作者と別かは CI から見えない（席はどれも同じ GitHub の account で統合する）。K6 は監査の席の返却と Approve で見て、統合の席の別は branch protection と統合の決まり（T129）に任せる。
 - 写しが Owner の作業場の今の file と同じかは CI から見えない。写しを足す・変える PR の監査で、監査の席が作業場の file の SHA-256 と照らす。
 - 設計の記録の集まりは arc が handoff に書く。arc が書き漏らした設計の記録は K4 では見つからず、単位を閉じる PR の監査（設計の記録の一覧と handoff を照らす項目）で見る。
+- 照らす単位も handoff で決まる。席はどれも同じ GitHub の account で書くので、handoff を書いたのが arc かは CI から見えない。門の判定 4 と同じく、PR の `control_handoff` の URL と本文の SHA-256 で handoff を固定し、それが arc の作業指示の写しかは、単位を閉じる PR の監査で、監査の席が iyasaka-arc#24 の作業指示と照らす（単位を閉じる PR の監査の項目に置く。aun の分の記録 §5）。
 - 対応表が挙げた試験・`audit` の理由が条件の中身を本当に確かめているかは見ない（PR ごとの監査と、単位を閉じる PR の監査で見る）。
 
 ## 8. 予算と目安の時間
@@ -281,3 +293,11 @@ PR ごとの見込みの行数（`scripts/**`・`configs/**`・`.github/workflow
 | BF-UDC-06 照らす相手の集まりが対応表の側だけで、空の配列・取り出し 0・届ける計画の「できた」を見ない | 設計の記録の集まりを arc が書く handoff の `unit_done` から取る（§3.5 の 4）。空・ID 0 は unobserved。届ける計画の共通の「できた」と単位の「できたと言える条件」を全部取り、K9 で対応表の `conditions` と照らす（§3.5 の 5）。見せるものは計画にある時に `demo` を必須にした（K8）。対応表の形を `sds-unit-done-checklist/2` にした |
 | aun の分の BF-UDA-01（同じ種類が芯にもあった）新しい workflow を default branch に入れる前に、その実物の run を求めていた | §4 の「実物の workflow で 1 回」を、最初の配布先の導入の PR を統合した後に、その default branch の呼出し側で確かめる形にした。PR-2 は試験 E・W だけで確かめる。必須の検査に足すのはその確かめの後（aun の分の記録） |
 | 同じ種類の所（arc が見直した） | (0) 実物の写しで取り出しを試し、onza の story map の 4 列目（Unit ごとの受け持つ AC）と、届ける計画の書き方の違い（見出し・欄の名前・共通の行の有無）を見つけて §3.5 の 2・5 と profile の `sources` に入れた（onza U1 = AC 19 と条件 1。監査の席の 27 は 4 列目を読まない数）。(1) K3 も、対応表に集まりに無い AC がある時に unmet にした（T-7b）。(2) PR の割り方を、PR ごとの見込みの行数（下の端〜上の端）と上限 400 で照らし、版 2 の PR-1a・PR-1b の 2 本を、取り出しの 2 本を含む 5 本に分けた（§5）。(3) 写しの指紋の違いは K8・K9 にも効くようにした。(4) 対応表の `text_sha256` で、計画が改まった後の古い対応表を止める |
+
+## 11. 版 4 で直した所（事前の設計監査 2 回目 = shirube#90 6601271636 の指摘）
+
+| 指摘 | 直した所 |
+|---|---|
+| BF-UDC-06 対応表の `unit` を実在する別の単位（U2 → U5）に替えると、plan_id・node_id・unit_dir・写し・manifest を変えずに、U5 の小さい受入の集まり（AC 4 つ）で照らせる | 照らす単位を handoff の `unit_done.unit`・`unit_dir` と `plan_binding` だけで決め、対応表と PR の binding の値はそれと全部同じことを確かめるだけにした（違えば FAIL）。統合済みの単位を閉じる PR の handoff と照らし、1 つの単位と 1 つの node と 1 つの置き場が 1 対 1 でなければ FAIL。記録に無い単位・行が 0 は unobserved（§1・§3.2・§3.3 の 4・§3.5 の 2・4・5・§3.7）。負例 V-7（U2 → U5）・V-8・V-9・V-10・V-11 と、正しい組で U2 = 36・onza U1 = 19 のままの V-12 を足した（§4）。handoff の書き手の確かめは §7 |
+| BF-UDC-07 有効な外れ（excepted）と K8 の not_applicable が同時にあると、未達が無くても総合 FAIL になる | 総合を項目ごとの値の集まりで決める形にした: `met` か K8 の `not_applicable` だけ → PASS、それに `excepted` が 1 つ以上 → PASS_WITH_EXCEPTIONS、`unmet`・`unobserved` が 1 つでも → FAIL。K8 以外の `not_applicable` は `unmet` に数える（§3.6）。T-16b〜T-16e を足した（§4） |
+| 同じ種類の所（arc が見直した） | (1) 対応表の値で何かを選んでいる所を全部洗った: 単位のストーリー（§3.5 の 2）、届ける計画の単位の節（§3.5 の 5）、単位の PR の集まり（§3.3 の 4）の 3 つが対応表の値で選んでいたので、全部 handoff の値で選ぶ形にした。対応表の `design_records`・`prs`・`conditions`・`exceptions` は、写し・handoff・統合済みの PR から決めた集まりと照らすだけで、選ぶのには使っていない（版 3 のまま）。(2) 判定の値に K8 だけが出す値があったので、ほかの項目に出た時の扱いを決めた（T-16d）。(3) 行数: PR-1a と PR-1e の見込みを足した分で直し、上の端が 400 以内（§5） |
