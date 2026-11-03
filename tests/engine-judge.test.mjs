@@ -26,11 +26,12 @@ function put(root, files) {
 }
 const tmp = () => mkdtempSync(join(tmpdir(), "ej-"));
 const workspace = (extra = {}) => put(tmp(), { ...FILES, ...extra });
-const GOOD = JSON.stringify({ engineVersion: "2.11.1", selection: TARGET });
+const ROWS = [{ stage: "state-init", unit: null, kind: "initialization", status: "exempt", started: null, evidence: null }], SOURCE = sha("shards");
+const GOOD = JSON.stringify({ engineVersion: "2.11.1", selection: TARGET, sourceDigest: SOURCE, rows: ROWS });
 const shimLine = "export { unitStageStop, unitExempt, unitLedgerFor, engineRelativeRecordDir, codekbCtxFor, engineSelection };\n";
 // A fake child: records what it was given (the copy's root, the HOME, the orchestrate file with its shim) and answers with `reply`.
-const fakeChild = (reply, seen = []) => (root, home) => {
-  seen.push({ root, home, orchestrate: readFileSync(join(root, ".claude/tools/aidlc-orchestrate.ts"), "utf8") });
+const fakeChild = (reply, seen = []) => (root, home, target) => {
+  seen.push({ root, home, target, orchestrate: readFileSync(join(root, ".claude/tools/aidlc-orchestrate.ts"), "utf8") });
   return typeof reply === "function" ? reply(root) : reply;
 };
 
@@ -112,16 +113,17 @@ test("child environment: PATH, an empty HOME and the project dir only; the maker
   assert.ok(!source.includes("AIDLC_SESSION_OVERRIDE"));
 });
 
-test("prepare: a whole copy, fingerprints from the copy before the shim, one shim line, the child's version and selection; the workspace is not touched and the copy is gone", () => {
+test("prepare: a whole copy, fingerprints from the copy before the shim, one shim line, the child's judgment (sds-engine-judgment/1); the workspace is not touched and the copy is gone", () => {
   const ws = workspace(), before = treeDigest(ws), seen = [], base = tmp();
   const run = () => prepare({ workspace: ws, target: TARGET, tmp: base, runChild: fakeChild((root) => { put(root, { "aidlc/.aidlc-sessions/s.binding.json": "{}" }); return GOOD; }, seen) });
   const out = run();
-  assert.deepEqual(out, { inputDigest: before, engineTreeDigest: treeDigest(ws, [".claude"]), engineVersion: "2.11.1" });
+  assert.deepEqual(out, { inputDigest: before, engineTreeDigest: treeDigest(ws, [".claude"]), engineVersion: "2.11.1", sourceDigest: SOURCE, rows: ROWS });
   assert.deepEqual(run(), out);
   assert.equal(treeDigest(ws), before);
   assert.equal(seen[0].orchestrate, FILES[".claude/tools/aidlc-orchestrate.ts"] + "\n" + shimLine);
   assert.deepEqual(readdirSync(base), []);
   assert.equal(seen[0].home.includes(seen[0].root), false);
+  assert.deepEqual(seen[0].target, TARGET);
 });
 
 test("prepare: every failure is one fixed code with no sentence or path, and the temp place is empty afterwards", () => {
@@ -137,13 +139,14 @@ test("prepare: every failure is one fixed code with no sentence or path, and the
   run(JSON.stringify({ reason: "NOT_A_CODE" }));
   run("not json");
   run("");
+  run(JSON.stringify({ engineVersion: "2.11.1", selection: TARGET }));
   const noClone = workspace();
   rmSync(join(noClone, "aidlc/.aidlc-clone-id"));
   run(GOOD, noClone);
   const linked = workspace();
   symlinkSync("/etc/hosts", join(linked, ".claude/link"));
   run(GOOD, linked);
-  assert.deepEqual(codes, ["ENGINE_VERSION_MISMATCH", "SELECTION_MISMATCH", "SELECTION_MISMATCH", "ENGINE_LOAD_FAILED", "ENGINE_CALL_FAILED", "ENGINE_CALL_FAILED", "ENGINE_CALL_FAILED", "CLONE_ID_INCOMPLETE", "COPY_FAILED"]);
+  assert.deepEqual(codes, ["ENGINE_VERSION_MISMATCH", "SELECTION_MISMATCH", "SELECTION_MISMATCH", "ENGINE_LOAD_FAILED", "ENGINE_CALL_FAILED", "ENGINE_CALL_FAILED", "ENGINE_CALL_FAILED", "ENGINE_CALL_FAILED", "CLONE_ID_INCOMPLETE", "COPY_FAILED"]);
   assert.deepEqual(readdirSync(base), []);
   // A temp place that cannot be made, a child that throws and a copy that cannot be removed are fixed codes too, never a raw error or a path.
   const fixed = (code) => (e) => e instanceof JudgeError && e.message === code && e.code === code;
