@@ -41,7 +41,7 @@ test("negative: an approval, a reference, a start or an attempt file the workspa
   assert.deepEqual(verdict(pr([R("functional-design", "u1", "approved", true, REF2), INFRA, CG])), ["FAIL", "APPROVAL_REF_MISMATCH"]);
   assert.deepEqual(verdict(pr([FD, INFRA, CG]), { ...REGEN, rows: seq([FD, INFRA, R("code-generation", "u1", "not_approved", false)]) }), ["FAIL", "START_NOT_REPRODUCED"]);
   assert.deepEqual(verdict(pr([FD, INFRA, CG], new Map([[REF, Buffer.from("{B}")]]))), ["FAIL", "ATTEMPT_BYTES_MISMATCH"]);
-  assert.deepEqual(verdict(pr([FD, INFRA, CG], new Map([[REF, Buffer.from("{A}")], ["approvals/i1/x/_intent/attempt-1.json", Buffer.from("{}")]]))), ["FAIL", "ATTEMPT_BYTES_MISMATCH"]);
+  assert.deepEqual(compareRecords(pr([FD, INFRA, CG], new Map([[REF, Buffer.from("{A}")], ["approvals/i1/x/_intent/attempt-1.json", Buffer.from("{}")]])), REGEN).findings, [{ code: "ATTEMPT_BYTES_MISMATCH", stage: "x", unit: null }]);
   assert.deepEqual(verdict(pr([FD, INFRA, CG]), { ...REGEN, rows: seq([FD, R("infrastructure-design", "u1", "exempt", false), CG]) }), ["FAIL", "EXEMPT_MISMATCH"]);
   assert.deepEqual(verdict(pr([FD, INFRA, CG, R("build-and-test", null, "not_approved", false)])), ["FAIL", "ROW_EXTRA"]);
   assert.deepEqual(verdict({ ...REGEN, rows: REGEN.rows.map((r, i) => ({ ...r, order: i ? i + 2 : 1 })) }), ["FAIL", "ORDER_NOT_SEQUENTIAL"]);
