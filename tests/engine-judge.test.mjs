@@ -58,9 +58,9 @@ test("copy: only .claude/ and aidlc/, whole, byte for byte; a symbolic link stop
 });
 
 test("fingerprints: path and hash pairs in UTF-8 byte order of the path; anything the engine can see moves inputDigest, only .claude/ moves engineTreeDigest", () => {
-  const ws = put(tmp(), { ".claude/b": "2", ".claude/a": "1", "aidlc/\u{10000}": "4", "aidlc/￿": "3" });
+  const ws = put(tmp(), { ".claude/b": "2", ".claude/a": "1", "aidlc/\u{10000}": "4", "aidlc/\ue000": "3" });
   const pair = (p, s) => `${p}\t${sha(s)}\n`;
-  assert.equal(treeDigest(ws), sha(pair(".claude/a", "1") + pair(".claude/b", "2") + pair("aidlc/￿", "3") + pair("aidlc/\u{10000}", "4")));
+  assert.equal(treeDigest(ws), sha(pair(".claude/a", "1") + pair(".claude/b", "2") + pair("aidlc/\ue000", "3") + pair("aidlc/\u{10000}", "4")));
   assert.equal(treeDigest(ws, [".claude"]), sha(pair(".claude/a", "1") + pair(".claude/b", "2")));
   const base = workspace();
   for (const p of ["aidlc/active-memory/team.md", "aidlc/spaces/default/intents/intents.json", "aidlc/spaces/default/scopes/x.md", "aidlc/spaces/default/codekb/y.md", "aidlc/.aidlc-clone-id"]) {
