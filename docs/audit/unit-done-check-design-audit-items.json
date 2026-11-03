@@ -1,0 +1,55 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@b13192d0d5c3150125c5b5f19ee00eafde372c71/docs/sds/audit-method.md#3",
+  "scope": "Shirube の作る単位の完成検査（unit-done）の芯の設計の記録の事前監査（D1〜D6）、4 回目: shirube の docs/design/unit-done-check.md（作者 arc、版 5）と、本項目集合の file docs/audit/unit-done-check-design-audit-items.json。実装は本監査の合格の後なので、code の差分は無い。事実の照らし先 [SH] = shirube main dd48581d の scripts/sds/kit.mjs・scripts/sds/plan-binding.mjs・scripts/sds/design-gate.mjs・scripts/hygiene/audit-admission.mjs・.github/workflows/sds-gate.yml・kit/sds-gate-caller.yml・.shirube/hygiene-profile.md。[AIA] = Owner の作業場 aidlc-owner/aun の intent 261021-ai-handoff-relay の inception の stories.md（7bf22579416b0bda695a9b2ae5d69dc84585491faca56caad433116e1c87cf14）・unit-of-work-story-map.md（ceb154c98f3ee27c278f82194d14d1f81c9cd1fa4e996372ab6614008e34e799）・bolt-plan.md（c73b022753b24d3eebbfd6e3701c00b803a6618478889550020c31df85aa7ce2）。[AIO] = Owner の作業場 aidlc-owner/onza の intent 261021-decision-stall-visibilit の inception の stories.md・unit-of-work-story-map.md・bolt-plan.md（51250df0bd9223fb28573789a9a6f3e25d635bb85219ac16f666df655da04e1c）。[U2PR] = aun の統合済みの u2 の PR #71・#72・#73・#74・#76・#77・#78・#79・#85。1 回目の返却 = shirube#90 6599617868（BF-UDC-01〜06）、2 回目の返却 = shirube#90 6601271636（BF-UDC-06・07）、3 回目の返却 = shirube#90 6602191506（BF-UDC-08）、aun の分の 1 回目の返却 = aun#89 6599987095（BF-UDA-01・02）。記法: [KIT] = OD-SUITE-UNIT-DONE-CHECK-IN-SHIRUBE-GATE-KIT-20261103-001（iyasaka-arc#49 6597452196）、[ALL] = OI-SUITE-UNIT-DONE-ALL-CHECKS-PASS-BEFORE-OWNER-CHECKLIST-TESTS-20261103-001（#49 6596779824）、[CI] = OI-SUITE-UNIT-DONE-CHECK-AS-CI-GATE-20261103-001（#49 6596966301）、[SCRIPT] = OI-LLM-CONTROL-BY-SCRIPT-MECHANISM-HOOK-MUST-20261024-001（#49 6380845765）、[UT] = OD-SUITE-UNIT-TIME-TARGET-MIDPOINT-20261102-001（#49 6566617526）、[RCPT] = OD-SHIRUBE-UNIT-DONE-CORE-SHIRUBE90-ROUND4-AUTHOR-RECEIPT-20261103-001（#49 6602513803、本文 SHA-256 45b2f4a8f23b4171e81261edb28e7619d7a647ff462e3780544d59127480c539）、[RCP78] = aun#78 の作者の受領 6578087864、[RCP79] = aun#79 の作者の受領 6589549943、[V1] = 版 1（iyasaka-arc#57 6597113797）、[V2] = 版 2（iyasaka-arc#57 6598922223）。全 8 項目必須。",
+  "items": [
+    {
+      "id": "UDC-1",
+      "stage": "design",
+      "criterion": "目的と置き場: §1 の目的が [ALL]・[CI] の範囲の中で「全部 met の時だけ単位を閉じる PR を統合できる」「Owner に回すのは通った PR だけ」を言い、判定に LLM を使わない（[SCRIPT]）。§2 の置き場が [KIT] の決定 1 と同じ形で、判定の決まりが shirube の 1 か所（S3）。対象外（試験の意味・設計と実装の意味のずれ・log の秘密・門の判定 1〜6）を完成検査で見ると書いていない。S2 から外れる所が §9 の deviation_ledger にある。",
+      "basis": "[KIT] の決定 1・4、[ALL]、[CI]、[SCRIPT]、S2、S3"
+    },
+    {
+      "id": "UDC-2",
+      "stage": "design",
+      "criterion": "動き方と権限（BF-UDC-02）: §3.1 の呼出し側が pull_request_target と workflow_run（ci の completed）で走り、定義が default branch の物で、再利用の workflow が shirube を job.workflow_sha で checkout し、PR の code を checkout も実行もしない。§3.1 の API と権限の表の権限の組が [SH] kit/sds-gate-caller.yml の permissions（contents・pull-requests・issues・actions・checks の read と statuses の write）と同じで、表の API が §3.3 で読む物を全部覆う。gh の包みの文が [SH] sds-gate.yml と同じで試験 W が縛る。新しい資格情報・新しい外部の依存を足さない（S9）。キットの render が profile のある配布先にだけ 2 つの file を書き、kit status の uses の照らし（[SH] kit.mjs の usesMatch）がそのまま効く。",
+      "basis": "[SH]、S9、escalation-policy（新しい外部依存）"
+    },
+    {
+      "id": "UDC-3",
+      "stage": "design",
+      "criterion": "対象の見分け: §3.2 の表の 4 つの行が、対応表を変える PR と completes_unit: true の handoff を持つ PR の組合せを全部覆い、片方だけの PR を FAIL にする。handoff の読み手が [SH] plan-binding.mjs の物と同じで、2 つ目の読み手を作らない（S3）。handoff が読めない時を unobserved にしている。§3.2 の単位の決め方（2 回目の BF-UDC-06）: 照らす単位（unit・unit_dir・plan_id・node_id）を handoff の unit_done と plan_binding だけで決め、対応表と PR の delivery_plan_binding の値が全部それと同じでなければ FAIL、handoff の unit・unit_dir が無ければ unobserved で FAIL、統合済みの単位を閉じる PR の handoff と照らして 1 つの単位・1 つの node・1 つの置き場が 1 対 1 でなければ FAIL。対象外の PR で success を出す。",
+      "basis": "[SH] plan-binding.mjs、S3、S5"
+    },
+    {
+      "id": "UDC-4",
+      "stage": "design",
+      "criterion": "事実の集め方（BF-UDC-03）: §3.3 の 1 の run の選び方が、event pull_request・同じ repo（fork は unobserved）・pull_requests に対象の PR がある・head_sha が今の head・completed・一番新しい run の一番新しい attempt で、同じ head の別の PR の run を選ばない。§3.3 の 2 で、事実の行が試した commit を持ち、その commit の親が [今の base、今の head] と同じでなければ全部 unobserved（CI の後に base が動いた時に古い結果を使わない）。事実の行が workflow の command にならない形で元の file に戻り、2 組・欠け・指紋の違いを unobserved にする。読めない時は例外で job を緑にしない（S8）。核が集め手の JSON だけを読む（S4）。試験 G-6〜G-10 がこれらの負例を持つ。",
+      "basis": "S4、S5、S8、BF-UDC-03"
+    },
+    {
+      "id": "UDC-5",
+      "stage": "design",
+      "criterion": "項目と判定（BF-UDC-01・05）: §3.4 の K1〜K9 の照らし方が §3.3 の事実と写しと設計の記録と handoff だけで決まる。K5 が 1 つ目の commit に test_paths の file を 1 つ以上求め、空・docs だけ・試験と code を一緒に変えた commit を unmet にする。K6 が固定 checker を統合済みの PR に当て直さず、(a)〜(f)（統合・PR 本文の audit の依頼の本文の指紋と形と reviewer・返却の作者と形と全部 PASS と統合した head・返却の編集の履歴・統合した head への Approve と後の changes requested が無いこと・作者の受領）で照らし、[U2PR] の Approve の本文が文だけでも通る形で、[SH] audit-admission.mjs の 72 行目の state の決まりと食い違わない。(c)・(d)・(e) の判断を [SH] design-gate.mjs の passed・quiet・mine と同じ関数で行い、5.3u の答えを変えない（S3）。(f)（3 回目の BF-UDC-08、[CI] の 4、[RCPT]）が、同じ PR の issue comment の全部の頁から、作者が watchout・作成が (c) の返却より後で merged_at より前・本文に (c) の返却の comment の URL と統合した head の 40 文字と RECEIPT_ACCEPTED を全部持ち、編集が watchout だけで merged_at より前（消された版が無い）の受領を 1 つ以上求め、無い・別の返却・別の head・範囲の外の時刻・ほかの作者や編集を unmet、comment の一覧か候補の編集の履歴が読めない時を unobserved にする。監査の席が [RCP78]・[RCP79] にこの決まりを当てて (f) を満たすこと、受領だけを除いた入力で K6 が met にならないことを確かめる。(f) の編集の履歴の判断が quiet と同じ関数（login と時刻の上限が引数）である。K7 が単位を閉じる PR 自身を prs に入れさせない。§3.6 の総合が、met か K8 の not_applicable だけ → PASS、それに excepted が 1 つ以上 → PASS_WITH_EXCEPTIONS、unmet・unobserved が 1 つでも → FAIL の 3 つで全部の組を重ならずに覆い（BF-UDC-07。有効な外れと K8 の not_applicable が同時にある組が PASS_WITH_EXCEPTIONS）、K8 以外の not_applicable を unmet に数え、外れの扱いが [V2] と同じで、unobserved を met に数えない。試験 T-16b〜T-16e がこの境目を持つ。",
+      "basis": "[SH] design-gate.mjs・audit-admission.mjs、[U2PR]、[ALL] の 5、S3、S5、BF-UDC-01、BF-UDC-05、BF-UDC-07（2 回目）、[CI] の 4、[RCPT]"
+    },
+    {
+      "id": "UDC-6",
+      "stage": "design",
+      "criterion": "照らす相手の集まりと取り出し（BF-UDC-04・06、2 回目の BF-UDC-06）: 単位のストーリー（§3.5 の 2）・届ける計画の単位の節（§3.5 の 5）・単位の PR の集まり（§3.3 の 4）を handoff の値で選び、対応表の値で選ばない。監査の席が [AIA] の今の file で、plan_id・node_id・unit_dir・写し・manifest を変えずに対応表の unit だけを U5 にした組が FAIL になり（V-7）、照らす相手が U5 の物（US7.2・AC 4）にならず U2 の 36 のままであることを確かめる。記録に無い単位（story map に行が 0）と届ける計画に節の無い単位は unobserved。受入の基準・届ける計画の条件・見せるものが承認済みの記録の写しから、設計の記録の集まりが arc の書く handoff の unit_done.design_records から決まり、対応表の側から小さくできない（空・ID 0・条件 0 は unobserved）。§3.5 の 2 が story map の Unit ID の `;` と、profile が名指す受け持つ AC の欄（範囲の展開、ID の無い区切りをストーリーの条件にする）を読み、箇条書きでも表でも AC を取り、ストーリーごとに AC か条件を求める。監査の席が [AIA]・[AIO] の今の file にこの決まりを当てて、aun U2 = ストーリー 8・AC 36、onza U1 = ストーリー 6・AC 19・条件 1（US3.3）になることを確かめる。§3.5 の 5 が profile の sources の値で [AIA]・[AIO] の届ける計画を読み、aun U2 = 共通 5・単位の条件 5・見せるものあり、onza U1 = 共通なし・単位の条件 5・見せる物ありになる。K8・K9 が見せるものと条件を全部照らし、text_sha256 で古い対応表を止める。§3.7 の profile と対応表の形が K1〜K9 に要る欄を全部持つ。",
+      "basis": "[AIA]、[AIO]、AI-DLC 2.11.1、S5、BF-UDC-04、BF-UDC-06"
+    },
+    {
+      "id": "UDC-7",
+      "stage": "design",
+      "criterion": "試験・PR・順・予算（BF-UDA-01 の同じ種類）: §4 の試験が §3 の各決まりの正と負（T・V・X・G・P・E・W）を持ち、1 つ目の commit を試験だけにする手順を書いている。実物の workflow の run を、default branch に呼出し側が無いうちに求めず、最初の配布先の導入の PR を統合した後に、その default branch の呼出し側で確かめる形で、必須の検査に足すのはその後。PR-1f が統合済みの [U2PR] のうち aun#78・#79 に K6 の (a)〜(f) を読むだけの API で当てた結果を示す。§4 に (f) の負例 P-3d〜P-3g・P-3i と正例 P-3h、核の T-12d・T-12e がある。§5 の PR ごとの見込みの行数（下の端〜上の端。PR-1a の 395、版 5 で 2 本に分けた PR-1e の 195・PR-1f の 280 を含む。PR は 8 本）の上の端が 1 本 400 行（scripts・configs・workflows・tests、fixtures は除く）以内で、20 file・新しい file 300 行の上限（[SH] hygiene-profile）に収まり、超えそうな時に止める。own code の見込みが 4,000 行の予算の内。workflow を足す PR-2 が R4 で Owner の exact-head に置かれている（[KIT] の決定 4）。§8 の目安が [UT] の決まりで計算されている。",
+      "basis": "[SH] hygiene-profile、[KIT] の決定 4、[UT]、BF-UDA-01"
+    },
+    {
+      "id": "UDC-8",
+      "stage": "design",
+      "criterion": "直しの対応: §10 が 1 回目の BF-UDC-01〜06 と、aun の分の BF-UDA-01 のうち芯にある同じ種類の所を、§11 が 2 回目の BF-UDC-06・07 とその同じ種類の所（対応表の値で選んでいた 3 か所、K8 だけの値）を、§12 が 3 回目の BF-UDC-08 とその同じ種類の所（[CI] の 4 の記録 3 つを K6 の (c)〜(f) に当て直したこと、PR の集め手を 2 本に分けたこと）を、1 つずつ具体の直しに結び、版 5 の本文がその直しのとおりになっている。§7 に、(f) が受領の中身の正しさまでは CI から確かめられないことと、その確かめを統合する席が持つことが書かれている。門の判定の決まり・固定 checker・pin・保護面を、PR-2 の workflow と kit 以外で変えていない。",
+      "basis": "shirube#90 6599617868・6601271636、aun#89 6599987095、audit-method"
+    }
+  ]
+}
