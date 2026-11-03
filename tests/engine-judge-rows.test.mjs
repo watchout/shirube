@@ -115,6 +115,13 @@ test("shapes the judgment does not cover are UNSUPPORTED_SHAPE, and the audit sh
   assert.equal(out.sourceDigest, createHash("sha256").update(readFileSync(out.ws.shard)).digest("hex"));
 });
 
+test("completions in the same second cannot be put in order across shards: a different Run floor is EVIDENCE_MISSING, the same one is one attempt (3-2)", async () => {
+  const same = "2026-11-02T00:00:00Z", at = (floor) => done("functional-design", "u1", floor, same);
+  await assert.rejects(judged({ events: [...HEALTHY, at("F2"), at("F3")] }), { code: "EVIDENCE_MISSING" });
+  const twice = await judged({ events: [...HEALTHY, at("F2"), at("F2")] });
+  assert.equal(twice.rows.find((r) => r.stage === "functional-design" && r.unit === "u1").evidence.runFloorOrdinal, 2);
+});
+
 test("an exception inside the engine's parts is one fixed code, with no sentence or path", async () => {
   await assert.rejects(judged({ boom: true }), (e) => e instanceof JudgeError && e.code === "ENGINE_CALL_FAILED" && e.message === "ENGINE_CALL_FAILED");
 });
