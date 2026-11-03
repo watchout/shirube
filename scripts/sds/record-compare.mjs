@@ -63,8 +63,7 @@ export function main(argv) {
   if (!prDir || !regenDir) return { code: 2, line: JSON.stringify({ schema: SCHEMA, result: "USAGE", findings: [] }) };
   const pr = loadDir(prDir), regen = loadDir(regenDir), base = loadBase(arg("--base"));
   const unreadable = { schema: SCHEMA, result: "FAIL", findings: [{ code: "INPUT_UNREADABLE", stage: null, unit: null }] };
-  let out = unreadable;
-  try { if (pr && regen && base) out = compareRecords({ ...pr, attempts: new Map([...pr.attempts].filter(([path]) => !base.has(path))) }, regen); } catch { out = unreadable; }
+  const out = pr && regen && base ? compareRecords({ ...pr, attempts: new Map([...pr.attempts].filter(([path]) => !base.has(path))) }, regen) : unreadable; // loadDir's checks leave nothing for compareRecords to throw on
   return { code: out.result === "PASS" ? 0 : 1, line: JSON.stringify(out) };
 }
 
