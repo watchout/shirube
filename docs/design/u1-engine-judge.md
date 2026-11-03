@@ -1,5 +1,5 @@
-<!-- arc:shirube-u1-design-revision:engine-judge:v10 -->
-## arc の設計の記録: Shirube U1 の設計の改版 v10（I1: 段の「済み」を AI-DLC の engine の判断で読む。v8 = §7 の追補で aun・onza に広げ、門の判定 6 として入れる。v9 = §7 の事前の設計監査 1 回目の指摘 3 つを直した版。v10 = 2 回目の指摘 1 つ（試験 19）を直した版。直した所は §7.10・§7.11）
+<!-- arc:shirube-u1-design-revision:engine-judge:v11 -->
+## arc の設計の記録: Shirube U1 の設計の改版 v10（I1: 段の「済み」を AI-DLC の engine の判断で読む。v8 = §7 の追補で aun・onza に広げ、門の判定 6 として入れる。v9 = §7 の事前の設計監査 1 回目の指摘 3 つを直した版。v10 = 2 回目の指摘 1 つ（試験 19）を直した版。v11 = 3 回目の指摘 1 つ（試験 18 の onza の期待）を直した版。直した所は §7.10〜§7.12）
 
 適用: R1〜R3、L1〜L6、S2・S4・S5・S8、OD-SHIRUBE-INCLUDE-AIDLC-NO-REINVENT-20261021-001（#49 6309035411）、OD-SHIRUBE-I1-ENGINE-STATE-COPY-DESIGN-REVISION-20261024-001（#49 6381170673）、OD-SHIRUBE-I1-UNIT-DONE-VIA-ENGINE-PARTS-WITH-BUN-20261025-001（#49 6389500200。索引の行 = iyasaka-org main 40e2f18f）、OI-LLM-CONTROL-BY-SCRIPT-MECHANISM-HOOK-MUST-20261024-001、OD-SHIRUBE-I1-DESIGN-ROUND6-WHOLE-COPY-20261025-001（#49 6393696963。索引の行 = iyasaka-org main 79ec8cd1）。v6（#57 6390523968）への設計監査 round 5 の返却（shirube#68 6392576496、BF-R5-01・02）と Owner の決定（入力を 1 つずつ数えて写し原典の一覧と照らす形をやめ、丸ごと写して指紋と engine の版を残す）を受けて §3-5 を書き直した。round 4 の返却（shirube#68 6392358644）は受付の BLOCK で、設計の中身を見ていない。v6 の答えのうち §3-5 に関わらない物は保つ。以下は v6 までの経緯。v2（#57 6389874375）への設計監査 round 2 の返却（shirube#68 6390071922、BF-R2-01〜06）と、shirube の席の確認（#24 6389980151・6390213665・6390265024）を受けて全体を書き直した。v2・v3（#57 6390136222）・v4（#57 6390236637）・v5（#57 6390272104）は置き換え（v3・v4 は監査に出す前に席の確認で直した）。v5 への設計監査 round 3 の返却（shirube#68 6390455033、BF-R3-01〜05）と、席の確認（#24 6390338940）を受けて直した。round 1 の指摘（BF-01〜07）への答えは保つ。対象 = U1 の Functional Design（entities.md・rules.md）と NFR Requirements の tech-stack-decisions.md。独立の監査の前の案。
 
@@ -132,7 +132,7 @@
 
 （v7 の next_action は §7 の最後の next_action が置き換える。）
 
-### 7. 版 8 の追補（2026-11-03。aun・onza に広げ、門の判定 6 として入れる。版 9 で §7.3・§7.4・§7.5・§7.7・§7.8・§7.9 を直し、§7.10 を足した。版 10 で §7.8 の 18・19 を直し、§7.11 を足した）
+### 7. 版 8 の追補（2026-11-03。aun・onza に広げ、門の判定 6 として入れる。版 9 で §7.3・§7.4・§7.5・§7.7・§7.8・§7.9 を直し、§7.10 を足した。版 10 で §7.8 の 18・19 を直し、§7.11 を足した。版 11 で §7.1・§7.6・§7.8 の 18・19 を直し、§7.12 を足した）
 
 v7 の §1〜§6 は v7 のまま残す（§3-1〜§3-7 の作り手の作りは変えない）。この §7 は、Owner の決定 OD-SHIRUBE-NEXT-GOAL-GATE-READS-AIDLC-APPROVAL-START-20261103-001（iyasaka-arc#49 6588894545。以下 [NG]）の決定 4（作業指示の前に v7 を 10/25 より後の門の変更と照らし、食い違えば設計の改版を事前の設計監査に通す）による追補で、照らし合わせの結果（iyasaka-arc#57 6589245832）の食い違い 3 つだけを埋める。§7 と §1〜§6 が食い違う所は §7 が正（§7.2 に列挙）。
 
@@ -147,7 +147,7 @@ v7 の §1〜§6 は v7 のまま残す（§3-1〜§3-7 の作り手の作りは
 - U1 の Functional Design（shirube main の `aidlc/spaces/default/intents/261021-dev-speedup-automation/construction/u1-skeleton/functional-design/`）は、記録の判定を門の 1〜5 とは別の「記録の判定」にし（BR1.1・BR4.1）、`sds-pr` の block に `aidlc_record`（`intent`・`stage`・`unit`）を足し（C1）、承認の記録を repo の `approvals/<intent>/…` に置く（C2・C9）と決めている。v7 はその読み方（§3-4 の橋）を engine の判断に替えた物。
 - aun・onza の repo は非公開。AI-DLC の記録は repo に無く、Owner の作業場（`~/Developer/aidlc-owner/aun`・`~/Developer/aidlc-owner/onza`。どちらもその repo の checkout で、`.claude/`・`aidlc/` は git の外）にだけある。3 つの作業場とも `AIDLC_VERSION = "2.11.1"`、Unit Ownership = solo、unit-major。
 - aun の作業場（intent `261021-ai-handoff-relay`）: Inception の段は全部 `[x]`・`[S]`。作る段は u1 の設計の 4 段の記録がある（記録の追いつき）。u2 以降の Unit の作る段は始まっていない。aun の作る単位（u2・u3・u5 …）は、arc の設計の記録（独立の設計監査 = 判定 5 の 5.3u の対象）で作っている（OD-U5-U1-IMPLEMENT-ALONGSIDE-AIDLC-RESYNC-20261027-001・OD-AUN-REMAINING-UNITS-DESIGN-AHEAD-AND-U3-ON-SPE-DEV-20261102-001）。
-- onza の作業場（intent `261021-decision-stall-visibilit`。もう 1 つ `261021-staff-knowledge-support` がある）: Inception と U1 の設計の 4 段が承認済みで、onza の実装の席がこの作業場で U1 の Code Generation を回している（OD-ONZA-U1-RELAUNCH-IMPL-SEAT-IN-AIDLC-WORKSPACE-BY-CTO-20261102-001）。
+- onza の作業場（intent `261021-decision-stall-visibilit`。もう 1 つ `261021-staff-knowledge-support` がある）: Inception と U1 の設計の 4 段が承認済み。onza の実装の席はこの作業場で U1 の Code Generation の作業を進めている（OD-ONZA-U1-RELAUNCH-IMPL-SEAT-IN-AIDLC-WORKSPACE-BY-CTO-20261102-001）が、engine の記録では U1 の Code Generation の行は始まっていない（`started: false`。D1 の直しで段を戻した 2026-11-02T21:41Z の `STAGE_JUMPED` の後、設計の 4 段の `UNIT_COMPLETED` は 2026-11-03T01:06:51Z までにあるが、code-generation の `UNIT_STARTED` が無い。3 回目の返却 shirube#87 6594750285 の実測と、arc が 2026-11-03T03:3x に audit の file を読んだ結果が同じ）。版 10 までの「Code Generation を回している」は、engine の記録ではなく席の作業を書いていた（版 11 で直した）。
 - shirube の own code は 2,178 行 / 4,000 行（main `5356af4f`、`scripts/hygiene/own-code-budget.mjs`）。
 
 #### 7.2 v7 のうち §7 が置き換える所
@@ -205,7 +205,7 @@ v7 の §1〜§6 は v7 のまま残す（§3-1〜§3-7 の作り手の作りは
 - 置き場: 判定の芯 `scripts/sds/record-gate.mjs`（約 160 行。v9 で R6.3 の中の食い違いの確かめと R6.0 の (b) を足した）と、`gate.mjs` の読み手（base の `approvals/` を contents の API で読む。約 40 行）。作り手（I1）は v7 §3-6 の `engine-judge.mjs`（300 行の内）と `approval-record.mjs`（約 150 行）、照合の `record-compare.mjs`（約 60 行、§7.3）。合わせて約 710 行で、own code は約 2,890 行 / 4,000 行（予算は変えない。超えそうな時は作る席が止めて arc に返す）。
 
 #### 7.6 aun・onza で済みの条件をどう満たすか
-- onza: U1 の設計の 4 段が承認済みで、Code Generation を作業場で回しているので、U1 の作業の PR（`aidlc_record` = `code-generation`・`u1-skeleton-board`）は、前の行（`infrastructure-design` の U1）が承認済み・自分の行が `started: true` なら判定 6 を通る（済みの条件 (1) の正例）。
+- onza: U1 の設計の 4 段は承認済み。U1 の作業の PR（`aidlc_record` = `code-generation`・`u1-skeleton-board`）は、前の行（`infrastructure-design` の U1）が承認済みで、自分の行が `started: true` なら判定 6 を通る（済みの条件 (1) の正例）。今の engine の記録では U1 の Code Generation の行は `started: false`（§7.1）なので、今の onza の作業の PR は判定 6 で FAIL になり、それは「その段を engine の上で始めていない」という正しい FAIL として数える（記録だけの間は止めない）。正例は、onza の席が engine の上で U1 の Code Generation を始め（engine が `UNIT_STARTED` を記録し、作り直しで行が `started: true` になる）、その後に出す作業の PR で観測する。観測の手順: (1) onza の席が engine の上で U1 の Code Generation を始める（始め方は arc が onza の席への作業指示で決め、Owner の操作が要るならボードで伺う）、(2) 作り手を動かし、U1 の code-generation の行が engine の答えのとおり `started: true` になったことを確かめる、(3) その後の作業の PR で判定 6 が PASS になることを読み戻す。行の `started` を手で書き換えない。
 - aun: 作る段が AI-DLC の会話で回っていない Unit（u3・u5 …）の作業の PR は、判定 6 で FAIL になる（記録だけの間は止めない）。これは門の誤りではなく「その段を AI-DLC で承認していない」という正しい FAIL で、devauditor の分類（OD-SHIRUBE-REQUIREMENTS-MEASURES-AND-FAIL-CLASSIFICATION-20261022-001）では「PR の不備」に入る。aun で済みの条件 (1) の正例を出すには、どれかの Unit の作る段を aidlc-aun の会話で回す（Owner の承認が要る）必要がある。どの Unit からそうするかは、進め方の決定なので arc が別に Owner に伺う（§7.9 の 2）。
 - 負例（済みの条件 (2)）: 承認の無い段の作業の PR を、aun か onza で 1 本ずつ出して FAIL を確かめて閉じる（S1-SH-01 の負例の PR と同じやり方）。
 
@@ -233,10 +233,10 @@ v7 の §1〜§6 は v7 のまま残す（§3-1〜§3-7 の作り手の作りは
 16. 段階: `record_binding_mode` が無い → `NOT_CHECKED`、`report-only` の FAIL → 門は PASS のまま `record_binding.result = FAIL`、`blocking` の FAIL → 門が FAIL。
 17. 判定 4・5 と並べて: 同じ PR で判定 5 が PASS・判定 6 が FAIL → 門の JSON に両方が別々に出て、片方が片方を上書きしない。
 本物で 1 回ずつ（席の作業場、PR に証拠）:
-18. onza の作業場で作り手を動かし、**全部の行が engine の答えと同じ**になる（下の 19 の比べ方と同じ）。あわせて、1 回目の事前の設計監査で監査の席が観測した値と同じになる: U1 の設計の 4 段は `approved`、Code Generation は `started: true`（I1 の PR か onza の記録の PR）。
+18. onza の作業場で作り手を動かし、**全部の行が engine の答えと同じ**になる（下の 19 の比べ方と同じ。Unit ごとの期待を手で並べない）。照らしの値（監査の席が隔離した写しで観測した値。試験の期待にはしない。扱いは 19 の照らしと同じ）: U1 の設計の 4 段は `approved`（1 回目の返却 shirube#87 6593957425 と 3 回目の返却 shirube#87 6594750285）、U1 の code-generation は `not_approved`・`started: false`（`unitStageStop` が work、`unitLedgerFor(...).open` と `unitLifecycleSnapshot(...).open` が空、3 回目の返却）。code-generation の行は、onza の席が engine の上で始めると `started: true` に変わる（§7.6）。その時も期待は engine の答えのまま。
 19. aun の作業場で作り手を動かし、**全部の行が engine の答えと同じ**になる（記録の PR に載せる。BF-U8D-03 で直した。版 10 で、Unit ごとの期待を arc が手で並べる形をやめた）。
    - 比べ方: 試験が作り手とは別に、同じ写しで engine の部品を (段, Unit) ごとに直接呼び（Unit の段は `unitStageStop`・`unitExempt`・`unitLifecycleSnapshot(...).open`、段単位の段は Stage Progress の印と `GATE_APPROVED`）、§3-1 の決まり（stop が null で免除が真 → `exempt`、null で免除が偽 → `approved`、null でない → `not_approved`）と §3-4 の `started` の決まりで期待の行を作る。作り手の `_sequence.json` の行は、この期待の行と全部同じ（行の集まり・順・`status`・`started`）。engine が免除と言う行を `not_approved` に、未承認と言う行を `exempt` に書き換えない。
-   - 観測した値の照らし（監査の席が隔離した写しで見た値。この値と違えば作る席が止めて arc に返す）: u1 の設計の 4 段（functional-design・nfr-requirements・nfr-design・infrastructure-design）は `approved`・`started: true`（`unitStageStop` が null・`unitExempt` が偽、shirube#87 6593957425）。u2 の同じ 4 段は `not_approved`・`started: false`（`unitStageStop` が work・`open` が空、同じ返却）。u6（u6-local-seats-acceptance）の functional-design は `exempt`・`started: false`（`unitStageStop` が null・`unitExempt` が真 = Unit の種類に当てはまる成果物が無い段の免除、shirube#87 6594420177）。
+   - 観測した値の照らし（監査の席が隔離した写しで見た値。試験の期待にはしない。作る時に engine の答えが照らしの値と違う行があれば、作る席は違う行と engine の部品の答えを PR 本文に書く。照らしで `approved` の行が `approved` でなくなっていた時（段の開き直しの疑い）だけ、作らずに止めて arc に返す。engine の答えを照らしの値に合わせて書き換えず、照らしの値に合わせた期待も書かない）: u1 の設計の 4 段（functional-design・nfr-requirements・nfr-design・infrastructure-design）は `approved`・`started: true`（`unitStageStop` が null・`unitExempt` が偽、shirube#87 6593957425）。u2 の同じ 4 段は `not_approved`・`started: false`（`unitStageStop` が work・`open` が空、同じ返却）。u6（u6-local-seats-acceptance）の functional-design は `exempt`・`started: false`（`unitStageStop` が null・`unitExempt` が真 = Unit の種類に当てはまる成果物が無い段の免除、shirube#87 6594420177）。
    - ほかの Unit・段の値は arc が手で並べず、上の比べ方で engine の答えのままを期待にする。
 20. `record-compare.mjs`（偽の入力、§7.3）: 作り直し = [functional-design `approved`, infrastructure-design `not_approved`, code-generation `started: true`] に対し、(正例) 同じ記録 → PASS。作り直しで engine の免除の行（例: u6 の functional-design が `exempt`）を PR も `exempt` で持つ → PASS（正しい免除は通る）。作業場が進んで作り直しの infrastructure-design が `approved` になった → PASS。(負例、BF-U8D-01 の 3 つ) PR で中の行（infrastructure-design）を `exempt` にした → FAIL（`EXEMPT_MISMATCH`）。中の行を消して `order` を振り直した → FAIL（`ROW_MISSING`）。中の行を先頭に動かした → FAIL（`ROW_ORDER_MISMATCH`）。(負例) PR で `approved` だが作り直しで `not_approved`（開き直し）→ FAIL。`approvalRef` が違う → FAIL。`started: true` を作り直しが言わない → FAIL。`attempt-*.json` の bytes が 1 byte 違う → FAIL。作り直しで `exempt` の行が PR で `not_approved` → FAIL。3 つの負例は、照合が無ければ橋（v7 §3-4）で PASS になる形であることも同じ試験で示す。
 
@@ -261,4 +261,10 @@ v7 の §1〜§6 は v7 のまま残す（§3-1〜§3-7 の作り手の作りは
 | BF-U8D-03（2 回目）試験 19 の「u2 以降は一律 `not_approved`」が、engine が u6 の functional-design を正しく免除にすることと食い違う | §7.8 の 19: Unit ごとの期待を arc が手で並べる形をやめ、試験が作り手とは別に engine の部品を直接呼んで作った期待の行と、作り手の行が全部同じことを確かめる形にした。観測した値（u1 の設計の 4 段 = `approved`、u2 = `not_approved`、u6 の functional-design = `exempt`）は照らしの値として残した。§7.8 の 20 に正しい免除が通る正例を足した |
 | 同じ種類の所（arc が見直した） | §7.8 の 18（onza）も、手で並べた期待ではなく engine の答えと全部同じことを確かめる形にした（観測した U1 の設計の 4 段と Code Generation の値は照らしとして残した）。§7.6 の aun の FAIL の読み（作る段を AI-DLC で回していない Unit の作業の PR は判定 6 で FAIL）は、免除の行を飛ばして前の行を選ぶ橋の決まり（v7 §3-4）のままで変わらない（u6 なら functional-design を飛ばした前の行も `not_approved`） |
 
-next_action: actor=shirube; what=この v10 の 2 つの file を shirube#87 に置き直し、事前の設計監査の 3 回目を頼む（作業指示 = iyasaka-arc#24 の追補）; blocking=false
+#### 7.12 版 11 で直した所（事前の設計監査 3 回目 = shirube#87 6594750285 の指摘）
+| 指摘 | 直した所 |
+|---|---|
+| BF-U8D-04 試験 18 と項目集合 U8D-6 が onza の U1 の Code Generation を `started: true` と期待し、「全部の行が engine の答えと同じ」と同時に満たせない（実測は `started: false`）。1 回目の返却の U8D-2 は「Code Generation の `ledger.open` は空、正例の `started: true` は工程の開始の後に別に確かめる」と書いていた | §7.8 の 18: 期待を engine の答えだけにし、`started: true` の期待を消した。照らしの値を返却の文から写し直した（U1 の設計の 4 段 = `approved`、U1 の code-generation = `not_approved`・`started: false`）。§7.6: 正例は、onza の席が engine の上で U1 の Code Generation を始めた後の PR で観測すると書き、観測の手順を足した（`started` を手で書き換えない） |
+| 同じ種類の所（arc が見直した） | (1) §7.1 の「onza の席が U1 の Code Generation を回している」は席の作業を書いていて、engine の記録（未開始）と違って読めた → 両方を分けて書いた。(2) §7.8 の 19 の照らしの「違えば止めて返す」は、作業場が進むと変わる値（例: aidlc-aun の記録が追いつくと u2 の行が変わる）でも作る席を止める → 違いは PR に書いて止めず、承認済みの行が承認でなくなった時だけ止める形にした（18 も同じ）。(3) v7 §4 の 9（shirube の作業場、U1 の Code Generation = `started: true`）も、2026-10-24〜25 の実測を書いた行で、同じ種類。v7 の文は変えず、I1 の PR で 9 を動かす前に shirube の席が engine の今の答えを読み、9 と違えば作らずに arc に返す（設計を先に直す）。(4) 照らしの値は、どれも返却の文の観測をそのまま写した（arc が手で書き足した値は無い） |
+
+next_action: actor=shirube; what=この v11 の 2 つの file を shirube#87 に置き直し、事前の設計監査の 4 回目を頼む（Owner の決定の記録と索引の行の統合の後。作業指示 = iyasaka-arc#24 の追補）; blocking=false
