@@ -1,0 +1,77 @@
+{
+  "schema": "sds-unit-done-facts/1",
+  "profile": {
+    "ci_workflow": ".github/workflows/ci.yml",
+    "facts": [
+      { "name": "junit-unit", "job": "test (24)", "kind": "junit" },
+      { "name": "coverage", "job": "coverage", "kind": "coverage" }
+    ],
+    "code_paths": ["src/**", "bin/**"],
+    "test_paths": ["tests/**"],
+    "auditor_login": "auditor-login"
+  },
+  "checklist": {
+    "schema": "sds-unit-done-checklist/2",
+    "unit": "U2",
+    "unit_dir": "u2-example",
+    "plan_id": "DP-EXAMPLE-001",
+    "node_id": "N-EXAMPLE",
+    "design_records": ["docs/design/u2-example.md"],
+    "prs": [71, 72],
+    "unbound_prs": { "71": "a design record PR that is merged before the node is named" },
+    "acceptance": {
+      "AC1.1.1": ["tests/a.test.mjs::suite::t1"],
+      "AC1.1.2": ["tests/a.test.mjs::suite::t2"]
+    },
+    "design_cases": { "E-1": ["tests/a.test.mjs::suite::t3"] },
+    "design_refs": { "R-01": "a reference to a rule, not a case" },
+    "demo": ["tests/a.test.mjs::suite::t4"],
+    "conditions": {
+      "common-1": { "text_sha256": "1111111111111111111111111111111111111111111111111111111111111111", "k": "K5" },
+      "dod-1": { "text_sha256": "2222222222222222222222222222222222222222222222222222222222222222", "tests": ["tests/a.test.mjs::suite::t5"] },
+      "story:US3.3": { "text_sha256": "3333333333333333333333333333333333333333333333333333333333333333", "audit": "the audit of the unit-closing PR reads this condition" }
+    },
+    "exceptions": []
+  },
+  "results": {
+    "junit-unit": {
+      "conclusion": "success",
+      "cases": [
+        { "id": "tests/a.test.mjs::suite::t1", "status": "pass" },
+        { "id": "tests/a.test.mjs::suite::t2", "status": "pass" },
+        { "id": "tests/a.test.mjs::suite::t3", "status": "pass" },
+        { "id": "tests/a.test.mjs::suite::t4", "status": "pass" },
+        { "id": "tests/a.test.mjs::suite::t5", "status": "pass" }
+      ]
+    },
+    "coverage": { "conclusion": "success", "coverage": { "exit_code": 0, "lines_threshold": 80 } }
+  },
+  "source": {
+    "files": [
+      { "role": "stories", "manifest_sha256": "aa", "actual_sha256": "aa" },
+      { "role": "story-map", "manifest_sha256": "bb", "actual_sha256": "bb" },
+      { "role": "delivery-plan", "manifest_sha256": "cc", "actual_sha256": "cc" }
+    ],
+    "acceptance": ["AC1.1.1", "AC1.1.2"],
+    "story_conditions": [{ "id": "story:US3.3", "text_sha256": "3333333333333333333333333333333333333333333333333333333333333333" }],
+    "delivery": {
+      "dod": [{ "id": "dod-1", "text_sha256": "2222222222222222222222222222222222222222222222222222222222222222" }],
+      "common": [{ "id": "common-1", "text_sha256": "1111111111111111111111111111111111111111111111111111111111111111" }],
+      "has_demo": true
+    }
+  },
+  "design": { "records": ["docs/design/u2-example.md"], "ids": { "docs/design/u2-example.md": ["E-1", "R-01"] } },
+  "unit_prs": { "closing": 80, "node_prs": [72] },
+  "prs": {
+    "71": {
+      "files": ["docs/design/u2-example.md"],
+      "first_commit": { "files": [{ "path": "docs/design/u2-example.md", "status": "added" }] },
+      "k6": { "a": "met", "b": "met", "c": "met", "d": "met", "e": "met", "f": "met" }
+    },
+    "72": {
+      "files": ["src/x.mjs", "tests/a.test.mjs"],
+      "first_commit": { "files": [{ "path": "tests/a.test.mjs", "status": "added" }] },
+      "k6": { "a": "met", "b": "met", "c": "met", "d": "met", "e": "met", "f": "met" }
+    }
+  }
+}
