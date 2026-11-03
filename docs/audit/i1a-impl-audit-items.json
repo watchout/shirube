@@ -1,0 +1,67 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@dd48581d988bc284e3ebf574f8ba76c170bb8ca5/docs/sds/audit-method.md#3",
+  "scope": "Shirube の次の目標の I1a（R2）の実装監査: scripts/sds/engine-judge.mjs（設計 v13 §3-5 の入力側と §3-7 の理由の code）、その試験 tests/engine-judge.test.mjs、本項目集合の file docs/audit/i1a-impl-audit-items.json。記法: [DR] = 設計の記録 docs/design/u1-engine-judge.md（shirube main dd48581d988bc284e3ebf574f8ba76c170bb8ca5 の bytes、v13、SHA-256 07e296ac3b56d64175fadf43bb1fdffbfa498261b08ac37ef1993b3ab54b3193）、[WO] = 作業指示 iyasaka-arc#24 6598649490 と追補 1（6599529855）、[NG] = Owner の決定 OD-SHIRUBE-NEXT-GOAL-GATE-READS-AIDLC-APPROVAL-START-20261103-001（iyasaka-arc#49 6588894545）、[SEL] = 指定を渡さない形の実物の確かめ（iyasaka-arc#24 6598779080）。engine の判断（[DR] §3-1〜§3-4）・approval-record.mjs・record-compare.mjs は I1a に無い（I1b 以降）。全 12 項目必須。",
+  "items": [
+    {
+      "id": "IA-1",
+      "criterion": "範囲と PR: 変更 path が scripts/sds/engine-judge.mjs・tests/engine-judge.test.mjs・docs/audit/i1a-impl-audit-items.json だけ。.github/**・.shirube/**・kit/**・docs/sds/**・docs/design/**・ほかの scripts と tests に触れていない。新しい外部の依存が無い。PR 本文の sds-pr block が risk_class R2、changed_paths が diff と一致、control_handoff が shirube#6 6599535410 の URL と本文 SHA-256（4897fd89…）、control_handoff_amendments が元の作業指示と追補 1。追加が 400 行以下・file 20 以下・新しい file 300 行以下、関数 50 行・複雑さ 10 以下で、CI が成功している。",
+      "basis": "[WO]、hygiene-profile の limits"
+    },
+    {
+      "id": "IA-2",
+      "criterion": "TDD（Red → Green）: 1 つ目の commit が tests/engine-judge.test.mjs だけで、その commit で試験が落ちる出力（実装が無いための ERR_MODULE_NOT_FOUND）が PR 本文にある。2 つ目以降の commit で試験が全部通る。試験を直した所があれば PR 本文が述べている。試験が、実装を壊した版（PR 本文の変異の一覧）で落ちる（監査席が 1 つ以上を自分で再現する）。",
+      "basis": "[WO] 追補 1 の 2、TDD の決まり"
+    },
+    {
+      "id": "IA-3",
+      "criterion": "丸ごとの写し（[DR] §3-5 の 1 行目）: copyHarness が .claude/ と aidlc/ を、file を選ばずに丸ごと一時的な場所に写し、写しの root にはその 2 つのほかを置かない。symbolic link が file にも directory にも、.claude/ と aidlc/ 自身にもあれば、何も写さずに COPY_FAILED で止まる。",
+      "basis": "[DR] §3-5"
+    },
+    {
+      "id": "IA-4",
+      "criterion": "指紋（[DR] §3-5 の 2 行目）: treeDigest が「相対 path と SHA-256 の組」を path の UTF-8 の bytes の順に並べた物の SHA-256 で、inputDigest は .claude/ と aidlc/、engineTreeDigest は .claude/ だけから作る。engine を呼ぶ前（shim を足す前）の写しから計算し、同じ写しは同じ値。memory・scopes・codekb・intents.json・名札を変えると inputDigest が変わり、止めない。transcript などを作業場との比べ直しに使っていない。",
+      "basis": "[DR] §3-5、§4 の 7"
+    },
+    {
+      "id": "IA-5",
+      "criterion": "版（[DR] §3-5 の 3 行目）: 子の process が写しの .claude/tools/aidlc-version.ts の AIDLC_VERSION を読み込んで返し、親が \"2.11.1\" でなければ ENGINE_VERSION_MISMATCH で何も返さない。原典の file との 1 つずつの照合を持ち込んでいない。engineVersion と engineTreeDigest を返す。",
+      "basis": "[DR] §3-5"
+    },
+    {
+      "id": "IA-6",
+      "criterion": "名札（[DR] §3-5 の 4 行目）: 写しの aidlc/.aidlc-clone-id が無い、または token か host のどちらかが無い・形が engine と違う時は CLONE_ID_INCOMPLETE。形は engine の parseCloneIdFile と同じ（1 行目 token、2 行目 host、同じ正規表現）。host を hostname() から取る経路を持たない。",
+      "basis": "[DR] §3-5"
+    },
+    {
+      "id": "IA-7",
+      "criterion": "写しの途中の変化（[DR] §3-5 の 5 行目）: 写した後に、audit の shard・aidlc-state.md・名札の file を作業場から読み直して bytes を比べ、違えば 1 回だけ写し直し、2 回目も違えば WORKSPACE_CHANGED で何も返さない。ほかの file（transcript など）は比べない。",
+      "basis": "[DR] §3-5、§4 の 7"
+    },
+    {
+      "id": "IA-8",
+      "criterion": "子の process の環境（[DR] §3-5 の 6 行目、[WO] 追補 1）: bun --no-env-file で、cwd は写しの root。環境は PATH・空の一時的な HOME・CLAUDE_PROJECT_DIR の 3 つだけで、AIDLC_・CLAUDE_・KIRO_・CODEX_ で始まるほかの変数も親の HOME も渡さない。session を選ぶ指定（AIDLC_SESSION_OVERRIDE で始まる変数）を渡さず、作り手の source にもその名前が無い（試験が source を読んで確かめる）。OVERRIDE_DROPPED と専用の id の名の file の確かめを持たない。hook を変える・避ける物が無い。",
+      "basis": "[DR] §3-5、[SEL]"
+    },
+    {
+      "id": "IA-9",
+      "criterion": "選択の固定（[DR] §3-5 の 7 行目）: 作り手が対象の space と intent を引数で受け、子の process が写しの engine の engineSelection を呼んで返した space・intent が対象と違えば SELECTION_MISMATCH（cursor が別の intent を指す場合も、束縛が別の intent を指す場合も）。shim は写しの aidlc-orchestrate.ts の末尾に足す 1 行だけで、その行が [DR] §3-6 の文字列と同じ。",
+      "basis": "[DR] §3-5・§3-6、§4 の 7"
+    },
+    {
+      "id": "IA-10",
+      "criterion": "作業場は変えない（[DR] §3-5 の 8 行目）: 作業場は読むだけ。子の process が写しの中に束縛の file を書いても、作業場の aidlc/.aidlc-sessions/ は変わらない。一時的な場所（写しと空の HOME）は、成功でも失敗でも消える。",
+      "basis": "[DR] §3-5、§4 の 7"
+    },
+    {
+      "id": "IA-11",
+      "criterion": "理由の code（[DR] §3-7）: 出す理由は決まった 10 個（ENGINE_VERSION_MISMATCH・CLONE_ID_INCOMPLETE・COPY_FAILED・ENGINE_LOAD_FAILED・ENGINE_CALL_FAILED・UNSUPPORTED_SHAPE・SELECTION_MISMATCH・WORKSPACE_CHANGED・EVIDENCE_MISSING・FILE_CONFLICT。OVERRIDE_DROPPED は無い）だけで、失敗の message は code そのもの。例外の文・絶対 path・秘密を出さない。子の process が返した理由が code の集合に無ければ ENGINE_CALL_FAILED。",
+      "basis": "[DR] §3-7、§4 の 8"
+    },
+    {
+      "id": "IA-12",
+      "criterion": "範囲の外と出す物: engine の判断（[DR] §3-1〜§3-4）・承認の記録・C9・record-compare を実装していない。prepare が返す物が inputDigest・engineTreeDigest・engineVersion だけで、I1b が判断を足せる形。本物の engine を CI で読み込まず（偽の子の process）、PR 本文が own code の行数（今の値と I1a の後の値）と、本物の engine で動かしていないことを述べている。",
+      "basis": "[WO]、[DR] §3-6"
+    }
+  ]
+}
