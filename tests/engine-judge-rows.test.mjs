@@ -6,7 +6,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { childJudgment, childReport } from "../scripts/sds/engine-judge.mjs";
+import { JudgeError, childJudgment, childReport } from "../scripts/sds/engine-judge.mjs";
 
 const RECORD = "aidlc/spaces/default/intents/i1", SHARD = `${RECORD}/audit/h.md`, UNITS = ["u1", "u2"];
 const stage = (slug, phase, perUnit = false) => ({ slug, phase, for_each: perUnit ? "unit-of-work" : undefined });
@@ -31,21 +31,32 @@ function workspace(spec) {
   return { root, state, events, shard };
 }
 
+const CODEKB = { codekb: true }, KINDS = { u1: "service", u2: "library" };
+const dagOf = (kinds) => ({ state: "ok", units: UNITS, unitKinds: new Map(Object.entries(kinds)) });
+
 function engine(ws, spec) {
-  const has = (list, slug, unit) => (list ?? []).includes(`${slug}:${unit}`);
+  const has = (list, slug, unit) => (list ?? []).includes(`${slug}:${unit}`), dag = spec.dag ?? dagOf(KINDS), ledgers = new Map();
   const lib = {
     loadStageGraph: () => GRAPH, isPerUnitStage: (e) => e.for_each === "unit-of-work", auditBlockField: field, auditShards: () => [ws.shard], readAuditShardEvents: () => ws.events,
     parseCheckboxes: (s) => [...s.matchAll(/^- \[(.)\] (\S+)/gm)].map(([, m, slug]) => ({ slug, state: MARK[m] })),
     getField: (s, name) => s.match(new RegExp(`^${name}: (.*)$`, "m"))?.[1] ?? null,
-    resolveBoltDag: () => spec.dag ?? { state: "ok", units: UNITS, unitKinds: null }, usesStageLevelPerUnitArtifacts: () => false, isTeamUnitOwnership: () => spec.team ?? false,
+    resolveBoltDag: () => dag, usesStageLevelPerUnitArtifacts: () => spec.stageLevel ?? false, isTeamUnitOwnership: () => spec.team ?? false,
     isConstructionSwarmEnabled: () => spec.swarm ?? false,
-    unitMajorConstructionStageSlugs: () => spec.walk ?? ["functional-design", "code-generation"], checkSummaryConfirmationEvidence: () => ({ ok: true, summaryCoverage: "covered" }),
+    unitMajorConstructionStageSlugs: () => spec.walk ?? ["functional-design", "code-generation"], checkSummaryConfirmationEvidence: (root, st, opts) => ({ ok: true, stage: st.slug, unit: opts.unit, sawState: opts.stateContent === ws.state }),
   };
   const orch = {
-    engineSelection: () => ({ space: "default", intent: "i1", sessionId: null, binding: null }), engineRelativeRecordDir: () => RECORD, codekbCtxFor: () => ({}),
-    unitLedgerFor: (root, slug) => ({ skipped: new Set(spec.skipped?.[slug] ?? []), open: (spec.open?.[slug] ?? []).map((unit) => ({ unit })) }),
-    unitExempt: (st, unit, kind, ledger) => ledger.skipped.has(unit) || has(spec.vacuous, st.slug, unit),
-    unitStageStop: (root, state, st, unit) => (has(spec.stops, st.slug, unit) ? { kind: "work" } : null),
+    engineSelection: () => ({ space: "default", intent: "i1", sessionId: null, binding: null }), engineRelativeRecordDir: () => RECORD, codekbCtxFor: () => CODEKB,
+    unitLedgerFor: (root, slug) => {
+      if (!ledgers.has(slug)) ledgers.set(slug, { skipped: new Set(spec.skipped?.[slug] ?? []), open: (spec.open?.[slug] ?? []).map((unit) => ({ unit })) });
+      return ledgers.get(slug);
+    },
+    unitExempt: (st, unit, kind, ledger) => ledger === ledgers.get(st.slug) && kind === dag.unitKinds.get(unit) && (ledger.skipped.has(unit) || kind === "vacuous"),
+    unitStageStop: (root, state, st, unit, kind, record, codekb, ledger) => {
+      // The engine's own parts get exactly what the engine's own walk gives them (3-1): the state text, the Unit's kind, the record dir, its codekb context and the stage's ledger.
+      assert.deepEqual([state === ws.state, kind, record, codekb, ledger], [true, dag.unitKinds.get(unit), RECORD, CODEKB, ledgers.get(st.slug)]);
+      if (spec.boom) throw new Error("/abs/path secret");
+      return has(spec.stops, st.slug, unit) ? { kind: "work" } : null;
+    },
   };
   return async (path) => ({ "aidlc-version.ts": { AIDLC_VERSION: "2.11.1" }, "aidlc-lib.ts": lib, "aidlc-orchestrate.ts": orch })[path.split("/").pop()];
 }
@@ -65,7 +76,12 @@ test("Unit stages: the engine's own answers decide, with the newest completion a
   assert.deepEqual(view(out, "functional-design"), ["u1 approved true", "u2 not_approved false"]);
   assert.deepEqual(view(out, "code-generation"), ["u1 not_approved true", "u2 not_approved false"]);
   const evidence = out.rows.find((r) => r.stage === "functional-design" && r.unit === "u1").evidence;
-  assert.deepEqual([evidence.completedBlock, evidence.completedAt, evidence.runFloorOrdinal, evidence.summary.ok, evidence.sourceAuditRef], [events[0].block, "2026-11-02T00:00:00Z", 2, true, SHARD]);
+  assert.deepEqual([evidence.completedBlock, evidence.completedAt, evidence.runFloorOrdinal, evidence.sourceAuditRef], [events[0].block, "2026-11-02T00:00:00Z", 2, SHARD]);
+  assert.deepEqual(evidence.summary, { ok: true, stage: "functional-design", unit: "u1", sawState: true });
+  // 3-3: from the "## " line to the last non-blank line, LF, whatever surrounds it.
+  const raw = ["", "## X", "**Event**: UNIT_COMPLETED", "**Stage**: functional-design", "**Unit**: u1", "**Run floor**: F1", "**Timestamp**: 2026-11-03T00:00:00Z", "", ""].join("\r\n");
+  const cut = await judged({ events: [...HEALTHY, { event: "UNIT_COMPLETED", timestamp: "2026-11-03T00:00:00Z", block: raw }] });
+  assert.equal(cut.rows.find((r) => r.stage === "functional-design" && r.unit === "u1").evidence.completedBlock, raw.trim().replace(/\r\n/g, "\n"));
   // The engine says approved but nothing records the completion, or the completion has no Run floor to number: not confirmable.
   await assert.rejects(judged({ events: HEALTHY.filter((e) => e.event !== "UNIT_COMPLETED") }), { code: "EVIDENCE_MISSING" });
   await assert.rejects(judged({ events: [...HEALTHY, audit("UNIT_COMPLETED", "2026-11-02T00:00:00Z", { Stage: "functional-design", Unit: "u1" })] }), { code: "EVIDENCE_MISSING" });
@@ -82,7 +98,7 @@ test("stage gates: [x] with a GATE_APPROVED is approved, [S] is exempt, [x] alon
 test("skip and exclusion are told apart: a skipped stage, a skipped Unit and a Unit the kind leaves out are exempt, never not_approved (4-3b)", async () => {
   assert.deepEqual(view(await judged({ marks: { "code-generation": "S" } }), "code-generation"), ["u1 exempt false", "u2 exempt false"]);
   assert.deepEqual(view(await judged({ skipped: { "functional-design": ["u2"] } }), "functional-design"), ["u1 approved true", "u2 exempt false"]);
-  assert.deepEqual(view(await judged({ vacuous: ["functional-design:u1"] }), "functional-design"), ["u1 exempt false", "u2 approved true"]);
+  assert.deepEqual(view(await judged({ dag: dagOf({ u1: "vacuous", u2: "service" }) }), "functional-design"), ["u1 exempt false", "u2 approved true"]);
   await assert.rejects(judged({ walk: ["code-generation"] }), { code: "UNSUPPORTED_SHAPE" });
 });
 
@@ -94,9 +110,13 @@ test("started: approving upstream again does not start the stage after it; start
 
 test("shapes the judgment does not cover are UNSUPPORTED_SHAPE, and the audit shards are digested as one (3-1, BR5.6)", async () => {
   await assert.rejects(judged({ dag: { state: "none" } }), { code: "UNSUPPORTED_SHAPE" });
-  for (const spec of [{ team: true }, { swarm: true }, { iteration: "stage-major" }]) await assert.rejects(judged(spec), { code: "UNSUPPORTED_SHAPE" });
+  for (const spec of [{ team: true }, { swarm: true }, { stageLevel: true }, { iteration: "stage-major" }]) await assert.rejects(judged(spec), { code: "UNSUPPORTED_SHAPE" });
   const out = await judged({});
   assert.equal(out.sourceDigest, createHash("sha256").update(readFileSync(out.ws.shard)).digest("hex"));
+});
+
+test("an exception inside the engine's parts is one fixed code, with no sentence or path", async () => {
+  await assert.rejects(judged({ boom: true }), (e) => e instanceof JudgeError && e.code === "ENGINE_CALL_FAILED" && e.message === "ENGINE_CALL_FAILED");
 });
 
 test("the child's report: version and selection first, the judgment only when the version is the pinned one", async () => {
