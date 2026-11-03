@@ -1,5 +1,5 @@
-<!-- arc:shirube-u1-design-revision:engine-judge:v12 -->
-## arc の設計の記録: Shirube U1 の設計の改版 v12（I1: 段の「済み」を AI-DLC の engine の判断で読む。v8 = §7 の追補で aun・onza に広げ、門の判定 6 として入れる。v9 = §7 の事前の設計監査 1 回目の指摘 3 つを直した版。v10 = 2 回目の指摘 1 つ（試験 19）を直した版。v11 = 3 回目の指摘 1 つ（試験 18 の onza の期待）を直した版。v12 = 4 回目の所見 OBS-R4-02（試験 9 の shirube の期待）と OBS-R4-03（題の版の表記）を直した版。直した所は §7.10〜§7.13）
+<!-- arc:shirube-u1-design-revision:engine-judge:v13 -->
+## arc の設計の記録: Shirube U1 の設計の改版 v13（I1: 段の「済み」を AI-DLC の engine の判断で読む。v8 = §7 の追補で aun・onza に広げ、門の判定 6 として入れる。v9 = §7 の事前の設計監査 1 回目の指摘 3 つを直した版。v10 = 2 回目の指摘 1 つ（試験 19）を直した版。v11 = 3 回目の指摘 1 つ（試験 18 の onza の期待）を直した版。v12 = 4 回目の所見 OBS-R4-02（試験 9 の shirube の期待）と OBS-R4-03（題の版の表記）を直した版。v13 = 作業場の hook が止めた子の process の環境の渡し方（session を選ぶ指定）と、v12 の監査の所見 OBS-V12-01 を直した版。直した所は §7.10〜§7.14）
 
 適用: R1〜R3、L1〜L6、S2・S4・S5・S8、OD-SHIRUBE-INCLUDE-AIDLC-NO-REINVENT-20261021-001（#49 6309035411）、OD-SHIRUBE-I1-ENGINE-STATE-COPY-DESIGN-REVISION-20261024-001（#49 6381170673）、OD-SHIRUBE-I1-UNIT-DONE-VIA-ENGINE-PARTS-WITH-BUN-20261025-001（#49 6389500200。索引の行 = iyasaka-org main 40e2f18f）、OI-LLM-CONTROL-BY-SCRIPT-MECHANISM-HOOK-MUST-20261024-001、OD-SHIRUBE-I1-DESIGN-ROUND6-WHOLE-COPY-20261025-001（#49 6393696963。索引の行 = iyasaka-org main 79ec8cd1）。v6（#57 6390523968）への設計監査 round 5 の返却（shirube#68 6392576496、BF-R5-01・02）と Owner の決定（入力を 1 つずつ数えて写し原典の一覧と照らす形をやめ、丸ごと写して指紋と engine の版を残す）を受けて §3-5 を書き直した。round 4 の返却（shirube#68 6392358644）は受付の BLOCK で、設計の中身を見ていない。v6 の答えのうち §3-5 に関わらない物は保つ。以下は v6 までの経緯。v2（#57 6389874375）への設計監査 round 2 の返却（shirube#68 6390071922、BF-R2-01〜06）と、shirube の席の確認（#24 6389980151・6390213665・6390265024）を受けて全体を書き直した。v2・v3（#57 6390136222）・v4（#57 6390236637）・v5（#57 6390272104）は置き換え（v3・v4 は監査に出す前に席の確認で直した）。v5 への設計監査 round 3 の返却（shirube#68 6390455033、BF-R3-01〜05）と、席の確認（#24 6390338940）を受けて直した。round 1 の指摘（BF-01〜07）への答えは保つ。対象 = U1 の Functional Design（entities.md・rules.md）と NFR Requirements の tech-stack-decisions.md。独立の監査の前の案。
 
@@ -88,8 +88,8 @@
 - 版: 子の process が写しの `.claude/tools/aidlc-version.ts` の `AIDLC_VERSION` を読み込んで返し、`"2.11.1"` でなければ何も書かない（`ENGINE_VERSION_MISMATCH`）。原典 2.11.1 の file と 1 つずつ同じであることは保証しない（Owner の決定。導入の時の書き換え・生成・plugin の選択を照らす一覧を持たないので、BF-R5-02 の「一覧の出所」は生じない）。後から作業場と照らせるように、`engineVersion` と `engineTreeDigest` を C9 に残す。
 - 名札: 写しの名札の file が無い、または token と host のどちらかが無ければ、何も書かない（`CLONE_ID_INCOMPLETE`）。engine が host を `hostname()` から取る経路（写しの外の機械の名前に依る）を通さないため（BF-R5-01 の host fallback）。今の作業場の名札は両方を持つ。
 - 写しの途中の変化: 写した後に、作業場の audit の shard・`aidlc-state.md`・名札の file を読み直して写しと bytes を比べ、違えば 1 回だけ写し直す。2 回目も違えば何も書かない（`WORKSPACE_CHANGED`）。会話が audit に書き足している最中の、途中で切れた写しで判断しないため。ほかの file（transcript など）は比べない（答えは写しに対する物で、指紋がその写しを指す）。
-- 子の process: `bun --no-env-file` で動かし、cwd は写しの root（`.env` は無い）。環境変数を全部消してから、要る物だけを渡す: PATH、空の一時的な場所を指す HOME（作業場の外の機械の設定を読ませない）、projectDir を決める変数（写しの root）、束縛を書かせないための `AIDLC_SESSION_OVERRIDE_SOURCE=payload` と、束縛を持たない専用の session の id（`AIDLC_SESSION_OVERRIDE`）。ほかの `AIDLC_`・`CLAUDE_`・`KIRO_`・`CODEX_` で始まる変数は渡さない。読み込みの後に 2 つの override が渡した値のまま残っているかを確かめ、消えていれば何も返さない（`OVERRIDE_DROPPED`）。専用の id は作り手が引数で受けた新しい id で、写しに `<id>.` で始まる file が 1 つも無いことを確かめる（在れば止める）。
-- 判断する intent の固定: 作り手は対象の space と intent を引数で受ける。子の process は export の shim で足した `engineSelection` を呼び、engine が使う space・intent が対象と同じかを確かめる。違えば何も書かない（`SELECTION_MISMATCH`）。この渡し方で選択が cursor から対象に決まることは、作る席が実物で確かめる（確かめられなければ、この設計の対象外として止める）。
+- 子の process: `bun --no-env-file` で動かし、cwd は写しの root（`.env` は無い）。環境変数を全部消してから、要る物だけを渡す: PATH、空の一時的な場所を指す HOME（作業場の外の機械の設定を読ませない）、projectDir を決める変数 `CLAUDE_PROJECT_DIR`（写しの root）の 3 つだけ。ほかの `AIDLC_`・`CLAUDE_`・`KIRO_`・`CODEX_` で始まる変数は渡さない。**session を選ぶ指定（`AIDLC_SESSION_OVERRIDE` で始まる変数）は渡さない**: AI-DLC の harness の hook は「席の tool の呼出しは session を選ばない」の決まりで、それを渡す script の書込みを止める（iyasaka-arc#24 6598720211）。渡さない時、engine は session を見つけず、cursor で space と intent を決める（実物の写しで 1 回確かめた = #24 6598779080: `sessionId`・`binding` は null、space `default`・intent `261021-dev-speedup-automation`、写しの `.claude/` と `aidlc/` の 580 file は呼ぶ前と後で 1 つも変わらず、写し始めから呼び終えるまで 0.51 秒）。engine は chat の id を process の祖先からも探す（§1）ので、作り手を動かす席の会話が見つかり、写しの中のその束縛で選ぶことがある。その時も、選んだ space・intent が対象と違えば下の確かめで止まり、engine が写しの中に何かを書いても、写しは終わったら消すので作業場は変わらない。
+- 判断する intent の固定: 作り手は対象の space と intent を引数で受ける。子の process は export の shim で足した `engineSelection` を呼び、engine が使う space・intent が対象と同じかを確かめる。違えば何も書かない（`SELECTION_MISMATCH`）。選択が cursor で決まり、cursor が別の intent を指す時はこの確かめで止まる（Owner が AI-DLC の会話で対象の intent に切り替えるまで、作り手は記録を作らない）。
 - 作業場は変えない: engine が書くのは写しの中だけで、写しは終わったら消す。作り手が作業場に書くのは、最後にまとめて置く `approvals/` の file だけ（§3-7）。
 
 **3-6 adapter の契約と CI（BF-01・BF-07・BF-R2-04）**
@@ -101,7 +101,7 @@
 
 **3-7 安全と誤った file の復旧（BF-05）**
 - 書く物は一時的な場所に全部作ってから、最後にまとめて `approvals/` に置く。途中の失敗では何も置かない。既にある file と bytes が違えば何も置かない（BR5.8）。
-- 出す理由は決まった code だけ（`ENGINE_VERSION_MISMATCH`・`CLONE_ID_INCOMPLETE`・`COPY_FAILED`・`ENGINE_LOAD_FAILED`・`ENGINE_CALL_FAILED`・`UNSUPPORTED_SHAPE`・`SELECTION_MISMATCH`・`OVERRIDE_DROPPED`・`WORKSPACE_CHANGED`・`EVIDENCE_MISSING`・`FILE_CONFLICT`）。例外の文・絶対 path・秘密は出さない（詳しい内容は repo の外の作業場の log にだけ）。
+- 出す理由は決まった code だけ（`ENGINE_VERSION_MISMATCH`・`CLONE_ID_INCOMPLETE`・`COPY_FAILED`・`ENGINE_LOAD_FAILED`・`ENGINE_CALL_FAILED`・`UNSUPPORTED_SHAPE`・`SELECTION_MISMATCH`・`WORKSPACE_CHANGED`・`EVIDENCE_MISSING`・`FILE_CONFLICT`）。例外の文・絶対 path・秘密は出さない（詳しい内容は repo の外の作業場の log にだけ）。
 - 誤って作った承認の記録は消さず書き換えず、同じ場所に `attempt-<n>.revoked.json`（`schema: sds-approval-revocation/1`・対象・理由の code・正しい記録の path（あれば）・決定の記録の URL と sha256）を足す PR で取り消す。足すのは arc の作業指示を受けた shirube の席、独立の監査の後に統合。橋は取り消しのある試行を承認として読まない。
 
 ### 4. 試験（作り直す I1 と I2 の merge の条件）
@@ -113,11 +113,11 @@
 4. 番号・指紋・時刻: `Run floor` が 2 種類（開き直し 1 回）で一番新しい完了が 2 種類目 → n = 2。同じ `Run floor` の完了が 2 行 → 同じ番号。完了の無い試行は数えない。決めた block の bytes と正規の JSON から期待の SHA-256（試験に値を書く）と一致し、鍵の順を変えた JSON でも同じ値。`approvedAt` は `UNIT_COMPLETED` の時刻。
 5. C9: 行の並び（unit-major）・`status`・`started`・`approvalRef`。同じ写しで 2 回 → bytes が同じ。作る段階より後へ進んだ intent でも、済んだ Unit の段の行が全部 `approved` で残る。
 6. 橋: 段単位の段でも (a)(b)(c) の 3 状態（例: Requirements を開き直して再承認しただけで User Stories が `[ ]` → User Stories の PR は FAIL、User Stories を始め直して `[-]` → 通す）。Initialization の 3 段が `exempt` の時、`intent-capture` の PR → 前の行が無いので PASS（BR2.4）。Initialization の 1 段が `not_approved` の時、`intent-capture` の PR → FAIL。Unit 2 の最初の段 → Inception の最後の行を見る。前の行が `exempt` → さらに前へ。§3-4 の (a)(b)(c) の 3 状態。取り消しあり → FAIL。
-7. 入力: 写しの `AIDLC_VERSION` が `"2.11.1"` でない → `ENGINE_VERSION_MISMATCH`・何も書かない。`.claude/` か `aidlc/` の中に symbolic link → `COPY_FAILED`。名札の file が無い・host が無い → `CLONE_ID_INCOMPLETE`（`hostname()` の経路を通らない）。名札が同じで、2 つの shard に同じ `UNIT_COMPLETED` の block がある → engine が残した方の shard が `sourceAuditRef` になり、名札の file を変えると `inputDigest` が変わる（BF-R5-01 の正と負）。`AIDLC_STAGE_GRAPH` を親で設定しても子に渡らず結果が変わらない。親の HOME に機械の設定を置いても結果が変わらない（子の HOME は空）。memory の Guard Policy・`scopes/`・`codekb/`・`intents/intents.json` を変えると `inputDigest` が変わる（止めない）。同じ写しで 2 回 → `inputDigest` と結果の bytes が同じ。写しの後に作業場の audit の shard が伸びる → 1 回写し直し、2 回とも違えば `WORKSPACE_CHANGED`・何も書かない。写しの後に transcript だけが変わる → 失敗しない。cursor が別の intent を指す → `SELECTION_MISMATCH`。写しに `<id>.helper-of` が在る → 止める。子の process が写しの中に束縛の file を書いても、作業場の `aidlc/.aidlc-sessions/` は変わらない。
+7. 入力: 写しの `AIDLC_VERSION` が `"2.11.1"` でない → `ENGINE_VERSION_MISMATCH`・何も書かない。`.claude/` か `aidlc/` の中に symbolic link → `COPY_FAILED`。名札の file が無い・host が無い → `CLONE_ID_INCOMPLETE`（`hostname()` の経路を通らない）。名札が同じで、2 つの shard に同じ `UNIT_COMPLETED` の block がある → engine が残した方の shard が `sourceAuditRef` になり、名札の file を変えると `inputDigest` が変わる（BF-R5-01 の正と負）。`AIDLC_STAGE_GRAPH` を親で設定しても子に渡らず結果が変わらない。親の HOME に機械の設定を置いても結果が変わらない（子の HOME は空）。memory の Guard Policy・`scopes/`・`codekb/`・`intents/intents.json` を変えると `inputDigest` が変わる（止めない）。同じ写しで 2 回 → `inputDigest` と結果の bytes が同じ。写しの後に作業場の audit の shard が伸びる → 1 回写し直し、2 回とも違えば `WORKSPACE_CHANGED`・何も書かない。写しの後に transcript だけが変わる → 失敗しない。cursor が別の intent を指す → `SELECTION_MISMATCH`。chat の束縛が別の intent を指し、engine がそれで選ぶ → `SELECTION_MISMATCH`。子の process の環境に `AIDLC_SESSION_OVERRIDE` で始まる変数が無く、作り手の source にもその名前が無い（試験が source の文を読む）。子の process が写しの中に束縛の file を書いても、作業場の `aidlc/.aidlc-sessions/` は変わらない。
 7b. 承認の記録: 2 つの shard に audit が分かれ、使う `UNIT_COMPLETED` が 2 つ目の shard にある → `sourceAuditRef` がその shard の相対 path になり、C2 の必須の欄がそろった承認の JSON が作れる。`resolveBoltDag` が `malformed` → 「確かめられない」。
 8. 途中の失敗・理由: 3 行目で engine が例外 → 何も置かない。既にある file と bytes が違う → 何も置かない。どの失敗でも、出す文は決まった code だけで、絶対 path を含まない。
 本物の engine で 1 回（席の作業場、PR に証拠）:
-9. shirube の作業場で作り手を動かし、**全部の行が engine の答えと同じ**になる（§7.8 の 19 の比べ方。v12 で、実測の値を期待に書く形をやめた）。照らしの値（監査の席と席が観測した値。試験の期待にはしない。扱いは §7.8 の 19 の照らしと同じ）: Initialization の 3 段 = `exempt`、ideation・inception の段 = `approved`、U1 の設計 4 段 = `approved`（#24 6381255682・6389980151 の実測、shirube#87 6597771127）、U1 の Code Generation = `not_approved`・`started: false`（shirube#87 6597771127 の OBS-R4-02。直接の snapshot も ledger も open が空。2026-10-24〜25 の実測の `started: true` とは違う）。作る時に engine の答えが照らしの値と違う行があれば、作る席は違う行と engine の部品の答えを PR 本文に書く。照らしで `approved` の行が `approved` でなくなっていた時（段の開き直しの疑い）だけ、作らずに止めて arc に返す。engine の答えを照らしの値に合わせて書き換えず、`started` を手で書き換えない。
+9. shirube の作業場で作り手を動かし、**全部の行が engine の答えと同じ**になる（§7.8 の 19 の比べ方。v12 で、実測の値を期待に書く形をやめた）。照らしの値（監査の席と席が観測した値。試験の期待にはしない。扱いは §7.8 の 19 の照らしと同じ）: Initialization の 3 段 = `exempt`、ideation・inception の段 = `approved`、U1 の設計 4 段 = `approved`（#24 6381255682・6389980151 の実測、shirube#87 6597771127）、U1 の Code Generation = `not_approved`・`started: false`（shirube#87 6597771127 の OBS-R4-02。直接の snapshot も ledger も open が空。v7 の 9 は `started: true` を期待していたが、それは実測ではなかった = OBS-V12-01）。作る時に engine の答えが照らしの値と違う行があれば、作る席は違う行と engine の部品の答えを PR 本文に書く。照らしで `approved` の行が `approved` でなくなっていた時（段の開き直しの疑い）だけ、作らずに止めて arc に返す。engine の答えを照らしの値に合わせて書き換えず、`started` を手で書き換えない。
 
 ### 5. 流れ
 1. Owner の決定 OD-SHIRUBE-I1-DESIGN-ROUND6-WHOLE-COPY-20261025-001 の索引の行は統合済み（iyasaka-org main 79ec8cd1）。
@@ -126,8 +126,8 @@
 4. 席が PR #67 を作り直し（I1）、実装監査の後に suite-lead が統合。
 
 ### 6. 残る未決
-- §3-5 の渡し方（`AIDLC_SESSION_OVERRIDE_SOURCE=payload` と専用の session の id）で、engine が束縛を書かず、選択が cursor から対象の intent に決まることを、作る席が実物で 1 回確かめて PR に証拠を載せる。違えば I1 の実装に入らず arc に返す（arc が設計を直す）。
-- 丸ごとの写しの大きさと時間（今の作業場で何 MB・何秒か）を、作る席が実物で 1 回測って PR に載せる。1 GB を超える・1 分を超える時は I1 の実装に入らず arc に返す。
+- （v13 で閉じた）§3-5 の渡し方: v12 までの `AIDLC_SESSION_OVERRIDE_SOURCE=payload` と専用の session の id は、作業場の hook が止めた（#24 6598720211）。v13 で session を選ぶ指定を渡さない形にし、実物の写しで engine が束縛を書かず cursor で対象の intent を選ぶことを確かめた（#24 6598779080）。
+- （v13 で閉じた）丸ごとの写しの大きさと時間: 約 14MB・symbolic link 0、写しは 0.21 秒、写し始めから `engineSelection` を呼び終えるまで 0.51 秒（#24 6598720211・6598779080）。I1 の PR には、作り手全体を本物で動かした時の時間を載せる。
 - 閉じた物: Initialization のほかに `[x]` で `GATE_APPROVED` の無い段は無い（stage の定義で「NO approval gate」は 3 段だけ。#24 6390213665）。engine が読む物を数える形は v7 でやめた（丸ごと写す）。
 
 （v7 の next_action は §7 の最後の next_action が置き換える。）
@@ -211,7 +211,7 @@ v7 の §1〜§6 は v7 のまま残す（§3-1〜§3-7 の作り手の作りは
 
 #### 7.7 作る順と PR（v7 §5 を置き換える）
 1. この v8 を shirube に置く PR（R1、docs だけ）の事前の設計監査（devauditor）。合格と受領の後に suite-lead が統合。
-2. **I1** 作り手と照合（`engine-judge.mjs`・`approval-record.mjs`・`record-compare.mjs`、R2）。v7 §6 の残る未決 2 つ（束縛を書かない渡し方の実物の確かめ、写しの大きさと時間）を PR に証拠として載せる。
+2. **I1** 作り手と照合（`engine-judge.mjs`・`approval-record.mjs`・`record-compare.mjs`、R2）。v7 §6 の 2 つは v13 で閉じた（§7.14）。作り手全体を本物で動かした時の時間を PR に証拠として載せる。
 3. **A** shirube 自身の記録の PR（R2、`approvals/261021-dev-speedup-automation/…`）。§7.3 の作り直しの照合つき。
 4. **I2** v7 のまま（kit の自己用の書く先と `budget.mjs`）。
 5. **I3** 判定 6（`record-gate.mjs`・`gate.mjs` の読み手・`docs/sds/distribution.md` §4 に判定 6 の文）。門の判定の決まりの文を変えるので、統合の前に Owner の exact-head（[NG] の決定 4）。
@@ -276,4 +276,13 @@ v7 の §1〜§6 は v7 のまま残す（§3-1〜§3-7 の作り手の作りは
 | OBS-R4-03 題の「v10」は古い表記 | 題を v12 にした |
 | 同じ種類の所（arc が見直した） | 本物の engine で動かす試験（9・18・19）は、3 つとも「全部の行が engine の答えと同じ」と「照らしの値は期待にしない」の同じ形になった。偽の入力の試験（1〜8・10〜17・20）は決めた入力に決めた期待を書く形のままで、作業場の進み具合に左右されない |
 
-next_action: actor=shirube; what=この v12 の 2 つの file を shirube に置く PR（R1、docs だけ）を作り、事前の設計監査を頼む（作業指示 = iyasaka-arc#24 の追補）; blocking=false
+
+#### 7.14 版 13 で直した所（I1 の作る前の確かめで作業場の hook が止めた所 = iyasaka-arc#24 6598720211、v12 の事前の設計監査 = shirube#88 6598309001 の所見）
+
+| 所見 | 直した所 |
+|---|---|
+| I1 の作る前の確かめで、子の process に session を選ぶ指定（`AIDLC_SESSION_OVERRIDE_SOURCE=payload` と専用の session の id）を渡す script の書込みを、Owner の作業場の AI-DLC の hook が止めた（「A tool call cannot … choose a session」）。席は回避せずに止まった | v7 §3-5 の子の process: 渡す環境を PATH・空の HOME・`CLAUDE_PROJECT_DIR` の 3 つだけにし、session を選ぶ指定を渡さない形にした。`OVERRIDE_DROPPED` と、専用の id の名の file を確かめる所を外した（§3-7・§4 の 7）。§4 の 7 に、作り手の環境と source にその名前が無いことの試験を足した。選択は cursor（process の祖先から会話が見つかればその束縛）で決まり、対象と違えば `SELECTION_MISMATCH` で止まる（変えない。束縛が別の intent を指す場合の試験を §4 の 7 に足した）。実物の写しで、engine が束縛を書かず対象の intent を選ぶことを確かめた（#24 6598779080）。hook は変えない（Owner の作業場の強制の仕組み） |
+| OBS-V12-01 §4 の 9 の「2026-10-24〜25 の実測の `started: true`」の出所が、名指した #24 の 2 報告に無い | 1 文を「v7 の 9 は `started: true` を期待していたが、それは実測ではなかった」に直した。arc の誤り |
+| 同じ種類の所（arc が見直した） | §6 の 2 つの未決（渡し方・大きさと時間）を閉じた事実と出所で書き直し、§7.7 の 2 の「PR に載せる」を作り手全体の時間だけにした。v7 §0 の BF-R3-03 の行は、その時に直した所の記録で、v13 の動きを決める文ではない（v13 の動きは §3-5）。BR2・判定 6・照合（§7.3・§7.5）・試験 9・18・19 の比べ方は変えない |
+
+next_action: actor=shirube; what=この v13 の 2 つの file を shirube に置く PR（R1、docs だけ）を作り、事前の設計監査を頼む（作業指示 = iyasaka-arc#24 の追補）; blocking=false
