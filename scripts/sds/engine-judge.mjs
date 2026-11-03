@@ -116,7 +116,8 @@ function unitEvidence(ctx, entry, unit) {
   const field = (event, name) => ctx.lib.auditBlockField(event.block, name);
   const done = ctx.events.filter((e) => e.event === "UNIT_COMPLETED" && field(e, "Stage") === entry.slug && field(e, "Unit") === unit), newest = done.at(-1);
   const floor = newest && field(newest, "Run floor");
-  if (!floor) return fail("EVIDENCE_MISSING");
+  // Equal times across shards are causally unordered (the engine's own note on its audit reader): a different Run floor at the newest time cannot be told from the newest attempt.
+  if (!floor || done.some((e) => e.timestamp === newest.timestamp && field(e, "Run floor") !== floor)) return fail("EVIDENCE_MISSING");
   return {
     completedBlock: blockBytes(newest.block), completedAt: newest.timestamp, runFloorOrdinal: [...new Set(done.map((e) => field(e, "Run floor")))].indexOf(floor) + 1,
     summary: ctx.lib.checkSummaryConfirmationEvidence(ctx.root, entry, { stateContent: ctx.state, unit }), sourceAuditRef: relative(ctx.root, newest.shard),
