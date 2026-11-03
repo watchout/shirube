@@ -1,5 +1,7 @@
 // unit-done core (PR-1a): from one sds-unit-done-facts/1 JSON, the nine items K1 to K9, the exceptions and the overall answer (design docs/design/unit-done-check.md v5 §3.4, §3.6;
 // work order iyasaka-arc#24 6603553960). The collectors read GitHub and the CI logs; this file only compares what they hand over. It reads no clock, random source, file or network (S4).
+import { matchesAny } from "../hygiene/lib.mjs"; // the one glob matcher of the repo (protected_paths, large files); it reads a path string and nothing else (S3)
+
 const FACTS = "sds-unit-done-facts/1", CHECKLIST = "sds-unit-done-checklist/2", RESULT = "sds-unit-done-result/1", MIN_LINES = 80, DESCRIPTION_MAX = 140;
 const EXCEPTION_URL = /^https:\/\/github\.com\/watchout\/iyasaka-arc\/issues\/49#issuecomment-\d+$/, SHA256 = /^[0-9a-f]{64}$/;
 
@@ -8,8 +10,6 @@ const text = (value) => (typeof value === "string" ? value.trim() : "");
 const unmet = (target, reason) => ({ target, reason });
 const out = (bad = [], seen = []) => ({ unmet: bad, unobserved: seen });
 const merge = (parts) => out(parts.flatMap((p) => p.unmet), parts.flatMap((p) => p.unobserved));
-const glob = (pattern) => new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replaceAll("**", "\0").replaceAll("*", "[^/]*").replaceAll("\0", ".*")}$`);
-const inside = (path, patterns) => patterns.some((pattern) => glob(pattern).test(path));
 
 // Every test the junit facts name, by "path::suite::name". A name that is not there is unmet when every junit fact was read, and unobserved when one was not.
 function testsOf(facts) {
@@ -67,8 +67,8 @@ function k4(facts, tests) {
 
 // K5: a pr that changed code_paths files must begin with a commit that adds or changes a test file and touches only test_paths and docs.
 function firstCommit(n, first, profile) {
-  const tests = list(profile.test_paths), stray = first.filter((f) => !inside(f.path, tests) && !inside(f.path, ["docs/**"]));
-  if (!first.some((f) => f.status !== "removed" && inside(f.path, tests))) return unmet(`#${n}`, "first commit adds or changes no test file");
+  const tests = list(profile.test_paths), stray = first.filter((f) => !matchesAny(f.path, tests) && !matchesAny(f.path, ["docs/**"]));
+  if (!first.some((f) => f.status !== "removed" && matchesAny(f.path, tests))) return unmet(`#${n}`, "first commit adds or changes no test file");
   return stray.length ? unmet(`#${n}`, `first commit changes ${stray[0].path}`) : null;
 }
 
@@ -77,7 +77,7 @@ function k5(facts) {
   for (const n of list(facts.checklist.prs)) {
     const pr = facts.prs?.[n];
     if (!Array.isArray(pr?.files)) seen.push(`#${n} files not read`);
-    else if (pr.files.some((p) => inside(p, list(facts.profile.code_paths)))) {
+    else if (pr.files.some((p) => matchesAny(p, list(facts.profile.code_paths)))) {
       const found = Array.isArray(pr.first_commit?.files) ? firstCommit(n, pr.first_commit.files, facts.profile) : "unread";
       if (found === "unread") seen.push(`#${n} first commit not read`);
       else if (found) bad.push(found);
