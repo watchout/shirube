@@ -1,0 +1,67 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@dd48581d988bc284e3ebf574f8ba76c170bb8ca5/docs/sds/audit-method.md#3",
+  "scope": "Shirube の次の目標の I1b（R2）の実装監査: scripts/sds/engine-judge.mjs（I1a の入力側に、設計 v13 §3-1〜§3-4 と §3-6 の子の process の判断を足した物）、その試験 tests/engine-judge-rows.test.mjs と tests/engine-judge.test.mjs（戻り値の拡張に合わせた直し）、本項目集合の file docs/audit/i1b-impl-audit-items.json。記法: [DR] = 設計の記録 docs/design/u1-engine-judge.md（shirube main dd48581d988bc284e3ebf574f8ba76c170bb8ca5 の bytes、v13、SHA-256 07e296ac3b56d64175fadf43bb1fdffbfa498261b08ac37ef1993b3ab54b3193）、[WO] = 作業指示 iyasaka-arc#24 6598649490・追補 1（6599529855）・I1b の指示（6600325342）、[SPLIT] = Owner の決定 OD-SHIRUBE-NEXT-GOAL-I1-SPLIT-THREE-PRS-20261103-001（iyasaka-arc#49 6599704588）。approval-record.mjs・record-compare.mjs・C9 は I1c、橋は I2 で、この PR には無い。全 12 項目必須。",
+  "items": [
+    {
+      "id": "IB-1",
+      "criterion": "範囲と PR: 変更 path が scripts/sds/engine-judge.mjs・tests/engine-judge-rows.test.mjs・tests/engine-judge.test.mjs・docs/audit/i1b-impl-audit-items.json だけ。.github/**・.shirube/**・kit/**・docs/sds/**・docs/design/**・ほかの scripts と tests に触れていない。新しい外部の依存が無い。PR 本文の sds-pr block が risk_class R2、changed_paths が diff と一致、control_handoff が shirube#6 6600330449 の URL と本文 SHA-256（ac73f3a5…）、control_handoff_amendments が元の作業指示・追補 1・I1b の指示の 3 つ。scripts と tests に足した行が 400 以下・file 20 以下、新しい file 300 行以下、engine-judge.mjs が全体で 300 行以下、関数 50 行・複雑さ 10 以下で、CI が成功している。",
+      "basis": "[WO] の 2 の大きさ、hygiene-profile の limits"
+    },
+    {
+      "id": "IB-2",
+      "criterion": "TDD（Red → Green）: 1 つ目の commit が tests/ だけで、その commit で試験が落ちる出力（childJudgment・childReport がまだ無いための読み込みの失敗と、prepare の戻り値の 2 件）が PR 本文にある。2 つ目の commit で scripts/ を足し、試験が全部通る。試験を直した所があれば PR 本文が述べている。試験が、実装を壊した版（PR 本文の変異の一覧）で落ちる（監査席が 1 つ以上を自分で再現する）。",
+      "basis": "[WO] の 2 の TDD"
+    },
+    {
+      "id": "IB-3",
+      "criterion": "行にする段（[DR] §3-1 の 1 つ目）: 行は stage graph の段のうち、状態の file の Stage Progress に印がある段だけで、graph の順。Unit の段（isPerUnitStage が真）は resolveBoltDag の Unit ごとに 1 行、それ以外の段は 1 行。walk の block（constructionUnitMajorBlock など）を済んだ段の一覧に使っていない。",
+      "basis": "[DR] §3-1、§4 の 2"
+    },
+    {
+      "id": "IB-4",
+      "criterion": "人の承認の無い段（[DR] §3-1 の分類 1）: phase が initialization の段は、印が [x] なら exempt、それ以外は not_approved。started と evidence は null。GATE_APPROVED を要求しない（本物の audit にも無い）。",
+      "basis": "[DR] §3-1、§4 の 1"
+    },
+    {
+      "id": "IB-5",
+      "criterion": "作る段階の Unit の段（[DR] §3-1 の分類 2）: 段全体が [S] なら全 Unit の行が exempt（成果物・受領が無くても not_approved にしない）。それ以外は、engine の unitStageStop を (段, Unit) ごとに呼び、null でない → not_approved、null で engine の unitExempt が真 → exempt、null で偽 → approved。unitStageStop の引数（kind・recordPrefix・codekbCtx・ledger）は engine の関数（resolveBoltDag・engineRelativeRecordDir・codekbCtxFor・unitLedgerFor）で作り、自分で組み立てていない。[S] でない Unit の段を engine の unitMajorConstructionStageSlugs(scope, state, true) が返さない時は UNSUPPORTED_SHAPE。",
+      "basis": "[DR] §3-1、§4 の 2・3b"
+    },
+    {
+      "id": "IB-6",
+      "criterion": "段単位の段と対象の形（[DR] §3-1 の分類 3 と最後の 2 項目）: 上の 2 つ以外の段は、[x] で audit にその段の GATE_APPROVED がある → approved、[S] → exempt、それ以外 → not_approved。[x] なのに GATE_APPROVED が無い → EVIDENCE_MISSING。対象は solo・unit-major・swarm でない・段単位の成果物の形でない・resolveBoltDag が ok の intent で、それ以外は UNSUPPORTED_SHAPE（none・malformed、team、swarm、usesStageLevelPerUnitArtifacts が真、Construction Iteration が unit-major でない）。",
+      "basis": "[DR] §3-1、§4 の 3"
+    },
+    {
+      "id": "IB-7",
+      "criterion": "試行の番号（[DR] §3-2）: Unit の段は、その段・Unit の UNIT_COMPLETED を audit の順に並べ、Run floor の値が初めて現れた順に番号を付け、一番新しい行の番号を runFloorOrdinal にする（同じ Run floor は同じ番号。完了の無い試行は数えない）。段単位の段は GATE_APPROVED を audit の順に数えた、一番新しい物の番号を gateOrdinal にする。engine が済みと言うのに UNIT_COMPLETED が無い、または一番新しい物に Run floor が無い → EVIDENCE_MISSING。",
+      "basis": "[DR] §3-2、§4 の 4"
+    },
+    {
+      "id": "IB-8",
+      "criterion": "証拠の取り出し（[DR] §3-3 と §3-6 の evidence）: approved の行だけが evidence を持ち、それ以外は null。Unit の段は completedBlock・completedAt・runFloorOrdinal・summary（engine の checkSummaryConfirmationEvidence の答えのまま）・sourceAuditRef、段単位は gateBlock・gateAt・gateOrdinal・sourceAuditRef。block は「## で始まる見出しの行」から最後の空でない行まで（LF）。sourceAuditRef は block のある shard の、作業場の root からの相対 path。今の時刻を読んでいない。audit は時刻順で、同じ時刻は engine の並べた順。",
+      "basis": "[DR] §3-3・§3-6、S4"
+    },
+    {
+      "id": "IB-9",
+      "criterion": "started（[DR] §3-4 の欄）: Unit の段は approved、または engine の台帳の open にその Unit がある時に真。段単位の段は印が [x]・[-]・[?]・[R] のどれかなら真、[ ] なら偽。exempt の行は偽（open にある Unit を除く）、初期化の段は null。上流を開き直して再承認しただけで下流を始めていない段は偽になる。",
+      "basis": "[DR] §3-4、§4 の 6"
+    },
+    {
+      "id": "IB-10",
+      "criterion": "返す型と読込み（[DR] §3-6）: prepare が sds-engine-judgment/1 の { inputDigest, engineTreeDigest, engineVersion, sourceDigest, rows } を返す。sourceDigest は audit の shard を name の順に並べて連結した bytes の SHA-256。engine は importModule の引数で読み込み（既定は動的な import()）、CI で本物の engine を読まない。親は版と選択の確かめを判断の読み取りより先に行い、子には対象の space と intent を渡して、違えば子は判断せず SELECTION_MISMATCH になる。版が違う時も判断を返さない。rows と sourceDigest の形が違う返事は ENGINE_CALL_FAILED。",
+      "basis": "[DR] §3-5・§3-6、§4 の 7"
+    },
+    {
+      "id": "IB-11",
+      "criterion": "engine の判断を作り直していない（[DR] §3-6、S2）: 「承認済み」「免除」「止まり」を自分の規則で決めず、engine の答えを写す。閾値・段の名前・Unit の名前を literal で持たない。承認の記録（approval-record.mjs）・照らし（record-compare.mjs）・C9 の並びと指紋・橋を実装していない。",
+      "basis": "[DR] §3-6、[SPLIT]、S2・S3"
+    },
+    {
+      "id": "IB-12",
+      "criterion": "I1a から変わらない物と報告: 理由の code が決まった 10 個だけで、失敗の message は code そのもの（判断の途中の想定外の例外は ENGINE_CALL_FAILED に直し、文・絶対 path を出さない）。子の process の環境は PATH・空の HOME・CLAUDE_PROJECT_DIR の 3 つで、AIDLC_SESSION_OVERRIDE で始まる名前が source に無い。作業場は読むだけ。PR 本文が own code の行数（今の値と I1b の後の値）、設計の記録に書かれていない判断（design_judgments）、本物の engine で全部の行を照らす試験 9 は I1c であることを述べている。",
+      "basis": "[DR] §3-5・§3-7、[WO] の PR 本文"
+    }
+  ]
+}
