@@ -35,7 +35,7 @@
     },
     {
       "id": "IB-7",
-      "criterion": "試行の番号（[DR] §3-2）: Unit の段は、その段・Unit の UNIT_COMPLETED を audit の順に並べ、Run floor の値が初めて現れた順に番号を付け、一番新しい行の番号を runFloorOrdinal にする（同じ Run floor は同じ番号。完了の無い試行は数えない）。段単位の段は GATE_APPROVED を audit の順に数えた、一番新しい物の番号を gateOrdinal にする。engine が済みと言うのに UNIT_COMPLETED が無い、または一番新しい物に Run floor が無い → EVIDENCE_MISSING。",
+      "criterion": "試行の番号（[DR] §3-2）: Unit の段は、その段・Unit の UNIT_COMPLETED を audit の順に並べ、Run floor の値が初めて現れた順に番号を付け、一番新しい行の番号を runFloorOrdinal にする（同じ Run floor は同じ番号。完了の無い試行は数えない）。段単位の段は GATE_APPROVED を audit の順に数えた、一番新しい物の番号を gateOrdinal にする。engine が済みと言うのに UNIT_COMPLETED が無い、一番新しい物に Run floor が無い、または一番新しい物と同じ時刻に別の Run floor の完了がある（shard をまたぐ同じ時刻は前後を決められない）→ EVIDENCE_MISSING。同じ時刻で Run floor が同じ完了は 1 つの試行。",
       "basis": "[DR] §3-2、§4 の 4"
     },
     {
