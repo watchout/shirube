@@ -98,16 +98,17 @@ test("BF-I1C-02: files are compared and replaced as raw bytes; bytes that only d
   assert.ok(readFileSync(join(out, ATT)).equals(changed));
 });
 
-test("BF-I1C-03: the judgment contract is checked whole; one wrong value is one fixed code and nothing is placed", () => {
+test("BF-I1C-03: the judgment contract is checked whole; one wrong value, an array where a string or an object belongs included, is one fixed code, exit 1 and nothing placed", () => {
   const only = (r) => ({ ...JUDGED, rows: [r] }), gate = (over) => row("requirements", null, "stage-gate", "approved", true, { ...gateEv, ...over });
-  const shape = [{ ...JUDGED, sourceDigest: undefined }, { ...JUDGED, inputDigest: "xyz" }, { ...JUDGED, engineTreeDigest: "" }, { ...JUDGED, engineVersion: "" }, only({ ...gate({}), started: "bad" }), only({ ...gate({}), started: null }),
+  const viaMain = (judgment) => { const out = tmp(), done = main(["--workspace", "/w", "--space", "default", "--intent", "i1", "--out", out], { prepare: () => judgment }); return [done.code, JSON.parse(done.line).reason, readdirSync(out)]; };
+  const shape = [{ ...JUDGED, sourceDigest: undefined }, { ...JUDGED, inputDigest: "xyz" }, { ...JUDGED, engineTreeDigest: "" }, { ...JUDGED, engineVersion: "" }, only({ ...gate({ gateBlock: "" }), started: "bad" }), only({ ...gate({}), started: null }),
     only(row("state-init", null, "initialization", "exempt", false)), only(row("state-init", null, "initialization", "approved", null, gateEv)), only(row("code-generation", null, "per-unit", "exempt", false)),
-    only(row("requirements", "u1", "stage-gate", "exempt", false)), only(row("requirements", null, "stage-gate", "not_approved", false, gateEv))];
-  for (const bad of shape) assert.equal(codeOf(() => buildRecords("i1", bad)), "UNSUPPORTED_SHAPE");
+    only(row("requirements", "u1", "stage-gate", "exempt", false)), only(row("requirements", null, "stage-gate", "not_approved", false, gateEv)),
+    ...["sourceDigest", "inputDigest", "engineTreeDigest"].map((k) => ({ ...JUDGED, [k]: [JUDGED[k]] }))];
+  for (const bad of shape) assert.deepEqual(viaMain(bad), [1, "UNSUPPORTED_SHAPE", []]);
   const evidence = [gate({ gateBlock: "" }), gate({ gateAt: "" }), gate({ sourceAuditRef: "" }), gate({ gateOrdinal: "1" }), row("functional-design", "u1", "per-unit", "approved", true, gateEv),
     row("requirements", null, "stage-gate", "approved", true, unitEv(1)), row("functional-design", "u1", "per-unit", "approved", true, { ...unitEv(1), completedAt: "" }), row("requirements", null, "stage-gate", "approved", true, "text"),
-    row("functional-design", "u1", "per-unit", "approved", true, { ...unitEv(1), summary: "text" }), row("functional-design", "u1", "per-unit", "approved", true, { ...unitEv(1), completedBlock: "" })];
-  for (const bad of evidence) assert.equal(codeOf(() => buildRecords("i1", only(bad))), "EVIDENCE_MISSING");
-  const out = tmp(), done = main(["--workspace", "/w", "--space", "default", "--intent", "i1", "--out", out], { prepare: () => only({ ...gate({ gateBlock: "", gateAt: "" }), started: "bad" }) });
-  assert.deepEqual([done.code, readdirSync(out)], [1, []]);
+    row("functional-design", "u1", "per-unit", "approved", true, { ...unitEv(1), summary: "text" }), row("functional-design", "u1", "per-unit", "approved", true, { ...unitEv(1), completedBlock: "" }),
+    row("functional-design", "u1", "per-unit", "approved", true, { ...unitEv(1), summary: [] })];
+  for (const bad of evidence) assert.deepEqual(viaMain(only(bad)), [1, "EVIDENCE_MISSING", []]);
 });
