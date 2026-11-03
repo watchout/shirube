@@ -24,7 +24,7 @@ export function canonical(value) {
 function evidenceOf(row) {
   const e = row.evidence, gate = row.kind === "stage-gate";
   if (!e || typeof e !== "object") fail("EVIDENCE_MISSING");
-  const unitText = text(e.completedBlock) && e.summary !== null && typeof e.summary === "object" ? `${e.completedBlock}\n${canonical(e.summary)}` : null;
+  const unitText = text(e.completedBlock) && Object.prototype.toString.call(e.summary) === "[object Object]" ? `${e.completedBlock}\n${canonical(e.summary)}` : null;
   const got = gate ? { n: e.gateOrdinal, at: e.gateAt, source: e.gateBlock } : { n: e.runFloorOrdinal, at: e.completedAt, source: unitText };
   if (!Number.isInteger(got.n) || got.n < 1 || ![got.at, got.source, e.sourceAuditRef].every(text)) fail("EVIDENCE_MISSING");
   return { ...got, ref: e.sourceAuditRef };
@@ -56,7 +56,7 @@ const sound = (r) => STATUS.has(r?.status) && KINDS.has(r.kind) && safe(r.stage)
 // path -> file text for the whole intent. A judgment that is not the closed shape, or a name that could leave approvals/<intent>/, is UNSUPPORTED_SHAPE.
 export function buildRecords(intent, judgment) {
   const rows = judgment?.rows;
-  if (!safe(intent) || !Array.isArray(rows) || !DIGESTS.every((k) => /^[0-9a-f]{64}$/.test(judgment[k])) || !text(judgment.engineVersion) || !rows.every(sound)) return fail("UNSUPPORTED_SHAPE");
+  if (!safe(intent) || !Array.isArray(rows) || !DIGESTS.every((k) => typeof judgment[k] === "string" && /^[0-9a-f]{64}$/.test(judgment[k])) || !text(judgment.engineVersion) || !rows.every(sound)) return fail("UNSUPPORTED_SHAPE");
   const made = new Map(), refs = new Map();
   for (const row of rows.filter((r) => r.status === "approved")) {
     const [path, body] = record(intent, row);
