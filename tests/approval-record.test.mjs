@@ -104,7 +104,7 @@ test("BF-I1C-03: the judgment contract is checked whole; one wrong value, an arr
   const shape = [{ ...JUDGED, sourceDigest: undefined }, { ...JUDGED, inputDigest: "xyz" }, { ...JUDGED, engineTreeDigest: "" }, { ...JUDGED, engineVersion: "" }, only({ ...gate({ gateBlock: "" }), started: "bad" }), only({ ...gate({}), started: null }),
     only(row("state-init", null, "initialization", "exempt", false)), only(row("state-init", null, "initialization", "approved", null, gateEv)), only(row("code-generation", null, "per-unit", "exempt", false)),
     only(row("requirements", "u1", "stage-gate", "exempt", false)), only(row("requirements", null, "stage-gate", "not_approved", false, gateEv)),
-    ...["sourceDigest", "inputDigest", "engineTreeDigest"].map((k) => ({ ...JUDGED, [k]: [JUDGED[k]] }))];
+    ...["sourceDigest", "inputDigest", "engineTreeDigest"].map((k) => ({ ...JUDGED, [k]: [JUDGED[k]] })), { ...JUDGED, inputDigest: "A".repeat(64) }];
   for (const bad of shape) assert.deepEqual(viaMain(bad), [1, "UNSUPPORTED_SHAPE", []]);
   const evidence = [gate({ gateBlock: "" }), gate({ gateAt: "" }), gate({ sourceAuditRef: "" }), gate({ gateOrdinal: "1" }), row("functional-design", "u1", "per-unit", "approved", true, gateEv),
     row("requirements", null, "stage-gate", "approved", true, unitEv(1)), row("functional-design", "u1", "per-unit", "approved", true, { ...unitEv(1), completedAt: "" }), row("requirements", null, "stage-gate", "approved", true, "text"),
