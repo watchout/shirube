@@ -1,16 +1,18 @@
 // I1c (design docs/design/u1-engine-judge.md v13 §7.3 rules 1 to 6 and §4 test 20): the audit seat's comparison of a PR's records with the records made again from the workspace.
 import test from "node:test";
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { compareRecords, main } from "../scripts/sds/record-compare.mjs";
 
 const REF = "approvals/i1/functional-design/u1/attempt-1.json", REF2 = "approvals/i1/infrastructure-design/u1/attempt-1.json";
 const R = (stage, unit, status, started, approvalRef) => ({ stage, ...(unit ? { unit } : {}), status, started, ...(approvalRef ? { approvalRef } : {}) });
 const seq = (rows) => rows.map((r, i) => ({ order: i + 1, ...r }));
 const FD = R("functional-design", "u1", "approved", true, REF), INFRA = R("infrastructure-design", "u1", "not_approved", false), CG = R("code-generation", "u1", "not_approved", true);
-const REGEN = { rows: seq([FD, INFRA, CG]), attempts: new Map([[REF, "{A}"]]) };
+const REGEN = { rows: seq([FD, INFRA, CG]), attempts: new Map([[REF, Buffer.from("{A}")]]) };
 const verdict = (pr, regen = REGEN) => { const out = compareRecords(pr, regen); return [out.result, [...new Set(out.findings.map((f) => f.code))].sort().join(",")]; };
 const pr = (rows, attempts = REGEN.attempts) => ({ rows: seq(rows), attempts });
 // What the bridge (R6.3, v7 3-4) can see inside one sequence: the order, the pairs, approvalRef only on approved rows, approved rows started. A PR that passes this alone is not yet compared with the workspace.
@@ -38,26 +40,51 @@ test("negative: an approval, a reference, a start or an attempt file the workspa
   assert.deepEqual(verdict(REGEN, reopened), ["FAIL", "APPROVAL_NOT_REPRODUCED"]);
   assert.deepEqual(verdict(pr([R("functional-design", "u1", "approved", true, REF2), INFRA, CG])), ["FAIL", "APPROVAL_REF_MISMATCH"]);
   assert.deepEqual(verdict(pr([FD, INFRA, CG]), { ...REGEN, rows: seq([FD, INFRA, R("code-generation", "u1", "not_approved", false)]) }), ["FAIL", "START_NOT_REPRODUCED"]);
-  assert.deepEqual(verdict(pr([FD, INFRA, CG], new Map([[REF, "{B}"]]))), ["FAIL", "ATTEMPT_BYTES_MISMATCH"]);
-  assert.deepEqual(verdict(pr([FD, INFRA, CG], new Map([[REF, "{A}"], ["approvals/i1/x/_intent/attempt-1.json", "{}"]]))), ["FAIL", "ATTEMPT_BYTES_MISMATCH"]);
+  assert.deepEqual(verdict(pr([FD, INFRA, CG], new Map([[REF, Buffer.from("{B}")]]))), ["FAIL", "ATTEMPT_BYTES_MISMATCH"]);
+  assert.deepEqual(verdict(pr([FD, INFRA, CG], new Map([[REF, Buffer.from("{A}")], ["approvals/i1/x/_intent/attempt-1.json", Buffer.from("{}")]]))), ["FAIL", "ATTEMPT_BYTES_MISMATCH"]);
   assert.deepEqual(verdict(pr([FD, INFRA, CG]), { ...REGEN, rows: seq([FD, R("infrastructure-design", "u1", "exempt", false), CG]) }), ["FAIL", "EXEMPT_MISMATCH"]);
   assert.deepEqual(verdict(pr([FD, INFRA, CG, R("build-and-test", null, "not_approved", false)])), ["FAIL", "ROW_EXTRA"]);
   assert.deepEqual(verdict({ ...REGEN, rows: REGEN.rows.map((r, i) => ({ ...r, order: i ? i + 2 : 1 })) }), ["FAIL", "ORDER_NOT_SEQUENTIAL"]);
   assert.deepEqual(compareRecords(pr([FD, INFRA, CG]), { ...REGEN, rows: seq([FD, R("infrastructure-design", "u1", "exempt", false), CG]) }).findings, [{ code: "EXEMPT_MISMATCH", stage: "infrastructure-design", unit: "u1" }]);
 });
 
-test("the entry: two directories in, one line of sds-record-compare/1 out; an unreadable sequence is a FAIL, never a PASS; wrong arguments exit 2", () => {
-  const put = (dir, rel, text) => { mkdirSync(dirname(join(dir, rel)), { recursive: true }); writeFileSync(join(dir, rel), text); };
-  const [a, b, c, d, e] = [0, 1, 2, 3, 4].map(() => mkdtempSync(join(tmpdir(), "rc-")));
-  for (const d of [a, b]) { put(d, "_sequence.json", JSON.stringify({ rows: REGEN.rows })); put(d, "functional-design/u1/attempt-1.json", "{A}"); }
-  put(b, "functional-design/u1/attempt-1.json", "{B}");
-  put(c, "_sequence.json", "{broken");
-  put(d, "_sequence.json", JSON.stringify({ rows: [{ order: 1 }] }));
-  put(e, "_sequence.json", JSON.stringify({ rows: REGEN.rows }));
-  symlinkSync(join(a, "functional-design/u1/attempt-1.json"), join(e, "attempt-9.json"));
-  const run = (...args) => { const out = main(args); return [out.code, JSON.parse(out.line)]; };
-  assert.deepEqual(run("--pr", a, "--regen", a), [0, { schema: "sds-record-compare/1", result: "PASS", findings: [] }]);
-  assert.deepEqual(run("--pr", a, "--regen", b), [1, { schema: "sds-record-compare/1", result: "FAIL", findings: [{ code: "ATTEMPT_BYTES_MISMATCH", stage: "functional-design", unit: "u1" }] }]);
-  for (const unreadable of [c, d, e]) assert.deepEqual([run("--pr", unreadable, "--regen", a)[0], run("--pr", unreadable, "--regen", a)[1].result, run("--pr", a, "--regen", unreadable)[1].findings.map((f) => f.code)], [1, "FAIL", ["INPUT_UNREADABLE"]]);
-  assert.equal(run("--pr", a)[0], 2);
+const CLI = fileURLToPath(new URL("../scripts/sds/record-compare.mjs", import.meta.url)), SEQ_OF = (rows) => JSON.stringify({ rows }), SEQ = SEQ_OF(REGEN.rows), A1 = "functional-design/u1/attempt-1.json", A2 = "functional-design/u1/attempt-2.json";
+const dirOf = (files) => { const d = mkdtempSync(join(tmpdir(), "rc-")); for (const [rel, body] of Object.entries(files)) { mkdirSync(dirname(join(d, rel)), { recursive: true }); writeFileSync(join(d, rel), body); } return d; };
+const cli = (...args) => { const r = spawnSync(process.execPath, [CLI, ...args], { encoding: "utf8" }); return { code: r.status, lines: r.stdout.split("\n").filter(Boolean), stderr: r.stderr }; };
+const seen = (r) => [r.code, r.lines.length, r.stderr, ...r.lines.map((l) => JSON.parse(l)).flatMap((o) => [o.result, o.findings.map((f) => f.code).join(",")])];
+const raw = (byte) => Buffer.concat([Buffer.from('{"x":"'), Buffer.from([byte]), Buffer.from('"}')]);
+
+test("BF-I1C-01 (real CLI): only the attempts the PR added over --base are compared; kept history is not; a first record has no base directory", () => {
+  const base = dirOf({ "_sequence.json": SEQ, [A1]: "{A}" }), regen = dirOf({ "_sequence.json": SEQ, [A2]: "{N}" });
+  const kept = dirOf({ "_sequence.json": SEQ, [A1]: "{A}", [A2]: "{N}" }), changed = dirOf({ "_sequence.json": SEQ, [A1]: "{A}", [A2]: "{X}" });
+  assert.deepEqual(seen(cli("--pr", kept, "--base", base, "--regen", regen)), [0, 1, "", "PASS", ""]);
+  assert.deepEqual(seen(cli("--pr", changed, "--base", base, "--regen", regen)), [1, 1, "", "FAIL", "ATTEMPT_BYTES_MISMATCH"]);
+  assert.deepEqual(seen(cli("--pr", dirOf({ "_sequence.json": SEQ, [A1]: "{A}" }), "--base", join(tmpdir(), "no-such-base-dir"), "--regen", dirOf({ "_sequence.json": SEQ, [A1]: "{A}" }))), [0, 1, "", "PASS", ""]);
+  assert.deepEqual(seen(cli("--pr", kept, "--base", dirOf({ "_sequence.json": SEQ }), "--regen", regen)), [1, 1, "", "FAIL", "ATTEMPT_BYTES_MISMATCH"]);
+  for (const args of [["--pr", kept, "--regen", regen], ["--pr", kept, "--base", join(dirOf({ x: "1" }), "x"), "--regen", regen]]) assert.deepEqual(seen(cli(...args)), [1, 1, "", "FAIL", "INPUT_UNREADABLE"]);
+  for (const args of [["--pr", kept, "--base", base], ["--regen", regen]]) assert.equal(cli(...args).code, 2);
+});
+
+test("BF-I1C-02 and 04 (real CLI): attempt files are compared as raw bytes; a sequence that is not UTF-8 or is broken on either side is one FAIL line and exit 1, never an uncaught error", () => {
+  const side = (byte) => dirOf({ "_sequence.json": SEQ, [A1]: raw(byte) }), empty = dirOf({});
+  assert.deepEqual(seen(cli("--pr", side(0x80), "--base", empty, "--regen", side(0x81))), [1, 1, "", "FAIL", "ATTEMPT_BYTES_MISMATCH"]);
+  assert.deepEqual(seen(cli("--pr", side(0x80), "--base", empty, "--regen", side(0x80))), [0, 1, "", "PASS", ""]);
+  const good = dirOf({ "_sequence.json": SEQ }), twice = [R("requirements", null, "not_approved", false), R("requirements", null, "not_approved", false)];
+  const odd = (rows) => dirOf({ "_sequence.json": SEQ_OF(rows) }), link = dirOf({ "_sequence.json": SEQ });
+  symlinkSync(join(good, "_sequence.json"), join(link, "attempt-9.json"));
+  const notUtf8 = dirOf({ "_sequence.json": Buffer.concat([Buffer.from('{"rows":[],"x":"'), Buffer.from([0x80]), Buffer.from('"}')]) });
+  const broken = [notUtf8, odd(seq(twice)), odd(seq([{ ...FD, unit: 7 }])), odd([{ order: 1 }]), dirOf({ "_sequence.json": '{"rows":"no"}' }), dirOf({ "_sequence.json": "{broken" }), link, dirOf({})];
+  for (const bad of broken) {
+    assert.deepEqual(seen(cli("--pr", bad, "--base", empty, "--regen", good)), [1, 1, "", "FAIL", "INPUT_UNREADABLE"]);
+    assert.deepEqual(seen(cli("--pr", good, "--base", empty, "--regen", bad)), [1, 1, "", "FAIL", "INPUT_UNREADABLE"]);
+  }
+});
+
+test("OBS-I1C-01: started through a symlink both scripts still run and speak (they used to exit 0 with no output)", () => {
+  for (const [script, arg] of [["record-compare", "--pr"], ["approval-record", "--workspace"]]) {
+    const alias = join(mkdtempSync(join(tmpdir(), "rc-")), "alias.mjs");
+    symlinkSync(fileURLToPath(new URL(`../scripts/sds/${script}.mjs`, import.meta.url)), alias);
+    const r = spawnSync(process.execPath, [alias, arg, "x"], { encoding: "utf8" });
+    assert.deepEqual([r.status, r.stdout.split("\n").filter(Boolean).length], [2, 1]);
+  }
 });
