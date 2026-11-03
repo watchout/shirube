@@ -1,0 +1,19 @@
+{
+ "schema": "sds-audit-items/1",
+ "method_ref": "watchout/shirube@5356af4fcf03ddf386e7823c2a5f15d8384603bd/docs/sds/audit-method.md#3",
+ "scope": "Shirube の次の目標の設計の記録 docs/design/u1-engine-judge.md の版 12（作者 arc）の事前監査（D1〜D6 のうち、版 11 からの差分に当たる物）と、本項目集合の file docs/audit/u1-engine-judge-v12-design-audit-items.json。版 11 = shirube main 6a9001c7（shirube#87 で統合、事前の設計監査 4 回目 PASS = shirube#87 6597771127）。版 12 は、その返却の所見 OBS-R4-02（shirube の作業場の U1 の Code Generation が not_approved・started: false で、§4 の 9 の started: true と今は一致しない）と OBS-R4-03（題の版の表記）を直した版。実装は本監査の合格の後なので、code の差分は無い。記法: [NG] = OD-SHIRUBE-NEXT-GOAL-GATE-READS-AIDLC-APPROVAL-START-20261103-001（iyasaka-arc#49 6588894545）、[R4] = shirube#87 6597771127（4 回目の返却）。全 2 項目必須。",
+ "items": [
+  {
+   "id": "V12-1",
+   "stage": "design",
+   "criterion": "§4 の 9 が §7.8 の 19 と同じ比べ方になっている: shirube の作業場で作り手を動かし、全部の行が engine の答え（(段, Unit) ごとに engine の部品を直接呼んで §3-1・§3-4 の決まりで作った期待の行）と同じになること。観測の値は照らしにとどめ試験の期待にせず、照らしで approved の行が approved でなくなった時だけ作らずに止めて arc に返す。照らしの値が [R4] の OBS-R4-02 と #24 6381255682・6389980151 の実測を写しただけで、U1 の Code Generation を started: true と期待する文・started を手で書き換える文が無い。§7.12 (3) の「9 と違えば作らずに arc に返す」は、この版 12 で 9 の期待そのものが engine の答えになったので、承認済みの行が承認でなくなった時だけ止める形として 18・19 と食い違わない。",
+   "basis": "[R4] OBS-R4-02、§7.8 の 18・19、§7.12 (3)"
+  },
+  {
+   "id": "V12-2",
+   "stage": "design",
+   "criterion": "版 11 からの差分の範囲: shirube main 6a9001c7 の docs/design/u1-engine-judge.md と比べて変わったのは、1 行目の marker の版・2 行目の題（v10 → v12 と、v12 の 1 文）・§4 の 9 の 1 行・末尾の §7.13 の表の追加・最後の next_action の行だけで、ほかの行の bytes が同じ（機械の diff で確かめる）。§7.13 の表が直した所と同じ種類の所を書き、[NG] の決定の範囲（門の判定の決まり・固定 checker・保護面・各 PR の exact-head を変えない）から出る変更が無い。",
+   "basis": "[NG]、[R4] OBS-R4-03"
+  }
+ ]
+}
