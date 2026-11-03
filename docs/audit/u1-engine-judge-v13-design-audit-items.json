@@ -1,0 +1,19 @@
+{
+ "schema": "sds-audit-items/1",
+ "method_ref": "watchout/shirube@5356af4fcf03ddf386e7823c2a5f15d8384603bd/docs/sds/audit-method.md#3",
+ "scope": "Shirube の次の目標の設計の記録 docs/design/u1-engine-judge.md の版 13（作者 arc）の事前監査（D1〜D6 のうち、版 12 からの差分に当たる物）と、本項目集合の file docs/audit/u1-engine-judge-v13-design-audit-items.json。版 12 = shirube main e183f4f0（shirube#88 で統合、事前の設計監査 1 回目 PASS = shirube#88 6598309001）。版 13 は、I1 の作る前の確かめで Owner の作業場の AI-DLC の hook が止めた子の process の環境の渡し方（iyasaka-arc#24 6598720211）と、その返却の所見 OBS-V12-01 を直した版。実装は本監査の合格の後なので、code の差分は無い。記法: [NG] = OD-SHIRUBE-NEXT-GOAL-GATE-READS-AIDLC-APPROVAL-START-20261103-001（iyasaka-arc#49 6588894545）、[HK] = iyasaka-arc#24 6598720211（hook が止めた報告）、[PR] = iyasaka-arc#24 6598779080（指定を渡さない実物の確かめ）、[R1] = shirube#88 6598309001（v12 の返却）。全 2 項目必須。",
+ "items": [
+  {
+   "id": "V13-1",
+   "stage": "design",
+   "criterion": "v7 §3-5 の子の process が、session を選ぶ指定（`AIDLC_SESSION_OVERRIDE` で始まる変数）を渡さない形になっている: 渡す環境が PATH・空の HOME・`CLAUDE_PROJECT_DIR` の 3 つだけで、`OVERRIDE_DROPPED` と専用の id の名の file の確かめが §3-5・§3-7・§4 の 7 から外れ、§4 の 7 に、作り手の環境と source にその名前が無いことと、chat の束縛が別の intent を指す時に `SELECTION_MISMATCH` で止まることの試験がある。選択が cursor（process の祖先から会話が見つかればその束縛）で決まり、対象と違えば止まる形のままで、作業場に書かない決まり（写しは消す）が保たれている。§6 の 2 つの未決を閉じた事実が [HK]・[PR] の値を写しただけで、[PR] が言えないとした事（判断の部品は動かしていない・1 回だけ・cursor に依る）を言えたことにしていない。hook を変える・避ける文が無い。",
+   "basis": "[HK]、[PR]、v7 §3-5・§3-7・§4 の 7・§6"
+  },
+  {
+   "id": "V13-2",
+   "stage": "design",
+   "criterion": "版 12 からの差分の範囲: shirube main e183f4f0 の docs/design/u1-engine-judge.md と比べて変わったのは、1 行目の marker の版・2 行目の題（v12 → v13 と v13 の 1 文）・§3-5 の子の process と intent の固定の 2 つの項・§3-7 の理由の code の一覧・§4 の 7 と 9・§6 の 2 つの項・§7.7 の 2・末尾の §7.14 の表の追加・最後の next_action の行だけで、ほかの行の bytes が同じ（機械の diff で確かめる）。§4 の 9 の直しが [R1] の OBS-V12-01 の文の範囲で、照らしの値や比べ方を変えていない。§7.14 の表が直した所と同じ種類の所を書き、[NG] の決定の範囲（門の判定の決まり・固定 checker・保護面・各 PR の exact-head を変えない）から出る変更が無い。",
+   "basis": "[NG]、[R1] OBS-V12-01"
+  }
+ ]
+}
