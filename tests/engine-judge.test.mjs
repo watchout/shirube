@@ -3,7 +3,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { JudgeError, REASONS, childEnv, childMain, cloneIdentity, copyHarness, listFiles, prepare, stableCopy, treeDigest } from "../scripts/sds/engine-judge.mjs";
@@ -59,7 +59,7 @@ test("copy: only .claude/ and aidlc/, whole, byte for byte; a symbolic link stop
 
 test("fingerprints: path and hash pairs in UTF-8 byte order of the path; anything the engine can see moves inputDigest, only .claude/ moves engineTreeDigest", () => {
   const ws = put(tmp(), { ".claude/b": "2", ".claude/a": "1", "aidlc/\u{10000}": "4", "aidlc/\ue000": "3" });
-  const pair = (p, s) => `${p}\t${sha(s)}\n`;
+  const pair = (p, s) => `${JSON.stringify(p)}\t${sha(s)}\n`;
   assert.equal(treeDigest(ws), sha(pair(".claude/a", "1") + pair(".claude/b", "2") + pair("aidlc/\ue000", "3") + pair("aidlc/\u{10000}", "4")));
   assert.equal(treeDigest(ws, [".claude"]), sha(pair(".claude/a", "1") + pair(".claude/b", "2")));
   const base = workspace();
@@ -69,6 +69,9 @@ test("fingerprints: path and hash pairs in UTF-8 byte order of the path; anythin
     assert.equal(treeDigest(changed, [".claude"]), treeDigest(base, [".claude"]), p);
   }
   assert.notEqual(treeDigest(workspace({ ".claude/tools/aidlc-version.ts": "other\n" }), [".claude"]), treeDigest(base, [".claude"]));
+  // A path that holds a tab and a newline must not read as two files: one file named `a<TAB><sha of X><LF>aidlc/b` against files a (X) and b (Y).
+  const one = put(tmp(), { ".claude/k": "k", [`aidlc/a\t${sha("X")}\naidlc/b`]: "Y" }), two = put(tmp(), { ".claude/k": "k", "aidlc/a": "X", "aidlc/b": "Y" });
+  assert.notEqual(treeDigest(one), treeDigest(two));
 });
 
 test("clone id: a token and a host, both, as the engine reads them (CLONE_ID_INCOMPLETE otherwise)", () => {
@@ -87,6 +90,19 @@ test("a workspace that moves while it is copied: one new copy, then WORKSPACE_CH
   dest = tmp();
   stableCopy(ws, dest, (w, d) => { copyHarness(w, d); put(ws, { "aidlc/transcripts/t.jsonl": "later\n", "aidlc/spaces/default/intents/i1/note.txt": "x" }); });
   assert.ok(existsSync(join(dest, SHARD)));
+  // Gone or renamed right after the copy is a change too: one new copy, and the copy then holds exactly what the workspace holds.
+  const renamed = "aidlc/spaces/default/intents/i1/audit/h2.md", state = "aidlc/spaces/default/intents/i1/aidlc-state.md";
+  for (const mutate of [(w) => rmSync(join(w, SHARD)), (w) => renameSync(join(w, SHARD), join(w, renamed)), (w) => rmSync(join(w, state)), (w) => rmSync(join(w, "aidlc/.aidlc-clone-id"))]) {
+    ws = workspace();
+    dest = tmp();
+    let copies = 0;
+    stableCopy(ws, dest, (w, d) => { copyHarness(w, d); if (copies++ === 0) mutate(w); });
+    assert.equal(copies, 2);
+    assert.deepEqual(listFiles(dest), listFiles(ws));
+  }
+  ws = workspace();
+  let again = 0;
+  assert.throws(() => stableCopy(ws, tmp(), (w, d) => { copyHarness(w, d); rmSync(join(w, again++ === 0 ? SHARD : state)); }), { code: "WORKSPACE_CHANGED" });
 });
 
 test("child environment: PATH, an empty HOME and the project dir only; the maker's source never names a session-choosing variable", () => {
@@ -129,6 +145,15 @@ test("prepare: every failure is one fixed code with no sentence or path, and the
   run(GOOD, linked);
   assert.deepEqual(codes, ["ENGINE_VERSION_MISMATCH", "SELECTION_MISMATCH", "SELECTION_MISMATCH", "ENGINE_LOAD_FAILED", "ENGINE_CALL_FAILED", "ENGINE_CALL_FAILED", "ENGINE_CALL_FAILED", "CLONE_ID_INCOMPLETE", "COPY_FAILED"]);
   assert.deepEqual(readdirSync(base), []);
+  // A temp place that cannot be made, a child that throws and a copy that cannot be removed are fixed codes too, never a raw error or a path.
+  const fixed = (code) => (e) => e instanceof JudgeError && e.message === code && e.code === code;
+  const stuck = () => { throw new Error("cannot remove /abs/path"); }, left = tmp();
+  const call = (extra, reply = GOOD) => () => prepare({ workspace: workspace(), target: TARGET, runChild: fakeChild(reply), ...extra });
+  assert.throws(call({ tmp: join(tmp(), "no", "such") }), fixed("COPY_FAILED"));
+  assert.throws(call({ tmp: base, runChild: () => { throw new Error("boom"); } }), fixed("ENGINE_CALL_FAILED"));
+  assert.throws(call({ tmp: left, remove: stuck }), fixed("COPY_FAILED"));
+  assert.throws(call({ tmp: left, remove: stuck }, JSON.stringify({ engineVersion: "2.11.0", selection: TARGET })), fixed("ENGINE_VERSION_MISMATCH"));
+  rmSync(left, { recursive: true, force: true });
 });
 
 test("child side: the version and the selection as the engine answers; a load failure and a call failure are two fixed codes", async () => {
