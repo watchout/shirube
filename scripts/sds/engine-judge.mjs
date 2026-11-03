@@ -36,8 +36,9 @@ export function listFiles(root, dirs = DIRS) {
   return out.sort((a, b) => Buffer.compare(Buffer.from(a), Buffer.from(b)));
 }
 
-// SHA-256 over the `<path>\t<sha256>\n` lines of every file in listFiles order: inputDigest over .claude/ and aidlc/, engineTreeDigest over .claude/ alone (3-5).
-export const treeDigest = (root, dirs = DIRS) => sha(listFiles(root, dirs).map((p) => `${p}\t${sha(readFileSync(join(root, p)))}\n`).join(""));
+// SHA-256 over one line per file in listFiles order: the path as a JSON string, a tab, the file's SHA-256, a newline. The JSON string ends at its own closing quote, so a tab or a
+// newline inside a file name cannot pass for a separator and two different sets of files cannot read the same. inputDigest covers .claude/ and aidlc/, engineTreeDigest .claude/ alone (3-5).
+export const treeDigest = (root, dirs = DIRS) => sha(listFiles(root, dirs).map((p) => `${JSON.stringify(p)}\t${sha(readFileSync(join(root, p)))}\n`).join(""));
 
 // The whole copy, file choice left out on purpose (nothing the engine can see is missed). A symbolic link is found before anything is copied.
 export function copyHarness(workspace, dest) {
@@ -53,8 +54,11 @@ export function cloneIdentity(text) {
 
 // The files a running conversation appends to: audit shards, aidlc-state.md and the clone id. Transcripts and the like are not compared (3-5).
 const WATCHED = /^aidlc\/(\.aidlc-clone-id|spaces\/.*\/(audit\/[^/]+\.md|aidlc-state\.md))$/;
-const same = (a, b) => { try { return sha(readFileSync(a)) === sha(readFileSync(b)); } catch { return false; } };
-const moved = (workspace, copy) => listFiles(workspace, ["aidlc"]).filter((p) => WATCHED.test(p)).some((p) => !same(join(workspace, p), join(copy, p)));
+// What the watched files hold on one side, as path and hash lines; null when one of them vanishes while it is read. Both sides are listed, so a file that is gone or has another name is a change too.
+const watched = (root) => {
+  try { return listFiles(root, ["aidlc"]).filter((p) => WATCHED.test(p)).map((p) => `${JSON.stringify(p)}\t${sha(readFileSync(join(root, p)))}`).join("\n"); } catch (error) { if (error instanceof JudgeError) throw error; return null; }
+};
+const moved = (workspace, copy) => { const now = watched(workspace); return now === null || now !== watched(copy); };
 
 // Copy, read the watched files again, and copy once more if any moved; a second move is WORKSPACE_CHANGED (3-5).
 export function stableCopy(workspace, dest, copy = copyHarness) {
@@ -98,21 +102,31 @@ function addShim(root) {
   try { writeFileSync(file, readFileSync(file, "utf8") + SHIM); } catch { fail("ENGINE_LOAD_FAILED"); }
 }
 
-// Everything the judgment needs from the input side: a stable whole copy, its fingerprints (taken before the shim), the engine's version and its selection as the
-// child reports them. The workspace is only read; the copy and the empty HOME are removed whatever happens.
-export function prepare({ workspace, target, runChild = spawnChild, tmp = tmpdir() }) {
-  const base = mkdtempSync(join(tmp, "sds-engine-")), root = join(base, "harness"), home = join(base, "home");
-  try {
-    mkdirSync(home);
-    stableCopy(workspace, root);
-    cloneIdentity(readText(join(root, "aidlc/.aidlc-clone-id")));
-    const inputDigest = treeDigest(root), engineTreeDigest = treeDigest(root, [".claude"]);
-    addShim(root);
-    const report = parseReport(runChild(root, home));
-    if (report.engineVersion !== ENGINE_VERSION) fail("ENGINE_VERSION_MISMATCH");
-    if (report.selection?.space !== target.space || report.selection?.intent !== target.intent) fail("SELECTION_MISMATCH");
-    return { inputDigest, engineTreeDigest, engineVersion: report.engineVersion };
-  } finally { rmSync(base, { recursive: true, force: true }); }
+const askChild = (runChild, root, home) => { try { return runChild(root, home); } catch { return fail("ENGINE_CALL_FAILED"); } };
+
+// What the judgment needs from the input side, inside the temp place: a stable whole copy, its fingerprints (taken before the shim), the engine's version and its selection as the child reports them.
+function judge({ workspace, target, runChild, root, home }) {
+  mkdirSync(home);
+  stableCopy(workspace, root);
+  cloneIdentity(readText(join(root, "aidlc/.aidlc-clone-id")));
+  const inputDigest = treeDigest(root), engineTreeDigest = treeDigest(root, [".claude"]);
+  addShim(root);
+  const report = parseReport(askChild(runChild, root, home));
+  if (report.engineVersion !== ENGINE_VERSION) fail("ENGINE_VERSION_MISMATCH");
+  if (report.selection?.space !== target.space || report.selection?.intent !== target.intent) fail("SELECTION_MISMATCH");
+  return { inputDigest, engineTreeDigest, engineVersion: report.engineVersion };
+}
+
+// The one public entry. Whatever goes wrong leaves as a code of the closed set (3-7) and nothing else: an error that is not one of ours means the temp place or the copy could not be used,
+// which is COPY_FAILED, without its sentence or its path. The workspace is only read; the copy and the empty HOME are removed whatever happens, and a copy that cannot be removed is a failure.
+export function prepare({ workspace, target, runChild = spawnChild, tmp = tmpdir(), remove = rmSync }) {
+  let base;
+  try { base = mkdtempSync(join(tmp, "sds-engine-")); } catch { return fail("COPY_FAILED"); }
+  let result, failure;
+  try { result = judge({ workspace, target, runChild, root: join(base, "harness"), home: join(base, "home") }); } catch (error) { failure = error instanceof JudgeError ? error : new JudgeError("COPY_FAILED"); }
+  try { remove(base, { recursive: true, force: true }); } catch { failure ??= new JudgeError("COPY_FAILED"); }
+  if (failure) throw failure;
+  return result;
 }
 
 if (process.argv[1] === SELF && process.argv[2] === "child") {
