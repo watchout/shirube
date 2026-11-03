@@ -1,5 +1,5 @@
-<!-- arc:shirube-u1-design-revision:engine-judge:v8 -->
-## arc の設計の記録: Shirube U1 の設計の改版 v8（I1: 段の「済み」を AI-DLC の engine の判断で読む。v8 = §7 の追補で aun・onza に広げ、門の判定 6 として入れる）
+<!-- arc:shirube-u1-design-revision:engine-judge:v9 -->
+## arc の設計の記録: Shirube U1 の設計の改版 v9（I1: 段の「済み」を AI-DLC の engine の判断で読む。v8 = §7 の追補で aun・onza に広げ、門の判定 6 として入れる。v9 = §7 の事前の設計監査 1 回目の指摘 3 つを直した版。直した所は §7.10）
 
 適用: R1〜R3、L1〜L6、S2・S4・S5・S8、OD-SHIRUBE-INCLUDE-AIDLC-NO-REINVENT-20261021-001（#49 6309035411）、OD-SHIRUBE-I1-ENGINE-STATE-COPY-DESIGN-REVISION-20261024-001（#49 6381170673）、OD-SHIRUBE-I1-UNIT-DONE-VIA-ENGINE-PARTS-WITH-BUN-20261025-001（#49 6389500200。索引の行 = iyasaka-org main 40e2f18f）、OI-LLM-CONTROL-BY-SCRIPT-MECHANISM-HOOK-MUST-20261024-001、OD-SHIRUBE-I1-DESIGN-ROUND6-WHOLE-COPY-20261025-001（#49 6393696963。索引の行 = iyasaka-org main 79ec8cd1）。v6（#57 6390523968）への設計監査 round 5 の返却（shirube#68 6392576496、BF-R5-01・02）と Owner の決定（入力を 1 つずつ数えて写し原典の一覧と照らす形をやめ、丸ごと写して指紋と engine の版を残す）を受けて §3-5 を書き直した。round 4 の返却（shirube#68 6392358644）は受付の BLOCK で、設計の中身を見ていない。v6 の答えのうち §3-5 に関わらない物は保つ。以下は v6 までの経緯。v2（#57 6389874375）への設計監査 round 2 の返却（shirube#68 6390071922、BF-R2-01〜06）と、shirube の席の確認（#24 6389980151・6390213665・6390265024）を受けて全体を書き直した。v2・v3（#57 6390136222）・v4（#57 6390236637）・v5（#57 6390272104）は置き換え（v3・v4 は監査に出す前に席の確認で直した）。v5 への設計監査 round 3 の返却（shirube#68 6390455033、BF-R3-01〜05）と、席の確認（#24 6390338940）を受けて直した。round 1 の指摘（BF-01〜07）への答えは保つ。対象 = U1 の Functional Design（entities.md・rules.md）と NFR Requirements の tech-stack-decisions.md。独立の監査の前の案。
 
@@ -132,7 +132,7 @@
 
 （v7 の next_action は §7 の最後の next_action が置き換える。）
 
-### 7. 版 8 の追補（2026-11-03。aun・onza に広げ、門の判定 6 として入れる）
+### 7. 版 8 の追補（2026-11-03。aun・onza に広げ、門の判定 6 として入れる。版 9 で §7.3・§7.4・§7.5・§7.7・§7.8・§7.9 を直し、§7.10 を足した）
 
 v7 の §1〜§6 は v7 のまま残す（§3-1〜§3-7 の作り手の作りは変えない）。この §7 は、Owner の決定 OD-SHIRUBE-NEXT-GOAL-GATE-READS-AIDLC-APPROVAL-START-20261103-001（iyasaka-arc#49 6588894545。以下 [NG]）の決定 4（作業指示の前に v7 を 10/25 より後の門の変更と照らし、食い違えば設計の改版を事前の設計監査に通す）による追補で、照らし合わせの結果（iyasaka-arc#57 6589245832）の食い違い 3 つだけを埋める。§7 と §1〜§6 が食い違う所は §7 が正（§7.2 に列挙）。
 
@@ -151,7 +151,7 @@ v7 の §1〜§6 は v7 のまま残す（§3-1〜§3-7 の作り手の作りは
 - shirube の own code は 2,178 行 / 4,000 行（main `5356af4f`、`scripts/hygiene/own-code-budget.mjs`）。
 
 #### 7.2 v7 のうち §7 が置き換える所
-| v7 の所 | v8 |
+| v7 の所 | v8・v9 |
 |---|---|
 | §2「門の判定 1〜5 と FAIL の扱い…を変えない」 | 判定 1〜5 は変えない。U1 の「記録の判定」を **判定 6**（record binding）として足す（§7.5） |
 | §2「承認の記録（C2）の置き場」・§3-7「最後にまとめて `approvals/` に置く」 | 置き場は shirube・aun・onza の各 repo の root の `approvals/<intent>/…`（C2・C9 の path のまま）。作り手は Owner の作業場を読み、書く先は引数で受けた repo の checkout の root（Owner の作業場に書かない。onza のように作業場がその repo の checkout の時は同じ場所になる）（§7.3） |
@@ -162,15 +162,26 @@ v7 の §1〜§6 は v7 のまま残す（§3-1〜§3-7 の作り手の作りは
 - 対象の repo は shirube・aun・onza。各 repo に `approvals/<intent>/<段>/<unit>/attempt-<n>.json`（Inception の段は `<unit>` の代わりに `_intent`）、`approvals/<intent>/_sequence.json`、取り消しの `attempt-<n>.revoked.json` を置く（形は v7 の C2・C9・§3-7 のまま）。
 - `approvals/**` は保護面（pin の `protected_paths`）にしない（記録の PR のたびに Owner の exact-head が要ることになるため）。代わりに判定 6 が次を機械で確かめる（§7.5 の R6.1〜R6.5）: 記録の PR は `approvals/**` だけを変える、足すだけ（今ある `attempt-*.json` を変えない・消さない）、形が決まりどおり、R2 以上（判定 3 の独立の監査が要る）。
 - **記録の PR を作るのは、その repo の実装の席**（shirube = shirube の席、aun = aun の席、onza = onza の席）。作り方: その repo の pin の `sds_commit` の shirube の checkout から作り手（I1）を、`--workspace <Owner の作業場>`・`--intent <intent>`・`--out <その repo の checkout の root>` で動かす。作り手は v7 §3-5 のとおり作業場を丸ごと写して読み、作業場に何も書かない。
-- **記録の PR の独立の監査**（項目集合に必ず入れる）: 形と path と足すだけ（R6.1〜R6.5 と同じ事を目でも見る）に加え、**作り直しの照合**: 監査の席が同じ固定の作り手（同じ `sds_commit`）を同じ作業場で動かし、PR が足した `attempt-*.json` が作り直しと bytes で同じこと、PR の `_sequence.json` の各行が作り直しの行より多くを主張しないこと（PR で `approved` の行は作り直しでも `approved` で `approvalRef` が同じ、PR で `started: true` の行は作り直しでも `started: true` か `approved`）を確かめる。作業場が PR の後に進んでいても（承認が増えても）通り、開き直しで PR の承認が消えていれば通らない。監査の席が作業場を読めない・bun を動かせない時、この項目は「観測できず」で合格にならない（§7.9 の 1）。
+- **記録の PR の独立の監査**（項目集合に必ず入れる）: 形と path と足すだけ（R6.1〜R6.5 と同じ事を目でも見る）に加え、**作り直しの照合**を、監査の席が script で行う（比べ方を文の指示で任せない。OI-LLM-CONTROL-BY-SCRIPT-MECHANISM-HOOK-MUST-20261024-001）。
+  - 手順: 監査の席が、PR の repo の pin の `sds_commit` の shirube の checkout から同じ固定の作り手（I1）を、同じ作業場・同じ intent で、書く先を空の一時的な場所にして動かす。続けて `node scripts/sds/record-compare.mjs --pr <PR の head の approvals/<intent>/> --regen <作り直しの approvals/<intent>/>` を動かし、出力の JSON（`sds-record-compare/1`）を返却に写す。`result` が `PASS` でなければ、この項目は FAIL。
+  - `record-compare.mjs` の決まり（I1 で作る。約 60 行。時刻・乱数を読まない、S4）。比べるのは `_sequence.json` の `rows` と、PR が足した `attempt-*.json`:
+    1. **行の集まりと順**: PR の行の `(stage, unit)` の並び（`order` の順）が、作り直しの並びと全部同じ。足りない行（`ROW_MISSING`）・余分な行（`ROW_EXTRA`）・順の違い（`ROW_ORDER_MISMATCH`）は FAIL。`order` は 1 から始まって 1 ずつ増え、並びの位置と同じ（違えば `ORDER_NOT_SEQUENTIAL`）。
+    2. **免除**: PR で `exempt` の行は、作り直しでも `exempt`。作り直しで `exempt` の行は、PR でも `exempt`（免除は engine が免除と言う時だけ。両向き。違えば `EXEMPT_MISMATCH`）。
+    3. **承認**: PR で `approved` の行は、作り直しでも `approved` で、`approvalRef` が同じ（違えば `APPROVAL_NOT_REPRODUCED`・`APPROVAL_REF_MISMATCH`）。
+    4. **始めた**: PR で `started: true` の行は、作り直しでも `started: true` か `approved`（違えば `START_NOT_REPRODUCED`）。
+    5. **承認の記録の bytes**: PR が足した `attempt-*.json` は、作り直しの同じ path の file と bytes で同じ（違う・作り直しに無い = `ATTEMPT_BYTES_MISMATCH`）。
+    6. 上の 1〜5 に当たらない違いは、作業場が PR の後に進んだ分（作り直しで `approved`・`started: true` が増えた行）だけで、それは通す。開き直しで PR の承認が消えていれば 3 で止まる。
+  - 出力: `{ schema: "sds-record-compare/1", result: "PASS" | "FAIL", findings: [ { code, stage, unit } ] }`。理由は上の決まった code だけで、本文・file の中身・秘密は出さない。
+  - 1 回目の事前の設計監査で、監査の席は Owner の作業場を隔離した写しで読み、bun 1.3.11 で engine の部品を呼べた（shirube#87 6593957425 の `engine_probe`。元の作業場には書いていない）。だから照合の担い手は監査の席のままにする（§7.9 の 1 は閉じた）。照合の時も作り手は v7 §3-5 のとおり作業場を丸ごと写して読み、元の作業場に書かない。照合を動かせない時は、この項目は「観測できず」で合格にならない。
 - 記録の PR を出す時: Owner が AI-DLC の会話で段 k を承認し、席が段 k+1 を始めた後（段 k+1 の行が `started: true` になる）で、段 k+1 の作業の PR を統合する前。判定 6 は base の記録だけを読む（BR3.1）ので、記録の PR が先に統合されていないと作業の PR は FAIL になる（記録だけの間は止めない）。
 
 #### 7.4 PR と AI-DLC の段の結び付け（食い違い 2）
 - `sds-pr/1` の block に `aidlc_record: { "intent": "<intent>", "stage": "<段の slug>", "unit": "<Unit の名>" }` を書く（U1 の C1・BR1.2 のまま。`unit` は Construction の Unit の段で必須）。`schema` は `sds-pr/1` のまま（足すだけ）。
 - PR の種類と判定 6 の当て方（§7.5 の R6.0）:
   1. **記録の PR**（変更 path に `approvals/` の下がある）: `aidlc_record` を要らない。R6.1〜R6.5 で見る。
-  2. **配布キットだけの PR**（変更 path が全部、base の pin の `files` の鍵か `.shirube/sds-pin.json`）: `NOT_CHECKED`（理由 `kit_only`。キットの版上げは AI-DLC の段の作業ではなく、R4 で Owner の exact-head が付く）。
+  2. **配布キットだけの PR**: 次の 2 つが両方そろう PR。(a) 変更 path が全部、base の pin の `files` の鍵か `.shirube/sds-pin.json`。(b) 判定 1 の `protected_touched` が真（変更 path が base の pin の `protected_paths` に当たる。この時、判定 1 の実際の risk `effective_risk` は R4。PR の宣言の risk では決まらない。宣言だけを R4 にした PR は (b) に当たらない）。この時 `NOT_CHECKED`（理由 `kit_only`）。理由: キットの版上げは AI-DLC の段の作業ではない。実際の risk が R4 なので判定 3 が独立の監査を求め、統合の条件は配布キットの版上げの決まり（OD-KIT-UPGRADE-STANDING-AND-INCEPTION-WHILE-WAITING-20261021-001 の 1。mode・必須の検査などを変える版上げは Owner の exact-head、[NG] の決定 4）で決まる。(a) だけで (b) が無い PR（pin の `files` にあっても保護面でない file、例えば `.claude/skills/sds-audit/SKILL.md` だけを変える R1 の PR）は、免除の根拠が無いので 3 に入る。
   3. **ほかの PR**: `aidlc_record` を要る。無ければ FAIL（BR1.1）。あれば v7 §3-4 の橋（BR2・BR3 と v7 の `started` の確かめ）。
+- 種類を決めるのは門だけで、PR は自分の種類を書けない（(a) は base の pin、(b) は判定 1 の `protected_touched` だけで決まる）。
 - 配布キットの PR の雛形の散文の `aidlc_record` の行を、`sds-pr` の block の例の欄に替える（K、§7.7）。
 
 #### 7.5 判定 6（記録の判定）と、今の門との重なり（食い違い 3）
@@ -179,7 +190,7 @@ v7 の §1〜§6 は v7 のまま残す（§3-1〜§3-7 の作り手の作りは
   - R6.0 種類（§7.4 の 1〜3）。
   - R6.1 変更 path に `approvals/` の下が 1 つでもあれば、変更 path は全部 `approvals/` の下（記録と作業を混ぜない）。違えば FAIL。
   - R6.2 `approvals/` の下の変更は、`attempt-<n>.json` と `attempt-<n>.revoked.json` の追加と、`_sequence.json` の追加か置き換えだけ。`attempt-*.json` の変更・消し・名前の変更は FAIL（BR5.8 を機械にする）。
-  - R6.3 足した file の名前が C2・C9 の path の決まりどおりで、JSON として読め、`schema` が `sds-approval-record/1`・`sds-stage-sequence/2`・`sds-approval-revocation/1` のどれかで、path の intent・段・Unit・試行の番号が中身と同じ。違えば FAIL。中身の正しさ（engine の判断どおりか）は独立の監査の作り直しの照合で見る（§7.3）。
+  - R6.3 足した file の名前が C2・C9 の path の決まりどおりで、JSON として読め、`schema` が `sds-approval-record/1`・`sds-stage-sequence/2`・`sds-approval-revocation/1` のどれかで、path の intent・段・Unit・試行の番号が中身と同じ。`_sequence.json` は中で食い違わない: `order` は 1 から 1 ずつ増え、`(stage, unit)` は重ならず、`approvalRef` は `approved` の行だけにあり、その path の段・Unit がその行と同じで、その file が PR か base にあり、`approved` の行は `started: true`。違えば FAIL。中身の正しさ（engine の判断どおりか、行の集まり・順・免除が engine と同じか）は機械の門では決められないので、独立の監査の作り直しの照合（§7.3 の `record-compare.mjs`）で見る。
   - R6.4 記録の PR の実際の risk（判定 1 の `effective`）は R2 以上。R1 以下なら FAIL（判定 3 の独立の監査を通さずに記録を入れさせない）。
   - R6.5 ほかの PR は v7 §3-4 の橋（BR1〜BR3、`exempt` の飛ばし、`started` の確かめ、取り消しの読み）。
 - 今の門との重なり: 判定 4・5・6 は別の事実を見る。同じ事実を 2 回見ない。
@@ -191,7 +202,7 @@ v7 の §1〜§6 は v7 のまま残す（§3-1〜§3-7 の作り手の作りは
 | 6 記録 | その PR の AI-DLC の段の前の段を **Owner が AI-DLC の会話で承認した**か、その段を今の試行で始めたか | repo の `approvals/` の承認の記録と段の順の記録 |
 
   5.3u（独立の監査が設計の記録を通したこと）と 6（Owner が AI-DLC の段を承認したこと）は承認した者も証拠も違い、片方で片方を置き換えない。同じ PR に 4・5・6 が全部当たることがある。
-- 置き場: 判定の芯 `scripts/sds/record-gate.mjs`（約 150 行）と、`gate.mjs` の読み手（base の `approvals/` を contents の API で読む。約 40 行）。作り手（I1）は v7 §3-6 の `engine-judge.mjs`（300 行の内）と `approval-record.mjs`（約 150 行）。合わせて約 640 行で、own code は約 2,820 行 / 4,000 行（予算は変えない。超えそうな時は作る席が止めて arc に返す）。
+- 置き場: 判定の芯 `scripts/sds/record-gate.mjs`（約 160 行。v9 で R6.3 の中の食い違いの確かめと R6.0 の (b) を足した）と、`gate.mjs` の読み手（base の `approvals/` を contents の API で読む。約 40 行）。作り手（I1）は v7 §3-6 の `engine-judge.mjs`（300 行の内）と `approval-record.mjs`（約 150 行）、照合の `record-compare.mjs`（約 60 行、§7.3）。合わせて約 710 行で、own code は約 2,890 行 / 4,000 行（予算は変えない。超えそうな時は作る席が止めて arc に返す）。
 
 #### 7.6 aun・onza で済みの条件をどう満たすか
 - onza: U1 の設計の 4 段が承認済みで、Code Generation を作業場で回しているので、U1 の作業の PR（`aidlc_record` = `code-generation`・`u1-skeleton-board`）は、前の行（`infrastructure-design` の U1）が承認済み・自分の行が `started: true` なら判定 6 を通る（済みの条件 (1) の正例）。
@@ -200,7 +211,7 @@ v7 の §1〜§6 は v7 のまま残す（§3-1〜§3-7 の作り手の作りは
 
 #### 7.7 作る順と PR（v7 §5 を置き換える）
 1. この v8 を shirube に置く PR（R1、docs だけ）の事前の設計監査（devauditor）。合格と受領の後に suite-lead が統合。
-2. **I1** 作り手（`engine-judge.mjs`・`approval-record.mjs`、R2）。v7 §6 の残る未決 2 つ（束縛を書かない渡し方の実物の確かめ、写しの大きさと時間）を PR に証拠として載せる。
+2. **I1** 作り手と照合（`engine-judge.mjs`・`approval-record.mjs`・`record-compare.mjs`、R2）。v7 §6 の残る未決 2 つ（束縛を書かない渡し方の実物の確かめ、写しの大きさと時間）を PR に証拠として載せる。
 3. **A** shirube 自身の記録の PR（R2、`approvals/261021-dev-speedup-automation/…`）。§7.3 の作り直しの照合つき。
 4. **I2** v7 のまま（kit の自己用の書く先と `budget.mjs`）。
 5. **I3** 判定 6（`record-gate.mjs`・`gate.mjs` の読み手・`docs/sds/distribution.md` §4 に判定 6 の文）。門の判定の決まりの文を変えるので、統合の前に Owner の exact-head（[NG] の決定 4）。
@@ -213,21 +224,32 @@ v7 の §1〜§6 は v7 のまま残す（§3-1〜§3-7 の作り手の作りは
 
 #### 7.8 試験（v7 §4 に足す）
 偽の入力で（CI）:
-10. R6.0: 配布キットだけの PR → `NOT_CHECKED`（`kit_only`）。pin の `files` に無い file を 1 つ足した PR → 種類 3 で `aidlc_record` が無いので FAIL。
+10. R6.0: (正例) pin と pin の `files` の file を変える正しい版上げ（`protected_touched` が真）→ `NOT_CHECKED`（`kit_only`）。宣言が R1 でも同じ。(負例) 保護面でないキットの file だけを変え、宣言だけを R4 にした PR（`protected_touched` が偽）→ `kit_only` にならない。(負例) pin の `files` に無い file を 1 つ足した PR → 種類 3 で `aidlc_record` が無いので FAIL。(負例、BF-U8D-02) pin の `files` にあるが保護面でない `.claude/skills/sds-audit/SKILL.md` だけを変える R1 の PR（判定 1 の実際の risk も R1）→ `kit_only` にならず、種類 3 で `aidlc_record` が無いので FAIL。
 11. R6.1: `approvals/` の file と `src/` の file を同じ PR で変える → FAIL。
 12. R6.2: 今ある `attempt-1.json` を書き換える・消す・名前を変える → FAIL。`attempt-2.json` を足し `_sequence.json` を置き換える → 通る。取り消しの file を足す → 通る。
-13. R6.3: path の段と中身の段が違う・`schema` が違う・JSON が壊れている → FAIL。
+13. R6.3: path の段と中身の段が違う・`schema` が違う・JSON が壊れている → FAIL。`_sequence.json` の `order` が飛ぶ・同じ `(stage, unit)` が 2 行・`not_approved` の行に `approvalRef`・`approvalRef` の段が行と違う・`approvalRef` の file が PR にも base にも無い・`approved` で `started: false` → FAIL。
 14. R6.4: 記録の PR を R1 で出す → FAIL。R2 → 通る（判定 3 が監査を求める）。
 15. BR2.2 の v8 の読み: base に `approvals/<intent>/_sequence.json` が無い intent を名指す → FAIL（探した path を出す）。
 16. 段階: `record_binding_mode` が無い → `NOT_CHECKED`、`report-only` の FAIL → 門は PASS のまま `record_binding.result = FAIL`、`blocking` の FAIL → 門が FAIL。
 17. 判定 4・5 と並べて: 同じ PR で判定 5 が PASS・判定 6 が FAIL → 門の JSON に両方が別々に出て、片方が片方を上書きしない。
 本物で 1 回ずつ（席の作業場、PR に証拠）:
 18. onza の作業場で作り手を動かし、U1 の設計の 4 段が `approved`、Code Generation が `started: true` になる（I1 の PR か onza の記録の PR）。
-19. aun の作業場で作り手を動かし、u1 の設計の段の行と、u2 以降の Unit の行が `not_approved`・`started: false` になる（記録の PR に載せる）。
+19. aun の作業場で作り手を動かし、engine の判断のままの行になる（記録の PR に載せる。BF-U8D-03 で直した）: u1 の設計の 4 段（functional-design・nfr-requirements・nfr-design・infrastructure-design）は `approved`・`started: true`（engine の `unitStageStop` が null・`unitExempt` が偽。1 回目の事前の設計監査で監査の席が隔離した写しで観測 = shirube#87 6593957425）、u2 以降の Unit の同じ 4 段は `not_approved`・`started: false`（`unitStageStop` が work・`open` が空）。u1 の code-generation 以降の行は `not_approved`（u1 の作る段の Code Generation は AI-DLC で回していない）で、`started` は engine の `unitLifecycleSnapshot` の答えのまま。期待に合わせるために engine の答えを変えない（作り手の値が engine の部品の答えと違えば、作る席が止めて arc に返す）。
+20. `record-compare.mjs`（偽の入力、§7.3）: 作り直し = [functional-design `approved`, infrastructure-design `not_approved`, code-generation `started: true`] に対し、(正例) 同じ記録 → PASS。作業場が進んで作り直しの infrastructure-design が `approved` になった → PASS。(負例、BF-U8D-01 の 3 つ) PR で中の行（infrastructure-design）を `exempt` にした → FAIL（`EXEMPT_MISMATCH`）。中の行を消して `order` を振り直した → FAIL（`ROW_MISSING`）。中の行を先頭に動かした → FAIL（`ROW_ORDER_MISMATCH`）。(負例) PR で `approved` だが作り直しで `not_approved`（開き直し）→ FAIL。`approvalRef` が違う → FAIL。`started: true` を作り直しが言わない → FAIL。`attempt-*.json` の bytes が 1 byte 違う → FAIL。作り直しで `exempt` の行が PR で `not_approved` → FAIL。3 つの負例は、照合が無ければ橋（v7 §3-4）で PASS になる形であることも同じ試験で示す。
 
 #### 7.9 未決と、伺う事
-1. **監査の席が Owner の作業場を読めるか**: §7.3 の作り直しの照合は、監査の席（devauditor、Codex の席）が同じ Mac の `~/Developer/aidlc-owner/<product>` を読み、bun で固定の作り手を動かせることを前提にする。この v8 の事前の設計監査で、監査の席は読めるか・動かせるかを項目の答えに書く。読めない・動かせない時は、arc が照合の担い手を替える案（例: 統合の直前に suite-lead が作り直して照らし、#24 に読み戻す）を書いて v8 を直す（その案は監査の席の独立性を弱めるので、採るなら Owner に伺う）。
+1. **監査の席が Owner の作業場を読めるか**（v9 で閉じた）: 1 回目の事前の設計監査で、監査の席は作業場を隔離した写しで読み、bun 1.3.11 で engine の部品を呼べた（shirube#87 6593957425 の `engine_probe`）。照合の担い手は監査の席のまま（§7.3）。担い手を替える案（監査の席の独立性を弱める）は採らない。
 2. **aun の作る段を AI-DLC で回す Unit**（§7.6）: aun で済みの条件 (1) の正例を出すには、どれかの Unit の作る段（Functional Design から）を aidlc-aun の会話で回し、Owner が各段を承認する必要がある。どの Unit から、どの形で（arc の設計の記録を AI-DLC の段の成果物として取り込むか、段の中で作り直すか）回すかは進め方の決定なので、arc が Suite の質問ボードで Owner に伺う。答えまで、aun の PR は判定 6 で記録だけの FAIL のまま進む（止まらない）。
 3. v7 §6 の 2 つは I1 の PR で確かめる（§7.7 の 2）。
 
-next_action: actor=shirube; what=この v8 の file を shirube に置く PR（R1）を作り、事前の設計監査を頼む（作業指示 = iyasaka-arc#24、写し = shirube#6）; blocking=false
+#### 7.10 版 9 で直した所（事前の設計監査 1 回目 = shirube#87 6593957425 の指摘）
+| 指摘 | 直した所 |
+|---|---|
+| BF-U8D-01 作り直しの照合に、免除・行の集まり・順の改変を止める決まりが足りない | §7.3: 照合を `record-compare.mjs`（決まった code の出力）にし、行の `(stage, unit)` の並びの完全な一致・`order` の連番・免除の両向きの一致・承認と `approvalRef`・始めた・`attempt` の bytes を比べる。§7.5 の R6.3 に `_sequence.json` の中の食い違いの機械の確かめを足した。§7.8 の 13・20 に 3 つの反例と、正しい前進の正例を足した |
+| BF-U8D-02 `kit_only` の path の見分けが、免除の根拠の R4 を保証しない | §7.4 の 2: `kit_only` は「path が pin の `files` か pin」と「判定 1 の `protected_touched` が真（実際の risk が R4）」の両方（宣言の risk では決まらない）。免除の理由の文を、判定 3 の監査と配布キットの版上げの決まり（OD-KIT-UPGRADE-STANDING-AND-INCEPTION-WHILE-WAITING-20261021-001）に直した（v8 の「R4 で Owner の exact-head が付く」は、版上げの決まりで exact-head の要らない版上げがあるので誤り）。§7.8 の 10 に、保護面でないキットの file だけの R1 の負例と、正しい版上げの正例を足した |
+| BF-U8D-03 試験 19 が、aun の u1 の承認済みの設計の 4 段を未承認と期待している | §7.8 の 19: u1 の設計の 4 段は `approved`・`started: true`、u2 以降は `not_approved`・`started: false`（監査の席が engine で観測した値）。code-generation 以降は engine の答えのまま |
+| 同じ種類の所（arc が見直した） | §7.9 の 1（監査の席が作業場を読めるか）を、1 回目の観測で閉じた。§7.5 の置き場の行数と own code の見込みを、`record-compare.mjs` と R6 の足しで直した（約 710 行、約 2,890 / 4,000） |
+
+採らなかった案: (1) base の `_sequence.json` を置き換える記録の PR で、行の `(stage, unit)` の並びを base と同じに保つことを門で機械で求める案。Units の段を開き直して Unit が増えた時の正しい置き換えまで止めるので採らず、行の集まりと順は engine の作り直しとの照合（§7.3）で見る。(2) 免除の根拠に Owner の exact-head を門で確かめる案。門が読める exact-head の証拠の形が無く（版上げの決まりで要らない時もある）、判定 1 の実際の risk と判定 3 の監査で縛る。
+
+next_action: actor=shirube; what=この v9 の 2 つの file を shirube#87 に置き直し、事前の設計監査の 2 回目を頼む（作業指示 = iyasaka-arc#24 の追補）; blocking=false
