@@ -1,0 +1,49 @@
+{
+ "schema": "sds-audit-items/1",
+ "method_ref": "watchout/shirube@b13192d0d5c3150125c5b5f19ee00eafde372c71/docs/sds/audit-method.md#3",
+ "scope": "Shirube の作る単位の完成検査（unit-done）の芯の設計の記録の事前監査（D1〜D6）: shirube の docs/design/unit-done-check.md（作者 arc、版 2）と、本項目集合の file docs/audit/unit-done-check-design-audit-items.json。実装は本監査の合格の後なので、code の差分は無い。事実の照らし先 [SH] = shirube main e183f4f0 の scripts/sds/kit.mjs・scripts/sds/plan-binding.mjs・.github/workflows/sds-gate.yml・kit/sds-gate-caller.yml・.shirube/hygiene-profile.md。記法: [KIT] = OD-SUITE-UNIT-DONE-CHECK-IN-SHIRUBE-GATE-KIT-20261103-001（iyasaka-arc#49 6597452196）、[ALL] = OI-SUITE-UNIT-DONE-ALL-CHECKS-PASS-BEFORE-OWNER-CHECKLIST-TESTS-20261103-001（#49 6596779824）、[CI] = OI-SUITE-UNIT-DONE-CHECK-AS-CI-GATE-20261103-001（#49 6596966301）、[SCRIPT] = OI-LLM-CONTROL-BY-SCRIPT-MECHANISM-HOOK-MUST-20261024-001（#49 6380845765）、[UT] = OD-SUITE-UNIT-TIME-TARGET-MIDPOINT-20261102-001（#49 6566617526）、[V1] = 版 1（iyasaka-arc#57 6597113797）。全 7 項目必須。",
+ "items": [
+  {
+   "id": "UDC-1",
+   "stage": "design",
+   "criterion": "目的と置き場: §1 の目的が [ALL]・[CI] の範囲の中で「全部 met の時だけ単位を閉じる PR を統合できる」「Owner に回すのは通った PR だけ」を言い、判定に LLM を使わない（[SCRIPT]）。§2 の置き場が [KIT] の決定 1（最初から Shirube に作り、配布キットで aun・onza・shirube に同じ版で配る。各 repo は CI の job で芯を呼び、対応表だけを持つ）と同じ形で、判定の決まりが shirube の 1 か所（S3）。対象外（試験の意味・設計と実装の意味のずれ・log の秘密・門の判定 1〜6）を完成検査で見ると書いていない。S2 から外れる所が §9 の deviation_ledger にある。",
+   "basis": "[KIT] の決定 1・4、[ALL]、[CI]、[SCRIPT]、S2、S3"
+  },
+  {
+   "id": "UDC-2",
+   "stage": "design",
+   "criterion": "動き方と権限: §3.1 の呼出し側が pull_request_target と workflow_run（ci の completed）で走り、定義が default branch の物で、再利用の workflow が shirube を job.workflow_sha で checkout し、PR の code を checkout も実行もしない（[SH] の sds-gate.yml・sds-gate-caller.yml と同じ形）。権限が読む物と status を書く物だけで、新しい資格情報・新しい外部の依存（actions の artifact を含む）を足さない（S9）。キットの render が profile のある配布先にだけ 2 つの file を書き、pin の files と kit status の uses の照らし（[SH] kit.mjs の usesMatch）がそのまま効く。",
+   "basis": "[SH]、S9、escalation-policy（新しい外部依存）"
+  },
+  {
+   "id": "UDC-3",
+   "stage": "design",
+   "criterion": "対象の見分け: §3.2 の表の 4 つの行が、対応表を変える PR と completes_unit: true の handoff を持つ PR の組合せを全部覆い、片方だけの PR を FAIL にする（単位を閉じる PR は必ず完成検査を通る）。handoff の読み手が [SH] plan-binding.mjs の物と同じで、2 つ目の読み手を作らない（S3）。handoff が読めない時を「なし」にせず unobserved にしている（V-6）。対象外の PR で success を出し、必須の検査にしても他の PR を止めない。",
+   "basis": "[SH] plan-binding.mjs の completesUnit、S3、S5"
+  },
+  {
+   "id": "UDC-4",
+   "stage": "design",
+   "criterion": "事実の集め方: §3.3 の事実の行が workflow の command（`::`）にならない形で、gzip と base64 と分割と SHA-256 で元の file に戻り、同じ名前の 2 組・欠け・指紋の違いを unobserved にする（試験の出力がまねても通らない）。CI の run の選び方（workflow の path・event・head_sha・一番新しい attempt）が決まっていて、completed でない時は pending、読めない時は unobserved で、例外で job を緑にしない（S8）。核が集め手の JSON だけを読み、時計・乱数・file・ネットワークを読まない（S4）。",
+   "basis": "S4、S5、S8"
+  },
+  {
+   "id": "UDC-5",
+   "stage": "design",
+   "criterion": "項目と判定: §3.4 の K1〜K8 が [V1] の 8 項目の意味を保ち、照らし方が §3.3 の事実と写しと設計の記録だけで決まる。K6 が門の判定 3 と同じ固定 checker を指紋を変えずに使い、統合済みの古い PR に当て直せるかを PR-1b で実物で示し、返らない時は止めて arc に返す形（§7）。K7 が node を名指した PR を全部求め、名指していない PR を理由つきで挙げさせる。§3.6 が 4 つの値を持ち、unobserved を met に数えず、外れは欄がそろった物だけで、Owner の決定の実在を CI が見られないことを書いて、閉じる PR の監査と exact-head に置いている。status の対応が決まっている。",
+   "basis": "[V1] §3.1、[ALL] の 5、S5"
+  },
+  {
+   "id": "UDC-6",
+   "stage": "design",
+   "criterion": "取り出しと形: §3.5 の AC の取り出しが AI-DLC 2.11.1 の stories と story map の書式（`### USx.y` の見出し、字下げした `- ACx.y.z —` の行、`| Story | Unit ID |` の表）に合い、取れた AC が 0 の時に unobserved にする。設計の場合の ID の取り出しが profile の節と ID の形だけで決まり、位置で見分けない。§3.7 の profile と対応表の形が、K1〜K8 の照らしに要る欄を全部持ち、profile が保護面（`.shirube/**`）にあり、欠けた時に FAIL にする。",
+   "basis": "AI-DLC 2.11.1 の雛形、[V1] §3.2"
+  },
+  {
+   "id": "UDC-7",
+   "stage": "design",
+   "criterion": "試験・PR・予算: §4 の試験が §3 の各決まりの正と負（T・V・X・G・E・W と実物の 1 回）を持ち、1 つ目の commit を試験だけにする手順を書いている。§5 の PR の割り方が 1 本 400 行（scripts・configs・workflows・tests、fixtures は除く）・20 file・新しい file 300 行の上限（[SH] hygiene-profile）に収まる見込みで、超えそうな時に止める。own code の見込みが 4,000 行の予算の内。workflow を足す PR-2 が R4 で Owner の exact-head に置かれている（[KIT] の決定 4）。§8 の目安が [UT] の決まりで計算されている。",
+   "basis": "[SH] hygiene-profile、[KIT] の決定 4、[UT]"
+  }
+ ]
+}
