@@ -16,6 +16,7 @@ const noJunit = (f) => { f.profile.facts = f.profile.facts.filter((x) => x.kind 
 const own = (f) => { f.checklist.conditions["common-1"] = { text_sha256: "1".repeat(64), audit: "this condition is read by the audit of the closing pr" }; };
 const put = (o, key, v) => { if (v === undefined) delete o[key]; else o[key] = v; };
 const without = (role) => (f) => { f.source.files = f.source.files.filter((s) => s.role !== role); };
+const BAD = [["null", null], ["true", true], ["a number", 1], ["an empty string", ""], ["an array", []], ["an object", {}]]; // values no id, name, path or fingerprint may be, even when both sides hold the same one
 
 // [name, change, item, value, part of a finding that must show]
 const TABLE = [
@@ -51,8 +52,14 @@ const TABLE = [
   ...[["T-15 copy differs from the manifest", "K3"], ["T-15 K8 too", "K8"], ["T-15 K9 too", "K9"]].map(([name, id]) => [name, (f) => { f.source.files[0].actual_sha256 = "d".repeat(64); }, id, "unobserved", "manifest"]),
   ...["K3", "K8", "K9"].flatMap((id) => [["T-15b no stories", without("stories")], ["T-15b no story-map", without("story-map")], ["T-15b no delivery-plan", without("delivery-plan")], ["T-15b one role three times", (f) => { f.source.files = Array(3).fill(f.source.files[0]); }],
     ["T-15b a fourth file", (f) => { f.source.files.push({ ...f.source.files[0] }); }], ["T-15b an unknown role", (f) => { f.source.files[0].role = "other"; }], ["T-15b a null entry", (f) => { f.source.files[0] = null; }], ["T-15b an extra file of an unknown role", (f) => { f.source.files.push({ ...f.source.files[0], role: "extra" }); }]].map(([name, change]) => [`${name}: ${id}`, change, id, "unobserved", "manifest"])),
-  ...["K3", "K8", "K9"].flatMap((id) => [["a non-hash", "x"], ["64 characters that are not hex", "g".repeat(64)], ["upper-case hex", "A".repeat(64)], ["true", true], ["a number", 1], ["an empty string", ""]]
+  ...["K3", "K8", "K9"].flatMap((id) => [["a non-hash", "x"], ["64 characters that are not hex", "g".repeat(64)], ["upper-case hex", "A".repeat(64)], ...BAD]
     .map(([name, v]) => [`T-15c both fingerprints ${name}: ${id}`, (f) => { f.source.files[0].manifest_sha256 = v; f.source.files[0].actual_sha256 = v; }, id, "unobserved", "manifest"])),
+  ...[["a test name", "K3", "unmet", "no test named", (f, v) => { cases(f)[0] = { id: v, status: "pass" }; f.checklist.acceptance["AC1.1.1"] = [v]; }],
+    ["a design record path", "K4", "unobserved", "design record", (f, v) => { f.design.records = [v]; f.checklist.design_records = [v]; f.design.ids = { [String(v)]: ["E-1"] }; }],
+    ["a design case id", "K4", "unobserved", "case id", (f, v) => { f.design.ids["docs/design/u2-example.md"] = [v]; f.checklist.design_cases = { [String(v)]: ["tests/a.test.mjs::suite::t3"] }; }],
+    ["a condition id", "K9", "unobserved", "not extracted", (f, v) => { f.source.delivery.dod[0].id = v; f.checklist.conditions[String(v)] = f.checklist.conditions["dod-1"]; }],
+    ["an acceptance id", "K3", "unobserved", "acceptance", (f, v) => { f.source.acceptance = [v]; f.checklist.acceptance = { [String(v)]: ["tests/a.test.mjs::suite::t1"] }; }]]
+    .flatMap(([what, id, value, shown, apply]) => BAD.map(([name, v]) => [`T-15d ${what} that is ${name} on both sides`, (f) => apply(f, v), id, value, shown])),
   ["T-19 demo wanted, none given", (f) => { f.checklist.demo = []; }, "K8", "unmet", "no test"],
   ["T-19 no demo in the plan", (f) => { f.checklist.demo = []; f.source.delivery.has_demo = false; }, "K8", "not_applicable", ""],
   ["T-20 plan condition missing", (f) => { delete f.checklist.conditions["dod-1"]; }, "K9", "unmet", "dod-1"],
@@ -153,7 +160,7 @@ test("what was not read is never an empty set: the whole answer is a FAIL", () =
 });
 
 test("a value the core cannot read is a FAIL with a reason and no items, never an exception", () => {
-  const broken = [(f) => { f.profile.facts = [null]; }, (f) => { f.profile.facts = [{ kind: "junit" }]; }, (f) => { f.profile.code_paths = [null]; }, (f) => { f.profile.code_paths = []; }, (f) => { f.profile.test_paths = [80]; }, (f) => { f.profile.code_paths = ["src/**", ""]; }, (f) => { f.profile.facts = [{ name: "junit-unit" }]; }, (f) => { delete f.profile; },
+  const broken = [(f) => { f.profile.facts = [null]; }, (f) => { f.profile.facts = [{ kind: "junit" }]; }, (f) => { f.profile.code_paths = [null]; }, (f) => { f.profile.code_paths = []; }, (f) => { f.profile.test_paths = [80]; }, (f) => { f.profile.code_paths = ["src/**", ""]; }, (f) => { f.profile.facts = [{ name: "junit-unit" }]; }, (f) => { delete f.profile; }, (f) => { f.profile.facts[0].name = ""; f.results[""] = f.results["junit-unit"]; },
     (f) => { f.source.delivery.dod = [null]; }, (f) => { f.checklist.design_cases = null; }, (f) => { f.checklist.design_refs = null; }, (f) => { f.results["junit-unit"].cases = [null]; }];
   for (const change of broken) {
     const r = made(change);
