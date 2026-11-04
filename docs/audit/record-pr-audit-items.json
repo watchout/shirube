@@ -1,7 +1,7 @@
 {
   "schema": "sds-audit-items/1",
   "method_ref": "watchout/shirube@dd48581d988bc284e3ebf574f8ba76c170bb8ca5/docs/sds/audit-method.md#3",
-  "scope": "記録の PR（その repo の AI-DLC の作業場の承認の記録 approvals/<intent>/** だけを足す PR。shirube・aun・onza が使う 1 つの項目集合）の監査。項目 RA-1〜RA-4 の文は、作業指示 iyasaka-arc#24 6622113604（本文 SHA-256 19a9359f3babcddba329eac6ab11c7bc036fe2dca4bd23b0b3dcd02db6ea835e、作者 arc）の RA-1〜RA-4 を、RA-5 の文は、その追補 2 iyasaka-arc#24 6622678442（本文 SHA-256 c9771ba9c61af0ee25208292aa4cdea216bcc139f437e82fd717af7d6c55cbf5、作者 arc。元の RA-5 を置き換えた）の RA-5 を、字を変えずに取り出した物。設計の正本は docs/design/u1-engine-judge.md の版 13（SHA-256 07e296ac3b56d64175fadf43bb1fdffbfa498261b08ac37ef1993b3ab54b3193）の §7.3。記法: [WO] = 上の作業指示、[A2] = 上の追補 2、[DR] = 上の設計の記録。全 5 項目必須。",
+  "scope": "記録の PR（その repo の AI-DLC の作業場の承認の記録 approvals/<intent>/** だけを足す PR。shirube・aun・onza が使う 1 つの項目集合）の監査。項目 RA-1〜RA-4 の文は、作業指示 iyasaka-arc#24 6622113604（本文 SHA-256 19a9359f3babcddba329eac6ab11c7bc036fe2dca4bd23b0b3dcd02db6ea835e、作者 arc）の RA-1〜RA-4 を、RA-5 の文は、その追補 3 iyasaka-arc#24 6623104939（本文 SHA-256 16c23913758e1755797081e528a3ad4006d68c7f5c8eaf7917ab3135a17b94a8、作者 arc。追補 2 までの RA-5 を置き換えた）の RA-5 を、字を変えずに取り出した物。設計の正本は docs/design/u1-engine-judge.md の版 13（SHA-256 07e296ac3b56d64175fadf43bb1fdffbfa498261b08ac37ef1993b3ab54b3193）の §7.3。記法: [WO] = 上の作業指示、[A3] = 上の追補 3、[DR] = 上の設計の記録。全 5 項目必須。",
   "items": [
     {
       "id": "RA-1",
@@ -25,8 +25,8 @@
     },
     {
       "id": "RA-5",
-      "criterion": "証拠: (a) PR 本文の file の SHA-256 の表が、PR の head の各 file の bytes から計算した SHA-256 と同じ（監査の席が head の file から計算する）。(b) PR 本文に書いた作り手の版・`engineVersion`（`2.11.1`）・`inputDigest`・`engineTreeDigest` が、PR の head の `_sequence.json` の中の値と同じ。(c) 作り直しとの比べは RA-3 の固定 script（`record-compare.mjs`）の結果だけで判断する。`attempt-*.json` の bytes の一致と `_sequence.json` の行の決まりは script が見る。`_sequence.json` の file の SHA-256 や `inputDigest` が作り直しと違うことは、それだけでは FAIL にしない（承認が消えた・`attempt-*.json` が変わった時は script が FAIL を返す）。",
-      "basis": "[A2] の RA-5、[DR] の §7.3"
+      "criterion": "証拠: (a) PR 本文の file の SHA-256 の表が、PR の head の各 file の bytes から計算した SHA-256 と同じ（監査の席が head の file から計算する）。(b) PR 本文に書いた `engineVersion`（`2.11.1`）・`inputDigest`・`engineTreeDigest` が、PR の head の `_sequence.json` の中の同じ名前の欄の値と同じ。(c) PR 本文に書いた作り手の版（40 桁の commit）が、作業指示が名指す作り手の版（作業指示に無ければ、その repo の `.shirube/sds-pin.json` の `sds_commit`）と同じで、監査の席が RA-3 の作り直しに使った shirube の checkout の `git rev-parse HEAD` もその版と同じ。作り手の版は `_sequence.json` の欄と比べない。(d) 作り直しとの比べは RA-3 の固定 script（`record-compare.mjs`）の結果だけで判断する。`attempt-*.json` の bytes の一致と `_sequence.json` の行の決まりは script が見る。`_sequence.json` の file の SHA-256 や `inputDigest` が作り直しと違うことは、それだけでは FAIL にしない（承認が消えた・`attempt-*.json` が変わった時は script が FAIL を返す）。",
+      "basis": "[A3] の RA-5、[DR] の §7.3"
     }
   ]
 }
