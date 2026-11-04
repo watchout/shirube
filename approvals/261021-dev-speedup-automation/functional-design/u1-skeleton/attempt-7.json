@@ -1,0 +1,12 @@
+{
+  "schema": "sds-approval-record/1",
+  "intent": "261021-dev-speedup-automation",
+  "stage": "functional-design",
+  "unit": "u1-skeleton",
+  "attempt": 7,
+  "approvedAt": "2026-10-28T00:28:38Z",
+  "approverRole": "owner",
+  "identityCheck": "none",
+  "sourceEventDigest": "92ecf7c9f9d3eda4b0f92970fdedf1411426f1d97673dfbff3753dead72e7f1c",
+  "sourceAuditRef": "aidlc/spaces/default/intents/261021-dev-speedup-automation/audit/owner-gpnwa4zc9q15.md"
+}
