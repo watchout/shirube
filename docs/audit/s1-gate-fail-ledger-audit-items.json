@@ -1,7 +1,7 @@
 {
   "schema": "sds-audit-items/1",
   "method_ref": "watchout/shirube@b13192d0d5c3150125c5b5f19ee00eafde372c71/docs/sds/audit-method.md#3",
-  "scope": "S1-SH-04 の台帳の PR（R1、docs だけ）の監査: docs/measure/s1-gate-fail-ledger.md（版 1、作者 arc、file の SHA-256 2930bdf827b7b588f78eccac37bc09936e5c3ea9fb6885de20b069d4bf04b256、写し元 iyasaka-arc#57 の arc の comment）と、本項目集合の file docs/audit/s1-gate-fail-ledger-audit-items.json。code・試験・workflow・設計の記録の差分は無い。この監査は 2 つのことをする: (1) 台帳が事実として正しいか（数と行）を確かめる、(2) 台帳の 121 行を「門の不備／PR の不備／観測できず」に分類し、返却の JSON の欄 classification に書く（OD-SHIRUBE-REQUIREMENTS-MEASURES-AND-FAIL-CLASSIFICATION-20261022-001・OD-SHIRUBE-P1-PR66-EXACT-HEAD-AND-P1-SETTINGS-20261024-001）。門の不備の行が見つかっても、それは分類の結果であって blocking_findings にしない。blocking_findings にするのは、台帳の数・行・測り方が事実と違う時と、分類を全行に付けられない時だけ。全 4 項目必須。",
+  "scope": "S1-SH-04 の台帳の PR（R1、docs だけ）の監査: docs/measure/s1-gate-fail-ledger.md（版 2、作者 arc、file の SHA-256 5084f09f4233a0330d9d94a81c043f170fae2e698c87209e7325dc9473342791、写し元 iyasaka-arc#57 6630292776）と、本項目集合の file docs/audit/s1-gate-fail-ledger-audit-items.json。code・試験・workflow・設計の記録の差分は無い。この監査は 2 つのことをする: (1) 台帳が事実として正しいか（数と行）を確かめる、(2) 台帳の 121 行を「門の不備／PR の不備／観測できず」に分類し、返却の JSON の欄 classification に書く（OD-SHIRUBE-REQUIREMENTS-MEASURES-AND-FAIL-CLASSIFICATION-20261022-001・OD-SHIRUBE-P1-PR66-EXACT-HEAD-AND-P1-SETTINGS-20261024-001）。門の不備の行が見つかっても、それは分類の結果であって blocking_findings にしない。blocking_findings にするのは、台帳の数・行・測り方が事実と違う時と、分類を全行に付けられない時だけ。全 4 項目必須。",
   "items": [
     {
       "id": "GL-1",

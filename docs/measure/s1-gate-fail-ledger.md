@@ -1,6 +1,6 @@
 # Shirube S1-SH-04 の台帳: 門が出した FAIL の一覧（devauditor の分類の入力）
 
-版 1（2026-11-04、作者 = arc）。置き場 = shirube `docs/measure/s1-gate-fail-ledger.md`。
+版 2（2026-11-04、作者 = arc）。置き場 = shirube `docs/measure/s1-gate-fail-ledger.md`。版 1 との違い: 監査 1 回目（shirube#99 6630257036）の 2 件を直した。BF-GL-01 = 統合の数を UNTIL の時点（`merged_at <= UNTIL`）で数えるよう script と §2 の文をそろえた（数は 71 のまま。aun#97 は UNTIL の後の 11:21:39Z に統合）。BF-GL-02 = PR の一覧・commit の一覧が読めない時も unread に出し、unread が 1 つでもあれば exit 2 で「不完全」とする（負例 2 つの結果は §1）。§2 の数と §3 の行は変えていない。
 
 - 適用 ID: OD-SHIRUBE-REQUIREMENTS-MEASURES-AND-FAIL-CLASSIFICATION-20261022-001（[iyasaka-arc#49 6336035707](https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6336035707)。門が FAIL を出した PR ごとに devauditor が「門の不備／PR の不備」を判定して記録し、未分類は 0 と数えない）、OD-SHIRUBE-P1-PR66-EXACT-HEAD-AND-P1-SETTINGS-20261024-001（[同 6379461383](https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6379461383)。P1 の統合の後に門が FAIL を出した PR ごとに devauditor が分類を書く）、OD-SHIRUBE-S1-SCOPE-NARROWED-BASELINE-ONCE-HANDS-NOT-MET-20261027-001（S1 の済みは S1-SH-01〜06）。
 - 何に使うか: S1-SH-04「正しい PR は止まらない」の判定。門が統合を止める FAIL（status `sds-gate` の failure・error）のうち、門の側の誤りで止めた物（以下「門の不備」）が何件あるかを、独立の監査（devauditor）が 1 行ずつ分類して数える。arc はこの台帳に事実だけを並べ、分類はしない。
@@ -11,14 +11,17 @@
 - 窓: shirube の P1（[shirube#66](https://github.com/watchout/shirube/pull/66)、門の土台を入れた保護面の PR）の統合 `2026-10-24T03:48:03Z` から `2026-11-04T11:00:00Z` まで。
 - 対象: watchout/shirube・aun・onza の PR のうち、窓の中に更新があった物の全 commit。各 commit の status のうち context が `sds-gate` で、作られた時刻が窓の中の物。同じ commit の同じ状態と説明の重なりは 1 つに数える。
 - まとめ方: (repo, PR, 種類) ごとに 1 行。種類は status の説明の頭の文で決める（§2）。
-- 読めなかった commit: 0（GitHub の 502・500 で読めなかった 8 commit は読み直して埋めた）。
-- 測った script（下の全文。SHA-256 `8fab256433c1e6de6dd55f6dcd64a81173670515cb868dce05fd8b41f0a54ede`）。使うのは GitHub の GET だけ。同じ窓で流すと同じ数が出る。
+- 読めなかった一覧: 0（PR の一覧・commit の一覧・status。GitHub の 502・500 で読めなかった 8 commit の status は読み直して埋めた）。
+- 統合の数は UNTIL の時点で数える（`merged_at <= UNTIL`）。後から流しても、窓の後に統合された PR は数えない。
+- 負例（script を bytes を変えずに流した結果）: (a) `GH=/usr/bin/false`（全部の GET が失敗）→ exit 2、unread = 3 つの repo の PR の一覧、PR・FAIL・行は 0。(b) PR の一覧だけを 1 件返し commit の一覧を失敗させる偽の gh → exit 2、unread = 3 つの `commits:`、行は 0。どちらも「0 件の成功」にならない。
+- 測った script（下の全文。SHA-256 `90679f2eef59cf43cb197d40c5470f48afd37ddb80b958ffb5f16c6d6fe3a3ab`）。使うのは GitHub の GET だけ。同じ窓で流すと同じ数が出る（unread が無く exit 0 の時）。
 
 ```python
 # S1-SH-04 の台帳の測り: shirube の P1（shirube#66）の統合から UNTIL までに、shirube・aun・onza の PR の各 commit に
 # 門（status の context = sds-gate）が出した failure・error を集め、(repo, PR, 種類) ごとにまとめる。使うのは GitHub の GET だけ。
-# 読めなかった commit は unread に出し、0 件のまま成功にしない（S5）。python3 s1-gate-fails.py > out.json
-import json, subprocess, sys
+# 読めなかった一覧（PR・commit・status）は unread に出し、1 つでもあれば exit 2 で「不完全」とする（0 件の成功にしない。S5・S8）。
+# 統合の数は UNTIL の時点（merged_at <= UNTIL）で数える。gh の場所は環境変数 GH（既定 gh）。python3 s1-gate-fails.py > out.json
+import json, os, subprocess, sys
 SINCE, UNTIL = '2026-10-24T03:48:03Z', '2026-11-04T11:00:00Z'
 KINDS = [('K1', '3 audit: R2+ needs'), ('K2', 'PR head/base/state changed'), ('K3', '2 changed paths'), ('K4', '1 risk_class'),
          ('K6', 'protected paths: the base pin could not be read'), ('K8', 'CI PR/head/base differs'),
@@ -31,16 +34,21 @@ def kind(desc):
         if desc.startswith(head): return k
     return 'K?'
 def gh(path):
-    r = subprocess.run(['gh', 'api', '--paginate', '--slurp', path], capture_output=True, text=True)
+    r = subprocess.run([os.environ.get('GH', 'gh'), 'api', '--paginate', '--slurp', path], capture_output=True, text=True)
     if r.returncode != 0: return None
     return [x for page in json.loads(r.stdout) for x in (page if isinstance(page, list) else [page])]
 out = {'since': SINCE, 'until': UNTIL, 'prs_with_gate_status': 0, 'merged': 0, 'fail_statuses': 0, 'rows': [], 'unread': []}
 groups = {}
 for repo in ['watchout/shirube', 'watchout/aun', 'watchout/onza']:
-    prs = [p for p in (gh('repos/%s/pulls?state=all&sort=updated&direction=desc&per_page=100' % repo) or []) if p['updated_at'] >= SINCE]
-    for p in prs:
+    listed = gh('repos/%s/pulls?state=all&sort=updated&direction=desc&per_page=100' % repo)
+    if listed is None:
+        out['unread'].append('pulls:%s' % repo); continue
+    for p in [p for p in listed if p['updated_at'] >= SINCE]:
         seen_status = False
-        for c in gh('repos/%s/pulls/%d/commits?per_page=100' % (repo, p['number'])) or []:
+        commits = gh('repos/%s/pulls/%d/commits?per_page=100' % (repo, p['number']))
+        if commits is None:
+            out['unread'].append('commits:%s#%d' % (repo, p['number'])); continue
+        for c in commits:
             st = gh('repos/%s/commits/%s/statuses?per_page=100' % (repo, c['sha']))
             if st is None:
                 out['unread'].append('%s@%s' % (repo, c['sha'])); continue
@@ -55,17 +63,18 @@ for repo in ['watchout/shirube', 'watchout/aun', 'watchout/onza']:
                 groups.setdefault(key, []).append((s['created_at'], c['sha'], s['target_url']))
         if seen_status:
             out['prs_with_gate_status'] += 1
-            out['merged'] += 1 if p.get('merged_at') else 0
+            out['merged'] += 1 if p.get('merged_at') and p['merged_at'] <= UNTIL else 0
 for (repo, pr, k), rs in sorted(groups.items()):
     rs.sort()
     out['rows'].append({'pr': '%s#%d' % (repo, pr), 'kind': k, 'fails': len(rs), 'first': rs[0][0], 'last': rs[-1][0], 'first_sha': rs[0][1], 'first_run': rs[0][2]})
 out['prs_with_fail'] = len({r['pr'] for r in out['rows']})
 json.dump(out, sys.stdout, ensure_ascii=False, indent=1)
+sys.exit(2 if out['unread'] else 0)
 ```
 
 ## 2. 数
 
-- 窓の中に門の status がある PR: 107（うち統合済み 71）
+- 窓の中に門の status がある PR: 107（うち UNTIL の時点で統合済み 71）
 - FAIL の status: 215（PR 80 本）
 - 行（PR × 種類）: 121
 
