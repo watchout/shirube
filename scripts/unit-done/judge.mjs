@@ -12,6 +12,7 @@ const paths = (value) => Array.isArray(value) && value.every((f) => typeof f?.pa
 const text = (value) => (typeof value === "string" ? value.trim() : "");
 const hex = (value) => typeof value === "string" && SHA256.test(value); // a string first: a one-element array would pass a RegExp as its text
 const same = (a, b) => hex(a) && a === b; // the one comparison of fingerprints: a is 64 lowercase hex characters and b is the same string
+const ints = (value) => Array.isArray(value) && value.every(Number.isInteger); // pr numbers are compared with each other and used as keys of `prs`: null, true or "" must not pass as a number
 const unmet = (target, reason) => ({ target, reason });
 const out = (bad = [], seen = []) => ({ unmet: bad, unobserved: seen });
 const merge = (parts) => out(parts.flatMap((p) => p.unmet), parts.flatMap((p) => p.unobserved));
@@ -109,7 +110,7 @@ function k6(facts) {
 
 function k7(facts) {
   const { node_prs: node, closing } = facts.unit_prs ?? {}, mine = list(facts.checklist.prs), unbound = facts.checklist.unbound_prs ?? {};
-  if (!Array.isArray(node) || !Number.isInteger(closing)) return out([], ["unit prs not read"]);
+  if (!ints(node) || !Number.isInteger(closing)) return out([], ["unit prs not read"]);
   return out([...node.filter((n) => !mine.includes(n)).map((n) => unmet(`#${n}`, "names the node but is not in prs")),
     ...mine.filter((n) => n === closing).map((n) => unmet(`#${n}`, "the unit-closing pr must not be in prs")),
     ...mine.filter((n) => !node.includes(n) && n !== closing && !text(unbound[n])).map((n) => unmet(`#${n}`, "does not name the node and has no reason in unbound_prs"))]);
@@ -174,7 +175,7 @@ const answer = (result, items, description) => {
 const profileFine = (p) => Array.isArray(p.facts) && p.facts.every((f) => text(f?.name) && typeof f.kind === "string") && globs(p.code_paths) && globs(p.test_paths) && Boolean(text(p.auditor_login));
 const shapeProblem = (facts) => {
   if (facts?.schema !== FACTS) return `facts: not ${FACTS}`;
-  return facts.checklist?.schema !== CHECKLIST ? `checklist: not ${CHECKLIST}` : profileFine(facts.profile ?? {}) ? null : "profile";
+  return facts.checklist?.schema !== CHECKLIST ? `checklist: not ${CHECKLIST}` : !ints(facts.checklist.prs) ? "checklist: prs" : profileFine(facts.profile ?? {}) ? null : "profile";
 };
 
 function decide(facts) {
