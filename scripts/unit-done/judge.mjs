@@ -10,6 +10,7 @@ const strings = (value) => Array.isArray(value) && value.every((s) => typeof s =
 const globs = (value) => strings(value) && value.length > 0 && !value.includes("");
 const paths = (value) => Array.isArray(value) && value.every((f) => typeof f?.path === "string" && typeof f.status === "string");
 const text = (value) => (typeof value === "string" ? value.trim() : "");
+const hex = (value) => typeof value === "string" && SHA256.test(value); // a string first: a one-element array would pass a RegExp as its text
 const unmet = (target, reason) => ({ target, reason });
 const out = (bad = [], seen = []) => ({ unmet: bad, unobserved: seen });
 const merge = (parts) => out(parts.flatMap((p) => p.unmet), parts.flatMap((p) => p.unobserved));
@@ -29,9 +30,10 @@ function named(tests, names, target) {
   }));
 }
 
+const ROLES = ["stories", "story-map", "delivery-plan"]; // the three records the manifest names, once each and nothing else (design 3.5 step 1)
 const sourceProblem = (facts) => {
-  const files = list(facts.source?.files);
-  return files.length > 0 && files.every((f) => f.manifest_sha256 && f.manifest_sha256 === f.actual_sha256) ? null : "source copy differs from its manifest";
+  const files = list(facts.source?.files), whole = files.length === ROLES.length && ROLES.every((role) => files.filter((f) => f?.role === role).length === 1);
+  return whole && files.every((f) => f.manifest_sha256 && f.manifest_sha256 === f.actual_sha256) ? null : "source copy differs from its manifest";
 };
 
 // K1: every junit fact read, its job succeeded, one test or more, none but passed.
@@ -121,6 +123,7 @@ function k8(facts, tests, source) {
 
 // K9: each condition of the plan (unit conditions, common ones, the stories' own) has a test, a K that is met, or an audit reason.
 function condition(item, c, tests, before) {
+  if (!hex(item.text_sha256)) return out([], [`${item.id}: text_sha256 not extracted`]);
   if (!c) return out([unmet(item.id, "not in conditions")]);
   if (c.text_sha256 !== item.text_sha256) return out([unmet(item.id, "text_sha256 differs: the plan changed or the checklist is old")]);
   if (list(c.tests).length) return named(tests, c.tests, item.id);
@@ -136,7 +139,7 @@ function k9(facts, tests, source, before) {
 }
 
 // 3.6: only an exception with all five fields and an Owner decision url counts; it turns one unmet finding (item and target) into an excepted one. An unobserved finding is never excepted.
-const valid = (e) => ["item", "target", "owner_decision"].every((key) => text(e?.[key])) && EXCEPTION_URL.test(e.url ?? "") && SHA256.test(e.sha256 ?? "");
+const valid =(e) => ["item", "target", "owner_decision"].every((key) => text(e?.[key])) && typeof e.url === "string" && EXCEPTION_URL.test(e.url) && hex(e.sha256);
 const rawValue = (o) => (o.na ? "not_applicable" : o.unmet.length ? "unmet" : o.unobserved.length ? "unobserved" : "met");
 
 function settle(id, o, exceptions) {
