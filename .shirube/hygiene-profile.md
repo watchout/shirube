@@ -18,7 +18,7 @@ This page is the one place where this repository declares what the hygiene check
 {
   "language": "js",
   "lines": { "include": ["scripts/**", "configs/**", ".github/workflows/**", "tests/**"], "exclude": ["tests/fixtures/**"] },
-  "exclude_generated": ["tests/fixtures/**", ".hygiene/jscpd/**", "aidlc/**/*.md", "aidlc/**/*.json", "aidlc/**/*.txt", "docs/**/*.md"],
+  "exclude_generated": ["tests/fixtures/**", ".hygiene/jscpd/**", "aidlc/**/*.md", "aidlc/**/*.json", "aidlc/**/*.txt", "docs/**/*.md", "approvals/**/attempt-*.json", "approvals/**/_sequence.json"],
   "own_code": { "include": ["scripts/**", "configs/**", ".github/workflows/**"], "exclude": [] },
   "large_file_allow": [],
   "exceptions": [],
