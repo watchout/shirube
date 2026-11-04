@@ -23,7 +23,7 @@ function testsOf(facts) {
 }
 
 function named(tests, names, target) {
-  if (!Array.isArray(names) || names.length === 0) return out([unmet(target, "no test named")]);
+  if (!globs(names)) return out([unmet(target, "no test named")]);
   return merge(names.map((name) => {
     if (tests.status.get(name) === "pass") return out();
     if (!tests.status.has(name) && !tests.whole) return out([], [`${target}: a junit fact was not read`]);
@@ -58,14 +58,14 @@ function k2(facts) {
 
 function k3(facts, tests, source) {
   const set = facts.source?.acceptance, table = facts.checklist.acceptance ?? {};
-  if (source || !Array.isArray(set)) return out([], [source ?? facts.source?.reasons?.acceptance ?? "acceptance not extracted"]);
+  if (source || !strings(set) || set.includes("")) return out([], [source ?? facts.source?.reasons?.acceptance ?? "acceptance not extracted"]);
   const extra = Object.keys(table).filter((id) => !set.includes(id)).map((id) => unmet(id, "not in the unit's acceptance set"));
   return merge([out(extra), ...set.map((id) => named(tests, table[id], id))]);
 }
 
 function k4(facts, tests) {
   const records = list(facts.design?.records), mine = list(facts.checklist.design_records), ids = records.map((path) => list(facts.design.ids?.[path]));
-  if (records.length === 0 || ids.some((one) => one.length === 0)) return out([], [records.length === 0 ? "no design record named by the handoff" : "no case id in a design record section"]);
+  if (!globs(records) || ids.some((one) => !globs(one))) return out([], [!globs(records) ? "no design record named by the handoff" : "no case id in a design record section"]);
   const bad = [...records.filter((p) => !mine.includes(p)).map((p) => unmet(p, "design record missing from the checklist")), ...mine.filter((p) => !records.includes(p)).map((p) => unmet(p, "design record the handoff does not name"))];
   const { design_cases: cases = {}, design_refs: refs = {} } = facts.checklist;
   const one = (id) => (list(cases[id]).length ? named(tests, cases[id], id) : text(refs[id]) ? out() : out([unmet(id, "neither a test nor a reason")]));
@@ -124,7 +124,7 @@ function k8(facts, tests, source) {
 
 // K9: each condition of the plan (unit conditions, common ones, the stories' own) has a test, a K that is met, or an audit reason.
 function condition(item, c, tests, before) {
-  if (!hex(item.text_sha256)) return out([], [`${item.id}: text_sha256 not extracted`]);
+  if (!(text(item.id) && hex(item.text_sha256))) return out([], [`${String(item.id)}: id or text_sha256 not extracted`]);
   if (!c) return out([unmet(item.id, "not in conditions")]);
   if (!same(item.text_sha256, c.text_sha256)) return out([unmet(item.id, "text_sha256 differs: the plan changed or the checklist is old")]);
   if (list(c.tests).length) return named(tests, c.tests, item.id);
@@ -171,7 +171,7 @@ const answer = (result, items, description) => {
   return { schema: RESULT, result, status: description ? { state: "failure", description } : statusOf(result, items, listed), items, exceptions: listed };
 };
 
-const profileFine = (p) => Array.isArray(p.facts) && p.facts.every((f) => typeof f?.name === "string" && typeof f.kind === "string") && globs(p.code_paths) && globs(p.test_paths) && Boolean(text(p.auditor_login));
+const profileFine = (p) => Array.isArray(p.facts) && p.facts.every((f) => text(f?.name) && typeof f.kind === "string") && globs(p.code_paths) && globs(p.test_paths) && Boolean(text(p.auditor_login));
 const shapeProblem = (facts) => {
   if (facts?.schema !== FACTS) return `facts: not ${FACTS}`;
   return facts.checklist?.schema !== CHECKLIST ? `checklist: not ${CHECKLIST}` : profileFine(facts.profile ?? {}) ? null : "profile";
