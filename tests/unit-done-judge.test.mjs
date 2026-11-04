@@ -35,7 +35,7 @@ const TABLE = [
   ["K3 acceptance not extracted", (f) => { f.source.acceptance = null; f.source.reasons = { acceptance: "unit not in story map" }; }, "K3", "unobserved", "unit not in story map"],
   ["T-9 case without test or reason", (f) => { delete f.checklist.design_cases["E-1"]; }, "K4", "unmet", "E-1"],
   ["T-9 empty reason", (f) => { f.checklist.design_refs["R-01"] = " "; }, "K4", "unmet", "R-01"],
-  ["T-9b no design record in the handoff", (f) => { f.design.records = []; }, "K4", "unobserved", "design record"],
+  ["T-9b no design record in the handoff", (f) => { f.design.records = []; }, "K4", "unobserved", "no design record"],
   ["T-9c one record fewer", (f) => { f.checklist.design_records = []; }, "K4", "unmet", "u2-example.md"],
   ["T-9c one record more", (f) => { f.checklist.design_records.push("docs/design/other.md"); }, "K4", "unmet", "other.md"],
   ["T-9d no id in the section", (f) => { f.design.ids["docs/design/u2-example.md"] = []; }, "K4", "unobserved", "case id"],
@@ -55,7 +55,7 @@ const TABLE = [
   ...["K3", "K8", "K9"].flatMap((id) => [["a non-hash", "x"], ["64 characters that are not hex", "g".repeat(64)], ["upper-case hex", "A".repeat(64)], ...BAD]
     .map(([name, v]) => [`T-15c both fingerprints ${name}: ${id}`, (f) => { f.source.files[0].manifest_sha256 = v; f.source.files[0].actual_sha256 = v; }, id, "unobserved", "manifest"])),
   ...[["a test name", "K3", "unmet", "no test named", (f, v) => { cases(f)[0] = { id: v, status: "pass" }; f.checklist.acceptance["AC1.1.1"] = [v]; }],
-    ["a design record path", "K4", "unobserved", "design record", (f, v) => { f.design.records = [v]; f.checklist.design_records = [v]; f.design.ids = { [String(v)]: ["E-1"] }; }],
+    ["a design record path", "K4", "unobserved", "no design record", (f, v) => { f.design.records = [v]; f.checklist.design_records = [v]; f.design.ids = { [String(v)]: ["E-1"] }; }],
     ["a design case id", "K4", "unobserved", "case id", (f, v) => { f.design.ids["docs/design/u2-example.md"] = [v]; f.checklist.design_cases = { [String(v)]: ["tests/a.test.mjs::suite::t3"] }; }],
     ["a condition id", "K9", "unobserved", "not extracted", (f, v) => { f.source.delivery.dod[0].id = v; f.checklist.conditions[String(v)] = f.checklist.conditions["dod-1"]; }],
     ["an acceptance id", "K3", "unobserved", "acceptance", (f, v) => { f.source.acceptance = [v]; f.checklist.acceptance = { [String(v)]: ["tests/a.test.mjs::suite::t1"] }; }]]
