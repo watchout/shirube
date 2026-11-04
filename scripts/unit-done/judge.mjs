@@ -6,6 +6,9 @@ const FACTS = "sds-unit-done-facts/1", CHECKLIST = "sds-unit-done-checklist/2", 
 const EXCEPTION_URL = /^https:\/\/github\.com\/watchout\/iyasaka-arc\/issues\/49#issuecomment-\d+$/, SHA256 = /^[0-9a-f]{64}$/;
 
 const list = (value) => (Array.isArray(value) ? value : []);
+const strings = (value) => Array.isArray(value) && value.every((s) => typeof s === "string");
+const globs = (value) => strings(value) && value.length > 0 && !value.includes("");
+const paths = (value) => Array.isArray(value) && value.every((f) => typeof f?.path === "string" && typeof f.status === "string");
 const text = (value) => (typeof value === "string" ? value.trim() : "");
 const unmet = (target, reason) => ({ target, reason });
 const out = (bad = [], seen = []) => ({ unmet: bad, unobserved: seen });
@@ -43,10 +46,11 @@ function k1(tests) {
   }));
 }
 
+const enough = (threshold) => Number.isInteger(threshold) && threshold >= MIN_LINES; // an integer (design 3.3), not a string or an array that only compares like one
 function k2(facts) {
   const fact = list(facts.profile?.facts).find((f) => f.kind === "coverage"), r = fact && facts.results?.[fact.name], c = r?.coverage ?? {};
   if (!r) return out([], ["coverage not read"]);
-  return out([r.conclusion !== "success" && `job ${r.conclusion}`, c.exit_code !== 0 && `exit_code ${c.exit_code}`, !(c.lines_threshold >= MIN_LINES) && `lines_threshold ${c.lines_threshold} < ${MIN_LINES}`].filter(Boolean).map((why) => unmet(fact.name, why)));
+  return out([r.conclusion !== "success" && `job ${r.conclusion}`, c.exit_code !== 0 && `exit_code ${c.exit_code}`, !enough(c.lines_threshold) && `lines_threshold ${c.lines_threshold} is not an integer of ${MIN_LINES} or more`].filter(Boolean).map((why) => unmet(fact.name, why)));
 }
 
 function k3(facts, tests, source) {
@@ -76,9 +80,9 @@ function k5(facts) {
   const bad = [], seen = [];
   for (const n of list(facts.checklist.prs)) {
     const pr = facts.prs?.[n];
-    if (!Array.isArray(pr?.files)) seen.push(`#${n} files not read`);
+    if (!strings(pr?.files)) seen.push(`#${n} files not read`);
     else if (pr.files.some((p) => matchesAny(p, list(facts.profile.code_paths)))) {
-      const found = Array.isArray(pr.first_commit?.files) ? firstCommit(n, pr.first_commit.files, facts.profile) : "unread";
+      const found = paths(pr.first_commit?.files) ? firstCommit(n, pr.first_commit.files, facts.profile) : "unread";
       if (found === "unread") seen.push(`#${n} first commit not read`);
       else if (found) bad.push(found);
     }
@@ -102,7 +106,7 @@ function k6(facts) {
 
 function k7(facts) {
   const { node_prs: node, closing } = facts.unit_prs ?? {}, mine = list(facts.checklist.prs), unbound = facts.checklist.unbound_prs ?? {};
-  if (!Array.isArray(node)) return out([], ["unit prs not read"]);
+  if (!Array.isArray(node) || !Number.isInteger(closing)) return out([], ["unit prs not read"]);
   return out([...node.filter((n) => !mine.includes(n)).map((n) => unmet(`#${n}`, "names the node but is not in prs")),
     ...mine.filter((n) => n === closing).map((n) => unmet(`#${n}`, "the unit-closing pr must not be in prs")),
     ...mine.filter((n) => !node.includes(n) && n !== closing && !text(unbound[n])).map((n) => unmet(`#${n}`, "does not name the node and has no reason in unbound_prs"))]);
@@ -111,6 +115,7 @@ function k7(facts) {
 function k8(facts, tests, source) {
   const delivery = facts.source?.delivery;
   if (source || !delivery) return out([], [source ?? "delivery plan not extracted"]);
+  if (typeof delivery.has_demo !== "boolean") return out([], ["has_demo not extracted"]);
   return delivery.has_demo ? named(tests, facts.checklist.demo, "demo") : { ...out(), na: true };
 }
 
@@ -126,7 +131,8 @@ function condition(item, c, tests, before) {
 function k9(facts, tests, source, before) {
   const delivery = facts.source?.delivery, table = facts.checklist.conditions ?? {};
   if (source || !delivery || list(delivery.dod).length === 0) return out([], [source ?? "no unit condition extracted"]);
-  return merge([...list(delivery.dod), ...list(delivery.common), ...list(facts.source.story_conditions)].map((item) => condition(item, table[item.id], tests, before)));
+  if (![delivery.common, facts.source.story_conditions].every(Array.isArray)) return out([], ["common or story conditions not extracted"]);
+  return merge([...delivery.dod, ...delivery.common, ...facts.source.story_conditions].map((item) => condition(item, table[item.id], tests, before)));
 }
 
 // 3.6: only an exception with all five fields and an Owner decision url counts; it turns one unmet finding (item and target) into an excepted one. An unobserved finding is never excepted.
@@ -161,20 +167,25 @@ const answer = (result, items, description) => {
   return { schema: RESULT, result, status: description ? { state: "failure", description } : statusOf(result, items, listed), items, exceptions: listed };
 };
 
+const profileFine = (p) => Array.isArray(p.facts) && p.facts.every((f) => typeof f?.name === "string" && typeof f.kind === "string") && globs(p.code_paths) && globs(p.test_paths) && Boolean(text(p.auditor_login));
 const shapeProblem = (facts) => {
-  const profile = facts?.profile ?? {}, fine = Array.isArray(profile.facts) && ["code_paths", "test_paths"].every((key) => Array.isArray(profile[key])) && text(profile.auditor_login);
   if (facts?.schema !== FACTS) return `facts: not ${FACTS}`;
-  return facts.checklist?.schema !== CHECKLIST ? `checklist: not ${CHECKLIST}` : fine ? null : "profile";
+  return facts.checklist?.schema !== CHECKLIST ? `checklist: not ${CHECKLIST}` : profileFine(facts.profile ?? {}) ? null : "profile";
 };
 
-// facts (sds-unit-done-facts/1) -> { schema: "sds-unit-done-result/1", result, status: { state, description }, items: [{ id, value, findings }], exceptions }.
-export function judge(facts) {
-  const problem = shapeProblem(facts);
-  if (problem) return answer("FAIL", [], problem);
+function decide(facts) {
   const tests = testsOf(facts), source = sourceProblem(facts), exceptions = list(facts.checklist.exceptions).filter(valid), before = {};
   const steps = [["K1", () => k1(tests)], ["K2", () => k2(facts)], ["K3", () => k3(facts, tests, source)], ["K4", () => k4(facts, tests)], ["K5", () => k5(facts)], ["K6", () => k6(facts)],
     ["K7", () => k7(facts)], ["K8", () => k8(facts, tests, source)], ["K9", () => k9(facts, tests, source, before)]];
   const items = steps.map(([id, run]) => { const o = run(); before[id] = rawValue(o); return settle(id, o, exceptions); });
   const done = conclude(items);
   return answer(done.result, done.items);
+}
+
+// facts (sds-unit-done-facts/1) -> { schema: "sds-unit-done-result/1", result, status: { state, description }, items: [{ id, value, findings }], exceptions }.
+// A facts file the core cannot read is a FAIL with a fixed reason and no items, never an exception (T-18, S8).
+export function judge(facts) {
+  const problem = shapeProblem(facts);
+  if (problem) return answer("FAIL", [], problem);
+  try { return decide(facts); } catch { return answer("FAIL", [], "facts: a value the core cannot read"); }
 }
