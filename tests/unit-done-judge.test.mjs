@@ -48,9 +48,11 @@ const TABLE = [
   ["T-13 node pr missing", (f) => { f.unit_prs.node_prs.push(73); }, "K7", "unmet", "#73"],
   ["T-13 unbound pr without reason", (f) => { f.checklist.unbound_prs["71"] = " "; }, "K7", "unmet", "#71"],
   ["T-13 closing pr in prs", (f) => { f.checklist.prs.push(80); }, "K7", "unmet", "#80"],
-  ...[["T-15 copy differs from the manifest", "K3"], ["T-15 K8 too", "K8"], ["T-15 K9 too", "K9"]].map(([name, id]) => [name, (f) => { f.source.files[0].actual_sha256 = "zz"; }, id, "unobserved", "manifest"]),
+  ...[["T-15 copy differs from the manifest", "K3"], ["T-15 K8 too", "K8"], ["T-15 K9 too", "K9"]].map(([name, id]) => [name, (f) => { f.source.files[0].actual_sha256 = "d".repeat(64); }, id, "unobserved", "manifest"]),
   ...["K3", "K8", "K9"].flatMap((id) => [["T-15b no stories", without("stories")], ["T-15b no story-map", without("story-map")], ["T-15b no delivery-plan", without("delivery-plan")], ["T-15b one role three times", (f) => { f.source.files = Array(3).fill(f.source.files[0]); }],
     ["T-15b a fourth file", (f) => { f.source.files.push({ ...f.source.files[0] }); }], ["T-15b an unknown role", (f) => { f.source.files[0].role = "other"; }], ["T-15b a null entry", (f) => { f.source.files[0] = null; }], ["T-15b an extra file of an unknown role", (f) => { f.source.files.push({ ...f.source.files[0], role: "extra" }); }]].map(([name, change]) => [`${name}: ${id}`, change, id, "unobserved", "manifest"])),
+  ...["K3", "K8", "K9"].flatMap((id) => [["a non-hash", "x"], ["64 characters that are not hex", "g".repeat(64)], ["upper-case hex", "A".repeat(64)], ["true", true], ["a number", 1], ["an empty string", ""]]
+    .map(([name, v]) => [`T-15c both fingerprints ${name}: ${id}`, (f) => { f.source.files[0].manifest_sha256 = v; f.source.files[0].actual_sha256 = v; }, id, "unobserved", "manifest"])),
   ["T-19 demo wanted, none given", (f) => { f.checklist.demo = []; }, "K8", "unmet", "no test"],
   ["T-19 no demo in the plan", (f) => { f.checklist.demo = []; f.source.delivery.has_demo = false; }, "K8", "not_applicable", ""],
   ["T-20 plan condition missing", (f) => { delete f.checklist.conditions["dod-1"]; }, "K9", "unmet", "dod-1"],
@@ -58,7 +60,8 @@ const TABLE = [
   ["T-20c empty audit reason", (f) => { f.checklist.conditions["story:US3.3"].audit = " "; }, "K9", "unmet", "story:US3.3"],
   ["T-20d K it points at is unmet", (f) => { f.results.coverage.coverage.exit_code = 1; f.checklist.conditions["common-1"].k = "K2"; }, "K9", "unmet", "K2"],
   ["K9 no unit condition", (f) => { f.source.delivery.dod = []; }, "K9", "unobserved", "unit condition"],
-  ...[["K9 both text_sha256 missing", undefined, undefined, "unobserved"], ["K9 both text_sha256 the same non-hash", "x", "x", "unobserved"], ["K9 the source's text_sha256 missing", undefined, "2".repeat(64), "unobserved"], ["K9 the checklist's text_sha256 missing", "2".repeat(64), undefined, "unmet"]]
+  ...[["K9 both text_sha256 missing", undefined, undefined, "unobserved"], ["K9 both text_sha256 the same non-hash", "x", "x", "unobserved"], ["K9 the source's text_sha256 missing", undefined, "2".repeat(64), "unobserved"], ["K9 the checklist's text_sha256 missing", "2".repeat(64), undefined, "unmet"],
+    ["K9 both text_sha256 true", true, true, "unobserved"], ["K9 both text_sha256 a number", 1, 1, "unobserved"], ["K9 both text_sha256 empty", "", "", "unobserved"], ["K9 the checklist's text_sha256 true", "2".repeat(64), true, "unmet"]]
     .map(([name, src, chk, value]) => [name, (f) => { put(f.source.delivery.dod[0], "text_sha256", src); put(f.checklist.conditions["dod-1"], "text_sha256", chk); }, "K9", value, "text_sha256"]),
   ["K9 common conditions not read are not empty", (f) => { f.source.delivery.common = null; delete f.checklist.conditions["common-1"]; }, "K9", "unobserved", "not extracted"],
   ["K9 story conditions not read are not empty", (f) => { delete f.source.story_conditions; delete f.checklist.conditions["story:US3.3"]; }, "K9", "unobserved", "not extracted"],
@@ -84,7 +87,8 @@ const TABLE = [
   ["K5 a first commit file without a status is not read", (f) => { delete f.prs["72"].first_commit.files[0].status; }, "K5", "unobserved", "first commit"],
   ["T-16 a valid exception", (f) => { bad(f); f.checklist.exceptions = [exception]; }, "K5", "excepted", "src/x.mjs"],
   ...[["an exception for another item", { item: "K1" }], ["an exception without owner_decision", { owner_decision: "" }], ["T-17 an exception without sha256", { sha256: "" }],
-    ["T-17 an exception with another url", { url: "https://example.com/a#issuecomment-1" }], ["an exception for another target", { target: "#71" }], ["an exception whose url is an array", { url: [exception.url] }], ["an exception whose sha256 is an array", { sha256: [exception.sha256] }]].map(([name, patch]) => [name, (f) => { bad(f); f.checklist.exceptions = [{ ...exception, ...patch }]; }, "K5", "unmet", "src/x.mjs"]),
+    ["T-17 an exception with another url", { url: "https://example.com/a#issuecomment-1" }], ["an exception for another target", { target: "#71" }], ["an exception whose url is an array", { url: [exception.url] }], ["an exception whose sha256 is an array", { sha256: [exception.sha256] }],
+    ["an exception whose sha256 is true", { sha256: true }], ["an exception whose sha256 is a number", { sha256: 1 }], ["an exception whose sha256 is upper-case hex", { sha256: "A".repeat(64) }]].map(([name, patch]) => [name, (f) => { bad(f); f.checklist.exceptions = [{ ...exception, ...patch }]; }, "K5", "unmet", "src/x.mjs"]),
 ];
 
 for (const [name, change, id, value, shown] of TABLE) {

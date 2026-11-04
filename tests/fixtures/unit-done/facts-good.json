@@ -48,9 +48,9 @@
   },
   "source": {
     "files": [
-      { "role": "stories", "manifest_sha256": "aa", "actual_sha256": "aa" },
-      { "role": "story-map", "manifest_sha256": "bb", "actual_sha256": "bb" },
-      { "role": "delivery-plan", "manifest_sha256": "cc", "actual_sha256": "cc" }
+      { "role": "stories", "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "actual_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" },
+      { "role": "story-map", "manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "actual_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
+      { "role": "delivery-plan", "manifest_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc", "actual_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc" }
     ],
     "acceptance": ["AC1.1.1", "AC1.1.2"],
     "story_conditions": [{ "id": "story:US3.3", "text_sha256": "3333333333333333333333333333333333333333333333333333333333333333" }],
