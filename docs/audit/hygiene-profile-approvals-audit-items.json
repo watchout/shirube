@@ -1,0 +1,27 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@dd48581d988bc284e3ebf574f8ba76c170bb8ca5/docs/sds/audit-method.md#3",
+  "scope": "PR-P（R4、保護面 .shirube/**）の実装監査: .shirube/hygiene-profile.md の exclude_generated の末尾に approvals/**/attempt-*.json と approvals/**/_sequence.json の 2 つを足す 1 行の変更と、本項目集合の file docs/audit/hygiene-profile-approvals-audit-items.json。項目 HP-1〜HP-4 の文は、作業指示 iyasaka-arc#24 6624376432（本文 SHA-256 87f5e23f28b9aaf3bdf3ebbb5b6d52a79d1318c5c07784af1bee034daae9f0ac、作者 arc）の PR-P の節の HP-1〜HP-4 を、字を変えずに取り出した物。設計の記録は、決定の記録 iyasaka-arc#49 6624185989（OD-SHIRUBE-APPROVAL-RECORD-FILES-OUT-OF-PR-SIZE-20261104-001、本文 SHA-256 f56234c062f0d8ccd1e903e1572ae697c9e0eaa9f162a68ba01e9a9bd9214103）の決定 1 で、事前の設計監査は置かない（作業指示の PR-P の節）。記法: [WO] = 上の作業指示。全 4 項目必須。",
+  "items": [
+    {
+      "id": "HP-1",
+      "criterion": "範囲と字: 変更 path が `.shirube/hygiene-profile.md` と本項目集合の file だけ。profile の差分は `exclude_generated` の配列の末尾に `\"approvals/**/attempt-*.json\"` と `\"approvals/**/_sequence.json\"` を足すだけで、ほかの行は bytes で変わらない。2 つの字が決定の記録 iyasaka-arc#49 6624185989 の決定 1 の字と同じ（監査の席が本文を取り直し、SHA-256 も照らす）。",
+      "basis": "[WO] の HP-1、決定の記録 iyasaka-arc#49 6624185989 の決定 1"
+    },
+    {
+      "id": "HP-2",
+      "criterion": "当たる名前と当たらない名前（script）: 監査の席が PR の head の `scripts/hygiene/lib.mjs` の `matchesAny` に新しい `exclude_generated` を渡して次の path を照らす。当たる = `approvals/261021-dev-speedup-automation/inception/_intent/attempt-1.json`・`approvals/261021-dev-speedup-automation/_sequence.json`・`approvals/261021-dev-speedup-automation/construction/u1/attempt-2.revoked.json`。当たらない = `approvals/x/evil.mjs`・`approvals/x/attempt-1.mjs`・`approvals/x/notattempt-1.json`・`approvals/x/sequence.json`・`scripts/sds/attempt-1.json`。1 つでも違えば FAIL。",
+      "basis": "[WO] の HP-2、scripts/hygiene/lib.mjs の matchesAny"
+    },
+    {
+      "id": "HP-3",
+      "criterion": "検査: この PR の head で必須の検査（`test`・`hygiene / hygiene`・`sds-gate`）が通っている。",
+      "basis": "[WO] の HP-3、main の保護（test・hygiene / hygiene・sds-gate）"
+    },
+    {
+      "id": "HP-4",
+      "criterion": "宣言と結び付け: `sds-pr` の block が 1 つで risk_class が R4、changed_paths が diff と同じ、control_handoff が shirube#6 の写し `SHIRUBE-NEXT-GOAL-A-SIZE-PROFILE-20261104` の URL と SHA-256、label `risk:R4`。適用 ID が iyasaka-org の索引に 1 行ずつある。deviation_ledger に上の 2 行。作者が ready 化も統合もしていない。",
+      "basis": "[WO] の HP-4、docs/sds/distribution.md の sds-pr"
+    }
+  ]
+}
