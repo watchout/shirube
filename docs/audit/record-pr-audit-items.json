@@ -1,0 +1,32 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@dd48581d988bc284e3ebf574f8ba76c170bb8ca5/docs/sds/audit-method.md#3",
+  "scope": "記録の PR（その repo の AI-DLC の作業場の承認の記録 approvals/<intent>/** だけを足す PR。shirube・aun・onza が使う 1 つの項目集合）の監査。項目 RA-1〜RA-5 の文は、作業指示 iyasaka-arc#24 6622113604（本文 SHA-256 19a9359f3babcddba329eac6ab11c7bc036fe2dca4bd23b0b3dcd02db6ea835e、作者 arc）の RA-1〜RA-5 を字を変えずに取り出した物。設計の正本は docs/design/u1-engine-judge.md の版 13（SHA-256 07e296ac3b56d64175fadf43bb1fdffbfa498261b08ac37ef1993b3ab54b3193）の §7.3。記法: [WO] = 上の作業指示、[DR] = 上の設計の記録。全 5 項目必須。",
+  "items": [
+    {
+      "id": "RA-1",
+      "criterion": "範囲: 変更 path が `approvals/<intent>/**` だけ。足すだけ（base にある `attempt-*.json`・`*.revoked.json` を変えない・消さない・名前を変えない。`_sequence.json` の置き換えは可）。新しい外部の依存が無い。",
+      "basis": "[WO] の RA-1、[DR] の §7.3"
+    },
+    {
+      "id": "RA-2",
+      "criterion": "形: `attempt-*.json` が C2（`sds-approval-record/1`）、`_sequence.json` が C9（`sds-stage-sequence/2`）。path の段・Unit と中身が同じ。`order` が 1 から 1 ずつ増え並びの位置と同じ。同じ `(stage, unit)` が 2 行無い。`not_approved`・`exempt` の行に `approvalRef` が無い。`approved` の行の `approvalRef` の file が PR か base にある。JSON が壊れていない。",
+      "basis": "[WO] の RA-2、[DR] の §7.3"
+    },
+    {
+      "id": "RA-3",
+      "criterion": "作り直しの照合（script、文の指示で任せない）: 監査の席が、PR 本文が名指す作り手の版の shirube の checkout から、同じ作業場・同じ space・同じ intent で、書く先を空の一時的な場所にして作り手を動かし、`node scripts/sds/record-compare.mjs --pr <PR の head の approvals/<intent>/> --base <base の approvals/<intent>/（無ければ空の dir）> --regen <作り直しの approvals/<intent>/>` を動かして、出力（`sds-record-compare/1`）を返却に写す。`result` が `PASS` でなければ FAIL。作り手・照合を動かせない時は「観測できず」で、合格にしない。",
+      "basis": "[WO] の RA-3、[DR] の §7.3"
+    },
+    {
+      "id": "RA-4",
+      "criterion": "宣言と結び付け: `sds-pr` の block の risk が R2 以上、changed_paths が diff と同じ、control_handoff の URL と SHA-256 が写しと同じ、label `risk:R2`。",
+      "basis": "[WO] の RA-4、[DR] の §7.3"
+    },
+    {
+      "id": "RA-5",
+      "criterion": "証拠: PR 本文の作り手の版・`inputDigest`・`engineVersion`（`2.11.1`）・file の SHA-256 が、RA-3 の作り直しと同じ値（`inputDigest` は作業場が進めば変わってよい。変わった時は RA-3 の照合の結果で判断する）。",
+      "basis": "[WO] の RA-5、[DR] の §7.3"
+    }
+  ]
+}
