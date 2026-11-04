@@ -1,7 +1,7 @@
 {
   "schema": "sds-audit-items/1",
   "method_ref": "watchout/shirube@dd48581d988bc284e3ebf574f8ba76c170bb8ca5/docs/sds/audit-method.md#3",
-  "scope": "A0（R1、docs だけ）の設計の段の監査: 記録の PR の監査の項目集合 docs/audit/record-pr-audit-items.json（RA-1〜RA-5。shirube・aun・onza の記録の PR が使う）と、本項目集合の file docs/audit/record-pr-a0-audit-items.json。code・試験・workflow・設計の記録の差分は無い。記法: [WO] = 作業指示 iyasaka-arc#24 6622113604（本文 SHA-256 19a9359f3babcddba329eac6ab11c7bc036fe2dca4bd23b0b3dcd02db6ea835e）、[A1] = その追補 1 iyasaka-arc#24 6622151107（1beae1b002ed7772f44d69d8889269ccbf09940bd8b9df785defe4e170e177a1。本項目集合の file を足した）、[CH] = 門が読む写し shirube#6 6622156027（ca567a86cd5f5696ccc8b06c5c0418a43403f903f97c8fed2646fd46d6f906cf）、[DR] = 設計の記録 docs/design/u1-engine-judge.md の版 13（shirube main b8303daa の bytes、SHA-256 07e296ac3b56d64175fadf43bb1fdffbfa498261b08ac37ef1993b3ab54b3193）の §7.3。全 4 項目必須。",
+  "scope": "A0（R1、docs だけ）の設計の段の監査: 記録の PR の監査の項目集合 docs/audit/record-pr-audit-items.json（RA-1〜RA-5。shirube・aun・onza の記録の PR が使う）と、本項目集合の file docs/audit/record-pr-a0-audit-items.json。code・試験・workflow・設計の記録の差分は無い。記法: [WO] = 作業指示 iyasaka-arc#24 6622113604（本文 SHA-256 19a9359f3babcddba329eac6ab11c7bc036fe2dca4bd23b0b3dcd02db6ea835e）、[A1] = その追補 1 iyasaka-arc#24 6622151107（1beae1b002ed7772f44d69d8889269ccbf09940bd8b9df785defe4e170e177a1。本項目集合の file を足した）、[A2] = その追補 2 iyasaka-arc#24 6622678442（c9771ba9c61af0ee25208292aa4cdea216bcc139f437e82fd717af7d6c55cbf5。RA-5 の文を置き換えた）、[CH] = 門が読む写し shirube#6 6622156027（ca567a86cd5f5696ccc8b06c5c0418a43403f903f97c8fed2646fd46d6f906cf）、[DR] = 設計の記録 docs/design/u1-engine-judge.md の版 13（shirube main b8303daa の bytes、SHA-256 07e296ac3b56d64175fadf43bb1fdffbfa498261b08ac37ef1993b3ab54b3193）の §7.3。全 4 項目必須。",
   "items": [
     {
       "id": "A0-1",
@@ -12,8 +12,8 @@
     {
       "id": "A0-2",
       "stage": "design",
-      "criterion": "RA の文: docs/audit/record-pr-audit-items.json の項目が RA-1〜RA-5 の 5 つで、各 criterion が [WO] の本文の部分文字列と字まで同じ（監査の席が GitHub から [WO] の本文を取り直して照らす。本文の SHA-256 が [WO] の記載と同じことも確かめる）。足りない・余計・順番の入れ替え・言い換えが無い。scope と basis は作者の文で、criterion の意味を変えていない。RA の文が [DR] の §7.3 と食い違っていないかも見る（食い違いを見つけたら blocking_findings に書く。作者は文を直さず、設計の側の問題として arc に返す）。",
-      "basis": "[WO] の RA-1〜RA-5、[A1]、[DR] の §7.3"
+      "criterion": "RA の文: docs/audit/record-pr-audit-items.json の項目が RA-1〜RA-5 の 5 つで、RA-1〜RA-4 の criterion が [WO] の本文の、RA-5 の criterion が [A2] の本文（元の RA-5 を置き換えた文）の、部分文字列と字まで同じ（監査の席が GitHub から [WO]・[A2] の本文を取り直して照らす。本文の SHA-256 が記載と同じことも確かめる）。元の RA-5（[WO] の文）が残っていない。足りない・余計・順番の入れ替え・言い換えが無い。scope と basis は作者の文で、criterion の意味を変えていない。RA の文が [DR] の §7.3 と食い違っていないかも見る（食い違いを見つけたら blocking_findings に書く。作者は文を直さず、設計の側の問題として arc に返す）。",
+      "basis": "[WO] の RA-1〜RA-4、[A2] の RA-5、[A1]、[DR] の §7.3"
     },
     {
       "id": "A0-3",
@@ -24,7 +24,7 @@
     {
       "id": "A0-4",
       "stage": "design",
-      "criterion": "宣言と結び付け: PR 本文の sds-pr の block が 1 つで、risk_class が R1、changed_paths が diff の 2 file と同じ、control_handoff の URL と SHA-256 が [CH] と同じ、control_handoff_amendments に [A1]（URL と本文の SHA-256）が入っている。label が risk:R1。PR 本文の適用 ID が、iyasaka-org の索引に 1 行ずつある。作者が ready 化も統合もしていない。",
+      "criterion": "宣言と結び付け: PR 本文の sds-pr の block が 1 つで、risk_class が R1、changed_paths が diff の 2 file と同じ、control_handoff の URL と SHA-256 が [CH] と同じ、control_handoff_amendments に [A1]・[A2]（URL と本文の SHA-256）が入っている。label が risk:R1。PR 本文の適用 ID が、iyasaka-org の索引に 1 行ずつある。作者が ready 化も統合もしていない。",
       "basis": "[CH]、[A1]、docs/sds/distribution.md の sds-pr"
     }
   ]
