@@ -60,6 +60,7 @@ const TABLE = [
     ["a condition id", "K9", "unobserved", "not extracted", (f, v) => { f.source.delivery.dod[0].id = v; f.checklist.conditions[String(v)] = f.checklist.conditions["dod-1"]; }],
     ["an acceptance id", "K3", "unobserved", "acceptance", (f, v) => { f.source.acceptance = [v]; f.checklist.acceptance = { [String(v)]: ["tests/a.test.mjs::suite::t1"] }; }]]
     .flatMap(([what, id, value, shown, apply]) => BAD.map(([name, v]) => [`T-15d ${what} that is ${name} on both sides`, (f) => apply(f, v), id, value, shown])),
+  ...[null, true, "72", "", [], {}, 1.5].map((v) => [`T-15d a node pr number that is ${JSON.stringify(v)}`, (f) => { f.unit_prs.node_prs = [v]; }, "K7", "unobserved", "unit prs"]),
   ["T-19 demo wanted, none given", (f) => { f.checklist.demo = []; }, "K8", "unmet", "no test"],
   ["T-19 no demo in the plan", (f) => { f.checklist.demo = []; f.source.delivery.has_demo = false; }, "K8", "not_applicable", ""],
   ["T-20 plan condition missing", (f) => { delete f.checklist.conditions["dod-1"]; }, "K9", "unmet", "dod-1"],
@@ -158,11 +159,11 @@ test("what was not read is never an empty set: the whole answer is a FAIL", () =
 
 test("a value the core cannot read is a FAIL with a reason and no items, never an exception", () => {
   const broken = [(f) => { f.profile.facts = [null]; }, (f) => { f.profile.facts = [{ kind: "junit" }]; }, (f) => { f.profile.code_paths = [null]; }, (f) => { f.profile.code_paths = []; }, (f) => { f.profile.test_paths = [80]; }, (f) => { f.profile.code_paths = ["src/**", ""]; }, (f) => { f.profile.facts = [{ name: "junit-unit" }]; }, (f) => { delete f.profile; }, (f) => { f.profile.facts[0].name = ""; f.results[""] = f.results["junit-unit"]; },
-    (f) => { f.source.delivery.dod = [null]; }, (f) => { f.checklist.design_cases = null; }, (f) => { f.checklist.design_refs = null; }, (f) => { f.results["junit-unit"].cases = [null]; }];
+    (f) => { f.source.delivery.dod = [null]; }, (f) => { f.checklist.design_cases = null; }, (f) => { f.checklist.design_refs = null; }, (f) => { f.results["junit-unit"].cases = [null]; }, ...BAD.filter(([, v]) => v !== 1).map(([, v]) => (f) => { f.checklist.prs = [v]; f.unit_prs.node_prs = [v]; })];
   for (const change of broken) {
     const r = made(change);
     assert.deepEqual([r.result, r.items, r.status.state], ["FAIL", [], "failure"]);
-    assert.match(r.status.description, /^(profile|facts: a value the core cannot read)$/);
+    assert.match(r.status.description, /^(profile|checklist: prs|facts: a value the core cannot read)$/);
   }
 });
 
