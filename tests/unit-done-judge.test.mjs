@@ -60,8 +60,18 @@ const TABLE = [
   ["T-20c empty audit reason", (f) => { f.checklist.conditions["story:US3.3"].audit = " "; }, "K9", "unmet", "story:US3.3"],
   ["T-20d K it points at is unmet", (f) => { f.results.coverage.coverage.exit_code = 1; f.checklist.conditions["common-1"].k = "K2"; }, "K9", "unmet", "K2"],
   ["K9 no unit condition", (f) => { f.source.delivery.dod = []; }, "K9", "unobserved", "unit condition"],
+  ["K9 common conditions not read are not empty", (f) => { f.source.delivery.common = null; delete f.checklist.conditions["common-1"]; }, "K9", "unobserved", "not extracted"],
+  ["K9 story conditions not read are not empty", (f) => { delete f.source.story_conditions; delete f.checklist.conditions["story:US3.3"]; }, "K9", "unobserved", "not extracted"],
+  ["K9 common conditions read as empty", (f) => { f.source.delivery.common = []; delete f.checklist.conditions["common-1"]; }, "K9", "met", ""],
+  ["K9 story conditions read as empty", (f) => { f.source.story_conditions = []; delete f.checklist.conditions["story:US3.3"]; }, "K9", "met", ""],
+  ["K8 has_demo missing is not no demo", (f) => { delete f.source.delivery.has_demo; f.checklist.demo = ["tests/none"]; }, "K8", "unobserved", "has_demo"],
+  ["K8 has_demo null is not no demo", (f) => { f.source.delivery.has_demo = null; f.checklist.demo = []; }, "K8", "unobserved", "has_demo"],
   ["K1 no junit fact in the profile", noJunit, "K1", "unobserved", "no junit fact"],
   ["K2 no threshold", (f) => { delete f.results.coverage.coverage.lines_threshold; }, "K2", "unmet", "undefined"],
+  ["K2 a threshold string is not a number", (f) => { f.results.coverage.coverage.lines_threshold = "80"; }, "K2", "unmet", "integer"],
+  ["K2 a threshold array is not a number", (f) => { f.results.coverage.coverage.lines_threshold = [80]; }, "K2", "unmet", "integer"],
+  ["K2 a threshold must be an integer", (f) => { f.results.coverage.coverage.lines_threshold = 80.5; }, "K2", "unmet", "integer"],
+  ["K2 a higher integer threshold", (f) => { f.results.coverage.coverage.lines_threshold = 100; }, "K2", "met", ""],
   ["K3 a failed test", (f) => { cases(f)[0].status = "fail"; }, "K3", "unmet", "did not pass"],
   ["K3 no junit fact: not read, not missing", noJunit, "K3", "unobserved", "junit fact was not read"],
   ["K3 a second junit fact not read", (f) => { f.profile.facts.push({ name: "junit-it", job: "it", kind: "junit" }); f.checklist.acceptance["AC1.1.1"] = ["tests/a.test.mjs::suite::none"]; }, "K3", "unobserved", "not read"],
@@ -74,6 +84,9 @@ const TABLE = [
   ["K5 a dot is a dot", (f) => { f.profile.code_paths = ["lib/a.b"]; f.prs["72"].files = ["lib/a.b"]; bad(f); }, "K5", "unmet", "src/x.mjs"],
   ["K6 audit record not read", (f) => { delete f.prs["72"].k6; }, "K6", "unobserved", "audit record not read"],
   ["K7 unit prs not read", (f) => { delete f.unit_prs; }, "K7", "unobserved", "unit prs not read"],
+  ["K7 the closing pr not read", (f) => { delete f.unit_prs.closing; }, "K7", "unobserved", "unit prs not read"],
+  ["K5 a file list that holds no path is not read", (f) => { f.prs["72"].files = [null]; }, "K5", "unobserved", "files not read"],
+  ["K5 a first commit that holds no path is not read", (f) => { f.prs["72"].first_commit.files = [null]; }, "K5", "unobserved", "first commit"],
   ["an exception for another item", (f) => { bad(f); f.checklist.exceptions = [{ ...exception, item: "K1" }]; }, "K5", "unmet", "src/x.mjs"],
   ["an exception without owner_decision", (f) => { bad(f); f.checklist.exceptions = [{ ...exception, owner_decision: "" }]; }, "K5", "unmet", "src/x.mjs"],
   ["T-16 a valid exception", (f) => { bad(f); f.checklist.exceptions = [exception]; }, "K5", "excepted", "src/x.mjs"],
@@ -137,6 +150,20 @@ test("T-18 the same facts give the same bytes; a bad facts file is a FAIL, never
     assert.deepEqual([r.result, r.status.state, r.items], ["FAIL", "failure", []]);
   }
   assert.equal(judge(null).result, "FAIL");
+});
+
+test("what was not read is never an empty set: the whole answer is a FAIL", () => {
+  for (const change of [(f) => { f.source.delivery.common = null; delete f.checklist.conditions["common-1"]; }, (f) => { delete f.source.delivery.has_demo; }]) assert.equal(made(change).result, "FAIL");
+});
+
+test("a value the core cannot read is a FAIL with a reason and no items, never an exception", () => {
+  const broken = [(f) => { f.profile.facts = [null]; }, (f) => { f.profile.facts = [{ kind: "junit" }]; }, (f) => { f.profile.code_paths = [null]; }, (f) => { f.profile.code_paths = []; }, (f) => { f.profile.test_paths = [80]; },
+    (f) => { f.source.files = [null]; }, (f) => { f.source.delivery.dod = [null]; }, (f) => { f.checklist.design_cases = null; }, (f) => { f.checklist.design_refs = null; }, (f) => { f.results["junit-unit"].cases = [null]; }];
+  for (const change of broken) {
+    const r = made(change);
+    assert.deepEqual([r.result, r.items, r.status.state], ["FAIL", [], "failure"]);
+    assert.ok(r.status.description.length > 0);
+  }
 });
 
 test("the core reads no clock, random source, file, network or child process (S4)", () => {
