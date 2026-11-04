@@ -85,6 +85,7 @@ const TABLE = [
   ["K6 audit record not read", (f) => { delete f.prs["72"].k6; }, "K6", "unobserved", "audit record not read"],
   ["K7 unit prs not read", (f) => { delete f.unit_prs; }, "K7", "unobserved", "unit prs not read"],
   ["K7 the closing pr not read", (f) => { delete f.unit_prs.closing; }, "K7", "unobserved", "unit prs not read"],
+  ["K7 the node prs not read", (f) => { delete f.unit_prs.node_prs; }, "K7", "unobserved", "unit prs not read"],
   ["K5 a file list that holds no path is not read", (f) => { f.prs["72"].files = [null]; }, "K5", "unobserved", "files not read"],
   ["K5 a first commit that holds no path is not read", (f) => { f.prs["72"].first_commit.files = [null]; }, "K5", "unobserved", "first commit"],
   ["K5 a first commit file without a status is not read", (f) => { delete f.prs["72"].first_commit.files[0].status; }, "K5", "unobserved", "first commit"],
@@ -158,12 +159,12 @@ test("what was not read is never an empty set: the whole answer is a FAIL", () =
 });
 
 test("a value the core cannot read is a FAIL with a reason and no items, never an exception", () => {
-  const broken = [(f) => { f.profile.facts = [null]; }, (f) => { f.profile.facts = [{ kind: "junit" }]; }, (f) => { f.profile.code_paths = [null]; }, (f) => { f.profile.code_paths = []; }, (f) => { f.profile.test_paths = [80]; },
+  const broken = [(f) => { f.profile.facts = [null]; }, (f) => { f.profile.facts = [{ kind: "junit" }]; }, (f) => { f.profile.code_paths = [null]; }, (f) => { f.profile.code_paths = []; }, (f) => { f.profile.test_paths = [80]; }, (f) => { f.profile.code_paths = ["src/**", ""]; }, (f) => { f.profile.facts = [{ name: "junit-unit" }]; }, (f) => { delete f.profile; },
     (f) => { f.source.files = [null]; }, (f) => { f.source.delivery.dod = [null]; }, (f) => { f.checklist.design_cases = null; }, (f) => { f.checklist.design_refs = null; }, (f) => { f.results["junit-unit"].cases = [null]; }];
   for (const change of broken) {
     const r = made(change);
     assert.deepEqual([r.result, r.items, r.status.state], ["FAIL", [], "failure"]);
-    assert.ok(r.status.description.length > 0);
+    assert.match(r.status.description, /^(profile|facts: a value the core cannot read)$/);
   }
 });
 
