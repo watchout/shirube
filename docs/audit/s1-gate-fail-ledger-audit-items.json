@@ -1,0 +1,31 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@b13192d0d5c3150125c5b5f19ee00eafde372c71/docs/sds/audit-method.md#3",
+  "scope": "S1-SH-04 の台帳の PR（R1、docs だけ）の監査: docs/measure/s1-gate-fail-ledger.md（版 1、作者 arc、file の SHA-256 2930bdf827b7b588f78eccac37bc09936e5c3ea9fb6885de20b069d4bf04b256、写し元 iyasaka-arc#57 の arc の comment）と、本項目集合の file docs/audit/s1-gate-fail-ledger-audit-items.json。code・試験・workflow・設計の記録の差分は無い。この監査は 2 つのことをする: (1) 台帳が事実として正しいか（数と行）を確かめる、(2) 台帳の 121 行を「門の不備／PR の不備／観測できず」に分類し、返却の JSON の欄 classification に書く（OD-SHIRUBE-REQUIREMENTS-MEASURES-AND-FAIL-CLASSIFICATION-20261022-001・OD-SHIRUBE-P1-PR66-EXACT-HEAD-AND-P1-SETTINGS-20261024-001）。門の不備の行が見つかっても、それは分類の結果であって blocking_findings にしない。blocking_findings にするのは、台帳の数・行・測り方が事実と違う時と、分類を全行に付けられない時だけ。全 4 項目必須。",
+  "items": [
+    {
+      "id": "GL-1",
+      "stage": "design",
+      "criterion": "範囲: 変更 path が docs/measure/s1-gate-fail-ledger.md と docs/audit/s1-gate-fail-ledger-audit-items.json の 2 つの新しい file だけ。base の file を変えていない。.github/**・.shirube/**・kit/**・docs/sds/**・docs/design/**・scripts/**・tests/**・approvals/**・package.json に触れていない。変更 path が写しの control_handoff の allowed_paths の中にある。台帳の file の SHA-256 が scope の値と同じ。",
+      "basis": "写しの control_handoff の allowed_paths、作業指示"
+    },
+    {
+      "id": "GL-2",
+      "stage": "design",
+      "criterion": "台帳の事実: 監査の席が §1 の script（台帳の中の全文。SHA-256 を照らす）か同じ GET で、同じ窓（since 2026-10-24T03:48:03Z、until 2026-11-04T11:00:00Z）の status を GitHub から取り直し、§2 の数（門の status がある PR 107・うち統合 71・FAIL の status 215・FAIL の PR 80・行 121）と、§3 の各行（PR・種類・FAIL の数・最初と最後の時刻・最初の版・最初の門の実行の URL）が同じことを確かめる。取り直せなかった commit があれば、その数を書き、0 件と同じ扱いにしない。違いがあれば行ごとに blocking_findings に書く（作者は直さず、台帳の直しは arc）。種類 K1〜K10 の分け方が status の説明の頭の文と合っていることも見る。",
+      "basis": "台帳 §1・§2・§3"
+    },
+    {
+      "id": "GL-3",
+      "stage": "design",
+      "criterion": "分類: 返却の JSON に欄 classification（配列）を置き、§3 の G001〜G121 の全行について {row, class, basis, note} を 1 つずつ書く。class は gate_defect（門の不備）・pr_defect（PR の不備）・unobservable（観測できず）のどれか。basis は判断の根拠の URL（status・門の実行の log・PR の本文の版・PR の履歴）を 1 つ以上。1 行に両方が混ざる時は、FAIL の status ごとに分けた要素にし、row に同じ行の id を書く。台帳 §4 の決まりで分ける（監査の前の版の判定 3 の FAIL は、決まりのとおりに止めた物として pr_defect、note にその旨）。返却の JSON に、class ごとの行の数と、gate_defect の行の一覧（行の id・門の何が誤ったか）を欄 classification_summary に置く。全行に class が付かない時は blocking_findings に書く。",
+      "basis": "台帳 §4、OD-SHIRUBE-REQUIREMENTS-MEASURES-AND-FAIL-CLASSIFICATION-20261022-001（未分類は 0 と数えない）"
+    },
+    {
+      "id": "GL-4",
+      "stage": "design",
+      "criterion": "宣言と結び付け: PR 本文の sds-pr の block が 1 つで、risk_class が R1、changed_paths が diff の 2 file と同じ、control_handoff の URL と SHA-256 が shirube#6 の写しと同じ、control_handoff_amendments に作業指示（iyasaka-arc#24 の comment の URL と本文の SHA-256）が入っている。label が risk:R1。作者が ready 化も統合もしていない。2 つの file とも JSON・markdown として壊れておらず、本項目集合が sds-audit-items/1 として固定 checker に読める（--preflight が READY_FOR_REVIEW）。",
+      "basis": "写しの control_handoff、docs/sds/distribution.md の sds-pr"
+    }
+  ]
+}
