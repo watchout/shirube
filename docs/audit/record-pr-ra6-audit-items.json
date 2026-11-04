@@ -1,0 +1,31 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@dd48581d988bc284e3ebf574f8ba76c170bb8ca5/docs/sds/audit-method.md#3",
+  "scope": "PR-R（R1、docs だけ）の設計の段の監査: 記録の PR の監査の項目集合 docs/audit/record-pr-audit-items.json に RA-6（approvals/<intent>/ の下の file の名前）を足す変更と、本項目集合の file docs/audit/record-pr-ra6-audit-items.json。code・試験・workflow・設計の記録の差分は無い。記法: [W6] = 作業指示 iyasaka-arc#24 6624376432（本文 SHA-256 87f5e23f28b9aaf3bdf3ebbb5b6d52a79d1318c5c07784af1bee034daae9f0ac。PR-R の節の RA-6 を足した）、[CH6] = 門が読む写し shirube#6 6624381235（382d6b7d075aaf95f31a7b0a4fc291e685f51a285bf63486dac55c08425a9ed1）、[DR] = 設計の記録 docs/design/u1-engine-judge.md の版 13（SHA-256 07e296ac3b56d64175fadf43bb1fdffbfa498261b08ac37ef1993b3ab54b3193）の §7.3。全 4 項目必須。",
+  "items": [
+    {
+      "id": "R6-1",
+      "stage": "design",
+      "criterion": "範囲: 変更 path が docs/audit/record-pr-audit-items.json（base にある file の変更）と docs/audit/record-pr-ra6-audit-items.json（新しい file）の 2 file だけ。base の file を消していない・名前を変えていない。.github/**・.shirube/**・kit/**・docs/sds/**・docs/design/**・scripts/**・tests/**・approvals/**・package.json に触れていない。新しい外部の依存が無い。変更 path が [CH6] の allowed_paths の中にある。",
+      "basis": "[CH6] の allowed_paths、[W6]"
+    },
+    {
+      "id": "R6-2",
+      "stage": "design",
+      "criterion": "RA-6 の文と、RA-1〜RA-5 が変わっていないこと: docs/audit/record-pr-audit-items.json の項目が RA-1〜RA-6 の 6 つで、RA-6 の criterion と basis が [W6] の本文の `- RA-6 …` の行と `- basis: …` の行の部分文字列と字まで同じ（監査の席が GitHub から [W6] の本文を取り直して照らす。本文の SHA-256 が記載と同じことも確かめる）。RA-1〜RA-5 の id・criterion・basis が base の file の同じ項目と字まで同じ（JSON として項目ごとに比べる）。method_ref が変わっていない。scope の変更は、「全 6 項目必須」への直しと、RA-6 の出典・記法 [W6] の足しだけで、RA-1〜RA-5 の出典の文を変えていない。足りない・余計・順番の入れ替え・言い換えが無い。RA-6 の文が [DR] の §7.3 と食い違っていないかも見る（食い違いを見つけたら blocking_findings に書く。作者は文を直さず、設計の側の問題として arc に返す）。",
+      "basis": "[W6] の RA-6、[CH6]、[DR] の §7.3"
+    },
+    {
+      "id": "R6-3",
+      "stage": "design",
+      "criterion": "項目集合として読める: 2 file とも JSON が壊れておらず、schema が sds-audit-items/1、method_ref・scope・items があり、items の id が重ならず、各項目に criterion と basis がある。固定 checker（scripts/hygiene/audit-admission.mjs、変更なし）が、本項目集合を item_set として読める（この依頼の --preflight が READY_FOR_REVIEW）。docs/audit/record-pr-audit-items.json の id は RA-1〜RA-6 で、A の依頼が同じ file を item_set に使う。",
+      "basis": "[CH6]、固定 checker の項目集合の読み方"
+    },
+    {
+      "id": "R6-4",
+      "stage": "design",
+      "criterion": "宣言と結び付け: PR 本文の sds-pr の block が 1 つで、risk_class が R1、changed_paths が diff の 2 file と同じ、control_handoff の URL と SHA-256 が [CH6] と同じ、control_handoff_amendments に [W6]（URL と本文の SHA-256）が入っている。label が risk:R1。PR 本文の適用 ID が、iyasaka-org の索引に 1 行ずつある。作者が ready 化も統合もしていない。",
+      "basis": "[CH6]、docs/sds/distribution.md の sds-pr"
+    }
+  ]
+}
