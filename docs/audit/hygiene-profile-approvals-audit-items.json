@@ -1,7 +1,7 @@
 {
   "schema": "sds-audit-items/1",
   "method_ref": "watchout/shirube@dd48581d988bc284e3ebf574f8ba76c170bb8ca5/docs/sds/audit-method.md#3",
-  "scope": "PR-P（R4、保護面 .shirube/**）の実装監査: .shirube/hygiene-profile.md の exclude_generated の末尾に approvals/**/attempt-*.json と approvals/**/_sequence.json の 2 つを足す 1 行の変更と、本項目集合の file docs/audit/hygiene-profile-approvals-audit-items.json。項目 HP-1〜HP-4 の文は、作業指示 iyasaka-arc#24 6624376432（本文 SHA-256 87f5e23f28b9aaf3bdf3ebbb5b6d52a79d1318c5c07784af1bee034daae9f0ac、作者 arc）の PR-P の節の HP-1〜HP-4 を、字を変えずに取り出した物。設計の記録は、決定の記録 iyasaka-arc#49 6624185989（OD-SHIRUBE-APPROVAL-RECORD-FILES-OUT-OF-PR-SIZE-20261104-001、本文 SHA-256 f56234c062f0d8ccd1e903e1572ae697c9e0eaa9f162a68ba01e9a9bd9214103）の決定 1 で、事前の設計監査は置かない（作業指示の PR-P の節）。記法: [WO] = 上の作業指示。全 4 項目必須。",
+  "scope": "PR-P（R4、保護面 .shirube/**）の実装監査: .shirube/hygiene-profile.md の exclude_generated の末尾に approvals/**/attempt-*.json と approvals/**/_sequence.json の 2 つを足す 1 行の変更と、本項目集合の file docs/audit/hygiene-profile-approvals-audit-items.json。項目 HP-1・HP-2・HP-4 の文は、作業指示 iyasaka-arc#24 6624376432（本文 SHA-256 87f5e23f28b9aaf3bdf3ebbb5b6d52a79d1318c5c07784af1bee034daae9f0ac、作者 arc）の PR-P の節の HP-1・HP-2・HP-4 を、字を変えずに取り出した物。HP-3 の文は、作業指示の HP-3 の書き誤り（実装監査 1 回目の BF-HP-01）を改めた追補 iyasaka-arc#24 6626659634（本文 SHA-256 4b0a111c966fd52645b0a9fbe6811c9e39531ecaf519b8141a795d3f54e769d5、作者 arc）の HP-3 を、字を変えずに取り出した物。設計の記録は、決定の記録 iyasaka-arc#49 6624185989（OD-SHIRUBE-APPROVAL-RECORD-FILES-OUT-OF-PR-SIZE-20261104-001、本文 SHA-256 f56234c062f0d8ccd1e903e1572ae697c9e0eaa9f162a68ba01e9a9bd9214103）の決定 1 で、事前の設計監査は置かない（作業指示の PR-P の節）。記法: [WO] = 上の作業指示、[AM] = 上の追補。全 4 項目必須。",
   "items": [
     {
       "id": "HP-1",
@@ -15,8 +15,8 @@
     },
     {
       "id": "HP-3",
-      "criterion": "検査: この PR の head で必須の検査（`test`・`hygiene / hygiene`・`sds-gate`）が通っている。",
-      "basis": "[WO] の HP-3、main の保護（test・hygiene / hygiene・sds-gate）"
+      "criterion": "検査: この PR の head で、監査の前に独立に実行できる必須の検査（`test`・`hygiene / hygiene`）が通っている。`sds-gate` は監査の返却と固定 checker の受領を `audit` に結んだ後に初めて通るので、この項目では見ない。",
+      "basis": "[AM] の HP-3、main の保護（test・hygiene / hygiene・sds-gate）。統合の直前の sds-gate の確認は統合席の手順で、この項目ではない"
     },
     {
       "id": "HP-4",
