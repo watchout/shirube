@@ -87,6 +87,7 @@ const TABLE = [
   ["K7 the closing pr not read", (f) => { delete f.unit_prs.closing; }, "K7", "unobserved", "unit prs not read"],
   ["K5 a file list that holds no path is not read", (f) => { f.prs["72"].files = [null]; }, "K5", "unobserved", "files not read"],
   ["K5 a first commit that holds no path is not read", (f) => { f.prs["72"].first_commit.files = [null]; }, "K5", "unobserved", "first commit"],
+  ["K5 a first commit file without a status is not read", (f) => { delete f.prs["72"].first_commit.files[0].status; }, "K5", "unobserved", "first commit"],
   ["an exception for another item", (f) => { bad(f); f.checklist.exceptions = [{ ...exception, item: "K1" }]; }, "K5", "unmet", "src/x.mjs"],
   ["an exception without owner_decision", (f) => { bad(f); f.checklist.exceptions = [{ ...exception, owner_decision: "" }]; }, "K5", "unmet", "src/x.mjs"],
   ["T-16 a valid exception", (f) => { bad(f); f.checklist.exceptions = [exception]; }, "K5", "excepted", "src/x.mjs"],
