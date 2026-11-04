@@ -70,12 +70,9 @@ const TABLE = [
   ...[["K9 both text_sha256 missing", undefined, undefined, "unobserved"], ["K9 both text_sha256 the same non-hash", "x", "x", "unobserved"], ["K9 the source's text_sha256 missing", undefined, "2".repeat(64), "unobserved"], ["K9 the checklist's text_sha256 missing", "2".repeat(64), undefined, "unmet"],
     ["K9 both text_sha256 true", true, true, "unobserved"], ["K9 both text_sha256 a number", 1, 1, "unobserved"], ["K9 both text_sha256 empty", "", "", "unobserved"], ["K9 the checklist's text_sha256 true", "2".repeat(64), true, "unmet"]]
     .map(([name, src, chk, value]) => [name, (f) => { put(f.source.delivery.dod[0], "text_sha256", src); put(f.checklist.conditions["dod-1"], "text_sha256", chk); }, "K9", value, "text_sha256"]),
-  ["K9 common conditions not read are not empty", (f) => { f.source.delivery.common = null; delete f.checklist.conditions["common-1"]; }, "K9", "unobserved", "not extracted"],
-  ["K9 story conditions not read are not empty", (f) => { delete f.source.story_conditions; delete f.checklist.conditions["story:US3.3"]; }, "K9", "unobserved", "not extracted"],
-  ["K9 common conditions read as empty", (f) => { f.source.delivery.common = []; delete f.checklist.conditions["common-1"]; }, "K9", "met", ""],
-  ["K9 story conditions read as empty", (f) => { f.source.story_conditions = []; delete f.checklist.conditions["story:US3.3"]; }, "K9", "met", ""],
-  ["K8 has_demo missing is not no demo", (f) => { delete f.source.delivery.has_demo; f.checklist.demo = ["tests/none"]; }, "K8", "unobserved", "has_demo"],
-  ["K8 has_demo null is not no demo", (f) => { f.source.delivery.has_demo = null; f.checklist.demo = []; }, "K8", "unobserved", "has_demo"],
+  ...[["K9 common conditions not read are not empty", "common-1", null, "unobserved", "not extracted"], ["K9 story conditions not read are not empty", "story:US3.3", undefined, "unobserved", "not extracted"], ["K9 common conditions read as empty", "common-1", [], "met", ""], ["K9 story conditions read as empty", "story:US3.3", [], "met", ""]]
+    .map(([name, key, v, value, shown]) => [name, (f) => { if (key === "common-1") put(f.source.delivery, "common", v); else put(f.source, "story_conditions", v); delete f.checklist.conditions[key]; }, "K9", value, shown]),
+  ...[["K8 has_demo missing is not no demo", undefined, ["tests/none"]], ["K8 has_demo null is not no demo", null, []]].map(([name, v, demo]) => [name, (f) => { put(f.source.delivery, "has_demo", v); f.checklist.demo = demo; }, "K8", "unobserved", "has_demo"]),
   ["K1 no junit fact in the profile", noJunit, "K1", "unobserved", "no junit fact"],
   ["K3 a failed test", (f) => { cases(f)[0].status = "fail"; }, "K3", "unmet", "did not pass"],
   ["K3 no junit fact: not read, not missing", noJunit, "K3", "unobserved", "junit fact was not read"],
