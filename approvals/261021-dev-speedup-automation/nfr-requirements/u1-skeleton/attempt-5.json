@@ -1,0 +1,12 @@
+{
+  "schema": "sds-approval-record/1",
+  "intent": "261021-dev-speedup-automation",
+  "stage": "nfr-requirements",
+  "unit": "u1-skeleton",
+  "attempt": 5,
+  "approvedAt": "2026-10-28T00:37:59Z",
+  "approverRole": "owner",
+  "identityCheck": "none",
+  "sourceEventDigest": "68b8f61c5971da35c8fb3476307ffd3aa5f398092f2427387cef1f80eb2d098c",
+  "sourceAuditRef": "aidlc/spaces/default/intents/261021-dev-speedup-automation/audit/owner-gpnwa4zc9q15.md"
+}

@@ -1,0 +1,300 @@
+{
+  "schema": "sds-stage-sequence/2",
+  "intent": "261021-dev-speedup-automation",
+  "sourceDigest": "f529523b76c77934d7eb9add5fd161b46d79fdad49ae610642bef9c9ae057dfc",
+  "inputDigest": "6586b19ad92b6d4d27f37029cdc09af52907e1cd1fcf69da79b997433ee68ef4",
+  "engineTreeDigest": "4d70156827b7d68bb8e654490aba8e65aa1d69c779e6b509ccb0d31226da0c18",
+  "engineVersion": "2.11.1",
+  "rows": [
+    {
+      "order": 1,
+      "stage": "workspace-scaffold",
+      "status": "exempt",
+      "started": null
+    },
+    {
+      "order": 2,
+      "stage": "workspace-detection",
+      "status": "exempt",
+      "started": null
+    },
+    {
+      "order": 3,
+      "stage": "state-init",
+      "status": "exempt",
+      "started": null
+    },
+    {
+      "order": 4,
+      "stage": "intent-capture",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/intent-capture/_intent/attempt-1.json"
+    },
+    {
+      "order": 5,
+      "stage": "market-research",
+      "status": "exempt",
+      "started": false
+    },
+    {
+      "order": 6,
+      "stage": "feasibility",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/feasibility/_intent/attempt-1.json"
+    },
+    {
+      "order": 7,
+      "stage": "scope-definition",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/scope-definition/_intent/attempt-2.json"
+    },
+    {
+      "order": 8,
+      "stage": "team-formation",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/team-formation/_intent/attempt-3.json"
+    },
+    {
+      "order": 9,
+      "stage": "rough-mockups",
+      "status": "exempt",
+      "started": false
+    },
+    {
+      "order": 10,
+      "stage": "approval-handoff",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/approval-handoff/_intent/attempt-2.json"
+    },
+    {
+      "order": 11,
+      "stage": "reverse-engineering",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/reverse-engineering/_intent/attempt-2.json"
+    },
+    {
+      "order": 12,
+      "stage": "practices-discovery",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/practices-discovery/_intent/attempt-2.json"
+    },
+    {
+      "order": 13,
+      "stage": "requirements-analysis",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/requirements-analysis/_intent/attempt-2.json"
+    },
+    {
+      "order": 14,
+      "stage": "user-stories",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/user-stories/_intent/attempt-2.json"
+    },
+    {
+      "order": 15,
+      "stage": "refined-mockups",
+      "status": "exempt",
+      "started": false
+    },
+    {
+      "order": 16,
+      "stage": "domain-design",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/domain-design/_intent/attempt-2.json"
+    },
+    {
+      "order": 17,
+      "stage": "units-generation",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/units-generation/_intent/attempt-4.json"
+    },
+    {
+      "order": 18,
+      "stage": "contract-design",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/contract-design/_intent/attempt-5.json"
+    },
+    {
+      "order": 19,
+      "stage": "delivery-planning",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/delivery-planning/_intent/attempt-6.json"
+    },
+    {
+      "order": 20,
+      "stage": "functional-design",
+      "unit": "u1-skeleton",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/functional-design/u1-skeleton/attempt-7.json"
+    },
+    {
+      "order": 21,
+      "stage": "nfr-requirements",
+      "unit": "u1-skeleton",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/nfr-requirements/u1-skeleton/attempt-5.json"
+    },
+    {
+      "order": 22,
+      "stage": "nfr-design",
+      "unit": "u1-skeleton",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/nfr-design/u1-skeleton/attempt-5.json"
+    },
+    {
+      "order": 23,
+      "stage": "infrastructure-design",
+      "unit": "u1-skeleton",
+      "status": "approved",
+      "started": true,
+      "approvalRef": "approvals/261021-dev-speedup-automation/infrastructure-design/u1-skeleton/attempt-4.json"
+    },
+    {
+      "order": 24,
+      "stage": "code-generation",
+      "unit": "u1-skeleton",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 25,
+      "stage": "functional-design",
+      "unit": "u5-plan-admission",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 26,
+      "stage": "nfr-requirements",
+      "unit": "u5-plan-admission",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 27,
+      "stage": "nfr-design",
+      "unit": "u5-plan-admission",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 28,
+      "stage": "infrastructure-design",
+      "unit": "u5-plan-admission",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 29,
+      "stage": "code-generation",
+      "unit": "u5-plan-admission",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 30,
+      "stage": "functional-design",
+      "unit": "u6-dist-aun",
+      "status": "exempt",
+      "started": false
+    },
+    {
+      "order": 31,
+      "stage": "nfr-requirements",
+      "unit": "u6-dist-aun",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 32,
+      "stage": "nfr-design",
+      "unit": "u6-dist-aun",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 33,
+      "stage": "infrastructure-design",
+      "unit": "u6-dist-aun",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 34,
+      "stage": "code-generation",
+      "unit": "u6-dist-aun",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 35,
+      "stage": "build-and-test",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 36,
+      "stage": "ci-pipeline",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 37,
+      "stage": "deployment-pipeline",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 38,
+      "stage": "environment-provisioning",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 39,
+      "stage": "deployment-execution",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 40,
+      "stage": "observability-setup",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 41,
+      "stage": "incident-response",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 42,
+      "stage": "performance-validation",
+      "status": "not_approved",
+      "started": false
+    },
+    {
+      "order": 43,
+      "stage": "feedback-optimization",
+      "status": "not_approved",
+      "started": false
+    }
+  ]
+}

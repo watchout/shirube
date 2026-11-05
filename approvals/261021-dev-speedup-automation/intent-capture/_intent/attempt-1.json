@@ -1,0 +1,11 @@
+{
+  "schema": "sds-approval-record/1",
+  "intent": "261021-dev-speedup-automation",
+  "stage": "intent-capture",
+  "attempt": 1,
+  "approvedAt": "2026-10-21T23:06:41Z",
+  "approverRole": "owner",
+  "identityCheck": "none",
+  "sourceEventDigest": "54d30aa4f16b24c8e71bff64b34802c24ee040c9c3cc2f512357fbd7040e2799",
+  "sourceAuditRef": "aidlc/spaces/default/intents/261021-dev-speedup-automation/audit/owner-gpnwa4zc9q15.md"
+}

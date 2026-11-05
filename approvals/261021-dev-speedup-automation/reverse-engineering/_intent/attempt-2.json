@@ -1,0 +1,11 @@
+{
+  "schema": "sds-approval-record/1",
+  "intent": "261021-dev-speedup-automation",
+  "stage": "reverse-engineering",
+  "attempt": 2,
+  "approvedAt": "2026-10-27T21:35:55Z",
+  "approverRole": "owner",
+  "identityCheck": "none",
+  "sourceEventDigest": "b35a24b8a15c391962cf067d7e5fd8e444ebe65a640eead4da02f5e3103a3a75",
+  "sourceAuditRef": "aidlc/spaces/default/intents/261021-dev-speedup-automation/audit/owner-gpnwa4zc9q15.md"
+}
