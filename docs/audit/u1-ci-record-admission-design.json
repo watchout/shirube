@@ -1,0 +1,97 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "261105-shirube-lifecycle-qualit / U1 u1-ci-record-admission の同PR・設計だけheadを対象とする独立設計監査。AI-DLCのInception、U1 Functional Design/NFR Requirements/NFR Design/Infrastructure Design、承認済みCode Generation計画・試験手順と公開承認readbackを一度の監査で照合する。以下のU1-Dxxは本項目集合の識別子であり新しい社内規格・工程・権限ではない。全18項目必須。製品未実装につき実装/製品試験/coverage/SEC-T/実CI/実配布の合格を要求・主張せず、その設計・検証計画と未達の扱いを監査する。旧SDS工程・旧道筋・判定4/5・退役PR/own-code予算を復活させない。今後は同PRに実装を追加し、新headで別途実装監査を要する。",
+  "items": [
+    {
+      "id": "U1-D01",
+      "criterion": "目的・単位・受入の整合: requirementsの13Must/47FR/10NFR、storiesの17US/88AC、7単位/7依存辺と後のcontract-summary変更対応表を照合し、U1の必要記録/承認・適用READY・実内容digest・該当同PR先行設計監査の四条件が一貫する。U1をU2/U3待ちにせず、U4の二センサー/初回U1〜U5/AUN U7/実追加U6をU1だけの完成へ拡張しない。",
+      "basis": "AI-DLC設計監査D1/D2、requirements、unit-of-work/story-map、contract-summary、FD BR9.2"
+    },
+    {
+      "id": "U1-D02",
+      "criterion": "所有と純粋核: EvidenceCollectionのObservedSnapshot/PublishedRecordProjection、ConformanceGateのConformanceAssessmentという既存所有を保持し、7部品/10entityを新サービス・DB・第二engineへ増やさない。時刻/ID/規則/required set/観測は明示入力、核にI/O/時計/乱数/UUID/token/process終了を持たず、adapterは輸送/形式のみ。閾値/理由code/承認値を複製しない設計か。",
+      "basis": "D2/D6、S2/S3/S4、FD entities/BR8.2、NFR SOL3"
+    },
+    {
+      "id": "U1-D03",
+      "criterion": "必須集合とcheckpoint: 信頼固定版stage/出力一覧・有効計画・対象単位・固定caller checkpointから、初回Inceptionを含む非空required artifacts/stage slots/承認kind/固定subsetを掲載記録と別に求める。PRの空stages/skip/exclude/任意profileで縮めず、不明計画はUNKNOWN、確定欠落はFAIL。現在CodeGenの未来完了承認や未開始Build and Test/CI承認を要求せず、gate:false summaryを人の完了承認へ変換しない。",
+      "basis": "D1/D2/D5、FD BR1.1〜1.4/4.2、W02、FD-T02/11/14/15"
+    },
+    {
+      "id": "U1-D04",
+      "criterion": "種類別承認と掲載変換: plan=Approve Plan、summary=Looks correct、stage-completion=Approve又は正式提示が確認できるAccept as-isだけをkind別に扱う。否定/空/未知/誤kind/一般質問/plan off/skipped/自動GATE_APPROVED/Autonomous/STAGE_COMPLETED単独を人承認へ数えない。既存native形式の許可された掲載前変換と公開viewのCI検査を分け、private raw receipt全供給や新producerを必須にしない。",
+      "basis": "D2/D5、FD BR2.1〜2.3/6.1、W03、FD-T09〜11"
+    },
+    {
+      "id": "U1-D05",
+      "criterion": "READY適用・legacy・再開: Asia/Tokyo 2026-11-06含むstage-completion承認/再承認日で判定し、厳密date/offset timestamp/approvalRecordRefを照合する。不明日/矛盾/日付だけ旧日変更をlegacy化せずUNKNOWN。閾値前のREADY不足はnonblocking knownRemaining全field/revisitOnReopenを保持する。再承認/再開attemptへ古い日を継承しない。必要READY0件でも全承認日の根拠と非空記録は必要で、過去5不足を固定集合にしない。",
+      "basis": "D1/D5、FD BR3.1〜3.4、contract-summary READY境界、FD-T12〜15/20"
+    },
+    {
+      "id": "U1-D06",
+      "criterion": "実bytes・集合・path: 固定PR headの通常file raw bytesからbyte数/SHA-256を再計算し、UTF-8 byte順pathのJSON.stringify([path,bytes,sha256])+LF連結hashでglobalとstage固定subsetを区別する。宣言hash/cache/native fingerprintを観測へ写さず、追加/欠落/rename/重複/未分類変更を検出する。固定した掲載記録/監査comment/CI自己参照除外以外へ対象を減らさず、除外記録自体の構造/充足も検査する。",
+      "basis": "D2/D5、S5、FD BR4.1/4.2、FD-T04/16/17/18"
+    },
+    {
+      "id": "U1-D07",
+      "criterion": "設計監査の該当性: DB構造/権限/契約/securityを設計と実差分の根拠pathから分類する。全分類が根拠付き非該当の時だけdesignAuditをNOT_APPLICABLEにし、自己申告/不明を非該当へ変換しない。Owner保護対象の変更権限はこの四分類と別の条件で、新DB/migrationや別DB intentの実装を追加しない。",
+      "basis": "D3/D6、FD BR5.1/9.1、NFR7非適用、FD-T05/16"
+    },
+    {
+      "id": "U1-D08",
+      "criterion": "同PR historical設計監査: 実在design-only head/現在head祖先/base/同repo-PR-unit、公開request/review本文bytesのhash/request_digest/指定投稿者/必須全PASS/blockingなし/掲載工程参照順を照合する計画か。既存現head受領器へ偽の現在観測を渡さず、共有payload意味検査を再利用する。設計/契約の途中変更は戻しても旧PASSを自動復活させず、履歴不能はUNKNOWN。URL/READY_FOR_REVIEW/commit日時だけで監査PASSや実CodeGen開始時刻を証明しない。",
+      "basis": "D3/D5、FD BR5.2/5.3、W05、FD-T05/16/19、Code Generation Step5"
+    },
+    {
+      "id": "U1-D09",
+      "criterion": "監査受付とU1の非循環: 未監査design-only headはU1閉門のまま、既存受付の非空mandatoryと指定check/対応t.workflow全体success/PR-head-base/merge checkout証明を維持する。U1別workflow案によりci/hygieneと相互needsを作らず、checks空/必須削除/設計モードPASS/失敗隠しで回避しない。live protectionのsds-gate統合条件と設計監査受付checkを分け、現在sds-gate成功や未観測の将来workflow適用を捏造しない。",
+      "basis": "D3/D5、S8、FD BR5.3/7.1、Infrastructure cicd-pipeline、FD-T19、新時点public baseline注記"
+    },
+    {
+      "id": "U1-D10",
+      "criterion": "完全結果と保証分担: E03/C01/C03と後続C05/C07で完全assessment/evaluationScope/同梱observationsをinline保持し、四条件/理由/対象/版/digest/knownRemaining/非保証固定field/authorization NONEを元評価と比較する。欠落/改変/残件空化/別target/参照だけ入力を拒否し、observationRefを同scopeのobservationIdへ一意に解決する。source ShirubeをAUN対象へ書換えず配布先を別参照にする。",
+      "basis": "D2/D5、FD BR7.2/7.3、NFR SOL7、FD-T06〜08/20"
+    },
+    {
+      "id": "U1-D11",
+      "criterion": "前処理診断・三値・停止: FAIL優先/FAILなしUNKNOWNありはUNKNOWNとし、必須FAIL/UNKNOWNはentry exit1へ伝播する。head/base/実blob不足や不正viewで必須digestが作れない時は既存診断のみで有効assessmentを作らず、宣言/架空/空集合hashやnullable化で補わない。既知残件を保持し、未評価残件を空配列で確認済みにしない。必須fieldが実観測で揃った完全UNKNOWNと区別する。",
+      "basis": "D2/D5、S5/S8、FD W01/BR7.1、NFR SOL5/6、FD-T01〜05/17"
+    },
+    {
+      "id": "U1-D12",
+      "criterion": "有限取得と評価分離: 1取得20000ms/総120000ms/100取得/1応答8000000bytes/自動retry0を単一policyから使う。要求前・受信中bytes・最終head/base照合まで予算に含め、欠page/truncated/拒否/timeout/cancel/上限/途中変更を部分成功にしない。呼出しごとのTarget/head/base/attemptを分け、正当再評価は再取得する。人待ち一回通知後の効果/成果物/後継記録0、watcher追加なし。",
+      "basis": "D2/D5、S4/S5/S8、FD BR8.1/8.2、NFR SOL1/4/6、FD-T17/18"
+    },
+    {
+      "id": "U1-D13",
+      "criterion": "入力・公開安全境界: /1 major/必須型/enum/unknown critical/部分・過大入力・escape後同object重複JSON keyを上書き前に拒否する。Git path raw bytesを保持し、absolute/空/dot/dotdot/backslash/NUL/境界外symlink/submoduleを拒否する。外部文字列/markup/URLを命令にせず、private raw audit/engine/人返信/秘密/他repo非公開データをprojection・診断・fixtureへ転記しない。未知を成功へ変換しない。",
+      "basis": "D3/D5、FD BR6.1/6.2、NFR SOL2/8、FD-T09〜11/17/18"
+    },
+    {
+      "id": "U1-D14",
+      "criterion": "信頼実行と資格情報: 固定callee repo/commit/実toolsを検証し、PRデータと制御核/required set/checkpoint/severityを分離する。導入前候補は資格情報なしのtest境界、実PR読取は別の既存read-only取得境界とし、候補script/install/test/buildへtokenを渡さず候補を自身のtrusted toolsへ昇格させない。実PR→核→CI停止の確認と、監査統合済み版のpin/caller配布成功を区別する。",
+      "basis": "D3/D5、S9、FD BR8.1/9.2、NFR SOL2/8、Infrastructure trusted execution、Code Generation Step11"
+    },
+    {
+      "id": "U1-D15",
+      "criterion": "実装計画・TDD・実分母100%: 承認済み計画の順序/正確なfile/用途argvと固定checkpoint/未知purpose拒否/現default callback-JSON-exit互換/旧4-5非呼出しを具体化しているか。native Testing Contractを未変更で保持し、runner readinessを最初のRed前、適用各層でRed→Green→Refactor、Node組込みでFD-T01〜20/25BR/19詳細NFR/割当30ACへ対応する82予定シナリオ以上を置く。共有依存を含む14fileの実分母・未load検出・適用src確認・行100%・除外の独立確認を保ち、80%/分母0/未測定/skipで代替しない。実行済み証拠はこの設計監査では要求しない。",
+      "basis": "D1/D2/D5、S3/S8、NFR1.1/1.2/8.1/10.1、code-generation-plan/unit-test-instructions、Testing Contract"
+    },
+    {
+      "id": "U1-D16",
+      "criterion": "安全検証・技術互換・復旧の計画: 適用SEC-Tの正本版/項目IDを実行前に同定して安全試験へ対応付け、未同定/未実行を合格にしない。依存導入前の脆弱性確認、ESM/Node宣言/実行時npm依存なし/構造・依存・秘密検査を維持する。schemaは既存majorを保ち、意味変更時は新旧同居・試験した逆向き・必要Owner判断を先に扱う。S1〜S9の既定/逸脱台帳/report-onlyを勝手な新blocking規格へ変えない。",
+      "basis": "D3/D5/D6、S1〜S9、NFR2.1/2.2/3/8/10、Code Generation Steps9/10"
+    },
+    {
+      "id": "U1-D17",
+      "criterion": "承認・独立性・権限: summary/plan/stage-completionとnative READY/独立PR監査/作者受領/別suite-lead統合/保護対象の公開Owner決定・R3/R4 exact-headを区別する。公開readbackやQfileを本人性・発行元認証・protected permissionにしない。設計監査PASS前の製品編集を止め、実装追加後の新head CI/独立監査/受領を残す。1単位1PR/前単位統合後次CodeGen/正式進行/承認済み委任範囲を保持する。",
+      "basis": "D3/D4/D6、FD BR9.1/9.2、team実践P1/P3、design-approval-records、Code Generation Preconditions"
+    },
+    {
+      "id": "U1-D18",
+      "criterion": "公開差分・基準・残件の正直さ: 初回InceptionとU1正式設計/計画/質問/可読reviewを必要範囲で公開し、全depthのaudit/.aidlc-engine、diary、research/外部草案/別intent/他repo資料/keys/生chat/一時データを除外する。個別環境履歴を含むcontract質問原本の除外と最小readback、public main既存shared memory/CodeKBとlocal版の差、root62ff/public main7eの区別を明示し共有fileを上書きしない。FD E05 Minor、READY不足、U1→U4 runtime順、未実装/未実測/未配布を保持し、文書sensor成功を製品成功や全体完了にしない。",
+      "basis": "D1/D5/D6、FD未解消Minor R-01、Contract/Delivery残件、publication manifest/PR本文/design-approval-records"
+    }
+  ]
+}
