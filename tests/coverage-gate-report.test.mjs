@@ -107,7 +107,7 @@ test("an unobservable summary says the ratio was not measured", () => {
 
 test("long file lists stop at the limit and say how many more there are", () => {
   const names = Array.from({ length: SUMMARY_LIST_LIMIT + 5 }, (_, i) => `src/m${String(i).padStart(2, "0")}.mjs`);
-  const text = renderSummary(make(measurement({ measuredPaths: [], records: [rec("lib/x.mjs", 1, 1)] }), { denominatorPaths: names }));
+  const text = renderSummary(make(measurement({ measuredPaths: ["src/real.mjs"], records: [rec("src/real.mjs", 1, 1)] }), { denominatorPaths: [...names, "src/real.mjs"] }));
   assert.equal(SUMMARY_LIST_LIMIT, 20);
   assert.ok(text.includes("`src/m19.mjs`") && !text.includes("src/m20.mjs"));
   assert.ok(text.includes("and 5 more"));
