@@ -1,0 +1,107 @@
+{
+  "schemaVersion": 1,
+  "runId": "local",
+  "outcome": "match",
+  "shouldFail": false,
+  "mode": "enforce",
+  "reasonCodes": [],
+  "coveredLines": 1004,
+  "totalLines": 1004,
+  "lineRatioPercent": "100.00",
+  "effectiveThresholdPercent": "100.00",
+  "thresholdException": null,
+  "measurementDefinition": {
+    "name": "node-builtin",
+    "measuredTarget": "declared tracked sources",
+    "toolName": "node --test coverage",
+    "toolVersion": "24.22.1"
+  },
+  "denominator": {
+    "declaredTargets": [
+      "scripts/coverage-gate/"
+    ],
+    "resolvedFileCount": 13,
+    "measuredFileCount": 13
+  },
+  "exclusions": [],
+  "exclusionCount": 0,
+  "unmeasuredPaths": [],
+  "notRunPaths": [],
+  "testFailurePaths": [],
+  "perFile": [
+    {
+      "path": "scripts/coverage-gate/cli.mjs",
+      "coveredLines": 106,
+      "totalLines": 106
+    },
+    {
+      "path": "scripts/coverage-gate/emit.mjs",
+      "coveredLines": 43,
+      "totalLines": 43
+    },
+    {
+      "path": "scripts/coverage-gate/events-reporter.mjs",
+      "coveredLines": 27,
+      "totalLines": 27
+    },
+    {
+      "path": "scripts/coverage-gate/events.mjs",
+      "coveredLines": 53,
+      "totalLines": 53
+    },
+    {
+      "path": "scripts/coverage-gate/input.mjs",
+      "coveredLines": 94,
+      "totalLines": 94
+    },
+    {
+      "path": "scripts/coverage-gate/judge.mjs",
+      "coveredLines": 138,
+      "totalLines": 138
+    },
+    {
+      "path": "scripts/coverage-gate/lcov.mjs",
+      "coveredLines": 101,
+      "totalLines": 101
+    },
+    {
+      "path": "scripts/coverage-gate/measure-node.mjs",
+      "coveredLines": 116,
+      "totalLines": 116
+    },
+    {
+      "path": "scripts/coverage-gate/order.mjs",
+      "coveredLines": 14,
+      "totalLines": 14
+    },
+    {
+      "path": "scripts/coverage-gate/report.mjs",
+      "coveredLines": 168,
+      "totalLines": 168
+    },
+    {
+      "path": "scripts/coverage-gate/resolve.mjs",
+      "coveredLines": 33,
+      "totalLines": 33
+    },
+    {
+      "path": "scripts/coverage-gate/runner.mjs",
+      "coveredLines": 94,
+      "totalLines": 94
+    },
+    {
+      "path": "scripts/coverage-gate/sanitize.mjs",
+      "coveredLines": 17,
+      "totalLines": 17
+    }
+  ],
+  "recordsSha256": "4ffb8b846378c2dded1d37d2431101d4817f87c75230def3a6ba6732137c9f93",
+  "measurementAttempt": {
+    "toolName": "node",
+    "deadlineSeconds": 600,
+    "totalBudgetSeconds": 900,
+    "spentSeconds": 6,
+    "endState": "completed"
+  },
+  "inputFailure": null
+}

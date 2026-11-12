@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "shape": "node-builtin",
+  "denominator": { "targets": ["scripts/coverage-gate/"] },
+  "testTargets": [
+    "tests/coverage-gate-cli.test.mjs",
+    "tests/coverage-gate-emit.test.mjs",
+    "tests/coverage-gate-events-reporter.test.mjs",
+    "tests/coverage-gate-events.test.mjs",
+    "tests/coverage-gate-input.test.mjs",
+    "tests/coverage-gate-judge.test.mjs",
+    "tests/coverage-gate-lcov.test.mjs",
+    "tests/coverage-gate-measure-node.test.mjs",
+    "tests/coverage-gate-order.test.mjs",
+    "tests/coverage-gate-report.test.mjs",
+    "tests/coverage-gate-resolve.test.mjs",
+    "tests/coverage-gate-runner.test.mjs",
+    "tests/coverage-gate-sanitize.test.mjs",
+    "tests/coverage-gate-structure.test.mjs"
+  ]
+}
