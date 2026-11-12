@@ -1,0 +1,57 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "261110-shared-coverage-gate / U2 u2-gate-trigger-narrowing の同PR・設計だけheadを対象とする独立設計監査。AI-DLCのInception(同取り組みはU1のPRで統合済み)を前提に、U2 NFR Requirements/NFR Design/Infrastructure Design、Code Generationの計画・試験手順を一度の監査で照合する。以下のU2GT-xxは本項目集合の識別子であり新しい社内規格・工程・権限ではない。全10項目必須。製品未実装につき、実装・試験の実行・GitHub Actions上の`if:`の評価・統合の合格を要求も主張もせず、その設計・検証計画と未達の扱いを監査する。旧SDS工程・旧道筋・判定4/5・退役PR/own-code予算を復活させない。今後は同PRに実装を追加し、新headで別途実装監査とOwner exact-headを要する。",
+  "items": [
+    {
+      "id": "U2GT-01",
+      "criterion": "目的・範囲・受入の整合: 単位の対象が `kit/sds-gate-caller.yml` の変更と、その定義の試験(新しい試験file1つ)に限られ、arcの答えで広げた `docs/sds/distribution.md` 107行目の説明の1箇所(SD10)を明示した上で、FR10.1・FR10.2・FR10.4 と US7.1/US7.2/US7.4/US8.1 が設計・計画・試験手順へ欠落なく対応している。kitの版上げ・利用先への導入(別の決定)・U1(ci.ymlのconcurrency)・U3以降(網羅率の門)の作業をU2へ混ぜず、U2の完成をそれらの完了として扱わない。要件の文言と実装の事実の食い違い(受領は絞りの対象にできない、作成だけを絞る、計画の印を足す、labelは外さない)が、黙って直されず設計7とSD2〜SD4・SD10に逸脱として記録されている。",
+      "basis": "D1/D2、requirements、unit-of-work/story-map、各段の traceability.json、security-design 設計7・SD1〜SD10"
+    },
+    {
+      "id": "U2GT-02",
+      "criterion": "絞りの式: 絞りは job `sds-gate` の `if:` の1か所だけで、`on:` の起動の種類・types(`pull_request_target` の7つ、`issue_comment` の `created, edited, deleted`)・権限6つ・`uses:`・`with.pr` を変えない。式は、`pull_request_target` では常に真、PRのコメント以外は偽、PRのコメントの作成は本文が印(依頼 `sds-audit-request/1`、返却 `sds-audit-review/1`、計画 `shirube-v3:control-handoff`)を含む時だけ真、編集・削除は本文を見ずに常に真になる形である。`github.event.action` が読めない・本文が空の場合は流す側(真)に倒れる。式の評価そのものは設計監査では実行できないことを区別し、実行の証拠を利用先での観測に回している。",
+      "basis": "D1/D2、NFR3.1/4.2/4.3/8.2、security-design 設計1・2、SD1・SD3、infrastructure-specification"
+    },
+    {
+      "id": "U2GT-03",
+      "criterion": "流れなくなる判定の列挙と印の集合の根拠: 絞る前は流れ、絞った後は流れなくなる出来事が、印を含まないPRのコメントの作成だけに限られ、門が読むもの(`scripts/sds/gate.mjs` と呼び先の `audit-admission.mjs`・`design-gate.mjs`・`plan-binding.mjs`)の実物で、`issue_comment` 由来の本文を読む箇所が印の3つ以外に無いことを、設計の表が基準の実物と一致する形で示している。「読まない」を「判定に効かない」と書いていない。印の集合が門の実物と過不足なく一致することを守る試験(P1)が、印を試験に書き写さず実物から取り出して比べる計画になっている。",
+      "basis": "D2/D5、S3/S5、NFR4.2/4.5/4.6、security-design 設計4・5(P1)、基準 origin/main の bytes"
+    },
+    {
+      "id": "U2GT-04",
+      "criterion": "label(labeled/unlabeled)を外さない判断: `scripts/sds/gate.mjs` の判定1がPRの label を実行のたびに読み、`risk:R0〜R4` がちょうど1つでPR本文の `risk_class` と一致することを要求している事実が、基準の実物と一致する。したがって `labeled`・`unlabeled` を `pull_request_target` の types に残す判断がFR10.2の括弧書きからの逸脱として根拠と採らなかった代替(外す。label の付け替えで判定が変わる穴が出て古いPASSが残る)とともに記録され、門が label を読まなくなったときに落ちる試験(P2)で見直す余地が持たされている。",
+      "basis": "D2、S5、FR10.2、security-design 設計3・SD4、gate.mjs の判定1"
+    },
+    {
+      "id": "U2GT-05",
+      "criterion": "既存の検査を弱めず失敗を隠さない: 設計・計画が「現在の caller・再利用workflow・gate.mjs」について書く事実(SHA-256、24行、`on:` のtypes、`if:` の形、権限、group の形、判定1が label を読む行)が、基準コミット `0f9ea89175ece32604e0dcfde9db28462f0d2f35` の実物と一致する(caller `e6eaa2eb0745f63a64e11b7497bc772a0e842c93deaca34a06765a4bd7a6ff5f`、再利用workflow `ac38c62e7f04ca55b8532877c66fa0dcc85452241fd011a192eef9d3f57e812c`、gate.mjs `b4f529aeb40270382b44a5a2754d2651b47c1e5414a683016bd34c3a5b1f5aa1`)。設計9の機械の突き合わせ結果で確かめられる。既存の試験(`issue_comment` のtypesを読む試験)を変えず通し続け、`continue-on-error`・`|| true`・`--if-present`・無条件PASS・表明の無い試験を足さない。読めない・解釈できない `if:` を真・偽へ読み替えない。",
+      "basis": "D1/D5、S3/S5/S8、NFR1.1/4.1/4.4/8.2、設計9、T3/T7"
+    },
+    {
+      "id": "U2GT-06",
+      "criterion": "最小権限と依存・秘密: 新しい secret・資格情報・権限・外部action・npm依存・サービスを足さない(NFR5.1/6.1)。caller の権限6つと `pull_request_target` の使用は変えず、変えるならセキュリティ設計の変更として止まって Owner の判断を待つ構成になっている。コメントの本文は `if:` の式の中の `contains()` の引数だけに使い、`run:`・`with:`・環境変数に渡さない(NFR5.2)。投稿者や権限による絞りを足さない(NFR5.3)。",
+      "basis": "D3、S9、escalation-policy、NFR5.1〜5.3/6.1、SD5"
+    },
+    {
+      "id": "U2GT-07",
+      "criterion": "TDDと試験計画: 8件(T1正例、T2前提、T3〜T7負例、T8逆向き・同居)が要件・NFRへ対応し、設計の試験の表の11行(P1・P2・N1〜N7・逆向き・同居)が欠落なく入り、先に変更前の caller で失敗する試験を書いて失敗を確かめ、次に最小の変更で通す順序になっている。試験は Node 組込みの `node:test` で新しいfile(300行以内。`tests/sds-gate.test.mjs` が300行ちょうどのため分ける)に置き、既存の試験を変更せず、規則の値を複数箇所に literal で複製しない(S3)。YAMLを解釈する依存を足さず(`scripts/sds/yaml.mjs` はRubyを呼ぶので読み手に使わない)、評価器は式の写しでGitHubの評価そのものではないと明記されている。実装は clone の worktree で base の実物から作り、最初に caller の SHA-256 の一致を観測する計画がある。変更前から通りうる試験をRed失敗に数えない扱いが書かれている。",
+      "basis": "D2/D5、S3/S5/S8、team実践(TDD)、NFR4.5/7.1、code-generation-plan Steps 1〜8、unit-test-instructions"
+    },
+    {
+      "id": "U2GT-08",
+      "criterion": "網羅率と観測の正直さ: 確認コマンドの網羅率の対象(`scripts/coverage-gate/**`)がこの単位では0件で、空のまま100%と出て通ることを明示し、U2の合否の根拠にしていない。観測した値(実行数・合格数・失敗数)は申告値を写さず実測から記録する計画になっている。この PR 自身の Actions では kit の caller の `if:` を評価できない(Shirube 自身の門は `sds-gate-self.yml`)ため、`if:` のGitHub上の評価、skip された job が commit status `sds-gate` を変えないこと、実行回数の変化を「観測できなかった」と書き、成功と書かず、導入の決定(範囲外)への条件として渡している。skip された job が check run では成功に見える点が caller の注記(2行)と設計に書かれている。",
+      "basis": "D5、S5/S8、NFR4.4/7.2/7.3/10.1、security-design 設計6・SD7・SD9、monitoring-design"
+    },
+    {
+      "id": "U2GT-09",
+      "criterion": "復旧と同居: 変更が追加だけ(既存の行の削除・改名を含まない)で、追加した `if:` の節と注記を取り除くと変更前の caller に戻り、取り除いた結果の SHA-256 が base と一致することを1回観測して記録する計画がある。利用先の caller は kit の版上げ(別の決定)まで古いまま動き、新旧どちらの caller と再利用workflowの組み合わせでも入力 `pr` と出力 status が変わらない。戻す PR 自身も workflow の変更として同じ承認の流れを通る。段階的展開・feature flag を使わない理由が示されている。",
+      "basis": "D4/D6、S6、NFR8.1〜8.4、security-design 設計8、cicd-pipeline の戻し方"
+    },
+    {
+      "id": "U2GT-10",
+      "criterion": "守る物・独立性・公開差分の正直さ: workflow の定義(kitの呼び出し側)を保護対象として扱い、設計監査PASSの前に `kit/` と `tests/` と `docs/sds/` を編集せず、実装を同じPRへ足した後は新headでCI・独立実装監査・作者の受領を揃え、統合前にOwnerの対象headへの公開決定を確認し、作者以外のsuite-leadが統合する。段の承認・arcの答え・中継の通知をOwnerの許可に読み替えない(arcの答えは Owner の言葉でないと各記録に書かれている)。1単位1PR。公開PRに含める記録が同取り組みのU2の設計・計画・試験・追跡表・読み戻し・本項目集合と、U1の読み戻しの転記の誤り1か所の訂正に限られ、`audit/`・`.aidlc-engine/`・段の日記・state/cursor・非公開の土台の識別子/コード/path・私的な会話・秘密を含まない。標準S1〜S9は適用/非該当(DBを持たないためS1/DB基準は非該当)が根拠付きで、S6の逆向きと同居、S8を保つ。未実装・未実測・未導入を残件として保持し、文書のsensor成功を製品の成功に拡張しない。",
+      "basis": "D1/D5/D6、protected-surface-owner-gate R1、aidlc-only §2、team実践(P1/P3)、engineering-standards S1〜S9、design-approval-records"
+    }
+  ]
+}
