@@ -1,0 +1,47 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "261110-shared-coverage-gate / U4 u4-thresholds-and-modes の設計記録だけのhead(設計記録だけのPR)を対象とする独立設計監査。AI-DLCのInception(同取り組みはU1のPRで統合済み)を前提に、U4 Functional Design/NFR Requirements/NFR Design/Infrastructure Designを一度の監査で照合する。以下のU4TM-xxは本項目集合の識別子であり新しい社内規格・工程・権限ではない。全8項目必須。U4はU3(PR #104、統合前)の入力の検査・判定・出力に、閾値の例外(threshold)と動作(mode)を足す単位で、製品のcode(scripts/・tests/)はまだ無い。実装・試験の実行・統合の合格を要求も主張もせず、その設計・検証計画と未達の扱いを監査する。Code Generationの計画と試験の手順はU3の統合の後に作る(本PRに含めない)。旧SDS工程・旧道筋・判定4/5・退役PR/own-code予算を復活させない。設計監査のPASSの後に同じ単位の実装を別のPRで受ける扱いは、実装の際に作者が改めて示す。",
+  "items": [
+    {
+      "id": "U4TM-01",
+      "criterion": "目的・範囲・受入の整合: 単位の対象が、U3の `scripts/coverage-gate/` の `input.mjs`・`judge.mjs`・`report.mjs`(必要なら `cli.mjs`)への項目の追加と、新しい2 file(`threshold.mjs`・`report-exception.mjs`)、その試験の追加だけで、FR3.2〜FR3.5・FR6.1〜FR6.4・FR8.4・NFR2〜NFR4・NFR7・NFR9 と、割り当てられた US/AC(functional-design の traceability.json の20件)が設計・規則(BR6.1〜BR8.6)・計画の入口へ欠落なく対応している。除外(U5)、TypeScript と vitest(U6)、workflow への配線と利用先への配布(U7)、運用の手引き(U8)を混ぜず、U4の完成をそれらの完了として扱わない。複数の単位にまたがるUS6.3のうちU4が受ける部分(mode と thresholdException を結果のJSONに含める、観測した記録だけから作る、監査や sds-gate の入力に組み込まない)が分けて書かれている。exclusions と measurement は引き続き未知のキーである。",
+      "basis": "requirements、unit-of-work U4、story map、各段の traceability.json、functional-spec、rules BR6〜BR8"
+    },
+    {
+      "id": "U4TM-02",
+      "criterion": "閾値の例外の入力の検査(BR6): threshold が持てる項目は percent・decisionUrl・rationale の3つだけで、どの階層の余分なキーも INPUT_FIELD_UNKNOWN になる。3つのうち1つでも欠ければ INPUT_FIELD_MISSING(欠けたキーの順は percent→decisionUrl→rationale の最初の1件)、threshold が object でなければ INPUT_FIELD_INVALID(field threshold)で、下げた値を受け付けない。percent は JSON の数で、0以上・既定の閾値(行100%)未満・小数第2位までに限り、文字列の \"95\"、100、100.5、-1、95.123 が失敗になり、上限の100を別に書かず既定の閾値の定数から導く(S3)。decisionUrl は GitHub の issue または pull request のコメントを指す完全一致の形(https、query なし、fragment は #issuecomment-<番号>、資格情報つき・別の host・前後の空白・http は不可)に限り、長さの確かめを形の確かめより先に行う(ReDoS を避ける)。rationale は空白だけでない1行、制御文字なし、上限以内で、入力のとおりに保存する。検査は最初の1件の失敗で止まり、既定の閾値にも下げた値にも倒れず、測定に進まず終了コード2になる。決定の実在・書き手・本文を門が確かめないこと(BR6.6、T9)と、それを今ある独立の監査で補う分担が「門が保証しないこと」に書かれ、新しい道具や別の取り組みへ広げていない。",
+      "basis": "FR3.2〜FR3.5、NFR4、NFR5.1〜5.3、BR6.1〜BR6.6、security-design SC1・SC2・SC4・SC5・SC7、プロジェクトの訂正の記録(門で証明できないことの補い方)"
+    },
+    {
+      "id": "U4TM-03",
+      "criterion": "動作(mode)と判定(BR7): 動作は enforce か record-only の完全一致だけで、省略は enforce、大文字小文字・別名・前後の空白・null・数・真偽・配列・objectは INPUT_FIELD_INVALID(field mode、終了コード2)になり、書き間違いが「記録だけ」にも「落とす」にも読み替えられない(SC6)。判定は2段で、1段目(区分と理由コード)は動作を見ずに U3 の表で決め、2段目の shouldFail = (outcome が match でない) AND (mode が enforce) を判定の核の1か所だけが決め、record-only のために match へ書き換えない。区分3つ(一致・不一致・観測できず)×動作2つの6通りで区分・理由・割合が等しく shouldFail だけが違う、という試験が計画されている。実際の閾値は例外の値、無ければ既定の100%で、比較は整数どうしの厳密比較である。観測できずの判定でも実際の閾値と例外は入力から決まって verdict に載り、主張された値(claimedHundredths)と比べた値(effectiveThresholdHundredths)が別の項目として残り、割合が100%でも・観測できずでも例外を使った事実が消えない(RL4)。判定の核が時計・乱数・識別子・環境変数・fileを持たず、入力の全要素が出力に効く(読み捨てる入力が無い、S4)。",
+      "basis": "FR6.1〜FR6.4、FR3.4、NFR2、NFR3、NFR4.1〜4.7、BR7.1〜BR7.6、reliability-design RL1・RL2・RL4・RL5、security-design SC6"
+    },
+    {
+      "id": "U4TM-04",
+      "criterion": "終了コードと失敗を隠さない(S8): 判定に至ったとき終了コードは shouldFail が偽なら0、真なら1。入力の失敗(mode や threshold の不正を含む)と入口の失敗(結果の file・summary・出力値の書き込みの失敗、予期しない例外)は、動作が record-only でも終了コード2で、結果の文書の mode は null(動作を信じられない入力は動作として扱わない)。record-only の間も未計測・NOT_RUN・閾値未満・計測不能は CI を落とさない代わりに、値と不足と名前つきの一覧が enforce と同じに出て、結果の見出しは成功と書かれず、計測不能は「計測不能」と明示される。入口(cli)は shouldFail を終了コードへ写すだけで、mode による分岐を持たない(ADR-004)。record-only が「失敗の握りつぶし」の入口にならない根拠(区分と理由を書き換えない、入力の失敗と書き込みの失敗は隠さない、結果の文書に mode が残る)が設計の記録から読める。",
+      "basis": "FR6.3、FR6.4、NFR4.2〜4.5、BR7.2、BR7.3、BR8.4、functional-spec 動作と結果の表、reliability-design RL1・RL3、S8、契約Q2"
+    },
+    {
+      "id": "U4TM-05",
+      "criterion": "出力(BR8): 結果のJSON・job summary・notice・出力値が、判定の結果と同じ1つの文書から1つの整形で作られ(例外・動作の表示を別の経路で読み直さない)、結果のJSONの版は1のまま項目の名前を増やさず、U3が null や固定値で出していた mode・thresholdException・effectiveThresholdPercent に値を持たせる。閾値を下げて使った事実が、job summary の最初の行(成功の見出しより前)と表の閾値の欄と専用の節に、結果の区分に関わらず出て、例外が無いときは出ない。noticeの注釈の種類が表で決まり(入力の失敗=error、一致で例外なし=notice、一致で例外あり=warning、一致でなく enforce=error、一致でなく record-only=warning)、実際の閾値を必ず含み、根拠は notice に載せない。自由な文字列(決定のURL・根拠)は入口で厳しく検査し、出口で面ごとに無害化し(summary は縦線・改行・バッククォートが表を壊さない、noticeは命令の区切りが入らない)、出力値には動作の名前と実際の閾値の数だけを載せて自由な文字列を載せない。出力値の名前は7つのまま増やさない。観測できない値は null で、値ありに数えない(NFR10.2)。",
+      "basis": "FR3.4、FR3.5、FR6.3、FR8.3、FR8.4、NFR4.8〜4.12、NFR10.2、BR8.1〜BR8.6、observability-design OB1〜OB6、security-design SC4"
+    },
+    {
+      "id": "U4TM-06",
+      "criterion": "最小権限と信頼の境界: 新しい secret・資格情報・権限・外部action・npm依存・サービスを足さず(NFR6)、外への通信を持たず(通信の module を import しない、トークンの名前の環境変数を読まない)、決定のURLは形を確かめるだけで読みに行かない。閾値と動作の入力の経路が入力JSONの threshold と mode だけで、環境変数・別の引数・設定fileから受けない(SC3)。書く場所は U3 のまま(結果のfile・一時directory・job summary・出力値のfile)で、絶対path・環境変数の値・資格情報つきのURLを出力に載せない(SC5)。脅威(閾値を下げる道を黙って通す、自由な文字列による表・注釈の破壊、資格情報つきのURL、動作の取り違え)のそれぞれに設計が対応している。門が保証しないこと(URLの実在・書き手・本文が値を認めているか)が独立の監査に残り、その分担が結果のJSONとsummaryに残る事実(URL・値・根拠・実際の閾値・動作)で監査できる。『下げる値を受け付ける』設計が、既定より厳しい値を許さない・100%以上を例外にしないことで、閾値の緩和の窓口を広げていない。",
+      "basis": "FR3.3、NFR5.1〜5.6、NFR6、security-design SC1〜SC7、security-requirements 脅威 T2・T3・T7〜T9、escalation-policy(セキュリティの設計の変更)"
+    },
+    {
+      "id": "U4TM-07",
+      "criterion": "構造と知識の重複・後ろ向きの互換: 論理部品(LC1)の依存の向きが一方向で循環せず(input→threshold、report→report-exception→{judgeの定数, sanitize})、核(threshold・report-exception を含む)が時計・乱数・UUID・環境・file・子プロセス・通信を持たないことを file の中身で確かめる試験が計画にある。動作の集合・既定(MODES・DEFAULT_MODE)と閾値の既定は judge.mjs、例外の上限・URLの形・許すキーは threshold.mjs、例外・動作の表示の文型と注釈の種類の表は report-exception.mjs だけが持ち、literal が持ち主以外に現れないこと(S3)と、shouldFail を書き換える code が判定の核以外に無いことを機械で確かめる試験が計画にある。新規2fileと触る既存3(〜4)fileがいずれも300行以内の見込みで、超えそうなら行を詰めずに部品を分け、既存の dependency-cruiser・knip・jscpd・ESLint・OWN-01 に当たる場合は設定を変えずPRに理由を書く。後ろ向きの互換: mode も threshold も無い入力の出力が U3 の出力(結果のJSON・summary・notice・出力値の4つ)とバイトまで一致し、追加の行・節は例外または record-only のときだけの分岐に置く。U3 の『threshold・mode は未知のキー』の試験を置き換える変更で、保つ確かめ(未知のキーはどの階層でも失敗、exclusions と measurement は引き続き未知)が残り、弱めた試験をPRに書く扱いである。",
+      "basis": "S2/S3/S4/S6、NFR3.1〜3.3、NFR7.3、NFR8.1〜8.4、NFR9.1〜9.3、logical-components LC1〜LC5、reliability-design RL5〜RL7"
+    },
+    {
+      "id": "U4TM-08",
+      "criterion": "TDD・網羅率・基準の実物・復旧・守る物・独立性・公開差分の正直さ: 規則(BR6.1〜BR8.6)ごとに Red(失敗を確かめて別commit)→Green の計画の入口が logical-components LC5 と cicd-pipeline にあり、試験は Node 組込みの node:test、skip と todo を置かず、fixture は架空の owner・repo・番号と架空の根拠だけ(gitleaks を踏む形を使わない)。行の網羅率の床は足す・触る file すべてに100%で、観測した値を機械が読める形で記録し、対象0件・記録なし・不一致・申告だけの値を成功に数えない。設計が『現在のfile』として書いた事実(公開 main の `1dd43e457361d9650153578baa71120788285e98` の package.json・ci.yml・scripts/hygiene/lib.mjs の SHA-256、scripts/coverage-gate が main にまだ無いこと、U3 の PR #104 の head `48024643e63c70fa5df62714a129972457181406` の関数の形)が実物と一致する。コード生成は U3 の統合後の main を土台にし、その時点で実物と突き合わせ直す(記録に書かれている)。変更が追加と置き換えだけで、取り消すと U3 の状態に戻り U3 の試験が通ることを1回観測する計画があり、どの workflow も門を呼ばないので統合しても CI の挙動は変わらない。この単位が触れない保護対象(workflow、必須検査、branch protection、DB の構造、資格情報、本番、料金、契約 .v2)が列挙され、U7 が R3 以上で Owner の対象 head の承認を取ることが書かれている。この単位自体をR3で扱い、Ownerの対象headの承認を統合の前に取ることが arc の答え(Owner の委任 https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6762288830、Ownerの言葉ではない)として記録され、段の承認・arc の答え・中継の通知を Owner の許可に読み替えていない。1単位1PRで、設計監査のPASSの前に `scripts/` と `tests/` を作らない。公開PRに含める記録が U4 の設計・読み戻し・本項目集合に限られ、`audit/`・`.aidlc-engine/`・段の日記・state/cursor・非公開の土台の識別子/コード/path・私的な会話・秘密を含まない。DB を持たないため S1・DB 基準は非該当、S7(外部への効果を持たない)も非該当である。",
+      "basis": "S1/S5/S6/S7/S8、team実践(TDD、行の網羅率100%、観測値の機械可読な記録)、protected-surface-owner-gate R1、aidlc-only §2、NFR7.1〜7.4、NFR8.3〜8.5、cicd-pipeline、design-approval-records"
+    }
+  ]
+}
