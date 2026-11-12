@@ -1,0 +1,42 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "watchout/shirube の PR「hygiene の PR・自前 code の上限を、予算でなく止めにする」の独立監査。対象は `.shirube/hygiene-profile.md` の `limits` の3つの値(pr_added_lines 400→10000、pr_changed_files 20→200、own_code_lines 4000→20000)と説明の2行(14行目・15行目)の変更、およびこの項目集合のfile `docs/audit/hygiene-limits-profile-items.json`。Ownerの決定は https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6835240824 (本文SHA-256 `401a00965f501dccb2bc3d952691ba1dbb7ea17a886e84e276ae6a6aacd27ce7`、原文「1,大きくしていい」)で、PRの統合の認可は含まず、統合の前に対象headへのOwnerのexact-headを別に取る。検査のcode・workflow・試験・利用先の既定の変更はこのPRの範囲外で、行わないことを確かめる。以下のHL-xxは本項目集合の識別子であり新しい社内規格・工程・権限ではない。全7項目必須。監査のPASSはOwnerの許可や統合の認可の代わりにならない。観測できなかったものを成功と読まない。",
+  "items": [
+    {
+      "id": "HL-01",
+      "criterion": "差分の形: 基準(公開 `main` の `a194a178b809b45a2a9d9f1190c76c13273b70c7`)からの差分が、`.shirube/hygiene-profile.md` と、この項目集合 `docs/audit/hygiene-limits-profile-items.json` の2 fileだけである。`scripts/hygiene/**`、`.github/**`、`tests/**`、`kit/**`、`package.json`、`package-lock.json`、`knip.jsonc` が変わっていない(基準とのgit diffで確かめる)。PR本文の `json sds-pr` の `changed_paths` が差分と一致し、`risk_class` がPRのlabelと一致する。項目集合のfileを足したのは、独立監査が対象headの項目集合を読む手続きのためで、検査や設定の変更ではないことがPR本文に書いてある。",
+      "basis": "Ownerの決定の2(この変更は設定のfileだけ。scripts/hygiene・workflow・ほかのrepoの既定は変えない)、docs/sds/audit-method.md、sds-gate の判定2"
+    },
+    {
+      "id": "HL-02",
+      "criterion": "値の正しさ: `limits` の `pr_added_lines` が10000、`pr_changed_files` が200、`own_code_lines` が20000で、Ownerの決定の数字と一致する。ほかの limits(new_file_lines 300、large_file_bytes 102400、baseline_max_entries 0)と、profileの他の欄(language、lines、exclude_generated、own_code、large_file_allow、exceptions、mode、enforce_by)が基準と同じである。第一の ```json block が構文として読め、`scripts/hygiene/lib.mjs` の検証(整数、最小値)を通る。基準の `lib.mjs` の既定(pr_added_lines 400、pr_changed_files 20)は変えず、利用先の既定は変わらない。作者が弱めた値を別の閾値に混ぜていない。",
+      "basis": "Ownerの決定の1・2、profile 15行目の「No other limit is loosened in the same change」、S8"
+    },
+    {
+      "id": "HL-03",
+      "criterion": "説明の行の整合: 14行目が「new file 300 lines, function 50 lines, complexity 10」だけを内部の予算とし、PR(10,000行/200 file)と自前code(20,000行)の値を『予算ではなく、誤って大量のfileを入れた時の止め』と書き、予算をやめた決定(https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6646126384 の6)を指している。15行目は経緯(2,300→4,000)を消さず、その後ろに「予算はやめた。今の20000は止めであって予算ではない」の文が足されている。profileの全文を機械で検索し(grep)、400、20 files、4,000、4000 を『今の上限』として書いた箇所が残っていない(経緯の説明としての記述は許す)。profile内の他の文が、変更後の値と食い違っていない。",
+      "basis": "Ownerの決定の1(説明の行は『予算ではなく、誤って大量のfileを入れた時の止め』に直す)、authority-and-waiting R3(設計と実装を黙って食い違わせない)、S3"
+    },
+    {
+      "id": "HL-04",
+      "criterion": "効果の主張が実測に基づく: PR本文の実測(この branch の `npm test` 761件合格・失敗0・skip 0、`own-code-budget` PASS total 2779 limit 20000、`lines-baseline` PASS、別PR #104 の head `48024643e63c70fa5df62714a129972457181406` に新しいprofileの写しを当てた `pr-size` PASS added 2858 files 31・`own-code-budget` PASS total 3783 limit 20000)が、監査が同じ commandで再現できる値と一致する。『上限を外した』『検査をやめた』とは書かず、検査のcodeは同じままで値が大きくなっただけだと書いている。上限がまだ『止め』として働くこと(新しい上限を超える入力で `pr-size` と `own-code-budget` が従来どおり落ちる判定の経路が変わっていない)を、codeが変わっていないことで示している。観測できなかった物(#104を開き直した後の実CIでの `hygiene / hygiene` の成功)が成功と書かれていない。",
+      "basis": "S5(宣言された値は証拠ではない)、S8、team実践(観測した値を根拠にする)"
+    },
+    {
+      "id": "HL-05",
+      "criterion": "権限と守る物: 変更が必須の検査の設定(`.shirube/**` は守る物。sds-gate は実効のリスクを R4 として扱う)で、根拠のOwnerの決定が control_source のコメントURLと本文SHA-256つきで引かれ、PR本文の引用と実物(コメントの本文、原文『1,大きくしていい』、決定1〜3、含まないもの)が一致する。決定は統合の認可を含まず、統合の前に対象headへのOwnerのexact-headを別に取ることがPR本文に書いてある。宣言のリスクの区分(R3)はarcの答えで、Owner本人の言葉ではないと書かれ、実効の区分に関わらずexact-headが要る旨がある。統合は作者以外のsuite-leadが行う。arcの答え・中継の通知・この監査のPASSを、Ownerの許可に読み替えていない。",
+      "basis": "protected-surface-owner-gate R1、authority-and-waiting R1、aidlc-only §2、sds-gate §7、Ownerの決定の3"
+    },
+    {
+      "id": "HL-06",
+      "criterion": "弱めの混入と独立性: この変更が、並行する別の変更(U3 の PR #104)を通すための単独の緩めであること、および『誤って大量のfileを入れた時の止め』として妥当な大きさ(PRの10000行・200 fileは、#104 の実測(数えられる追加2858行・31 file)の約3.5倍・約6倍、自前codeの20000行は#104 の head の実測3783行の約5倍)であることが、事実としてPR本文から追える。同じ PR に他の閾値の緩め、検査の除外(exclude_generated、exceptions、large_file_allow)の追加、modeの変更が混ざっていない。作者が自分の作業を監査・統合していない。見直し役・サブエージェントを使っていないことが書かれている。",
+      "basis": "project Forbidden(検査の閾値を緩める変更を同じPRで行わない。既存の採択を引継ぎ)、S8、aidlc-only §1の退役(PR 400行の上限をやめた決定)"
+    },
+    {
+      "id": "HL-07",
+      "criterion": "公開差分: 差分に秘密・資格情報・IP・私的な会話・他repoの非公開記録・ローカルの絶対path・モデル名が含まれない。PR本文・commit message・項目集合に作者の attribution 行(共著者行など)が無い。含めたOwnerの決定の引用は、コメントURLと本文SHA-256だけである。AI-DLC の `audit/`・`.aidlc-engine/`・段の日記・state は含まれない。",
+      "basis": "公開repoの規則(feedback: GitHubにmodel名を書かない)、team実践(P3)、S9"
+    }
+  ]
+}
