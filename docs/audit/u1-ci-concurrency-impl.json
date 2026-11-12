@@ -1,0 +1,57 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "261110-shared-coverage-gate / U1 u1-ci-concurrency の実装監査(同じPR #102、設計監査PASS後に足した実装を含むhead)。対象: `.github/workflows/ci.yml`(最上位の `concurrency:` の追加)、`tests/ci-concurrency.test.mjs`(8件)、U1のcode-generation記録(code-summary.md、traceability.json、source-manifest.json、計画のチェック)、設計監査の返却と受領の記録(design-approval-records.md)、本項目集合のfile `docs/audit/u1-ci-concurrency-impl.json`。設計は設計監査(round 2 PASS、https://github.com/watchout/shirube/pull/102#issuecomment-6815245330)で確かめ済みの `docs/audit/u1-ci-concurrency-design.json` の10項目に従う。以下のU1IA-xxは本項目集合の識別子であり新しい社内規格・工程・権限ではない。全10項目必須。統合の許可・Ownerの対象headの承認はこの監査の外で、監査のPASSはそれらを代替しない。旧SDS工程・旧道筋・判定4/5・退役PR/own-code予算を復活させない。",
+  "items": [
+    {
+      "id": "U1IA-01",
+      "criterion": "範囲と差分の形: 設計監査のhead(`affc852e…`)からの差分が、`.github/workflows/ci.yml`、`tests/ci-concurrency.test.mjs`、U1の code-generation 記録と設計の受領の記録、本項目集合のfileだけである。`ci.yml` の差分は追加のみで、コメント1行・`concurrency:`・`group`・`cancel-in-progress`・空行の5行。`.github/workflows/hygiene.yml`・`sds-gate*.yml`・`kit/`・`scripts/`・既存の試験・`package.json`・`.shirube/` に触れていない。新しい依存・secret・権限・外部actionが無い。PR本文の `json sds-pr` が risk_class R3、`changed_paths` が差分と一致し、`audit` の欄が実装の監査ではなく設計監査の返却を指していることが誤認されない(実装の監査は別の依頼・返却で行う)。",
+      "basis": "D1/D5、NFR3.1/5.1/6.1/9.1、code-generation-plan Step 1・4、source-manifest.json"
+    },
+    {
+      "id": "U1IA-02",
+      "criterion": "取り消しの式の実物: `ci.yml` の最上位で `permissions: {}` の直後・`jobs:` の直前に `concurrency:` がちょうど1つあり、`group` が `ci-` で始まり、`pull_request` のときだけ PR の番号(`github.event.pull_request.number`)、それ以外は `github.run_id` から作られ、`cancel-in-progress` が `github.event_name == 'pull_request'` のときだけ真である。`on:` の中・`push:` と `workflow_dispatch:` の間・job の中に入っていない(既存の BR7.2 が固定する並びを保つ)。式の字句(`format`、`&&`、`||`)が GitHub Actions で意図どおりに評価されることは、試験(文字列の検査)では証明できないと区別し、実行の記録で確かめる扱いになっている(U1IA-06)。",
+      "basis": "D1/D2、NFR3.1/4.2/4.3、security-design の式と試験の表、T1/T2"
+    },
+    {
+      "id": "U1IA-03",
+      "criterion": "group の鍵の安全と名前の衝突: `group` に作者が選べる値(`github.head_ref`・`github.ref`・`github.ref_name`・`github.actor`・題名・head)を使わず、接頭語 `ci-` が `sds-gate.yml` の group(`sds-gate-` で始まる)と重ならない。`hygiene.yml` に `concurrency` を持ち込んでいない。別の PR の実行を取り消す経路が無い(PR の番号が違えば group が違う)。試験 T3・T4 が、許可する文脈の集合と他の workflow の group の列挙(件数が0でない)で確かめていて、空の入力を成功に読み替えない。",
+      "basis": "D3/D6、NFR5.2/5.3、T3/T4"
+    },
+    {
+      "id": "U1IA-04",
+      "criterion": "既存の検査を弱めない: 必須の検査(`test`・`hygiene`・`measure` の job の名前・数・内容、各 job の権限、Node の版、`scripts/**` 全体80%の行の網羅率の command、OWN-01、起動3つ、最上位 `permissions: {}`)が変わらず、既存の `tests/workflow-contract.test.mjs`(BR7.2 を含む79件)が変更前と同じ基準で通る。足したブロックを取り除いた結果の SHA-256 が基準の `ci.yml`(`1e3f42c895dccd23b4b00017da6171488729d092af435cdc11cb85018b861c8a`)と一致する(記録の観測と、T7/T8 の差し引きの試験)。`continue-on-error`・`|| true`・必須 step の `--if-present`・無条件PASS・表明の無い試験を足していない(T5)。branch protection・ruleset・required checks の設定に触れていない。",
+      "basis": "D5、S3/S5/S8、NFR1.1/4.1/4.4/8.1/8.2、AC7.4.1〜7.4.3"
+    },
+    {
+      "id": "U1IA-05",
+      "criterion": "TDDの実物: 試験だけのcommit(`308bca7`)が先にあり、その時点の `ci.yml` に対して8件中6件(T1・T2・T4・T5・T7・T8)が失敗した記録(ローカルの実行と、この PR の Actions の `ci`/`test`)がある。T3・T6 は `ci.yml` を読まない入力の試験なので変更前から通ることが、Red の失敗に数えられずに明示されている。次の commit(`683b14f`)が `ci.yml` だけを変えて8件を通した。試験 file は300行以内で、Node 組込みの `node:test` だけを使い、規則の値(接頭語・許可する文脈・禁止する記述)を複数箇所に複製しない(S3)。試験が正例・負例・逆向き・同居を持ち、読めない/解釈できない `ci.yml`(無い・2つ・jobの中・groupの行が無い・空)が失敗になる。",
+      "basis": "team実践(TDD)、S3/S5/S8、NFR4.4/7.1/9.1、code-generation-plan Step 3・4"
+    },
+    {
+      "id": "U1IA-06",
+      "criterion": "観測の正直さ(O01の持ち越し): 設計監査の観察 O01(concurrency は commit の新旧順を保証せず、遅延や再実行で最新側が取り消され得る)が、code-summary と設計の受領の記録に持ち越されている。PR 自身の Actions の実行の一覧から、古い head の実行が取り消されたか・最新の head の実行が最後まで流れたかを、実際の実行の ID と結論で記録しているか、観測できなかった場合は「観測できなかった」と書いて成功とは書いていない。`main` への push の実行が取り消されないことは統合の後にしか観測できないと書き、統合前に成功と主張していない。",
+      "basis": "D4/D6、NFR4.2/4.3/7.3/10.1、monitoring-design、設計監査 O01"
+    },
+    {
+      "id": "U1IA-07",
+      "criterion": "網羅率と試験の結果の正直さ: この単位は `scripts/` に code を足さないので、確認コマンドの網羅率の対象(`scripts/coverage-gate/**`)が0件で、空のまま100%と出て通ることを明示し、U1の合否の根拠にしていない。観測した値(`npm test` 753件・合格753・失敗0、`workflow-contract` 79件、新しい試験 8件、Red 時の 753件中6失敗)が実測の出力から記録され、申告値を写していない。未実行・skip・計測不能を成功に数えていない。`ci` workflow の `test` job の 80% の床が、変更後も通っている実行の記録がある。",
+      "basis": "D5、S5/S8、NFR7.2/7.3、verification-command の注意"
+    },
+    {
+      "id": "U1IA-08",
+      "criterion": "守る物と独立性: workflow の変更として保護対象に扱い、統合の前にOwnerの対象headへの公開決定(URLと本文SHA-256)を確かめる前提が記録にある。この監査の返却・作者の受領・arc の答え(Ownerの委任)・中継の通知・段の承認をOwnerの対象headの承認に読み替えていない。作者以外の suite-lead が統合する。AC8.1.1〜8.1.3 を追跡表で「N/A」とした理由(code を足さず、統合前の確認の手順で満たす)が妥当で、満たしたとは主張していない。1単位1PRで、次の単位(U2)は統合後に始める。",
+      "basis": "D6、protected-surface-owner-gate R1、aidlc-only §2、AC8.1.1〜8.1.3、team実践(P1/P3)"
+    },
+    {
+      "id": "U1IA-09",
+      "criterion": "公開差分: 含めた記録が同取り組みの必要な Ideation/Inception/U1 の設計・計画・実装の要約・追跡表・source-manifest・確認コマンドに限られ、`audit/`・`.aidlc-engine/`・段の日記・state/cursor・非公開の土台の識別子/コード/path・私的な会話・秘密・モデル名を含まない。承認済みの前の段の記録への訂正の注記が日付つき(2026-11-12)で、本文を書き換えず、決まった判断(Q7 の答え C、NFR1、T2)を変えていないことが示され、arc の判断(Ownerの委任)であって Owner の言葉でないと書かれている。",
+      "basis": "D1/D5/D6、team Forbidden、project の学び(非公開の土台は一般化した所見だけ)"
+    },
+    {
+      "id": "U1IA-10",
+      "criterion": "記録の整合: code-summary・traceability.json・source-manifest.json が、実際の差分(2 file の追加・変更)と食い違わない。traceability の `OK` の対象が実在する file で、AC8.1.* の `N/A` 以外に欠落が無い。code-summary の「実行していない・観測していないもの」に、見直し役を呼んでいない(区分 none)ことと、Actions 上の観測の扱いが書かれている。文書の対応表の合格(sensor 成功)を製品の合格・統合の合格に拡張していない。設計(`ci.yml` の置き場・式・T1〜T8)と実装が黙って食い違っておらず、食い違いがあれば設計を先に直した記録がある(R3)。",
+      "basis": "authority-and-waiting R3、各段の traceability.json、code-generation の Step 5・6、source-manifest.json"
+    }
+  ]
+}
