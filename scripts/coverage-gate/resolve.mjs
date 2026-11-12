@@ -3,16 +3,15 @@
 import { resolveTargets, trackedFiles } from "../hygiene/lib.mjs";
 import { isTestFile } from "./input.mjs";
 import { sortPaths } from "./order.mjs";
-
-const NAME_LIST_LIMIT = 20;
+import { SUMMARY_LIST_LIMIT } from "./report.mjs";
 
 function fail(reasonCode, field, detail) {
   return { ok: false, failure: { reasonCode, field, detail } };
 }
 
 function unresolvedDetail(missing) {
-  const shown = missing.slice(0, NAME_LIST_LIMIT).join(", ");
-  const rest = missing.length - NAME_LIST_LIMIT;
+  const shown = missing.slice(0, SUMMARY_LIST_LIMIT).join(", ");
+  const rest = missing.length - SUMMARY_LIST_LIMIT;
   return `These declarations are not tracked files or directories holding tracked files: ${shown}${rest > 0 ? ` and ${rest} more` : ""}.`;
 }
 

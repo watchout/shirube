@@ -52,6 +52,14 @@ test("keys this version does not know are refused at every level, including the 
   assert.deepEqual([nested.reasonCode, nested.field], ["INPUT_FIELD_UNKNOWN", "denominator.exclude"]);
 });
 
+test("names that could reach an object's prototype are ordinary unknown keys", () => {
+  for (const key of ["__proto__", "constructor", "prototype"]) {
+    const f = fails(`{"schemaVersion":1,"${key}":{"polluted":true},"shape":"node-builtin"}`);
+    assert.deepEqual([f.reasonCode, f.field], ["INPUT_FIELD_UNKNOWN", key]);
+  }
+  assert.equal({}.polluted, undefined);
+});
+
 test("the first unknown key in code-point order is the one reported", () => {
   const f = fails(text({ zeta: 1, alpha: 1 }));
   assert.equal(f.field, "alpha");
