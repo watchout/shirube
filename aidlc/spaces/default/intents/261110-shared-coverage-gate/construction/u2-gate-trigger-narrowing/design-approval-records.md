@@ -37,6 +37,19 @@ U2 の NFR Requirements・NFR Design・Infrastructure Design の各 `traceabilit
 | `docs/sds/distribution.md` の 107 行目が `issue_comment` の動きを説明 | 成り立つ |
 | 計画の Sources が「`kit/sds-gate-caller.yml` は 22 行」と書いていた | **成り立たなかった**（実物は 24 行）。計画を 24 行に直した |
 
+## 設計監査 round 1 の差し戻しと直し
+
+- 依頼: https://github.com/watchout/shirube/pull/103#issuecomment-6817908773 （本文 SHA-256 `2beaa9cb781cecb054501e8c0ac7684c81dd768f687dbe53a031d824a85717e3`、対象 head `788585ce74c33065ee9d22da02bdc09e32632f8d`）。固定の checker の前検査は `READY_FOR_REVIEW`（監査の合格ではない）。
+- 返却（BLOCK、`blocking_findings` 1 件）: https://github.com/watchout/shirube/pull/103#issuecomment-6818591408 。10 項目のうち 8 件 PASS、U2GT-02・07 が FAIL。固定の checker の `--review` は BLOCK の返却に `RECEIPT_ACCEPTED` を出さない。BLOCK への受領は作者の記録であって、機械の受領ではない。
+- F01（高 × 中）: 設計 1 の `if:` の式は、本文が空・欠落した `created` の分岐を持たず、その入力では偽になる。一方、計画の T5 と試験手順は「本文が空・未定義の `created` は真」を要求していた。公開した式と期待値が直接に矛盾していた。
+- 直し（1 つの取り決め、SD11）: 本文が空・欠落・null の `created` は流す。式に `!github.event.comment.body` の節を 1 つ足し、設計 1・設計 2 の表・設計 5 の N4・SD5・SD11・評価器の値の扱い・計画の T5・試験手順の T5・NFR5.2・D3・項目集合の U2GT-02・06・07 を同じ取り決めに揃えた。採らなかった代替は SD11（空・欠落を流さない／評価器だけを GitHub と違う意味にして T5 を通す）。
+- 確かめた事実と確かめていない事実:
+  - 確かめた: 直した式を、ほかの 11 の場合（`pull_request_target`、PR でない issue、会話、3 つの印、大文字、空白だけ、編集、削除）とあわせて 12 件に代入した文書上の真偽表で、期待と食い違いが 0 件。これは GitHub 自身の評価ではなく、式の写しの評価。
+  - 確かめた: 直した式を構文と型の検査（`actionlint` 1.7.12）にかけ、指摘が 0 件だった。評価ではなく、構文の受理の確認だけ。
+  - 確かめていない（観測できなかった）: 空文字・null・欠落した property が GitHub 上で `!` により真になること。公式の説明による［文献確認］にとどまる。この PR の Actions では kit の caller を評価できない（設計 6）。導入の決定（範囲外）に、導入後の最初の PR で観測する条件として渡す。
+- 同じ種類の見落としを探す点検（式と試験の期待を突き合わせる全部の所）: 計画の T4・T6・N2・N3、試験手順の T4・T6・T8、設計 2 の表、評価器の入力（`edited`・`deleted`・PR でない issue）を、同じ式に代入して確かめた。ほかに食い違いは無かった。ただし、試験の Red の見込みに、変更前の式でも真になる確かめ（T5・T6 の真の向き）を失敗に数えている誤りを見つけたので、試験手順の Red の記録の節を直した（失敗が見込まれるのは T1・T4・T7 の一部、T5 は節を除いた式への反例で別に確かめる）。
+- 古い依頼と返却は流用しない。新しい head で、点検表 5 点を入れて再提出する（round 2）。
+
 ## 公開の範囲
 
 - 含めた記録: U2 の NFR・配置の設計、コード生成の計画と試験の手順、設計監査の項目集合（`docs/audit/u2-gate-trigger-narrowing-design.json`）、この読み戻し。あわせて U1 の読み戻しの 1 か所を訂正した（下）。

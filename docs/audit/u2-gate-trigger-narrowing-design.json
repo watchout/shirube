@@ -10,7 +10,7 @@
     },
     {
       "id": "U2GT-02",
-      "criterion": "絞りの式: 絞りは job `sds-gate` の `if:` の1か所だけで、`on:` の起動の種類・types(`pull_request_target` の7つ、`issue_comment` の `created, edited, deleted`)・権限6つ・`uses:`・`with.pr` を変えない。式は、`pull_request_target` では常に真、PRのコメント以外は偽、PRのコメントの作成は本文が印(依頼 `sds-audit-request/1`、返却 `sds-audit-review/1`、計画 `shirube-v3:control-handoff`)を含む時だけ真、編集・削除は本文を見ずに常に真になる形である。`github.event.action` が読めない・本文が空の場合は流す側(真)に倒れる。式の評価そのものは設計監査では実行できないことを区別し、実行の証拠を利用先での観測に回している。",
+      "criterion": "絞りの式: 絞りは job `sds-gate` の `if:` の1か所だけで、`on:` の起動の種類・types(`pull_request_target` の7つ、`issue_comment` の `created, edited, deleted`)・権限6つ・`uses:`・`with.pr` を変えない。式は、`pull_request_target` では常に真、PRのコメント以外は偽、PRのコメントの作成は本文が印(依頼 `sds-audit-request/1`、返却 `sds-audit-review/1`、計画 `shirube-v3:control-handoff`)を含む時、または本文が空・欠落・null の時だけ真(空・欠落の節は `!github.event.comment.body` として式に明示され、SD11 の1つの取り決めに設計1・設計2の表・N4・T5・評価器の値の扱いが揃っている)、編集・削除は本文を見ずに常に真になる形である。`github.event.action` が読めない場合も流す側(真)に倒れる。式の真偽を設計の記録の式に実際に代入して、設計と試験の期待が両立することを確かめられる。式の評価そのものは設計監査では実行できないことを区別し、GitHub 自身の評価は文献確認にとどまり観測できなかったと書き、実行の証拠を利用先での観測に回している。",
       "basis": "D1/D2、NFR3.1/4.2/4.3/8.2、security-design 設計1・2、SD1・SD3、infrastructure-specification"
     },
     {
@@ -30,12 +30,12 @@
     },
     {
       "id": "U2GT-06",
-      "criterion": "最小権限と依存・秘密: 新しい secret・資格情報・権限・外部action・npm依存・サービスを足さない(NFR5.1/6.1)。caller の権限6つと `pull_request_target` の使用は変えず、変えるならセキュリティ設計の変更として止まって Owner の判断を待つ構成になっている。コメントの本文は `if:` の式の中の `contains()` の引数だけに使い、`run:`・`with:`・環境変数に渡さない(NFR5.2)。投稿者や権限による絞りを足さない(NFR5.3)。",
+      "criterion": "最小権限と依存・秘密: 新しい secret・資格情報・権限・外部action・npm依存・サービスを足さない(NFR5.1/6.1)。caller の権限6つと `pull_request_target` の使用は変えず、変えるならセキュリティ設計の変更として止まって Owner の判断を待つ構成になっている。コメントの本文は `if:` の式の中の `contains()` の引数と空かどうかの真偽の判定(`!`)の対象だけに使い、`run:`・`with:`・環境変数に渡さない(NFR5.2)。投稿者や権限による絞りを足さない(NFR5.3)。",
       "basis": "D3、S9、escalation-policy、NFR5.1〜5.3/6.1、SD5"
     },
     {
       "id": "U2GT-07",
-      "criterion": "TDDと試験計画: 8件(T1正例、T2前提、T3〜T7負例、T8逆向き・同居)が要件・NFRへ対応し、設計の試験の表の11行(P1・P2・N1〜N7・逆向き・同居)が欠落なく入り、先に変更前の caller で失敗する試験を書いて失敗を確かめ、次に最小の変更で通す順序になっている。試験は Node 組込みの `node:test` で新しいfile(300行以内。`tests/sds-gate.test.mjs` が300行ちょうどのため分ける)に置き、既存の試験を変更せず、規則の値を複数箇所に literal で複製しない(S3)。YAMLを解釈する依存を足さず(`scripts/sds/yaml.mjs` はRubyを呼ぶので読み手に使わない)、評価器は式の写しでGitHubの評価そのものではないと明記されている。実装は clone の worktree で base の実物から作り、最初に caller の SHA-256 の一致を観測する計画がある。変更前から通りうる試験をRed失敗に数えない扱いが書かれている。",
+      "criterion": "TDDと試験計画: 8件(T1正例、T2前提、T3〜T7負例、T8逆向き・同居)が要件・NFRへ対応し、各試験の期待(特にT5の空・欠落・nullの作成が真)が設計1の式と両立して、式に代入して矛盾しないことを確かめられ、設計の試験の表の11行(P1・P2・N1〜N7・逆向き・同居)が欠落なく入り、先に変更前の caller で失敗する試験を書いて失敗を確かめ、次に最小の変更で通す順序になっている。試験は Node 組込みの `node:test` で新しいfile(300行以内。`tests/sds-gate.test.mjs` が300行ちょうどのため分ける)に置き、既存の試験を変更せず、規則の値を複数箇所に literal で複製しない(S3)。YAMLを解釈する依存を足さず(`scripts/sds/yaml.mjs` はRubyを呼ぶので読み手に使わない)、評価器は式の写しでGitHubの評価そのものではないと明記されている。実装は clone の worktree で base の実物から作り、最初に caller の SHA-256 の一致を観測する計画がある。変更前から通りうる試験をRed失敗に数えない扱いが書かれている。",
       "basis": "D2/D5、S3/S5/S8、team実践(TDD)、NFR4.5/7.1、code-generation-plan Steps 1〜8、unit-test-instructions"
     },
     {

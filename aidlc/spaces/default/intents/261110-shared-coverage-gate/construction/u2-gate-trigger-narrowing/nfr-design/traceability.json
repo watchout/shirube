@@ -12,7 +12,7 @@
     { "id": "NFR4.5", "status": "OK", "target": "設計 5 の P1・P2・N1〜N7（関係の無い作成は流れない、印のある作成は流れる、編集・削除は流れる、label の扱い、読めない時は失敗）" },
     { "id": "NFR4.6", "status": "OK", "target": "設計 4（流れなくなるのは印を含まないコメントの作成だけ。門が読むものを実物から列挙し、利用先の設定で読むものは確かめていないと書く）" },
     { "id": "NFR5.1", "status": "OK", "target": "設計 1・設計 8・試験 N6（権限 6 つ、pull_request_target の使用、checkout の無さ、起動の種類、secret を変えない・足さない）" },
-    { "id": "NFR5.2", "status": "OK", "target": "設計 1・SD5・試験 N5（本文は if: の contains() の引数だけ。run:・with: に渡さない）" },
+    { "id": "NFR5.2", "status": "OK", "target": "設計 1・SD5・試験 N5（本文は if: の contains() の引数と空かどうかの判定 ! の対象だけ。run:・with: に渡さない）" },
     { "id": "NFR5.3", "status": "OK", "target": "設計 2・設計 4（コメントの投稿者や権限による絞りを足さない。印を偽ったコメントが流れても判定は固定の checker が行う）" },
     { "id": "NFR6.1", "status": "OK", "target": "設計 5・SD6（新しい action・依存・資源を足さない。評価器は試験 file の中）" },
     { "id": "NFR7.1", "status": "OK", "target": "設計 5（TDD。変更前の caller で失敗する試験を先に書く。正例と負例 N1〜N7）" },
