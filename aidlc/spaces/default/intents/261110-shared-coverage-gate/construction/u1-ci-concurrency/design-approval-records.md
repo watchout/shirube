@@ -50,7 +50,7 @@ U1 の NFR Requirements・NFR Design・Infrastructure Design の各 `traceabilit
 - 依頼: https://github.com/watchout/shirube/pull/102#issuecomment-6814361560 （本文 SHA-256 `23b67c89a3fdbe5e68dc0110ec4438d36f5d52c0b98635f9a0034900e818b4ee`、対象 head `affc852ef120c77eada60c8f291f8db1403d33de`）。
 - 返却（PASS、`blocking_findings` 0 件、F01 は解消）: https://github.com/watchout/shirube/pull/102#issuecomment-6815245330 （本文 SHA-256 `ca56693c46a185b4c25f7fa3aa459d6acca76176fe86a46cf6edcda02c917edb`）。
 - 作者の受領: 固定の checker の `--review` が `RECEIPT_ACCEPTED`（`authorization: NONE`）。作者の記録は https://github.com/watchout/shirube/pull/102#issuecomment-6815677920 。これは設計監査の PASS の受領であって、Owner の承認でも統合の許可でもない。
-- 非差戻しの観察 O01: concurrency は commit の新旧順を保証しない。遅延した到着や再実行で古い head の実行が最新の実行と重なると、最新側が取り消され得る。「最新の head は取り消されない」は通常の更新順の前提に限って読む（U1CC-02・04・08 に関わる）。差し戻しの対象外（起きやすさ 低、困る大きさ 軽）として持ち越し、実装の PR 自身の Actions の実行で、古い head の実行が取り消されることを観測する。観測できなければ「観測できなかった」と書く。
+- 非差戻しの観察 O01: concurrency は commit の新旧順を保証しない。遅延した到着や再実行で古い head の実行が最新の実行と重なると、最新側が取り消され得る。「最新の head は取り消されない」は通常の更新順の前提に限って読む（U1CC-02・04・08 に関わる）。差し戻しの対象外（起きやすさ 低、困る大きさ 中。低 × 中は差し戻す組み合わせでない。返却 https://github.com/watchout/shirube/pull/102#issuecomment-6815245330 の `nonblocking_observations` O01 の `ky` に合わせて直した。以前の記録は大きさを「軽」と転記していた）として持ち越し、実装の PR 自身の Actions の実行で、古い head の実行が取り消されることを観測する。観測できなければ「観測できなかった」と書く。
 - 設計監査の PASS の後に、同じ PR へ実装を足した（試験だけの commit `308bca7`、`ci.yml` の commit `683b14f`）。実装の記録は `code-generation/code-summary.md`。実装の監査・Owner の対象 head の承認・統合は、新しい head で別に揃える。
 
 ## 公開の範囲

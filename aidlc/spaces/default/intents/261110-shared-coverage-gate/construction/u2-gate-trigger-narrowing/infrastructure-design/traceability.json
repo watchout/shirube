@@ -1,0 +1,29 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u2-gate-trigger-narrowing",
+  "upstream_ids": ["NFR1.1", "NFR3.1", "NFR4.1", "NFR4.2", "NFR4.3", "NFR4.4", "NFR4.5", "NFR4.6", "NFR5.1", "NFR5.2", "NFR5.3", "NFR6.1", "NFR7.1", "NFR7.2", "NFR7.3", "NFR8.1", "NFR8.2", "NFR8.3", "NFR8.4", "NFR9.1", "NFR10.1", "NFR11.1"],
+  "coverage": [
+    { "id": "NFR1.1", "status": "OK", "target": "infrastructure-specification の基準の観測と置き場（GitHub Actions の構文だけ。runner・Node・engines を変えない）" },
+    { "id": "NFR3.1", "status": "OK", "target": "infrastructure-specification の変更の中身、monitoring-design の印の集合の一致（規則は if: の 1 か所）" },
+    { "id": "NFR4.1", "status": "OK", "target": "cicd-pipeline の流れ 2（失敗を隠す記述を足さない。定義の試験 N5 が門）" },
+    { "id": "NFR4.2", "status": "OK", "target": "infrastructure-specification の共有の基盤、cicd-pipeline の流れ 2（判定が読むものを変える出来事は流す。既存の試験が変更前のまま通る）" },
+    { "id": "NFR4.3", "status": "OK", "target": "monitoring-design の観測する物（編集・削除は常に流れる。試験 N3 と、利用先での観測は導入の後）" },
+    { "id": "NFR4.4", "status": "OK", "target": "monitoring-design（skip 時の status の不変は利用先での観測まで観測できなかったと書く）、infrastructure-specification の共有の基盤" },
+    { "id": "NFR4.5", "status": "OK", "target": "monitoring-design の観測する物（試験 P1・P2・N1〜N7）、cicd-pipeline の流れ 2" },
+    { "id": "NFR4.6", "status": "OK", "target": "monitoring-design（流れなくなる出来事の実測は導入の後）、cicd-pipeline の確かめの記録" },
+    { "id": "NFR5.1", "status": "OK", "target": "cicd-pipeline の秘密情報と権限、infrastructure-specification のネットワーク（権限 6 つ・pull_request_target・通信を変えない）" },
+    { "id": "NFR5.2", "status": "OK", "target": "cicd-pipeline の秘密情報と権限（本文は if: の式の中だけ。run:・with: に渡さない）" },
+    { "id": "NFR5.3", "status": "OK", "target": "infrastructure-specification の共有の基盤（投稿者や権限による絞りを足さない。判定は固定の checker）" },
+    { "id": "NFR6.1", "status": "OK", "target": "infrastructure-specification の基盤のサービス（足す物は無い）" },
+    { "id": "NFR7.1", "status": "OK", "target": "cicd-pipeline の流れ 2、monitoring-design（TDD。変更前の caller で新しい試験が失敗する Red を記録する）" },
+    { "id": "NFR7.2", "status": "OK", "target": "cicd-pipeline の確かめの記録（網羅率は対象 0 件のため U2 の合否の根拠にしない）" },
+    { "id": "NFR7.3", "status": "OK", "target": "monitoring-design の観測する物と、ログと追跡（観測値を Build and Test の記録に残す）" },
+    { "id": "NFR8.1", "status": "OK", "target": "cicd-pipeline の戻し方と段階（利用先は版上げまで古いまま動く。入力 pr と出力 status は変わらない）" },
+    { "id": "NFR8.2", "status": "OK", "target": "cicd-pipeline の流れ 2（issue_comment の types を残し、既存の試験が変更前のまま通る）" },
+    { "id": "NFR8.3", "status": "OK", "target": "cicd-pipeline の流れ 2・戻し方と段階、monitoring-design（取り除いた結果の SHA-256 が base と一致することを 1 回観測する）" },
+    { "id": "NFR8.4", "status": "OK", "target": "infrastructure-specification の変更の中身（追加のみ。labeled・unlabeled を含め既存の行を削除・改名しない）" },
+    { "id": "NFR9.1", "status": "OK", "target": "infrastructure-specification の大きさ（追加は十数行。試験 file は 300 行以内）" },
+    { "id": "NFR10.1", "status": "OK", "target": "monitoring-design（この PR で観測できるものと導入の後でしか観測できないものを分けて、自社で観測できるものだけで判断する）" },
+    { "id": "NFR11.1", "status": "OK", "target": "infrastructure-specification の費用（新しい有料サービスや常設の資源を足さない。減るという主張は数えるまで書かない）" }
+  ]
+}

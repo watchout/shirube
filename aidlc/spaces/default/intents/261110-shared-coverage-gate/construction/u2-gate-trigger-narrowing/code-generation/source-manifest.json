@@ -1,0 +1,10 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-gate-trigger-narrowing",
+  "version": 1,
+  "writes": [
+    { "path": "kit/sds-gate-caller.yml" },
+    { "path": "tests/sds-gate-caller-trigger.test.mjs" },
+    { "path": "docs/sds/distribution.md" }
+  ]
+}

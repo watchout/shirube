@@ -1,0 +1,57 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "261110-shared-coverage-gate / U2 u2-gate-trigger-narrowing の実装監査(同じPR #103、設計監査PASS(https://github.com/watchout/shirube/pull/103#issuecomment-6819922491)後に足した実装を含むhead)。対象: `kit/sds-gate-caller.yml`(冒頭の注記2行と job `sds-gate` の `if:` の置き換え)、`tests/sds-gate-caller-trigger.test.mjs`(8件)、`docs/sds/distribution.md` 107行目の説明の1箇所(SD10)、U2のcode-generation記録(code-summary.md、traceability.json、source-manifest.json)、本項目集合のfile `docs/audit/u2-gate-trigger-narrowing-impl.json`。設計は設計監査(round 2 PASS)で確かめ済みの `docs/audit/u2-gate-trigger-narrowing-design.json` の10項目に従う。以下のU2IA-xxは本項目集合の識別子であり新しい社内規格・工程・権限ではない。全10項目必須。統合の許可・Ownerの対象headの承認はこの監査の外で、監査のPASSはそれらを代替しない。GitHub Actions上での `if:` の評価は本PRでは観測できず、監査も実行できないと区別し、観測できなかったものを成功と読まない。旧SDS工程・旧道筋・判定4/5・退役PR/own-code予算を復活させない。",
+  "items": [
+    {
+      "id": "U2IA-01",
+      "criterion": "範囲と差分の形: 設計監査のhead(`e4082fb5…`)からの差分が、`kit/sds-gate-caller.yml`、`tests/sds-gate-caller-trigger.test.mjs`、`docs/sds/distribution.md` の107行目の1箇所、U2のcode-generation記録、本項目集合のfile、PR本文の更新だけである。caller の差分は冒頭の注記2行と `if:` の置き換えで、`on:` の起動の種類と types、権限6つ、`uses:`、`with.pr` を変えていない。`.github/workflows/**`・`scripts/`・既存の試験・`package.json`・`.shirube/`・`docs/sds/consumers.json` に触れていない。新しい依存・secret・権限・外部actionが無い。PR本文の `json sds-pr` が risk_class R3、`changed_paths` が差分と一致し、`audit` の欄が実装の監査の依頼・返却を指す(設計監査のものを実装監査として流用していない)。",
+      "basis": "D1/D5、NFR3.1/5.1/6.1/9.1、code-generation-plan Step 1・4、source-manifest.json、SD10"
+    },
+    {
+      "id": "U2IA-02",
+      "criterion": "式の実物と設計の一致(F01の教訓): 実際の `if:` を、設計1の式と1文字ずつ照らし、かつ試験 T4〜T6 が使う境界の入力(印あり/印なしの作成、本文が空文字・欠落・null・空白だけ、編集、削除、`pull_request_target`、PRでない issue のコメント)に代入して、設計の表(設計1・N1〜N7)と試験の期待が全部両立することを確かめられる。節の並び(`github.event.action != 'created'`、`!github.event.comment.body`、3つの `contains`)と括弧の入れ子が設計の式と同じで、`github.event_name == 'pull_request_target'` の節が残り、PRのコメント以外は偽になる。空白だけの本文は空でないので印が無ければ偽になる。式の評価が GitHub 自身でどうなるかは試験(写しの評価器)では証明できないと区別されている(U2IA-06)。",
+      "basis": "D1/D2、NFR3.1/4.2/4.3/8.2、security-design 設計1・2、SD1・SD3・SD11、T4/T5/T6"
+    },
+    {
+      "id": "U2IA-03",
+      "criterion": "印の集合と、流れなくなる出来事: `if:` の3つの印が、門が読む実物(`scripts/hygiene/audit-admission.mjs` の依頼・返却の印、`scripts/sds/plan-binding.mjs` の計画の印)と過不足なく一致し、試験 T1 が印を試験に書き写さず実物から取り出して比べている。流れなくなるのは印を含まないPRのコメントの作成だけで、作者の受領の作成が絞りの対象になっても受領の取り込みの経路を壊さない(受領は絞りの対象にできないとした設計7・SD2〜SD4の判断に実装が従っている)。labeled・unlabeled を外していない(T2)。「読まない」を「判定に効かない」と書いていない。",
+      "basis": "D2/D5、S3/S5、NFR4.2/4.5/4.6、security-design 設計3〜5・SD4、T1/T2"
+    },
+    {
+      "id": "U2IA-04",
+      "criterion": "既存の検査を弱めず失敗を隠さない: base の実物(caller `e6eaa2eb0745f63a64e11b7497bc772a0e842c93deaca34a06765a4bd7a6ff5f`、再利用workflow `ac38c62e7f04ca55b8532877c66fa0dcc85452241fd011a192eef9d3f57e812c`、gate.mjs `b4f529aeb40270382b44a5a2754d2651b47c1e5414a683016bd34c3a5b1f5aa1`)が変わらず、既存の `tests/sds-gate.test.mjs`(68件)と `npm test` 全体が変更前と同じ基準で通る。注記2行と `if:` の節を取り除いた結果の SHA-256 が base の caller と一致する(記録の観測と、T8)。`continue-on-error`・`|| true`・必須 step の `--if-present`・無条件PASS・表明の無い試験を足していない(T7)。読めない・解釈できない `if:` を真・偽に読み替えず、評価器が例外にする。branch protection・ruleset・required checks に触れていない。",
+      "basis": "D1/D5、S3/S5/S8、NFR1.1/4.1/4.4/8.1〜8.4、設計9、T3/T7/T8"
+    },
+    {
+      "id": "U2IA-05",
+      "criterion": "TDDの実物: 試験だけのcommit(`089e0c0`)が先にあり、その時点の caller に対して8件中4件(T1・T4・T5・T8)が失敗した記録(ローカルの実行。この PR の Actions の `test`)がある。T2・T3・T6・T7 は caller の現状でも通る試験で、計画の見込み(T1・T4・T7の一部)と実測が違ったことを、Red の失敗に数えずに正直に記録している。次の commit が caller と文書だけを変えて8件を通した。試験 file は300行以内(135行)で、Node 組込みの `node:test` だけを使い、YAML の依存を足さず、規則の値(印・禁止する記述)を複数箇所に複製しない(S3)。試験が正例・負例・逆向き・同居を持ち、評価器の足りない構文が例外になる。",
+      "basis": "team実践(TDD)、S3/S5/S8、NFR4.4/7.1/9.1、code-generation-plan Step 3・4・5"
+    },
+    {
+      "id": "U2IA-06",
+      "criterion": "観測の正直さ: `if:` のGitHub上の評価(空・欠落・null での `!`、`contains` の大文字小文字)、skip された job が commit status `sds-gate` を変えないこと、skip が check run で成功に見える影響、流れる回数が減ることが、「観測できなかった」と書かれ、成功と書かれていない。評価器は式の写しでGitHub自身の評価そのものではないと書かれ、導入の決定(範囲外)への条件として渡されている。流れる回数が減るという主張を、数えるまで書いていない。`actionlint` の結果は構文と型の受理であって評価ではないと区別されている。",
+      "basis": "D5、S5/S8、NFR4.4/4.6/7.3/10.1、security-design 設計6・SD7・SD9、monitoring-design"
+    },
+    {
+      "id": "U2IA-07",
+      "criterion": "網羅率と試験の結果の正直さ: この単位は `scripts/` に code を足さないので、確認コマンドの網羅率の対象(`scripts/coverage-gate/**`)が0件で、空のまま100%と出て通ることを明示し、U2の合否の根拠にしていない。観測した値(新しい試験 8件・合格8、`tests/sds-gate.test.mjs` 68件・合格68、`npm test` 761件・合格761・失敗0、確認コマンド 412件・合格412)が実測の出力から記録され、申告値を写していない。道具(ESLint・jscpd)が入っていない作業木で 7件が失敗した事実と、道具が入った環境での再実行を区別して書いている。未実行・skip・計測不能を成功に数えていない。",
+      "basis": "D5、S5/S8、NFR7.2/7.3、verification-command の注意"
+    },
+    {
+      "id": "U2IA-08",
+      "criterion": "最小権限と本文の扱い: caller の権限6つと `pull_request_target` の使用が変わらず、新しい secret・資格情報・外部action・npm依存を足していない(NFR5.1/6.1)。コメントの本文は `if:` の式の中の `contains()` の引数と空かどうかの真偽の判定(`!`)だけに使われ、`run:`・`with:`・環境変数に渡されていない(T7、NFR5.2)。投稿者や権限による絞りを足していない(NFR5.3)。式にコメント本文を使うことで新しい注入の経路が生まれない(式の中の評価だけで、shell に渡らない)。",
+      "basis": "D3、S9、escalation-policy、NFR5.1〜5.3/6.1、SD5、T3/T7"
+    },
+    {
+      "id": "U2IA-09",
+      "criterion": "守る物と独立性: workflow の定義(kitの呼び出し側)の変更として保護対象に扱い、統合の前にOwnerの対象headへの公開決定(URLと本文SHA-256)を確かめる前提が記録にある。この監査の返却・作者の受領・arc の答え(Ownerの委任)・中継の通知・段の承認をOwnerの対象headの承認に読み替えていない。作者以外の suite-lead が統合する。SD10(`docs/sds/distribution.md` の1箇所を範囲に広げたこと)が arc の答え(Owner の言葉でない)であると書かれている。1単位1PRで、次の単位(U3)の Code Generation は統合後に始める。kit の版上げ・利用先への導入は別の決定で、U2 の完成をそれらの完了として扱っていない。",
+      "basis": "D6、protected-surface-owner-gate R1、aidlc-only §2、team実践(P1/P3)、SD10"
+    },
+    {
+      "id": "U2IA-10",
+      "criterion": "記録の整合と公開差分: code-summary・traceability.json・source-manifest.json が実際の差分(caller・試験・文書の3 file)と食い違わず、traceability の `OK` の対象が実在し、欠落が無い。code-summary の「実行していない・観測していないもの」に、見直し役とサブエージェントを呼んでいない(区分 none)ことが書かれている。設計(`if:` の式・T1〜T8・SD1〜SD11)と実装が黙って食い違っておらず、食い違いがあれば設計を先に直した記録がある(R3)。含めた記録が同取り組みのU2の設計・計画・試験・実装の要約・追跡表に限られ、`audit/`・`.aidlc-engine/`・段の日記・state/cursor・非公開の土台の識別子/コード/path・私的な会話・秘密・モデル名を含まない。",
+      "basis": "authority-and-waiting R3、各段の traceability.json、code-generation の Step 5・6、source-manifest.json、team Forbidden"
+    }
+  ]
+}
