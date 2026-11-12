@@ -40,7 +40,7 @@ entities:
     members:
       input: [INPUT_UNREADABLE, INPUT_VERSION_INVALID, INPUT_FIELD_UNKNOWN, INPUT_FIELD_MISSING, INPUT_FIELD_INVALID, INPUT_SHAPE_UNSUPPORTED, TARGET_UNRESOLVED, TARGET_EMPTY]
       mismatch: [UNMEASURED_FILES, TESTS_NOT_RUN, BELOW_THRESHOLD]
-      unobservable: [MEASUREMENT_FAILED, TEST_FAILED, MEASUREMENT_TIMED_OUT, MEASUREMENT_BUDGET_EXCEEDED, NO_RECORDS, CHILD_PROCESS_NOT_COUNTABLE]
+      unobservable: [MEASUREMENT_FAILED, TEST_FAILED, MEASUREMENT_TIMED_OUT, MEASUREMENT_BUDGET_EXCEEDED, NO_RECORDS, CHILD_PROCESS_NOT_COUNTABLE, TEMP_CLEANUP_FAILED]
       entry: [ENTRY_ARGUMENTS_INVALID, ENTRY_ENVIRONMENT_INVALID, ENTRY_OUTPUT_FAILED]
 
   GateInput:
@@ -85,7 +85,8 @@ entities:
     description: 試験 file 1 本について、報告係が受けた出来事を数えた物。標準出力の文面は使わない。
     attributes:
       - { name: path, type: path, required: true, unique: true }
-      - { name: passed, type: integer, required: true, min: 0, constraints: "skip でも todo でもない合格した試験（suite を除く）の数" }
+      - { name: passed, type: integer, required: true, min: 0, constraints: "skip でも todo でもない合格した試験（suite と、Node が file 全体に対して出す暗黙の合格を除く）の数。暗黙の合格の見分け方は BR2.4 と node22-reporter-observations.md" }
+      - { name: implicitFilePassCount, type: integer, required: true, min: 0, constraints: "Node が file 全体に対して出した暗黙の合格の数。数えない。観測として残す（試験が 0 件の file を見つけるため）" }
       - { name: failed, type: integer, required: true, min: 0, constraints: "skip でも todo でもない失敗の数。file の読み込みの失敗を含む" }
       - { name: skipped, type: integer, required: true, min: 0 }
       - { name: todo, type: integer, required: true, min: 0 }
@@ -113,6 +114,7 @@ entities:
       - { name: testFailurePaths, type: path-list, required: true, added_by_u3: true, constraints: "failed が 1 以上の file" }
       - { name: measurementDefinition, type: MeasurementDefinition, required: true }
       - { name: childProcessLinesCounted, type: boolean, required: true }
+      - { name: cleanupFailed, type: boolean, required: true, added_by_u3: true, constraints: "観測の file を置いた一時 directory を消せなかったとき真。真なら、測定が他の点で成功していても判定は観測できず（TEMP_CLEANUP_FAILED）。消せたら偽" }
       - { name: attempt, type: MeasurementAttempt, required: true }
       - { name: cause, type: enum, required: "kind が unobservable のとき", allowed: [failed, test_failed, timed_out, budget_exceeded, no_records, child_process_not_countable], added_by_u3: "test_failed を足した" }
     relationships:
@@ -197,9 +199,9 @@ entities:
 
 ## 実体の一覧（人が読む要約）
 
-- 設定の値: GateConstants 1 つ。理由コード 20（入力 8、不一致 3、観測できず 6、入口 3）。
+- 設定の値: GateConstants 1 つ。理由コード 21（入力 8、不一致 3、観測できず 7、入口 3）。
 - 入力の側: GateInput、ResolvedTargets、InputFailure。
 - 測定の側: LineRecord、TestObservation、MeasurementAttempt、MeasurementResult、MeasurementDefinition。
 - 判定と出力の側: GateVerdict、PerFileSummary、ResultDocument、DenominatorSummary。
-- 契約に無く足した項目（追加は版を上げない）: MeasurementResult の measuredPaths・testObservations・testFailurePaths と cause の test_failed、MeasurementDefinition の toolVersion、GateVerdict の perFile・recordsSha256、DenominatorSummary の measuredFileCount、ResultDocument の testFailurePaths・perFile・recordsSha256・inputFailure。
+- 契約に無く足した項目（追加は版を上げない）: MeasurementResult の measuredPaths・testObservations・testFailurePaths・cleanupFailed と cause の test_failed、TestObservation の implicitFilePassCount、MeasurementDefinition の toolVersion、GateVerdict の perFile・recordsSha256、DenominatorSummary の measuredFileCount、ResultDocument の testFailurePaths・perFile・recordsSha256・inputFailure。
 - 契約の項目で省いた物: MeasurementAttempt の attemptId（1 回しか実行しない）。契約 7 の「現在時刻」の入力（出力に時刻に依る項目が無いので判定の核は取らない。時刻に依る項目を足す単位が、核への明示の入力として足す）。

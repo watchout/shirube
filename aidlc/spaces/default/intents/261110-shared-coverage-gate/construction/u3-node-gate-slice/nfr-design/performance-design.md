@@ -13,7 +13,7 @@ NFR1.1〜NFR1.5 を満たす設計。試験の実行時間は利用先で決ま�
 ### PF1 Node の版の確認（NFR1.1・NFR1.2・NFR1.3）
 
 - 確認は `measure-node.mjs` が、測定を始める前に 1 回だけ行う。版の文字列は `process.versions.node` を入口で読み、純粋な関数 `isGuaranteedNode(versionString)` へ渡す（関数は `process` を読まない。試験は版の文字列を差し替えて呼ぶ）。
-- 主版が 22 未満（読めない文字列を含む）なら、子プロセスを起こさずに MeasurementResult を `unobservable`、cause `not_countable`（理由コード CHILD_PROCESS_NOT_COUNTABLE）で返す。23 以上は実行し、読んだ版の文字列を `measurementDefinition.toolVersion` に観測の事実として残す。
+- 主版が 22 未満（読めない文字列を含む）なら、子プロセスを起こさずに MeasurementResult を `unobservable`、cause `child_process_not_countable`（理由コード CHILD_PROCESS_NOT_COUNTABLE。名前は entities.md の MeasurementResult の cause と同じ。設計監査 round 1 の観測 O03）で返す。23 以上は実行し、読んだ版の文字列を `measurementDefinition.toolVersion` に観測の事実として残す。
 - 使う Node の機能は 22 の組込みだけ。ローカル（macOS）の差は保証しない。
 
 ### PF2 自分の処理の形（NFR1.4）

@@ -68,13 +68,14 @@
 4. 子プロセスを、許可した名前の一覧（childEnvAllowlist）だけを門が置いた値で持つ環境で、自分の process group で起動する。期限と総予算の小さい方を上限として待つ（BR2.3、BR2.8）。
 5. 上限を超えたら process group 全体を止め、timed_out か budget_exceeded の観測できずを返す。
 6. 終わったら、終了の観測と観測の file の有無で終わり方を決める（BR2.7）。
-7. 出来事の file を読んで、試験 file ごとに数える。失敗が 1 つでもあれば test_failed の観測できずを返す（BR2.4）。
+7. 出来事の file を読んで、試験 file ごとに数える。Node が file 全体に出す暗黙の合格は、試験に数えず implicitFilePassCount に分ける（BR2.4）。失敗が 1 つでもあれば test_failed の観測できずを返す（BR2.4）。
 8. lcov を読んで行ごとの記録に変換する。壊れていれば failed、DA が無ければ no_records（BR2.5）。
-9. measuredPaths、testFilesRun、testFailurePaths を観測から作って MeasurementResult を返す（BR2.6）。一時 directory を片付ける。
+9. measuredPaths、testFilesRun、testFailurePaths を観測から作って MeasurementResult を返す（BR2.6）。
+10. 一時 directory を消す（成功・失敗・期限超過・例外のどれでも、子が終わった後に必ず）。消せなかったら cleanupFailed を真にして返す（BR2.8）。消せたことを確かめる前に、成功の MeasurementResult を確定しない。
 
 ### W4 判定（CoverageJudge）
 
-1. MeasurementResult が観測できずなら、原因を理由コード 1 つに写し、値と一覧を null にして終わる（BR3.5）。
+1. MeasurementResult が観測できずか、cleanupFailed が真なら、原因を理由コードに写し（消せなかったときは TEMP_CLEANUP_FAILED を足し）、値と一覧を null にして終わる（BR3.5）。
 2. 対象の記録から行の数を数える。0 件なら NO_RECORDS の観測できず（BR3.4）。
 3. 行の割合を再計算し、perFile と recordsSha256 を作る（BR3.1）。
 4. 未計測の file を数える（BR3.2）。流れていない必須の試験を数える（BR3.3）。閾値と比べる（BR3.6）。
@@ -125,7 +126,7 @@ stateDiagram-v2
 
 | 条件（上から順に評価） | 区分 | 理由コード | 落とす（動作 enforce） |
 |---|---|---|---|
-| 測定が観測できなかった | unobservable | 原因に対応する 1 つ（BR3.5） | はい |
+| 測定が観測できなかった、または観測の一時 directory を消せなかった | unobservable | 原因に対応する 1 つ（BR3.5）。消せなかった時は TEMP_CLEANUP_FAILED を足す（終了コード 1） | はい |
 | 数えられた行が 0 件 | unobservable | NO_RECORDS | はい |
 | 未計測あり OR 必須の試験が流れていない OR 閾値未満 | mismatch | 当てはまる物を UNMEASURED_FILES、TESTS_NOT_RUN、BELOW_THRESHOLD の順に | はい |
 | 上のどれでもない | match | なし | いいえ |
@@ -136,6 +137,8 @@ stateDiagram-v2
 - 不一致（足りない）: 20,000 行のうち 19,999 行 → mismatch、BELOW_THRESHOLD、割合 99.99（100.00 と表示しない）。
 - 不一致（未計測）: 宣言した 3 file のうち 1 file が子プロセスでも読み込まれない → mismatch、UNMEASURED_FILES、その file の名前を出す。
 - 不一致（NOT_RUN）: 追跡された試験 file が 1 本増えて、全部が skip → mismatch、TESTS_NOT_RUN。
+- 不一致（NOT_RUN、試験が 0 件）: 追跡された試験 file が 1 本増えて、中身が空（または import だけ）→ Node は file 全体の暗黙の合格を 1 件出すが、試験に数えない → passed 0、mismatch、TESTS_NOT_RUN（「ran」になって成功に見えない）。
+- 観測できず（後始末）: 測定は成功したが、観測の一時 directory を消せなかった → unobservable、TEMP_CLEANUP_FAILED、値と一覧は null、終了コード 1。
 - 観測できず（失敗した試験）: 試験が 1 つ失敗 → unobservable、TEST_FAILED、割合は null。
 - 観測できず（上限）: 遅い試験が総予算を使い切る → unobservable、MEASUREMENT_BUDGET_EXCEEDED か MEASUREMENT_TIMED_OUT、孫の process が残らない。
 - 観測できず（壊れた記録）: lcov の LF/LH が DA と合わない、または DA が空 → MEASUREMENT_FAILED か NO_RECORDS。
@@ -180,7 +183,9 @@ erDiagram
 - [assumption] lcov の LF/LH と DA の件数の一致を、記録の整合の確かめ（BR2.5）に使う。この環境の小さな例では一致した。コード生成で、より大きな例で一致を確かめる。合わない正当な場合が見つかれば、この確かめは外し、その旨を設計の記録に書いて直す。
 - [assumption] 行が 0 件の file（コメントだけの file など）が記録に SF として現れるかは未測定。現れない場合は未計測として報告される（失敗側）。利用先は、その file を分母の宣言から外す（除外は U5）。コード生成で測って記録する。
 - [assumption] 試験の結果の `details.type` による suite と試験の区別は Node 22 で確かめた。24・26 では保証しない（Q4）。
-- [assumption] 子に渡す環境は許可した 5 つの名前の一覧（GateConstants.childEnvAllowlist: PATH, HOME, LANG, LC_ALL, TZ）だけで、値は門が置く（arc の答え。Owner の委任 iyasaka-arc#49 6762288830。Owner の言葉ではない）。利用先の試験が親の環境変数（例: CI）を必要とすると、その試験は失敗し、観測できずになる（成功には倒れない）。要る名前の追加は入力の項目を足す別の単位で扱う。Node の試験の実行器が自分で置く変数（NODE_V8_COVERAGE など）は一覧に入れない。実装の最初の実測で、一覧だけでは測れないと分かった時だけ、その名前を一覧に足す（設計に戻して記録する）。
+- [assumption] 子に渡す環境は許可した 5 つの名前の一覧（GateConstants.childEnvAllowlist: PATH, HOME, LANG, LC_ALL, TZ）だけで、値は門が置く（arc の答え。Owner の委任 iyasaka-arc#49 6762288830。Owner の言葉ではない）。利用先の試験が親の環境変数（例: CI）を必要とすると、その試験は失敗し、観測できずになる（成功には倒れない）。要る名前の追加は入力の項目を足す別の単位で扱う。Node の試験の実行器が起動後に子へ自分で足す変数（NODE_TEST_CONTEXT、NODE_V8_COVERAGE など。Node 22.23.4 で観測）は、門が渡した物ではなく、一覧に入れない。そのため完全一致の確かめは、門が起動に渡す環境（spawn の境界）で行い、試験の中では否定（偽の秘密の名前も値も無い、NODE_OPTIONS と NODE_PATH が無い）だけを確かめる。実装の最初の実測で、一覧だけでは測れないと分かった時だけ、その名前を一覧に足す（設計に戻して記録する）。
+- [assumption] Node は試験を 1 件も呼ばない file（空の file、import だけの file）にも、file 全体に対する暗黙の合格を出す。暗黙の合格の見分け（nesting 0・line 1・column 1・name が file の path と等しい test:pass）は、Node 22.23.4 の実際の reporter で 6 例（空、import だけ、普通の合格、全 skip、全 todo、読み込みの失敗）と入れ子の path の 2 例を流して選んだ（出力は node22-reporter-observations.md）。保証の版以外の Node では同じ出来事の形になるかを保証しない（観測した事実として扱う）。
+- [assumption] 一時 directory を消せない状況（権限の無い fixture を残す試験など）は、実在する条件で起きうる（監査席の隔離実測: 書き込み不可の directory の再帰削除は EACCES で残った）。消せなかった実行は成功と記録しない（TEMP_CLEANUP_FAILED）。試験は削除関数を差し替えて失敗を注入する。実際の fs で消せない状況の再現は、コード生成の検証で行わず、観測できなかったものとして残す。
 - [assumption] 質問 Q1〜Q4 の答えは arc の答え（Owner の委任）で、Owner の言葉ではない。
 
 ### Open Questions

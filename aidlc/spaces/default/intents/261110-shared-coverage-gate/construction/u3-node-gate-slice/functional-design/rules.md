@@ -117,10 +117,10 @@ rules:
 
   - id: BR2.4
     category: validation
-    statement: 試験の結果は、報告係が受けた出来事から数える。標準出力の文面は使わない。suite を除く試験 1 件ごとに、skip は skipped、todo は todo（合否を問わない）、それ以外の合格は passed、失敗は failed に数える。file の読み込みの失敗は、その file の failed に数える。
+    statement: 試験の結果は、報告係が受けた出来事から数える。標準出力の文面は使わない。suite を除く試験 1 件ごとに、skip は skipped、todo は todo（合否を問わない）、それ以外の合格は passed、失敗は failed に数える。file の読み込みの失敗は、その file の failed に数える。Node は試験を 1 件も呼ばない file（空の file、import だけの file）にも、file 全体に対する暗黙の合格を出す。その暗黙の合格は試験として数えない（implicitFilePassCount に分けて残す）。
     applies_to: NodeBuiltinMeasurer
     trigger: 測定が終わった後
-    logic: IF failed が 1 件以上ある file が 1 つでもある THEN MeasurementResult は unobservable、cause test_failed、testFailurePaths にその file。ran = passed が 1 以上。skip・todo だけの file は ran でない。試験が 0 件の file も ran でない。file に結び付かない失敗の出来事があれば、その失敗も test_failed とする。
+    logic: 暗黙の合格の見分け方（Node 22.23.4 の実際の reporter で 6 例を流して選んだ。出力は node22-reporter-observations.md）: 出来事が test:pass で、details.type が test、nesting が 0、line が 1、column が 1、name が門が走らせた file の引数の path（先頭の ./ を除いた形）と等しい物を、暗黙の合格とする。これは数えず implicitFilePassCount に足す。その file の暗黙でない test:pass だけを、skip・todo の判定のうえ passed に数える。test:fail は暗黙かどうかを問わず failed に数える（読み込みの失敗は file 全体の test:fail として出る）。IF failed が 1 件以上ある file が 1 つでもある THEN MeasurementResult は unobservable、cause test_failed、testFailurePaths にその file。ran = passed が 1 以上。skip・todo だけの file は ran でない。試験が 0 件の file（暗黙の合格だけ）も ran でない。file に結び付かない失敗の出来事があれば、その失敗も test_failed とする。見分けが外れる向き: file 名と同じ名前の試験を line 1・column 1 に置く file は暗黙の合格に読まれ、passed に数えられず、ran でなくなる（TESTS_NOT_RUN。成功には倒れない）。保証の版（22）以外の Node で同じ規則が成り立つかは、観測した事実として扱い、保証しない。
     violation: 失敗した実行の割合は低く出るので、その数字で判定しない（観測できず）。
     source: [Q1, FR4.1, FR4.2]
 
@@ -153,11 +153,11 @@ rules:
 
   - id: BR2.8
     category: constraint
-    statement: 試験を走らせる子プロセスには、GateConstants.childEnvAllowlist の名前だけを渡す（許可の名簿）。親の環境から名前を引き算して渡さない。観測の file を置く一時 directory は、成功でも失敗でも片付ける。
+    statement: 試験を走らせる子プロセスには、GateConstants.childEnvAllowlist の名前だけを渡す（許可の名簿）。親の環境から名前を引き算して渡さない。観測の file を置く一時 directory は、成功でも失敗でも片付ける。片付けに失敗したら、成功と記録せず、名前つきの失敗（TEMP_CLEANUP_FAILED、観測できず）にする。
     applies_to: MeasurementRunner
-    trigger: 子プロセスを起動する時
-    logic: 子の環境は空から作り、childEnvAllowlist の各名前に、門が置く値（PATH = 実行中の Node の directory と /usr/bin と /bin だけ、HOME = 実行ごとの一時 directory、LANG と LC_ALL = C.UTF-8、TZ = UTC）を入れる。親の環境の値は 1 つも写さない。NODE_OPTIONS と NODE_PATH は渡さない。一時 directory は OS の一時領域に作り、終わりで消す。
-    violation: 該当なし（組み方の制約）。
+    trigger: 子プロセスを起動する時、子プロセスが終わった後
+    logic: 子の環境は空から作り、childEnvAllowlist の各名前に、門が置く値（PATH = 実行中の Node の directory と /usr/bin と /bin だけ、HOME = 実行ごとの一時 directory、LANG と LC_ALL = C.UTF-8、TZ = UTC）を入れる。親の環境の値は 1 つも写さない。NODE_OPTIONS と NODE_PATH は渡さない。名簿と完全に一致するのは「門が起動に渡す環境」（spawn の境界）であり、起動後に Node 自身が子へ足す変数（NODE_TEST_CONTEXT、NODE_V8_COVERAGE など。Node 22.23.4 で観測）は門が渡した物ではない。試験の中では、完全一致ではなく否定だけを確かめる（security-design SC1）。一時 directory は OS の一時領域に、名前を `coverage-gate-<runId>-` で始めて作り、子が終わった後（成功・失敗・期限超過・例外のどれでも）に消す。消せなかったら MeasurementResult の cleanupFailed を真にする。測定がほかの点で成功していても、判定は観測できず（BR3.5）で、成功とは記録しない。残った directory は、絶対 path でなく runId（結果の文書の runId）で示し、担当が名前の先頭が `coverage-gate-<runId>-` の directory を OS の一時領域から消して流し直す（手順は security-design SC6）。
+    violation: 該当なし（組み方の制約）。消せなかった場合は上のとおり観測できず。
     source: [NFR5]
 
   # ---- BR3 判定の核 ----
@@ -199,10 +199,10 @@ rules:
 
   - id: BR3.5
     category: policy
-    statement: 測定が観測できなかった時、判定は観測できずで、値と一覧は null にする。測定の原因を理由コード 1 つに写す。
+    statement: 測定が観測できなかった時、または一時 directory を消せなかった時、判定は観測できずで、値と一覧は null にする。測定の原因を理由コード 1 つに写し、消せなかったことは別の理由コードとして足す。
     applies_to: CoverageJudge
-    trigger: MeasurementResult が unobservable の時
-    logic: cause failed -> MEASUREMENT_FAILED、test_failed -> TEST_FAILED、timed_out -> MEASUREMENT_TIMED_OUT、budget_exceeded -> MEASUREMENT_BUDGET_EXCEEDED、no_records -> NO_RECORDS、child_process_not_countable -> CHILD_PROCESS_NOT_COUNTABLE。coveredLines、totalLines、lineRatio、unmeasuredPaths、notRunPaths、perFile、recordsSha256 は null。
+    trigger: MeasurementResult が unobservable の時、または cleanupFailed が真の時
+    logic: cause failed -> MEASUREMENT_FAILED、test_failed -> TEST_FAILED、timed_out -> MEASUREMENT_TIMED_OUT、budget_exceeded -> MEASUREMENT_BUDGET_EXCEEDED、no_records -> NO_RECORDS、child_process_not_countable -> CHILD_PROCESS_NOT_COUNTABLE。cleanupFailed が真なら、その後ろに TEMP_CLEANUP_FAILED を足す（測定の原因が無ければ TEMP_CLEANUP_FAILED だけ）。coveredLines、totalLines、lineRatio、unmeasuredPaths、notRunPaths、perFile、recordsSha256 は null。
     violation: 該当なし（写像の定義）。
     source: [FR4.2, FR4.1, NFR3]
 
@@ -220,7 +220,7 @@ rules:
     statement: 結果の区分は 3 値で決める。観測できずを一致に読み替えない。動作が落とすなら、一致でない結果は落とす。
     applies_to: CoverageJudge
     trigger: 判定する時
-    logic: unobservable = 測定が観測できなかった（BR3.5）または BR3.4。mismatch = 観測できて、reasonCodes に UNMEASURED_FILES、TESTS_NOT_RUN、BELOW_THRESHOLD のどれかがある。match = 観測できて理由が 0 件。reasonCodes の順は UNMEASURED_FILES、TESTS_NOT_RUN、BELOW_THRESHOLD。shouldFail = (outcome が match でない)。mode は enforce。
+    logic: unobservable = 測定が観測できなかった（BR3.5）、一時 directory を消せなかった（BR3.5、TEMP_CLEANUP_FAILED）、または BR3.4。mismatch = 観測できて、reasonCodes に UNMEASURED_FILES、TESTS_NOT_RUN、BELOW_THRESHOLD のどれかがある。match = 観測できて理由が 0 件。reasonCodes の順は UNMEASURED_FILES、TESTS_NOT_RUN、BELOW_THRESHOLD。shouldFail = (outcome が match でない)。mode は enforce。
     violation: 該当なし（区分の定義）。
     source: [FR4.1, FR4.2, FR3.1]
 
@@ -349,7 +349,7 @@ rules:
 | 持ち主 | 規則 | 要点 |
 |---|---|---|
 | 入力の検査 | BR1.1〜BR1.8 | 読めない・版が違う・未知の項目は失敗。分母と必須の試験を宣言から解決。期限と総予算の既定は 1 か所 |
-| 測定 | BR2.1〜BR2.8 | Node 組込みだけ。再試行なし。期限か総予算で全体を止める。試験の失敗は観測できず。壊れた記録は失敗。子の環境は許可した名前の一覧だけ |
+| 測定 | BR2.1〜BR2.8 | Node 組込みだけ。再試行なし。期限か総予算で全体を止める。試験の失敗は観測できず。壊れた記録は失敗。子の環境は許可した名前の一覧だけ。Node の暗黙の file 合格は試験に数えない。一時 directory を消せなければ観測できず |
 | 判定の核 | BR3.1〜BR3.8 | 記録から再計算。未計測・NOT_RUN・閾値未満は不一致。行 0 件と測定の失敗は観測できず。時計・乱数を取らない |
 | 出力 | BR4.1〜BR4.7 | 1 つの文書から JSON・summary・notice・出力値を作る。観測できない値は null。自由な文字列は無害にする |
 | 入口 | BR5.1〜BR5.5 | 引数は 2 つだけ。古い結果を消す。終了コード 0・1・2。順は固定 |

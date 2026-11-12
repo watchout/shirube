@@ -15,7 +15,10 @@ NFR5.1〜NFR5.8 と脅威 T1〜T6 に対する設計。認証・認可・暗号�
 - `runner.mjs` が子の環境を、空から「`childEnvAllowlist`（`PATH`・`HOME`・`LANG`・`LC_ALL`・`TZ`）の 5 つの名前に、門が置いた値を入れた物」として作る。親の環境の値は 1 つも写さない。値は、`PATH` = 実行中の Node の directory と固定の `/usr/bin`・`/bin` だけ、`HOME` = 実行ごとの一時 directory、`LANG` と `LC_ALL` = `C.UTF-8`、`TZ` = `UTC`。`NODE_OPTIONS` と `NODE_PATH` は渡さない。名前を挙げて除く方式（denylist）にはしない: 知らない名前の秘密（`GH_TOKEN`・各社の API key・`*_SECRET` など）を通してしまい、資格の漏れ（致命）が起きやすさに関わらず差し戻しになるため（arc の答え。Owner の委任 iyasaka-arc#49 6762288830。Owner の言葉ではない）。
 - 一覧は `GateConstants.childEnvAllowlist` の 1 か所に置き、ほかの file は参照する。名前の大文字小文字を変えた別名（小文字の `github_token` など）も、一覧に無いので渡らない。
 - 利用先の試験が親の環境変数（例: `CI`）を必要とする場合、その試験は失敗し「観測できず」になる（成功には倒れない）。要る名前の追加は入力の項目を足す別の単位で扱う。
-- 検証: 親の環境に、架空の秘密を 3 種類（既知の名前 `GITHUB_TOKEN`、未知の名前 `FIXTURE_UNKNOWN_SECRET`、小文字の名前 `fixture_lowercase_secret`）と `NODE_OPTIONS`・`NODE_PATH` を置く。子が自分の環境を書き出す架空の試験で、(a) 名前の集合が一覧の 5 つと完全に一致すること、(b) どの偽の値も子の出力の中に現れないこと、(c) `HOME` が一時 directory で、終わりの後に消えることを確かめる。
+- 検証は 2 段に分ける。Node 自身が起動後に子へ足す変数（`NODE_TEST_CONTEXT`、`NODE_V8_COVERAGE` など。Node 22.23.4 で観測。macOS ではさらに増える）は門が渡した物ではないので、実際の子の中の名前の完全一致は成り立たない（設計監査 round 1 の F02。arc の答え。Owner の委任 iyasaka-arc#49 6762288830。Owner の言葉ではない）。
+  - (1) 完全一致は spawn の境界で確かめる: `runner.mjs` が起動関数に渡す環境の object を、起動関数を差し替えた単体の試験で受け取り、名前の集合が `childEnvAllowlist` の 5 つと等しいこと、値が門の置いた値（`PATH` = 実行中の Node の directory と `/usr/bin`・`/bin` だけ、`HOME` = 一時 directory、`LANG`・`LC_ALL` = `C.UTF-8`、`TZ` = `UTC`）であること、親に置いた架空の秘密の名前も値も入っていないことを確かめる。
+  - (2) 実際の子の中では否定だけを確かめる: 親の環境に、架空の秘密を 3 種類（既知の名前 `GITHUB_TOKEN`、未知の名前 `FIXTURE_UNKNOWN_SECRET`、小文字の名前 `fixture_lowercase_secret`）と `NODE_OPTIONS`・`NODE_PATH` を置く。子が自分の環境と出力を書き出す架空の試験で、(a) 3 つの偽の名前も値も、書き出した環境にも子の出力にも現れないこと、(b) `NODE_OPTIONS`・`NODE_PATH` が無いこと、(c) `HOME` が一時 directory で、終わりの後に消えることを確かめる。子の環境の名前の完全一致は求めない。
+  - 親の環境を継承する形（`env` を渡さない・親の環境に足す形）に戻さない。(1) の試験は、継承する実装を落とす（親の秘密が渡った環境で失敗する）。
 
 ### SC2 入力の経路を 2 つに絞る（NFR5.2・T1）
 
@@ -44,7 +47,10 @@ NFR5.1〜NFR5.8 と脅威 T1〜T6 に対する設計。認証・認可・暗号�
 
 ### SC6 一時 directory と結果の書き込み（NFR5.6・NFR4.6）
 
-- 一時 directory は `fs.mkdtemp` で実行ごとに作り（名前は乱数だが核の外 = runner の中）、作成時の権限を 0700 にする。成功・失敗・期限超過・例外のどれでも `finally` で消す。消せなかった場合は結果を変えず、標準エラーに 1 行の警告の JSON を書く（成功の記録は変えない。残りの面を失敗に変えない）。
+- 一時 directory は `fs.mkdtemp` で実行ごとに作り（名前は `coverage-gate-<runId>-` で始まり、あとは乱数。乱数は核の外 = runner の中）、作成時の権限を 0700 にする。成功・失敗・期限超過・例外のどれでも、子が終わった後に消す。
+- 消せなかった場合は、成功と記録しない（設計監査 round 1 の F03。arc の答え。Owner の委任 iyasaka-arc#49 6762288830。Owner の言葉ではない）。消す処理の失敗は `runner.mjs` が `cleanupFailed` を真にして返し、判定は観測できず（理由コード TEMP_CLEANUP_FAILED）、終了コードはほかの観測できずと同じ 1（落とす）。測定がほかの点で成功していても、成功とは記録しない。警告だけで流す道を持たない（S8、NFR4.4）。
+- 残った directory は、絶対 path でなく runId で示す（結果の文書にも標準エラーにも絶対 path を載せない。NFR5.7）。流れの手順: (1) 結果の文書の runId を読む、(2) 担当が OS の一時領域から、名前が `coverage-gate-<runId>-` で始まる directory の権限を直して消す、(3) 同じ入力で門を流し直す。消さずに流し直しても、runId の違う新しい directory を作るので、前の実行の観測は混ざらない。
+- 検証: 削除関数を差し替えて失敗を注入する負例を置く（実際の fs で消せない状況は、権限の無い fixture が環境に依るので、再現を成功の根拠にしない）。この負例で、(a) 成功する測定でも cleanupFailed が真になり、判定が観測できず・TEMP_CLEANUP_FAILED・終了コード 1 になること、(b) 結果の文書に絶対 path が無く runId があること、(c) 次の実行で前の directory の中身が混ざらないこと、(d) 削除が成功する通常の実行では偽のままであること、を確かめる。
 - 結果の file は、`--result` と同じ directory に一時の名前で書き、`rename` で置き換える（同じ directory 内は原子的）。書きかけを残さない。書けなかった場合は一時の file を消して ENTRY_OUTPUT_FAILED。
 
 ### SC7 出力に載せない物（NFR5.7・T3）
@@ -65,7 +71,7 @@ NFR5.1〜NFR5.8 と脅威 T1〜T6 に対する設計。認証・認可・暗号�
 | T2 注釈・出力値の命令への解釈 | SC5 |
 | T3 資格情報・path の漏れ | SC1・SC7 |
 | T4 書ける資格情報で利用先の試験が走る | SC1（許可の名簿。子に資格情報を渡さない）・SC8（U7 が本防御） |
-| T5 古い結果の残り | SC4・SC6（始めに消す、原子的な置き換え） |
+| T5 古い結果の残り | SC4・SC6（始めに消す、原子的な置き換え。一時 directory を消せなければ TEMP_CLEANUP_FAILED） |
 | T6 期限後に残る子 | reliability-design.md の RL2 |
 
 ## Assumptions & Open Questions

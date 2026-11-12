@@ -46,13 +46,13 @@ Step 8 で `emit.mjs` と `cli.mjs` を 1 file にまとめた場合は、対応
 | order | code-point 順の並べ替え | UTF-16 順と違う文字、同じ文字列、空 | BR1.7、NFR2.5 |
 | sanitize | 通常の file 名 | `%`・CR・LF、バッククォート、長い名前 | BR4.7、NFR5.4 |
 | lcov | 正しい DA の変換 | 先頭 `./`、cwd の外、重複 (path, line)、LF/LH と DA の不一致、DA 0 件、上限超え | BR2.5、BR2.6、AC6.1.2、AC6.1.4 |
-| events | passed / failed の数え上げ | skip・todo、読み込みの失敗、suite の除外、`ran` の定義、出来事が無い | BR2.4、AC1.1.3 |
-| judge | 100% で一致 | 99.99%、未計測の file、NOT_RUN、行 0 件、測定の原因 → 理由コード、同じ入力で同じ出力 | BR3.1〜BR3.8、AC2.1.x、AC4.1.x、AC10.2.x |
+| events | passed / failed の数え上げ。普通の合格（暗黙の file 合格が出ない形） | 実際の reporter に流した 6 例の出来事（空の file、import だけの file は暗黙の合格だけで passed 0・`ran` でない / 普通の合格 / 全 skip / 全 todo / 読み込みの失敗は file 全体の test:fail）、入れ子の path の空の file、file 名と同じ名前の試験（line が違う）、暗黙の合格の見分けの境界（nesting・line・column・name の 1 つだけ違う出来事は暗黙とみなさない）、suite の除外、出来事が無い | BR2.4、AC1.1.3、node22-reporter-observations.md |
+| judge | 100% で一致 | 99.99%、未計測の file、NOT_RUN、行 0 件、測定の原因 → 理由コード、cleanupFailed が真なら（測定が成功でも）観測できず・TEMP_CLEANUP_FAILED・値と一覧が null、同じ入力で同じ出力 | BR3.1〜BR3.8、AC2.1.x、AC4.1.x、AC10.2.x |
 | input | 最小の正しい入力 | 読めない、版違い、未知のキー（threshold・mode・exclusions・measurement）、shape 欠落・未対応、targets 不正、期限・総予算の不正 | BR1.1〜BR1.5、BR1.8、AC10.1.1、AC1.4.x |
 | resolve | 宣言の解決、重複の除去、順 | 解決できない宣言、空の集合、試験 file の名前の型、追跡されない file | BR1.6、BR1.7、AC1.1.1、AC2.1.5 |
 | events-reporter | 出来事を JSON の行で書く | 書き込み失敗、想定外の出来事 | BR2.4 |
-| runner | 試験の実行と、子の環境が許可した名前の一覧だけであること | 期限超過、総予算超過、孫の process の停止（Linux）、起動失敗、signal 終了、一時 directory の削除、親の偽の秘密（既知・未知・小文字の名前）と NODE_OPTIONS・NODE_PATH が子から見えない | BR2.3、BR2.7、BR2.8、AC2.1.3、AC2.2.1、AC2.2.2、AC10.1.2 |
-| measure-node | 保証の版で測定 | 保証の版未満、記録なし、一部の file だけ測れた | BR2.1、BR2.2、AC1.1.2、AC1.3.2 |
+| runner | 試験の実行。spawn の境界（起動関数を差し替えた単体の試験）で、渡された環境の名前の集合が許可した名前の一覧の 5 つと等しく、値が門の置いた値であること | 期限超過、総予算超過、孫の process の停止（Linux）、起動失敗、signal 終了、一時 directory の削除、削除関数の差し替えによる失敗の注入で cleanupFailed が真（成功の測定でも）、実際の子の中では親の偽の秘密（既知 `GITHUB_TOKEN`・未知 `FIXTURE_UNKNOWN_SECRET`・小文字 `fixture_lowercase_secret`）の名前も値も、NODE_OPTIONS・NODE_PATH も、子が書き出した環境と出力に現れない（否定だけ。Node 自身が足す変数は問わない） | BR2.3、BR2.7、BR2.8、AC2.1.3、AC2.2.1、AC2.2.2、AC10.1.2 |
+| measure-node | 保証の版で測定 | 保証の版未満、記録なし、一部の file だけ測れた、削除の失敗の注入で cleanupFailed が真になり成功の MeasurementResult を確定しない | BR2.1、BR2.2、BR2.8、AC1.1.2、AC1.3.2 |
 | report | 結果の文書、summary、notice、出力値 | 観測できない値は null、入力の失敗の文書、一覧の上限、同じ 1 つの文書からの作成 | BR4.1〜BR4.6、AC2.2.3、AC2.3.x、AC2.4.x、AC6.3.x |
 | emit | 原子的な書き込み | 古い結果の削除、書き込み失敗、output file の失敗 | BR5.2、BR5.3、AC2.4.1、AC2.4.4 |
 | cli（結合） | 一致・不一致・観測できず・入力の失敗の各経路を入口から | `--result` が `--input` と同じ、追跡された file、引数の重複・欠落、環境の不正、予期しない例外、終了コード 0/1/2 | BR5.1〜BR5.5、AC10.1.1、AC6.3.3 |
@@ -62,7 +62,7 @@ Step 8 で `emit.mjs` と `cli.mjs` を 1 file にまとめた場合は、対応
 
 - データは架空の名前と値だけ。12 文字の英数字を `token` に入れた形を使わない（gitleaks）。
 - 結合の試験は、一時 directory に小さな git repo を作る（`git init` と追跡する file の追加）。`after` で必ず消す。利用先の実物・非公開の物を写さない。
-- mock は使わない。純粋な核は入力と出力で確かめる。時刻・乱数・識別子は呼ぶ側が渡す（S4）。子プロセスは実際に `node --test` を走らせる。
+- mock の道具は使わない。純粋な核は入力と出力で確かめる。時刻・乱数・識別子は呼ぶ側が渡す（S4）。子プロセスは実際に `node --test` を走らせる。例外は 2 つだけで、どちらも runner の引数として渡す起動関数と削除関数を、試験が自分の関数に差し替える形（道具も外部依存も足さない）: (1) spawn の境界で環境の object を受け取って完全一致を確かめる、(2) 削除の失敗を注入する。この 2 つの差し替えでは実際の子を走らせないので、実際の子を走らせる別の試験で補う（上の runner の行）。
 - 保証の版（22）でない Node で走る時、その事実は観測として扱い、保証の確かめを成功に数えない。
 - 20 万件の合成記録の処理は 10 秒以内（網）。二乗の時間を見つける目的で、性能の保証ではない。
 
