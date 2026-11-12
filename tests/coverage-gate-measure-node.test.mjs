@@ -123,8 +123,10 @@ test("real run: lines of loaded files are recorded, files never loaded are not, 
   try {
     const r = await measure(dir, TESTS);
     assert.equal(r.kind, "records");
-    assert.deepEqual(r.measuredPaths, ["src/a.mjs"]);
-    assert.ok(r.records.length >= 1 && r.records.every((x) => x.path === "src/a.mjs" && x.hitCount >= 1));
+    // Node 22 also lists the test files themselves in the coverage; later versions leave them out. Only sources are compared.
+    assert.deepEqual(r.measuredPaths.filter((p) => p.startsWith("src/")), ["src/a.mjs"]);
+    const sourceRecords = r.records.filter((x) => x.path === "src/a.mjs");
+    assert.ok(sourceRecords.length >= 1 && sourceRecords.every((x) => x.hitCount >= 1));
     assert.deepEqual(r.testFilesRun, TESTS);
     assert.equal(r.childProcessLinesCounted, true);
     assert.equal(r.cleanupFailed, false);
@@ -164,22 +166,27 @@ test("real run: a file that fails to load is test_failed and named", async () =>
   }
 });
 
-test("real run: tests that load no source give no records", async () => {
-  const dir = makeRepo({ "cases/pass.test.mjs": REPORTER_CASES["cases/pass.test.mjs"] });
+test("real run: tests that load no source leave no line record for a source file", async () => {
+  const dir = makeRepo({ "src/a.mjs": SOURCE_A, "cases/pass.test.mjs": REPORTER_CASES["cases/pass.test.mjs"] });
   try {
     const r = await measure(dir, ["cases/pass.test.mjs"]);
-    assert.deepEqual([r.kind, r.cause], ["unobservable", "no_records"]);
+    // Node 22 still records the test file itself (so the result is records); later versions record nothing (no_records).
+    assert.ok(r.kind === "records" || r.cause === "no_records");
+    assert.ok(!(r.measuredPaths ?? []).includes("src/a.mjs"));
+    assert.ok(!(r.records ?? []).some((x) => x.path === "src/a.mjs"));
   } finally {
     removeDir(dir);
   }
 });
 
-test("real run: a file name that starts with a dash is passed as a path, not an option", async () => {
-  const dir = makeRepo({ "src/a.mjs": SOURCE_A, "-x.test.mjs": PASS_TEST.replace("../src/a.mjs", "./src/a.mjs") });
+test("real run: a file name that starts with a dash is passed as a path, not an option; an empty one is still not a ran test", async () => {
+  const dir = makeRepo({ "src/a.mjs": SOURCE_A, "-x.test.mjs": PASS_TEST.replace("../src/a.mjs", "./src/a.mjs"), "-empty.test.mjs": "" });
   try {
-    const r = await measure(dir, ["-x.test.mjs"]);
+    const r = await measure(dir, ["-empty.test.mjs", "-x.test.mjs"]);
     assert.equal(r.kind, "records");
     assert.deepEqual(r.testFilesRun, ["-x.test.mjs"]);
+    const empty = r.testObservations.find((o) => o.path === "-empty.test.mjs");
+    assert.deepEqual([empty.passed, empty.implicitFilePassCount], [0, 1]);
   } finally {
     removeDir(dir);
   }

@@ -37,6 +37,11 @@ test("a leading ./ in the event name is ignored when recognizing the implicit pa
   assert.deepEqual([o.passed, o.implicitFilePassCount], [0, 1]);
 });
 
+test("an absolute event name (a file given by its absolute path) is recognized as the implicit pass too", () => {
+  const o = one([implicit("/repo/t/a.test.mjs")]);
+  assert.deepEqual([o.passed, o.implicitFilePassCount], [0, 1]);
+});
+
 test("an event that differs from the implicit pass in any one field is a real test", () => {
   for (const over of [{ nesting: 1 }, { line: 2 }, { column: 2 }, { name: "t/other.test.mjs" }, { detailsType: "suite" }]) {
     const o = one([implicit("t/a.test.mjs", over)]);
