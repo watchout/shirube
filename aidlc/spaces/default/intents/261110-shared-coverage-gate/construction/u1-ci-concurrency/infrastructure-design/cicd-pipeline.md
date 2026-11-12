@@ -14,7 +14,7 @@
 | Stage | 内容 | 門（通らないと次へ進めない） |
 |---|---|---|
 | 1 設計記録だけの PR | U1 の設計・計画・試験の記録を、`audit/` と `.aidlc-engine/` を除いて PR にする | PR の CI。守る物（workflow）に触れる単位なので、独立の設計監査（devauditor）を 1 回出し、PASS を待つ |
-| 2 実装（TDD） | 設計監査の PASS の後、先に変更前の `ci.yml` で失敗する試験を書いて失敗を確かめ、次に `concurrency:` を足して通す | 定義の試験（`npm test`）の合格。既存の試験は変更前のまま通る |
+| 2 実装（TDD） | 設計監査の PASS の後、先に変更前の `ci.yml` で失敗する試験を書いて失敗を確かめ、次に `concurrency:` を足して通す | 定義の試験（`npm test`）の合格。既存の試験（`tests/workflow-contract.test.mjs` の BR7.2 を含む）は変更前のまま通る。取り除いた結果の SHA-256 が base の `1e3f42c8…` と一致することを 1 回観測して記録する |
 | 3 実装の監査 | 同じ PR に実装を足し、対象の head の CI が完了してから、`sds-audit-request/1` を作者が出す。devauditor の返却、作者の受領 | 返却が PASS、受領が記録される（BLOCK への受領は機械の受領と書かない） |
 | 4 Owner の承認 | workflow の変更は保護対象。統合の前に、対象の head への Owner の承認を確認する | Owner の公開決定（URL と本文 SHA-256）。段の承認を実行の許可と読まない |
 | 5 統合 | 作者以外の suite-lead が merge commit で `main` に統合する（squash しない） | 必須の検査（`test`、`hygiene`、`sds-gate`）が成功し、PR の記録がそろっている |
@@ -29,7 +29,7 @@
 
 ## 秘密情報と権限
 
-- 新しい secret・資格情報・権限を足さない（NFR5.1）。`permissions:` の明示は、この単位では行わない（範囲外。セキュリティの設計の変更にあたる）。
+- 新しい secret・資格情報・権限を足さない（NFR5.1）。`ci.yml` は最上位ですでに `permissions: {}` を明示し、job ごとに必要な権限（`test`・`hygiene` は `contents: read`、`measure` は読み取り 4 つ）だけを足している。この単位はそれを変えない（変えるのはセキュリティの設計の変更にあたる）。
 - 監査の依頼文の投稿は作者（watchout の名義）、統合は作者以外の席で行う。この分担は変えない。
 
 ## 確かめの記録

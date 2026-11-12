@@ -10,7 +10,7 @@
     },
     {
       "id": "U1CC-02",
-      "criterion": "取り消しの式: 最上位に `concurrency:` を1つだけ置き、group が PR の番号から作られ、`cancel-in-progress` が `pull_request` の実行のときだけ真になる。main への push の実行は取り消されず(取り消し0件)、PR以外の実行の group は実行ごとに一意(`github.run_id`)で他の実行と衝突しない。式の評価そのものは設計監査では実行できないことを区別し、実行の証拠を実装後のCIの記録に回している。",
+      "criterion": "取り消しの式: 最上位の既存の `permissions: {}` の直後・`jobs:` の直前に `concurrency:` を1つだけ置き、group が PR の番号から作られ、`cancel-in-progress` が `pull_request` の実行のときだけ真になる。main への push と `workflow_dispatch` の実行は取り消されず(取り消し0件)、PR以外の実行の group は実行ごとに一意(`github.run_id`)で他の実行と衝突しない。式の評価そのものは設計監査では実行できないことを区別し、実行の証拠を実装後のCIの記録に回している。",
       "basis": "D1/D2、NFR3.1/4.2/4.3、security-design の式と試験の表、infrastructure-specification"
     },
     {
@@ -20,17 +20,17 @@
     },
     {
       "id": "U1CC-04",
-      "criterion": "既存の検査を弱めず失敗を隠さない: `on:`・job の名前と数(`test`・`hygiene`)・必須の検査名・`permissions:` の有無を変えない。`continue-on-error`・`|| true`・必須stepの `--if-present` ・無条件PASS・表明の無い試験を足さない。取り消された古い実行が成功として数えられず、最新の head の実行が必須の検査として完走する前提を保つ。",
-      "basis": "D1/D5、S8、NFR4.1/4.4/8.1、T5"
+      "criterion": "既存の検査を弱めず失敗を隠さない: 設計・計画が「現在の `ci.yml`」について書く事実が、基準コミット `7e775afd5b755e51e55e269d8dc35b09d180c33e` の実物(SHA-256 `1e3f42c895dccd23b4b00017da6171488729d092af435cdc11cb85018b861c8a`)と一致する(起動3つ `pull_request`・`push` の `main`・`workflow_dispatch`、最上位 `permissions: {}`、job `test`・`hygiene`・`measure` と各権限、`test` の Node 26 と `scripts/**` 全体の行の網羅率80%の command、`hygiene` の Node 22、`concurrency` が無いこと)。設計 7 の機械の突き合わせ結果で確かめられる。これらと既存の BR7.2 の試験を変えず、通し続ける。`continue-on-error`・`|| true`・必須stepの `--if-present` ・無条件PASS・表明の無い試験を足さない。取り消された古い実行が成功として数えられず、最新の head の実行が必須の検査として完走する前提を保つ。",
+      "basis": "D1/D5、S3/S5/S8、NFR1.1/4.1/4.4/8.1、設計 7、T5/T8"
     },
     {
       "id": "U1CC-05",
-      "criterion": "最小権限と依存: 新しい secret・資格情報・`permissions:`・外部action・npm依存・サービスを足さない(NFR5.1/6.1)。`permissions:` の明示を、この単位の範囲外(セキュリティ設計の変更)として扱い、勝手に広げない。新しい外部依存や権限の追加が要るなら、実装を止めて Owner の判断を待つ構成になっている。",
-      "basis": "D3、S9、escalation-policy、NFR5.1/6.1、tech-stack-decisions"
+      "criterion": "最小権限と依存: 新しい secret・資格情報・権限・外部action・npm依存・サービスを足さない(NFR5.1/6.1)。最上位の `permissions: {}` と job ごとの権限(`test`・`hygiene` は `contents: read`、`measure` は読み取り4つ)はすでに明示されており、この単位は変えず、`concurrency:` は権限と独立した記述として足すだけである(権限が変わらないことは実装後のPRの実行で観測する計画がある)。権限の変更はセキュリティ設計の変更として扱い、勝手に広げない。新しい外部依存や権限の追加が要るなら、実装を止めて Owner の判断を待つ構成になっている。",
+      "basis": "D3、S9、escalation-policy、NFR5.1/6.1、SD5、monitoring-design の権限の観測"
     },
     {
       "id": "U1CC-06",
-      "criterion": "TDDと試験計画: 8件(T1正例、T2〜T6負例N1〜N5、T7逆向き、T8同居)が要件・NFRへ対応し、先に変更前の `ci.yml` で失敗する試験を書いて失敗を確かめ、次に最小の変更で通す順序になっている。試験は Node 組込みの `node:test` で新しい file(300行以内)に置き、既存の試験を変更せず、規則の値を複数箇所に literal で複製しない(S3)。読めない・解釈できない `ci.yml`(無い・2つ・jobの中・groupの行が無い・空)が失敗になり、成功へ読み替えない。",
+      "criterion": "TDDと試験計画: 8件(T1正例、T2〜T6負例N1〜N5、T7逆向き、T8同居)が要件・NFRへ対応し、先に変更前の `ci.yml` で失敗する試験を書いて失敗を確かめ、次に最小の変更で通す順序になっている。試験は Node 組込みの `node:test` で新しい file(300行以内)に置き、既存の試験を変更せず、規則の値を複数箇所に literal で複製しない(S3)。T5(足した行だけの検査)・T7(取り除いた結果が元から追加行だけを削ったものと一致)・T8(変更後と取り除いた後の最上位の節ごとの差分)は、既存の BR7.2 が持つ構造の知識を複製せず、base からの差分で確かめる。実装は clone の worktree で base の実物から作り、最初に `ci.yml` の SHA-256 の一致を観測する計画がある。読めない・解釈できない `ci.yml`(無い・2つ・jobの中・groupの行が無い・空)が失敗になり、成功へ読み替えない。",
       "basis": "D2/D5、S3/S5/S8、team実践(TDD)、NFR4.4/7.1、code-generation-plan Steps 1〜7、unit-test-instructions"
     },
     {
@@ -40,7 +40,7 @@
     },
     {
       "id": "U1CC-08",
-      "criterion": "観測と復旧: PR自身のActionsの実行の記録で、古いheadの実行が取り消され、最新のheadの実行が最後まで流れ、main への push の実行が取り消されないことを観測する計画があり、観測できなかった場合を成功と書かない。戻し方(追加した `concurrency:` を取り除く)が、変更前の構造の試験(T7/T8)で確かめられ、それ自体も workflow の変更として同じ承認の流れを通す。段階的展開・feature flag を使わない理由が示されている。",
+      "criterion": "観測と復旧: PR自身のActionsの実行の記録で、古いheadの実行が取り消され、最新のheadの実行が最後まで流れ、main への push の実行が取り消されないことを観測する計画があり、観測できなかった場合を成功と書かない。戻し方(追加した `concurrency:` を取り除く)が、差分の試験(T7/T8)と、取り除いた結果の SHA-256 が base と一致することの1回の観測で確かめられ、それ自体も workflow の変更として同じ承認の流れを通す。段階的展開・feature flag を使わない理由が示されている。",
       "basis": "D4/D6、NFR4.2/4.3/8.2/8.3/10.1、monitoring-design、cicd-pipeline の戻し方"
     },
     {

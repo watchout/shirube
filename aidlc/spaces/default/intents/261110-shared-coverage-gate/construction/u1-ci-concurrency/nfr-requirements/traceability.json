@@ -3,14 +3,14 @@
   "unit": "u1-ci-concurrency",
   "upstream_ids": ["NFR1", "NFR2", "NFR3", "NFR4", "NFR5", "NFR6", "NFR7", "NFR8", "NFR9", "NFR10", "NFR11"],
   "coverage": [
-    { "id": "NFR1", "status": "OK", "target": "NFR1.1" },
+    { "id": "NFR1", "status": "OK", "target": "NFR1.1（runner と Node の指定は base の実物: test・measure は 26、hygiene は 22）" },
     { "id": "NFR2", "status": "N/A", "target": "U1 は判定の核（時刻・乱数・識別子を入力で受ける部品）を持たない。足すのは ci.yml の concurrency の記述と定義の試験だけ" },
     { "id": "NFR3", "status": "OK", "target": "NFR3.1" },
     { "id": "NFR4", "status": "OK", "target": "NFR4.1, NFR4.2, NFR4.3, NFR4.4" },
     { "id": "NFR5", "status": "OK", "target": "NFR5.1, NFR5.2, NFR5.3" },
     { "id": "NFR6", "status": "OK", "target": "NFR6.1" },
     { "id": "NFR7", "status": "OK", "target": "NFR7.1, NFR7.2, NFR7.3" },
-    { "id": "NFR8", "status": "OK", "target": "NFR8.1, NFR8.2, NFR8.3" },
+    { "id": "NFR8", "status": "OK", "target": "NFR8.1（job 3 本・起動 3 つ・最上位 permissions: {} を含む base の実物を保つ）, NFR8.2, NFR8.3" },
     { "id": "NFR9", "status": "OK", "target": "NFR9.1" },
     { "id": "NFR10", "status": "OK", "target": "NFR10.1" },
     { "id": "NFR11", "status": "OK", "target": "NFR11.1" }

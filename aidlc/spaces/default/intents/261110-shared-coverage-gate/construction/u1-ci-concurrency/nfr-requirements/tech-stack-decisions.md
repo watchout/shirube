@@ -7,7 +7,8 @@
 - [desc] Initial description: 共有の網羅率の門を新しい AI-DLC の取り組みとして始める（Owner の指示 https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6759071065、本文 SHA-256 `c5d9ccc3510ff46e5d6661bc8c528cafb7e08d4ce2c86f39f049782eaf7e524b`）。
 - [scope] Workflow-selected scope: feature
 - 単位: [unit-of-work.md](../../../inception/units-generation/unit-of-work.md) の U1。要件: [requirements.md](../../../inception/requirements-analysis/requirements.md) の NFR1・NFR3・NFR7・NFR9〜NFR11、FR10.3、FR10.4。
-- 技術の観測: [technology-stack.md](../../../../../codekb/shirube/technology-stack.md)（root の CI は Node 22、`npm ci`、`npm test` = `node --test tests/*.test.mjs tests/u2/*.test.mjs`。実行時の npm 依存は無い）。`.github/workflows/ci.yml` の現状は、job `test` と `hygiene`、`concurrency` の記載なし。
+- 技術の観測: 基準は公開 Shirube の base コミット `7e775afd5b755e51e55e269d8dc35b09d180c33e` の `.github/workflows/ci.yml` の実物（SHA-256 `1e3f42c895dccd23b4b00017da6171488729d092af435cdc11cb85018b861c8a`）。詳細は [security-requirements.md](./security-requirements.md) の「基準の観測」。要点: job は `test`（Node 26、`scripts/**` 全体の行の網羅率 80% の床）・`hygiene`（Node 22 を呼び出し先に渡す）・`measure` の 3 本で、起動は `pull_request`・`push` の `main`・`workflow_dispatch`、最上位に `permissions: {}`、`concurrency` の記載なし。`npm test` = `node --test tests/*.test.mjs tests/u2/*.test.mjs`。実行時の npm 依存は無い。
+- 注意: 共有の [technology-stack.md](../../../../../codekb/shirube/technology-stack.md)（CodeKB）の「CI は Node 22」は作業場の古い木の観測で、base の実物と合わない。この単位の基準には使わない（CodeKB は PR の差分に入れず、更新は別の扱い）。
 - 実践: team.md の Testing Posture（TDD、`node:test` と `assert`、行の網羅率 100%、観測した値を機械が読める形で記録）と Code Style（`.mjs`、Node 22 以上、実行時 npm 依存なし）。確認コマンドの記録: `verification-command.txt`（Owner 承認済み。対象は `scripts/coverage-gate/` 配下で、この単位は足さない）。
 - 既存の試験の読み方: `tests/workflow-contract.test.mjs` は `ci.yml` と `hygiene.yml` を文字列として読んで確かめる。YAML を解釈する依存は使っていない。
 
@@ -27,7 +28,7 @@ D3・D4 の書き方の細部（式の書き方、group 名の接頭語）は、
 
 ### NFR1 動作環境
 
-- **NFR1.1** 実行場所（`ubuntu-latest`）と Node の指定（22）を変えない。`concurrency:` は GitHub Actions の構文で、runner や Node の版に依存しない。[NFR1、FR10.4]
+- **NFR1.1** 実行場所（`ubuntu-latest`）と Node の指定（`test` と `measure` は 26、`hygiene` は呼び出し先へ渡す 22）を変えない。`package.json` の `engines`（`>=22`）も変えない。`concurrency:` は GitHub Actions の構文で、runner や Node の版に依存しない。[NFR1、FR10.4]
 
 ### NFR3 規則は 1 か所
 

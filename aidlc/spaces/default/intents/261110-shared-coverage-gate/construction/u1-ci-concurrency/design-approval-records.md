@@ -10,7 +10,7 @@
 - この取り組みでは見直し役（AI-DLC の reviewer）を使っていない。Owner の決定（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6811761125 ）で、この作業場の見直しの区分は `none`。見直し済みと読まない。
 - 計画の承認（Approve Plan）はこの作業で `off` の設定のため、計画の承認の記録は無い。計画は `code-generation/code-generation-plan.md`、試験の手順は `code-generation/unit-test-instructions.md` にある。計画の承認が無いことを、製品の変更を始める許可にしない。
 - 要約の確認（Consolidated Summary Confirmation）も `off` で、記録は無い。
-- U1 の NFR Requirements・NFR Design・Infrastructure Design・Code Generation（計画まで）は、単位の段として gate を持たない。段の完了の承認を人から得たものとして扱わない。
+- U1 の NFR Requirements・NFR Design・Infrastructure Design・Code Generation（計画まで）は、単位の段として gate を持たない。段の完了の承認を人から得たものとして扱わない。NFR Requirements・NFR Design・Infrastructure Design は設計監査 round 1 の指摘で開き直して直し、単位の受領を取り直した（下の「設計監査 round 1 の差し戻しと直し」）。
 
 ## 段の完了の承認（種類: stage-completion、選択: Approve）
 
@@ -35,6 +35,15 @@ Scope Definition の承認では、kit の `sds-gate` の起動の絞り（U2）
 ## 文書の検査
 
 U1 の NFR Requirements・NFR Design・Infrastructure Design の各 `traceability.json` は、上流の要件・NFR の全項目に OK を対応付けている。これは文書の対応表であって、製品の試験・実際の CI での動作・統合の合格ではない。未実施: 試験の実行（Red・Green）、`ci.yml` の変更、PR 自身の Actions の実行での取り消しの観測、実装の独立監査、Owner の対象 head の承認、統合。
+
+## 設計監査 round 1 の差し戻しと直し
+
+- 返却（BLOCK、round 1、10 項目中 PASS 7・FAIL 3）: https://github.com/watchout/shirube/pull/102#issuecomment-6813817096 （本文 SHA-256 `39f77f935d99f85f4505bf7cd1f2c35c916c1d689fbe61cddf4995e06d9cf1ce`）。BLOCK への作者の記録は機械の受領ではない（固定の checker は BLOCK の返却に BLOCKED を返す）。
+- 指摘 F01（起きやすさ 高 × 困る大きさ 中）: 設計・計画が、権限なし・job 2 本・Node 22 の古い `ci.yml` を現状としていた。基準コミット `7e775afd5b755e51e55e269d8dc35b09d180c33e` の実物（SHA-256 `1e3f42c895dccd23b4b00017da6171488729d092af435cdc11cb85018b861c8a`）は、起動 3 つ・最上位 `permissions: {}`・job `test`・`hygiene`・`measure`・`test` の Node 26 と `scripts/**` 全体 80% の床を持つ。
+- 原因: 作業場の木が `origin/main` より古く（`ci.yml` の SHA-256 が基準と違った）、その木と共有の CodeKB を基準として読んだ。
+- 直し（承認済みの段を開き直して直した。承認済みの記録を黙って書き換えていない）: NFR Requirements・NFR Design・Infrastructure Design の「現状の観測」と、NFR1.1・NFR5.1・NFR8.1〜8.3、`concurrency:` の置き場（`permissions: {}` の直後）、負例 N4・逆向き・同居、SD5〜SD7、設計 7（「現在の `ci.yml`」の記述を基準の bytes と機械で突き合わせる。12 件を確かめ 12 件 HOLDS、0 件 DOES_NOT_HOLD）、コード生成の計画の Summary・Step 1・2・3（T1・T2・T5・T7・T8）・4、試験の手順、設計監査の項目集合の U1CC-02・04・05・06・08。
+- 注意（直していない記録）: 承認済みの前の段の記録にも、同じ古い木から来た「CI は Node 22」の記述がある（ideation の feasibility-assessment・constraint-register T2、inception の developer-scan、requirements-analysis-questions の Q7 の背景）。基準の実物では `test` と `measure` が Node 26、`hygiene` が 22 を渡す。これらは承認済みの記録なので黙って書き換えず、この単位（U1）の基準には使わない。Node の版の保証を決める U3 の設計の前に、段を開き直して直すか注記で足すかを、arc 経由で伺う。
+- 再依頼の前の確かめ: 記録の「現在の `ci.yml`」の記述を、基準の bytes と機械で突き合わせた結果が全件 HOLDS であること。
 
 ## 公開の範囲
 

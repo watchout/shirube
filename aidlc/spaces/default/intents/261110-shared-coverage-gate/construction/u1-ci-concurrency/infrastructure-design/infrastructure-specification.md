@@ -6,8 +6,8 @@
 
 - [desc] Initial description: 共有の網羅率の門を新しい AI-DLC の取り組みとして始める（Owner の指示 https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6759071065、本文 SHA-256 `c5d9ccc3510ff46e5d6661bc8c528cafb7e08d4ce2c86f39f049782eaf7e524b`）。
 - [scope] Workflow-selected scope: feature
-- 設計: [security-design.md](../nfr-design/security-design.md)（設計 1〜6、SD1〜SD5）。要件: [security-requirements.md](../nfr-requirements/security-requirements.md)、[tech-stack-decisions.md](../nfr-requirements/tech-stack-decisions.md)。部品: [components.md](../../../inception/domain-design/components.md) の ShirubeCi（既存・変更）。契約: [contract-summary.md](../../../inception/contract-design/contract-summary.md)（S10 は新しい契約を作らない）。
-- 現状の観測: `.github/workflows/ci.yml`（job `test` と `hygiene`、`runs-on: ubuntu-latest`、Node 22）。同じ repo の `sds-gate.yml` に job 単位の `concurrency`（先例）。
+- 設計: [security-design.md](../nfr-design/security-design.md)（設計 1〜7、SD1〜SD7）。要件: [security-requirements.md](../nfr-requirements/security-requirements.md)、[tech-stack-decisions.md](../nfr-requirements/tech-stack-decisions.md)。部品: [components.md](../../../inception/domain-design/components.md) の ShirubeCi（既存・変更）。契約: [contract-summary.md](../../../inception/contract-design/contract-summary.md)（S10 は新しい契約を作らない）。
+- 基準の観測（base コミット `7e775afd5b755e51e55e269d8dc35b09d180c33e` の実物。`ci.yml` の SHA-256 `1e3f42c895dccd23b4b00017da6171488729d092af435cdc11cb85018b861c8a`）: `.github/workflows/ci.yml` は起動 3 つ（`pull_request`・`push` の `main`・`workflow_dispatch`）、最上位 `permissions: {}`、job は `test`（`ubuntu-latest`、Node 26）・`hygiene`（`ubuntu-latest` 上で呼び出し先へ Node 22 を渡す）・`measure`（`pull_request` 以外のとき、Node 26）の 3 本で、`concurrency` は無い。同じ repo の `sds-gate.yml` に job 単位の `concurrency`（先例）。第 1 版は古い作業場の木を基準にして誤っていた（設計監査 F01）。security-design.md の設計 7 の突き合わせ（12 件すべて HOLDS）を通した記述だけを置く。
 
 ## 置き場（Deployment）
 
@@ -18,7 +18,7 @@
 | 保管 | 変更なし。実行の記録は GitHub が保持する | 新しい保管場所を作らない |
 | 環境 | 本物の環境は 1 つ（この repo の GitHub Actions）。dev/staging/prod の区別は無い | Shirube 自身の CI で、配布先ではない |
 | 構成の管理 | workflow の file そのもの（`ci.yml`）が定義。PR で変更し、git の履歴が戻す方法になる | 別の IaC は要らない |
-| 変更の中身 | 最上位に `concurrency:` を 1 か所（`group` と `cancel-in-progress` の 2 行） | 設計 1（SD1） |
+| 変更の中身 | 最上位の `permissions: {}` の直後に `concurrency:` を 1 か所（`group` と `cancel-in-progress` の 2 行）。`permissions: {}` と job 別の権限、起動 3 つ、job 3 本は変えない | 設計 1・4（SD1・SD5・SD7） |
 | 大きさ | 追加は数行。新しい実行時間・並列数の上限を置かない | NFR9.1 |
 
 ## 基盤のサービス（Infrastructure Services）

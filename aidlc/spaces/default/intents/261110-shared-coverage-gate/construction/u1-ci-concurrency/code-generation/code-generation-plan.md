@@ -2,15 +2,16 @@
 
 ## Summary
 
-- Builds: Shirube 自身の CI に「同じ PR の古い実行を取り消す」規則を足す（`concurrency:` の 2 行）と、その規則を文字列として確かめる定義の試験
-- Touches: `.github/workflows/ci.yml`（最上位に `concurrency:` を追加）、新しい試験 file `tests/ci-concurrency.test.mjs`
-- Tests: 8 件（正例 1、負例 5、逆向き 1、読めない入力 1 を含む）。`node:test` と `assert`、依存の追加なし
+- Builds: Shirube 自身の CI に「同じ PR の古い実行を取り消す」規則を足す（最上位の `concurrency:` ブロック。`group` と `cancel-in-progress` の 2 行）と、その規則を文字列として確かめる定義の試験
+- Touches: `.github/workflows/ci.yml`（既存の最上位 `permissions: {}` の直後に `concurrency:` を追加。ほかは変えない）、新しい試験 file `tests/ci-concurrency.test.mjs`
+- Tests: 8 件（T1 正例、T2〜T5 と T6 の負例、T7 逆向き、T8 同居）。`node:test` と `assert`、依存の追加なし
+- 基準: 実装は、公開 Shirube の base コミット `7e775afd5b755e51e55e269d8dc35b09d180c33e` の実物（`ci.yml` の SHA-256 `1e3f42c895dccd23b4b00017da6171488729d092af435cdc11cb85018b861c8a`）から作る。作業場の木は古いので使わない（設計監査 F01）。
 
 ## Sources
 
 - [desc] Initial description: 共有の網羅率の門を新しい AI-DLC の取り組みとして始める（Owner の指示 https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6759071065、本文 SHA-256 `c5d9ccc3510ff46e5d6661bc8c528cafb7e08d4ce2c86f39f049782eaf7e524b`）。
 - [scope] Workflow-selected scope: feature
-- 設計: [security-design.md](../nfr-design/security-design.md)（設計 1〜6、SD1〜SD5、試験の表）、[infrastructure-specification.md](../infrastructure-design/infrastructure-specification.md)、[monitoring-design.md](../infrastructure-design/monitoring-design.md)、[cicd-pipeline.md](../infrastructure-design/cicd-pipeline.md)。要件: [requirements.md](../../../inception/requirements-analysis/requirements.md)（FR10.3、FR10.4、FR10.5）、単位: [unit-of-work.md](../../../inception/units-generation/unit-of-work.md)、契約: [contract-summary.md](../../../inception/contract-design/contract-summary.md)。
+- 設計: [security-design.md](../nfr-design/security-design.md)（設計 1〜7、SD1〜SD7、試験の表）、[infrastructure-specification.md](../infrastructure-design/infrastructure-specification.md)、[monitoring-design.md](../infrastructure-design/monitoring-design.md)、[cicd-pipeline.md](../infrastructure-design/cicd-pipeline.md)。要件: [requirements.md](../../../inception/requirements-analysis/requirements.md)（FR10.3、FR10.4、FR10.5）、単位: [unit-of-work.md](../../../inception/units-generation/unit-of-work.md)、契約: [contract-summary.md](../../../inception/contract-design/contract-summary.md)。
 - 試験の置き場: 既存の `tests/workflow-contract.test.mjs` は 135 行で、足すと別の関心が混ざる。`npm test` は `tests/*.test.mjs` を拾うので、新しい file `tests/ci-concurrency.test.mjs`（300 行以内）に分ける（security-design.md の Open Question 1 を、ここで決めた）。
 
 ## 進め方の順序（守る物の決まり）
@@ -23,18 +24,18 @@
 
 ## 手順
 
-- [ ] Step 1: 構成の骨組み。新しい構成・設定・依存は足さない（`package.json` の `test` は `tests/*.test.mjs` を拾うので変更なし）。記録: 足すのは 2 file だけ（`.github/workflows/ci.yml` の変更と、新しい試験 file）。（FR10.3、NFR6.1、NFR9.1）
-- [ ] Step 2: 試験の実行環境の確かめ。既存の試験が変更前に通ることを、単位に絞った次の command で確かめ、観測値（実行数・合格数・失敗数）を記録する: `node --test tests/workflow-contract.test.mjs`（詳細は unit-test-instructions.md）。（NFR7.1、NFR8.1）
+- [ ] Step 1: 構成の骨組み。新しい構成・設定・依存は足さない（`package.json` の `test` は `tests/*.test.mjs` を拾うので変更なし。ただし `ci.yml` の `test` job の網羅率 command は `tests/*.test.mjs tests/u2/*.test.mjs` を拾い、`scripts/**` 全体 80% の床を持つ。新しい試験 file はそのまま拾われ、この単位は `scripts/` に code を足さないので床に影響しない）。記録: 足すのは 2 file だけ（`.github/workflows/ci.yml` の変更と、新しい試験 file）。（FR10.3、NFR6.1、NFR9.1）
+- [ ] Step 2: 試験の実行環境の確かめ。実装の作業木は clone の worktree（`~/Developer/.worktrees/` の下。作業場の木ではない）に、PR の branch から作る。最初に、その木の `ci.yml` の SHA-256 が base の `1e3f42c8…` と一致することを観測して記録する（一致しなければ、木が古いので書かずに直す）。次に、既存の試験が変更前に通ることを、単位に絞った次の command で確かめ、観測値（実行数・合格数・失敗数）を記録する: `node --test tests/workflow-contract.test.mjs`（BR7.2 を含む。詳細は unit-test-instructions.md）。（NFR7.1、NFR8.1）
 - [ ] Step 3: 取り消しの規則 — Red。`tests/ci-concurrency.test.mjs` に次の 8 件を書き、変更前の `ci.yml` に対して実行して失敗することを確かめる。失敗の出力を記録する（失敗しなければ試験が働いていないので書き直す）。（FR10.3、FR10.5、NFR4.1〜4.4、NFR5.2、NFR5.3、NFR7.1、NFR8.2）
-  - T1 正例: 最上位（`on:` と `jobs:` の間）に `concurrency:` がちょうど 1 つあり、`group` が `ci-` で始まり PR の番号（`github.event.pull_request.number`）から作られ、`cancel-in-progress` が `pull_request` の実行のときだけ真になる式である
-  - T2 負例 N1: `cancel-in-progress` の式が `github.event_name == 'pull_request'` と一致し、`push` では偽になる形である（`true` の固定値ではない）
+  - T1 正例: 最上位で、`permissions: {}` の直後・`jobs:` の直前に `concurrency:` がちょうど 1 つあり（`on:` の中や job の中ではない）、`group` が `ci-` で始まり PR の番号（`github.event.pull_request.number`）から作られ、`cancel-in-progress` が `pull_request` の実行のときだけ真になる式である
+  - T2 負例 N1: `cancel-in-progress` の式が `github.event_name == 'pull_request'` と一致し、`push` と `workflow_dispatch` では偽になる形である（`true` の固定値ではない）
   - T3 負例 N2: group に `github.head_ref`、`github.ref_name`、`github.ref`、`github.actor`、`pull_request.title`、`pull_request.head` を含まない。PR 以外の鍵は `github.run_id` だけ
   - T4 負例 N3: group の接頭語が `ci-` で、`sds-gate.yml` の group（`sds-gate-` で始まる）と重ならない。`hygiene.yml` に `concurrency` が無い
-  - T5 負例 N4: `ci.yml` に `continue-on-error`、`|| true`、`--if-present` が無く、`on:` の項目（`pull_request`、`push` の `main`）、job の名前と数（`test`、`hygiene`）、`permissions:` が無いこと、が変更前と同じである
+  - T5 負例 N4: 足した行（`concurrency:` のブロックだけ）に、`continue-on-error`、`|| true`、`--if-present`、`permissions`、`uses:`、`secrets.`、`pull_request_target`、`on:` の項目が入っていない。`ci.yml` 全体の失敗を隠す記述の検査は、既存の「workflows hide no failures」がすでに持つので複製しない（S3）
   - T6 負例 N5: 読めない・解釈できない `ci.yml`（`concurrency:` が無い、2 つある、job の中にある、group の行が無い、空の文字列）を与えると、読む部品（試験 file の中の補助関数）が失敗を返す。成功に読み替えない
-  - T7 逆向き: 実際の `ci.yml` から `concurrency:` のブロックを取り除いた文字列に、既存の構造の検査（T5 の変更前と同じ項目）が通る
-  - T8 同居: 取り除いた `concurrency:` を除き、`ci.yml` の中身（jobs の本文）が変更前の記録（試験 file に固定した主要な行）と一致する
-- [ ] Step 4: 取り消しの規則 — Green。`.github/workflows/ci.yml` の最上位（`on:` と `jobs:` の間）に、設計 1 の `concurrency:`（`group` と `cancel-in-progress` の 2 行）だけを足す。ほかの行は変えない。8 件が通ることと、既存の試験が変更前のまま通ることを確かめ、観測値を記録する。式の字句が意図どおりに評価されるかは、この PR 自身の CI の実行の記録で確かめる（Step 7）。評価されない場合は、設計を先に直してから実装する。（FR10.3、NFR3.1、NFR4.2、NFR4.3）
+  - T7 逆向き: 実際の `ci.yml` から `concurrency:` のブロックを取り除いた文字列を、読む部品（補助関数）が「`concurrency` なし」と判定し、元の `ci.yml` の行から取り除いた行を引いた結果と一致する（取り除いた行は、ブロックのキー行とその下位の行だけ）
+  - T8 同居（差分の形）: 変更後の `ci.yml` を最上位のキーごとの節に分け、`concurrency` の節を除いた残り（`on:`、`permissions:`、`jobs:` の節の全文）が、取り除いた後の文字列の節と一致する。起動 3 つ・最上位 `permissions: {}`・job `test`・`hygiene`・`measure` と各 job の権限の知識を試験に書き写さず、取り除く前と後を比べるだけにする（既存の BR7.2 と知識を二重に持たない。S3）。`concurrency:` を `on:` や job の中に入れる誤りは、この比較で落ちる
+- [ ] Step 4: 取り消しの規則 — Green。`.github/workflows/ci.yml` の最上位で、既存の `permissions: {}` の直後・`jobs:` の直前に、設計 1 の `concurrency:`（`group` と `cancel-in-progress` の 2 行）だけを足す。ほかの行は変えない（既存の BR7.2 が `permissions: {}` の行と、`push:` から `workflow_dispatch:` への並びを固定しているので、その間や周りに入れない）。8 件が通ることと、既存の試験（BR7.2 を含む）が変更前のまま通ることを確かめ、観測値を記録する。あわせて、足したブロックを取り除いた結果の SHA-256 が base の `1e3f42c8…` と一致することを 1 回観測して記録する（恒久の試験にはしない。後の単位が `ci.yml` を正当に変えるため）。式の字句が意図どおりに評価されるかは、この PR 自身の CI の実行の記録で確かめる（Step 7）。評価されない場合は、設計を先に直してから実装する。（FR10.3、NFR3.1、NFR4.2、NFR4.3）
 - [ ] Step 5: 取り消しの規則 — Refactor。試験の補助関数の重複を整理し、各 file を 300 行以内に保つ。通る状態を保つ。判定の値（接頭語、禁止する値の一覧）を試験 file の中で 2 か所に書かない（S3）。（NFR9.1）
 - [ ] Step 6: 環境・ビルドの設定。変更なし。次を実行して、他の検査が壊れていないことを確かめる: `npm test`（全体。観測値を記録）。hygiene と own-code budget は CI で確かめる。確認コマンド（取り組み全体の網羅率）は、この単位では対象 0 件のため U1 の合否の根拠にしない。（NFR7.2、NFR8.1）
 - [ ] Step 7: 文書と追跡。`code-summary.md`、`traceability.json`、`source-manifest.json` を書く。PR を出した後、この PR 自身の Actions の実行の一覧から、古い head の実行が取り消され、最新の head の実行が最後まで流れたこと、`main` の push の実行に取り消しが無いこと（統合の後）を読み、観測として Build and Test の記録に書く。観測できなかった場合は「観測できなかった」と書き、成功とは書かない。（NFR4.4、NFR7.3、NFR10.1）
@@ -42,7 +43,7 @@
 ## 試験の方針（標準の方針に対する適用）
 
 - 部品は 1 つ（既存の ShirubeCi の変更）。標準の方針（部品あたり 5〜8 件）に対し 8 件。
-- 統合の試験: 実際の `ci.yml` を読む試験（T1〜T5、T7、T8）が、境界（ファイル → 規則）の統合にあたる。T6 は読めない入力の境界。
+- 統合の試験: 実際の `ci.yml` を読む試験（T1〜T5、T7、T8）が、境界（ファイル → 規則）の統合にあたる。T6 は読めない入力の境界。T5・T7・T8 は、base からの差分を比べる形で、既存の BR7.2 が持つ構造の知識を複製しない。
 - 行の網羅率の床 100%: この単位は新しい実行用の code を足さない（workflow の宣言と、試験 file の補助関数のみ）。確認コマンドの網羅率の対象 `scripts/coverage-gate/**` は 0 件なので、空のまま 100% と出て通る。これを U1 の合否の根拠にしない。保証するのは、既存の 14 本の試験と、この単位の試験が通ることだけ（施行する側は U3）。
 
 ## Testing Contract

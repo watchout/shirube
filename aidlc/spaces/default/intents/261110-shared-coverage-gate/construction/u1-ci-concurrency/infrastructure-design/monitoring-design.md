@@ -14,8 +14,9 @@
 | Metric | Source | Threshold | Why it matters |
 |---|---|---|---|
 | 同じ PR の古い head の実行が「取り消し」で終わったか | この PR 自身の Actions の実行の一覧（`gh run list` の読み取り） | 古い head の実行が取り消され、最新の head の実行は取り消されない | 取り消しが正しい対象にだけ働く（NFR4.2） |
-| 最新の head の実行の結論 | 同上 | `test` と `hygiene` が最後まで流れ、結論が `success` か `failure`（取り消しではない） | 取り消しが成功と数えられない（NFR4.2） |
-| `main` への push の実行の結論 | `main` の Actions の実行の一覧 | 取り消し（cancelled）が 0 件 | `main` の検査の結果が欠けない（NFR4.3） |
+| 最新の head の実行の結論 | 同上 | `test` と `hygiene` が最後まで流れ、結論が `success` か `failure`（取り消しではない）。`measure` は `pull_request` では動かない（既存の条件）ので、PR の実行の一覧に無くてよい | 取り消しが成功と数えられない（NFR4.2） |
+| `main` への push の実行の結論 | `main` の Actions の実行の一覧 | 取り消し（cancelled）が 0 件。`workflow_dispatch` の手動の実行も取り消されない | `main` の検査の結果が欠けない（NFR4.3） |
+| 権限の設定が変わっていないこと | この PR の実行の job 一覧の権限の表示（読み取り） | 最上位 `permissions: {}` と job 別の権限が base と同じ | `concurrency:` の追加が権限に影響しない（NFR5.1） |
 | 定義の試験の結果 | `npm test` の実行の記録（実行数・合格数・失敗数） | 失敗 0、実行数が期待どおり（実行されない・時間切れは成功に数えない） | 設計の負例 N1〜N5 を確かめる（NFR7.3） |
 
 ## 通知（Alerts）
