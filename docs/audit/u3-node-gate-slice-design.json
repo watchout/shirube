@@ -20,7 +20,7 @@
     },
     {
       "id": "U3NG-04",
-      "criterion": "測定と子プロセス: 試験の実行が shell を使わず、期限(deadlineSeconds)と総予算(totalBudgetSeconds)の小さい方で process group ごと止まり、止める際の猶予(5秒)の後に孫まで残らない設計(RL2、NFR4.3)になっている。孫まで止まることと、Node 22 未満で試験を走らせず観測できず(CHILD_PROCESS_NOT_COUNTABLE)とすること(PF1、Q4)が検証の計画に入っている。子の環境から除く名前の集合が1か所で定義され、その選び方の限界(許可名簿方式へ移さない判断と、残る面)が security-design の Open Question 1 に正直に書かれている。一時 directory が成功でも失敗でも消える。子の終わり方(起動失敗、signal、非0終了、出来事の有無、記録の有無)が全部どれかの区分になり、再試行しない(NFR11.2)。保証は Node 22 だけで、24・26 は実測の事実として記録するだけで保証しないこと(Q4)が書かれ、「process group の停止が孫まで届く」前提が Assumption として明示され、成り立たない時は設計に戻す扱いが書かれている。",
+      "criterion": "測定と子プロセス: 試験の実行が shell を使わず、期限(deadlineSeconds)と総予算(totalBudgetSeconds)の小さい方で process group ごと止まり、止める際の猶予(5秒)の後に孫まで残らない設計(RL2、NFR4.3)になっている。孫まで止まることと、Node 22 未満で試験を走らせず観測できず(CHILD_PROCESS_NOT_COUNTABLE)とすること(PF1、Q4)が検証の計画に入っている。子の環境が、許可した名前の一覧(childEnvAllowlist: PATH, HOME, LANG, LC_ALL, TZ。値は門が置き、親から写さない。NODE_OPTIONS と NODE_PATH は渡さない)だけで空から作られ、一覧が1か所で定義されている(名前を挙げて除く方式ではない)。副作用(親の環境変数に頼る試験は失敗して観測できずになり、成功には倒れない)と、一覧だけで測れない時の扱いが書かれている。一時 directory が成功でも失敗でも消える。子の終わり方(起動失敗、signal、非0終了、出来事の有無、記録の有無)が全部どれかの区分になり、再試行しない(NFR11.2)。保証は Node 22 だけで、24・26 は実測の事実として記録するだけで保証しないこと(Q4)が書かれ、「process group の停止が孫まで届く」前提が Assumption として明示され、成り立たない時は設計に戻す扱いが書かれている。",
       "basis": "D3/D5、S5/S8、NFR1.1〜1.3/1.7/4.3/5.1/5.3/5.6/11.2、rules BR2.1〜BR2.3・BR2.7・BR2.8、reliability-design RL2、performance-design PF1、security-design SC1・SC3"
     },
     {
@@ -35,12 +35,12 @@
     },
     {
       "id": "U3NG-07",
-      "criterion": "最小権限と信頼の境界: 新しい secret・資格情報・権限・外部 action・npm 依存・サービスを足さず(NFR6.1〜6.3)、外への通信を持たず(通信の module を import しない)、書く場所が `--result` の file と実行ごとの一時 directory と job summary と出力値の file だけに限られる(SC4、NFR5.5)。入力の経路が `--input` と `--result` の2つだけで、環境変数で入力の項目を足せない(SC2)。子プロセスの起こし方(SC3)で、利用先の追跡された試験を走らせる境界(試験の中身の安全は保証しない、fork の code を書ける資格情報のある文脈で走らせない使い方は U7 が受ける。SC8)が設計に残っている。脅威 T1〜T6 のそれぞれに設計が対応している。子の環境から資格情報を除く方式が名前の denylist である限界(4つの名前以外は子に渡りうる)が正直に書かれ、それが重大×どの起きやすさか、設計の手当て(U7 での最小化)で足りるかが、security-design の KY の先読みと整合して判定できる。",
+      "criterion": "最小権限と信頼の境界: 新しい secret・資格情報・権限・外部 action・npm 依存・サービスを足さず(NFR6.1〜6.3)、外への通信を持たず(通信の module を import しない)、書く場所が `--result` の file と実行ごとの一時 directory と job summary と出力値の file だけに限られる(SC4、NFR5.5)。入力の経路が `--input` と `--result` の2つだけで、環境変数で入力の項目を足せない(SC2)。子プロセスの起こし方(SC3)で、利用先の追跡された試験を走らせる境界(試験の中身の安全は保証しない、fork の code を書ける資格情報のある文脈で走らせない使い方は U7 が受ける。SC8)が設計に残っている。脅威 T1〜T6 のそれぞれに設計が対応している。子の環境は許可した名前の一覧だけを渡す方式(SC1。知らない名前の秘密も渡らない)で、親に既知・未知・小文字の名前の偽の秘密と NODE_OPTIONS・NODE_PATH を置いて、子が見る名前の集合が一覧と完全に一致し偽の値が現れないことを確かめる試験が計画にある。残る面(試験の中身の安全は保証しない、U7 の本防御)が、security-design の KY の先読みと整合して判定できる。",
       "basis": "D3/D5、S9、escalation-policy、NFR5.1〜5.8/6.1〜6.3、security-design SC1〜SC8・脅威との対応・Open Question 1、design-approval-records の KY の先読み"
     },
     {
       "id": "U3NG-08",
-      "criterion": "構造と知識の重複: 論理部品(LC1)の依存の向きが一方向で循環せず、純粋な核(order, judge, input, lcov, events, report, sanitize)が時計・乱数・UUID・環境・file・子プロセスを持たない(S4)ことを機械で確かめる試験が計画にある。区分・理由コード・閾値の既定・入力の既定・除く名前の literal が持ち主の file にだけ現れる(S3、LC4)ことと、code-point 順の比較の持ち主が1か所であることが決まっている。13 file はいずれも300行以内の見込みで、既存の dependency-cruiser・knip・jscpd・ESLint・OWN-01 に新しい file が当たる場合は設定を変えず PR に理由を書く扱い(NFR9.3)が書かれ、「作者が基準を緩めて通す」道が無い。時刻・乱数・識別子は呼ぶ側が渡す。S2(抽象は3例目)に照らして、将来のために先に作る抽象が無い。",
+      "criterion": "構造と知識の重複: 論理部品(LC1)の依存の向きが一方向で循環せず、純粋な核(order, judge, input, lcov, events, report, sanitize)が時計・乱数・UUID・環境・file・子プロセスを持たない(S4)ことを機械で確かめる試験が計画にある。区分・理由コード・閾値の既定・入力の既定・子に渡す名前の一覧の literal が持ち主の file にだけ現れる(S3、LC4)ことと、code-point 順の比較の持ち主が1か所であることが決まっている。13 file はいずれも300行以内の見込みで、既存の dependency-cruiser・knip・jscpd・ESLint・OWN-01 に新しい file が当たる場合は設定を変えず PR に理由を書く扱い(NFR9.3)が書かれ、「作者が基準を緩めて通す」道が無い。時刻・乱数・識別子は呼ぶ側が渡す。S2(抽象は3例目)に照らして、将来のために先に作る抽象が無い。",
       "basis": "D2/D5、S2/S3/S4、NFR2.1/3.1〜3.3/9.1〜9.3、logical-components LC1〜LC5"
     },
     {

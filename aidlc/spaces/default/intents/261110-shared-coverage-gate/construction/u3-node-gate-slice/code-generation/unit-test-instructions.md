@@ -51,7 +51,7 @@ Step 8 で `emit.mjs` と `cli.mjs` を 1 file にまとめた場合は、対応
 | input | 最小の正しい入力 | 読めない、版違い、未知のキー（threshold・mode・exclusions・measurement）、shape 欠落・未対応、targets 不正、期限・総予算の不正 | BR1.1〜BR1.5、BR1.8、AC10.1.1、AC1.4.x |
 | resolve | 宣言の解決、重複の除去、順 | 解決できない宣言、空の集合、試験 file の名前の型、追跡されない file | BR1.6、BR1.7、AC1.1.1、AC2.1.5 |
 | events-reporter | 出来事を JSON の行で書く | 書き込み失敗、想定外の出来事 | BR2.4 |
-| runner | 試験の実行と環境の除去 | 期限超過、総予算超過、孫の process の停止（Linux）、起動失敗、signal 終了、一時 directory の削除 | BR2.3、BR2.7、BR2.8、AC2.1.3、AC2.2.1、AC2.2.2、AC10.1.2 |
+| runner | 試験の実行と、子の環境が許可した名前の一覧だけであること | 期限超過、総予算超過、孫の process の停止（Linux）、起動失敗、signal 終了、一時 directory の削除、親の偽の秘密（既知・未知・小文字の名前）と NODE_OPTIONS・NODE_PATH が子から見えない | BR2.3、BR2.7、BR2.8、AC2.1.3、AC2.2.1、AC2.2.2、AC10.1.2 |
 | measure-node | 保証の版で測定 | 保証の版未満、記録なし、一部の file だけ測れた | BR2.1、BR2.2、AC1.1.2、AC1.3.2 |
 | report | 結果の文書、summary、notice、出力値 | 観測できない値は null、入力の失敗の文書、一覧の上限、同じ 1 つの文書からの作成 | BR4.1〜BR4.6、AC2.2.3、AC2.3.x、AC2.4.x、AC6.3.x |
 | emit | 原子的な書き込み | 古い結果の削除、書き込み失敗、output file の失敗 | BR5.2、BR5.3、AC2.4.1、AC2.4.4 |

@@ -30,7 +30,7 @@
     { "id": "NFR4.9", "status": "OK", "target": "observability-design OB1（理由コードと名前つきの一覧。観測できずは not measured）" },
     { "id": "NFR4.10", "status": "OK", "target": "observability-design OB2・reliability-design RL3（標準エラーの 1 行の JSON）" },
     { "id": "NFR4.11", "status": "OK", "target": "observability-design OB3（1 つの文書から 4 つの面。判定を読み直さない）" },
-    { "id": "NFR5.1", "status": "OK", "target": "security-design SC1（子の環境から 4 つの名前を除く。補助の防御）" },
+    { "id": "NFR5.1", "status": "OK", "target": "security-design SC1（子の環境は許可した 5 つの名前の一覧だけ。値は門が置く）" },
     { "id": "NFR5.2", "status": "OK", "target": "security-design SC2（引数は 2 つだけ。未知のキーは失敗。prototype 汚染を避ける）" },
     { "id": "NFR5.3", "status": "OK", "target": "security-design SC3（shell なし、引数の配列、追跡された file だけ、先頭が - の path に ./ を前置）" },
     { "id": "NFR5.4", "status": "OK", "target": "security-design SC5（面ごとの無害化。出力値は区分の名前と数だけ）" },

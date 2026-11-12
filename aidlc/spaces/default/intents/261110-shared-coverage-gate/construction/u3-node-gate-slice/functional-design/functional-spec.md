@@ -65,7 +65,7 @@
 1. 実行中の Node の major を確かめる。保証する版より古ければ、走らせずに観測できず（CHILD_PROCESS_NOT_COUNTABLE）を返す（BR2.2）。
 2. 観測の file を置く一時 directory を作る（BR2.8）。
 3. command を組む: node、`--test`、`--experimental-test-coverage`、lcov の報告係とその出力先、出来事の報告係とその出力先、必須の試験 file の一覧（BR2.1）。cwd は利用先の repo の root。
-4. 子プロセスを、資格情報を除いた環境で、自分の process group で起動する。期限と総予算の小さい方を上限として待つ（BR2.3、BR2.8）。
+4. 子プロセスを、許可した名前の一覧（childEnvAllowlist）だけを門が置いた値で持つ環境で、自分の process group で起動する。期限と総予算の小さい方を上限として待つ（BR2.3、BR2.8）。
 5. 上限を超えたら process group 全体を止め、timed_out か budget_exceeded の観測できずを返す。
 6. 終わったら、終了の観測と観測の file の有無で終わり方を決める（BR2.7）。
 7. 出来事の file を読んで、試験 file ごとに数える。失敗が 1 つでもあれば test_failed の観測できずを返す（BR2.4）。
@@ -180,7 +180,7 @@ erDiagram
 - [assumption] lcov の LF/LH と DA の件数の一致を、記録の整合の確かめ（BR2.5）に使う。この環境の小さな例では一致した。コード生成で、より大きな例で一致を確かめる。合わない正当な場合が見つかれば、この確かめは外し、その旨を設計の記録に書いて直す。
 - [assumption] 行が 0 件の file（コメントだけの file など）が記録に SF として現れるかは未測定。現れない場合は未計測として報告される（失敗側）。利用先は、その file を分母の宣言から外す（除外は U5）。コード生成で測って記録する。
 - [assumption] 試験の結果の `details.type` による suite と試験の区別は Node 22 で確かめた。24・26 では保証しない（Q4）。
-- [assumption] 子の環境から除く資格情報の名前は 4 つ（GateConstants.strippedEnvNames）。主な防御は workflow の権限（U7）で、これは補助である。
+- [assumption] 子に渡す環境は許可した 5 つの名前の一覧（GateConstants.childEnvAllowlist: PATH, HOME, LANG, LC_ALL, TZ）だけで、値は門が置く（arc の答え。Owner の委任 iyasaka-arc#49 6762288830。Owner の言葉ではない）。利用先の試験が親の環境変数（例: CI）を必要とすると、その試験は失敗し、観測できずになる（成功には倒れない）。要る名前の追加は入力の項目を足す別の単位で扱う。Node の試験の実行器が自分で置く変数（NODE_V8_COVERAGE など）は一覧に入れない。実装の最初の実測で、一覧だけでは測れないと分かった時だけ、その名前を一覧に足す（設計に戻して記録する）。
 - [assumption] 質問 Q1〜Q4 の答えは arc の答え（Owner の委任）で、Owner の言葉ではない。
 
 ### Open Questions

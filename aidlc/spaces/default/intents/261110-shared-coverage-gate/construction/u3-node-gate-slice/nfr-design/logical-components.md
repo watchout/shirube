@@ -61,7 +61,7 @@
 | 区分・理由コード・閾値の既定 | `judge.mjs` | `report`、`cli`（終了コードの写像）、試験 |
 | 入力の既定（期限、総予算、試験 file の名前の型）・既知のキー | `input.mjs` | `resolve`、`measure-node`（上限の既定は入力の検査が埋めて渡す）、試験 |
 | Node の保証する版 | `measure-node.mjs` | 試験 |
-| 子の環境から除く名前 | `runner.mjs` | 試験 |
+| 子に渡す環境変数の名前の一覧（childEnvAllowlist） | `runner.mjs` | 試験 |
 | summary の一覧の上限、固定の文型 | `report.mjs` | 試験 |
 | 既存の分母の解決 | `scripts/hygiene/lib.mjs`（変更しない） | `resolve` |
 | 一時 directory | 実行ごとに `runner` が作り、終わりで消す | `measure-node` |

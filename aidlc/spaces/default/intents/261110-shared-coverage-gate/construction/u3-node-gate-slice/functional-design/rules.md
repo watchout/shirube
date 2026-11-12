@@ -153,10 +153,10 @@ rules:
 
   - id: BR2.8
     category: constraint
-    statement: 試験を走らせる子プロセスには、書ける資格情報を渡さない。観測の file を置く一時 directory は、成功でも失敗でも片付ける。
+    statement: 試験を走らせる子プロセスには、GateConstants.childEnvAllowlist の名前だけを渡す（許可の名簿）。親の環境から名前を引き算して渡さない。観測の file を置く一時 directory は、成功でも失敗でも片付ける。
     applies_to: MeasurementRunner
     trigger: 子プロセスを起動する時
-    logic: 子の環境から GateConstants.strippedEnvNames の名前を除く。一時 directory は OS の一時領域に作り、終わりで消す。
+    logic: 子の環境は空から作り、childEnvAllowlist の各名前に、門が置く値（PATH = 実行中の Node の directory と /usr/bin と /bin だけ、HOME = 実行ごとの一時 directory、LANG と LC_ALL = C.UTF-8、TZ = UTC）を入れる。親の環境の値は 1 つも写さない。NODE_OPTIONS と NODE_PATH は渡さない。一時 directory は OS の一時領域に作り、終わりで消す。
     violation: 該当なし（組み方の制約）。
     source: [NFR5]
 
@@ -349,7 +349,7 @@ rules:
 | 持ち主 | 規則 | 要点 |
 |---|---|---|
 | 入力の検査 | BR1.1〜BR1.8 | 読めない・版が違う・未知の項目は失敗。分母と必須の試験を宣言から解決。期限と総予算の既定は 1 か所 |
-| 測定 | BR2.1〜BR2.8 | Node 組込みだけ。再試行なし。期限か総予算で全体を止める。試験の失敗は観測できず。壊れた記録は失敗。資格情報を渡さない |
+| 測定 | BR2.1〜BR2.8 | Node 組込みだけ。再試行なし。期限か総予算で全体を止める。試験の失敗は観測できず。壊れた記録は失敗。子の環境は許可した名前の一覧だけ |
 | 判定の核 | BR3.1〜BR3.8 | 記録から再計算。未計測・NOT_RUN・閾値未満は不一致。行 0 件と測定の失敗は観測できず。時計・乱数を取らない |
 | 出力 | BR4.1〜BR4.7 | 1 つの文書から JSON・summary・notice・出力値を作る。観測できない値は null。自由な文字列は無害にする |
 | 入口 | BR5.1〜BR5.5 | 引数は 2 つだけ。古い結果を消す。終了コード 0・1・2。順は固定 |

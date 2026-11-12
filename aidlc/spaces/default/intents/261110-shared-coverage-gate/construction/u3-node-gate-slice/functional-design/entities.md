@@ -28,7 +28,7 @@ entities:
       - { name: defaultTotalBudgetSeconds, type: integer, required: true, defaults: 900, owner: CoverageInputContract }
       - { name: testFilePattern, type: string-set, required: true, defaults: "*.test.js, *.test.mjs, *.test.cjs（basename）", owner: CoverageInputContract }
       - { name: guaranteedNodeMajor, type: integer, required: true, defaults: 22, owner: NodeBuiltinMeasurer }
-      - { name: strippedEnvNames, type: string-set, required: true, defaults: "GITHUB_TOKEN, ACTIONS_RUNTIME_TOKEN, ACTIONS_ID_TOKEN_REQUEST_TOKEN, ACTIONS_ID_TOKEN_REQUEST_URL", owner: MeasurementRunner }
+      - { name: childEnvAllowlist, type: string-set, required: true, defaults: "PATH, HOME, LANG, LC_ALL, TZ", constraints: "子に渡す環境変数の名前の全部。値は親から写さず、門が自分で置く（PATH = 実行中の Node の directory と固定の系統 directory /usr/bin, /bin だけ、HOME = 実行ごとの一時 directory、LANG = C.UTF-8、LC_ALL = C.UTF-8、TZ = UTC）。NODE_OPTIONS と NODE_PATH は渡さない。この一覧にない名前は、大文字小文字を問わず子に渡らない", owner: MeasurementRunner }
       - { name: summaryListLimit, type: integer, required: true, defaults: 20, owner: ResultReporter }
 
   ReasonCode:
