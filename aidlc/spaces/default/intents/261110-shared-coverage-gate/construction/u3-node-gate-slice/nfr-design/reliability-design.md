@@ -20,7 +20,7 @@ NFR2・NFR4・NFR8 の設計。門の信頼性は「可用性」でなく「成�
 
 - 上限は `min(deadlineSeconds, totalBudgetSeconds - 既に使った秒)`。この単位の測定は 1 回なので、使った秒は 0。時計は `runner.mjs` だけが読む（単調な時計 `performance.now` を使い、壁時計の巻き戻りで上限が壊れない）。
 - 子は自分の process group を持つ形で起こす（`detached: true`）。上限に達したら、まず process group 全体に終了の signal を送り、猶予（固定の 5 秒）の後に残っていれば強制終了の signal を送る。その後、終了を待ってから返す（待たずに返さない）。返す時点で、孫の process が残っていないことを確認する試験を置く。
-- 期限が先に来たら endState は `timed_out`（MEASUREMENT_TIMED_OUT）、総予算が先に来たら `budget_exceeded`（MEASUREMENT_BUDGET_EXCEEDED）。両方が同時なら総予算を先に判定する（決まった順）。
+- 期限が先に来たら endState は `timed_out`（MEASUREMENT_TIMED_OUT）、総予算が先に来たら `budget_exceeded`（MEASUREMENT_BUDGET_EXCEEDED）。上限は `min(期限, 総予算 - 既に使った秒)` なので、期限が総予算以下（この単位の測定は 1 回で使った秒は 0）なら、両方が同時でも期限を先に判定して `timed_out` にする（BR2.3 に合わせる。コード生成で、上の「総予算を先に」と BR2.3 が食い違うと分かり、BR2.3 を採った。2026-11-12）。`budget_exceeded` になるのは総予算が期限より小さい時だけ。
 - 起動の失敗（実行ファイルが無い等）は failed。signal で終わった（上限で止めた場合を除く）も failed。終了コードが 0 でない、または出来事の file が無いか壊れている場合も failed。cancel・timeout・不明を成功に数えない。
 - process group の全停止が Linux で孫まで届くことは仮定。コード生成の試験（孫を起こして眠る架空の試験）で確かめ、確かめられなければ設計に戻して直す。
 
