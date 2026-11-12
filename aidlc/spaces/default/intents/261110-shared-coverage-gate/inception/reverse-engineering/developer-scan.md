@@ -104,3 +104,9 @@
   3. 100% の分母（どの file を数えるか）と、`src/` を含めるかは未決。
   4. 「coverage」の語が既に別の意味で使われている。成果物では「試験の行の網羅率」と書き分ける。
   5. この走査は選んだ範囲の読みで、試験や build は走らせていない。網羅率の実測値は未測定。公開 main の branch protection で網羅率の job が必須かは未観測。
+
+## 訂正の注記（2026-11-12、承認済みの本文は書き換えていない）
+
+- 上の「root」と書いた観測（`ci.yml` の Node 22、test job が `npm ci` → `npm test` → own-code budget だけ、網羅率の指定が無い、`ci.yml:21`）は、作業場の木（HEAD `62ff73d`、`origin/main` より 158 commit 古い）の観測であって、公開 main の現状ではない。公開 main（基準コミット `7e775afd5b755e51e55e269d8dc35b09d180c33e`、`ci.yml` の SHA-256 `1e3f42c895dccd23b4b00017da6171488729d092af435cdc11cb85018b861c8a`）の実物は、このファイルが「公開 main」と分けて書いた内容（`test` が Node 26 で `scripts/**` の網羅率 80% の床、最上位 `permissions: {}`、`measure` job）と合っており、加えて `hygiene` が呼び出し先へ Node 22 を渡し、起動が `pull_request`・`push` の `main`・`workflow_dispatch` の 3 つであることが分かった。「hygiene と root の CI は Node 22」は「`hygiene` は Node 22、`test` と `measure` は Node 26」が正しい。
+- 手元だけの変更（`gate.mjs` の record 入口と `ci-record-*`）は、別の取り組み（shirube#101）の作りかけだと arc が確認した。この取り組みの「すでにある」には数えない。
+- 結論への影響: なし。Handoff Summary の主な所見（公開 main には行の網羅率の下限が既にあり、100%・分母の宣言・機械可読な出力・配布・門への結び付けは無い）は、公開 main を基準に書いてあったので変わらない。確認した日付: 2026-11-12。

@@ -94,3 +94,5 @@ URL の形が正しいだけの確かめなら、実在しない URL を書い�
 - X. Other (please specify)
 
 [Answer]: C（arc の答え。Owner の委任 iyasaka-arc#49 6762288830。Owner の言葉ではない。設計の段で道具を実測してから決める。ただし Node 22 で動くことは最低条件とする）
+
+訂正の注記（2026-11-12、承認済みの問いと答えは書き換えていない）: 背景の「CI は Node 22」は作業場の古い木の観測だった。公開のShirube main（基準コミット `7e775afd5b755e51e55e269d8dc35b09d180c33e`、`ci.yml` の SHA-256 `1e3f42c895dccd23b4b00017da6171488729d092af435cdc11cb85018b861c8a`）では `test` と `measure` が Node 26、`hygiene` が呼び出し先へ Node 22 を渡す。この背景の続きの文（網羅率を測る job は Node 26）はもともと正しい。答え C の判断（Node 22 を最低条件にし、それより新しい版は設計で実測してから決める）は、`engines >=22` と `hygiene` の Node 22 が変わらないので変わらない。

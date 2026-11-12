@@ -74,3 +74,8 @@
 - [assumption] Shirube内の架空の利用例では、実際のDBを使わなくても「DB別jobの呼び方」と除外の規則を確かめられる。実DBでの確認は利用先の適用で扱う。[Q1][Q2]
 - Open: 現行の版で、Node組込みの網羅率が子プロセスを含められるか。設計・試験で確かめる。
 - Open: vitestと網羅率の提供部品の、採用時点の版と安全確認の結果。arc-secとOwnerの判断を待つ。
+
+## 訂正の注記（2026-11-12、承認済みの本文は書き換えていない）
+
+- 上の「手元の観測」の`ci.yml`（`ubuntu-latest`・Node 22）と、評価表の「CIはNode 22」は、作業場の古い木（`origin/main`より158 commit古い）の観測だった。公開のShirube main（基準コミット`7e775afd5b755e51e55e269d8dc35b09d180c33e`）の`.github/workflows/ci.yml`（SHA-256 `1e3f42c895dccd23b4b00017da6171488729d092af435cdc11cb85018b861c8a`）の実物は、`test` jobがNode 26で`scripts/**`の行の網羅率80%の床を持ち、`hygiene`が呼び出し先へNode 22を渡し、`measure` jobがあり、最上位に`permissions: {}`がある。出どころはU1の設計7の機械の突き合わせ（12件が成立）。
+- 結論への影響: なし。評価の結論（Node組込み＝高、TypeScript・vitest＝条件付き）と開いた問いは、Node 22を最低条件とする前提と、`engines >=22`・`hygiene`のNode 22から変わらない。確認した日付: 2026-11-12。
