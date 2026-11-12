@@ -36,7 +36,7 @@ Step 8 で `emit.mjs` と `cli.mjs` を 1 file にまとめた場合は、対応
 ## 網羅率の対象と床
 
 - 対象: `scripts/coverage-gate/**`（13 file、まとめた場合はその数）。行の網羅率の床は 100%。通すために弱めない。
-- 観測値の記録（OB5）: 門自身で `scripts/coverage-gate/**` を測った入力 JSON と結果の JSON を単位の記録（`self-coverage-input.json`、`self-coverage-result.json`）に置き、Node 組込みの lcov を別に計算して値を突き合わせる。次を成功に数えない: 対象 0 件、記録なし、2 つの値の不一致、申告だけの値。
+- 観測値の記録（OB5）: 門自身で `scripts/coverage-gate/`（directory の宣言。入力の `denominator.targets` に `**` を書かない）を測った入力 JSON と結果の JSON を単位の記録（`self-coverage-input.json`、`self-coverage-result.json`）に置き、Node 組込みの lcov を別に計算して値を突き合わせる。次を成功に数えない: 対象 0 件、記録なし、2 つの値の不一致、申告だけの値。
 - 除外が要る行があれば、PR に理由を書き、独立の監査で確認する。
 
 ## 部品ごとの試験（正例・負例）と対応

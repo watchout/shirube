@@ -34,7 +34,7 @@
 
 - 目的: 「行の網羅率 100%」を、CI の成否でなく観測した値で残す。
 - 方法: 門を `scripts/coverage-gate/` 自身に向けた入力（分母の宣言は directory の宣言 `scripts/coverage-gate/`。既存の `resolveTargets` は `**` を literal として扱い、解決できない宣言にするので、入力の `denominator.targets` に `**` を書かない。設計監査 round 1 の観測 O01）（架空の小さな repo ではなく、この repo の実物を分母にする 1 回の実行）の結果の JSON を、門自身で測る。同じ範囲を Node の組込みの網羅率（`--experimental-test-coverage --test-coverage-include=scripts/coverage-gate/**` の lcov）で別に計算し、2 つの値（対象の file 数、行数、被覆の行数、割合）を突き合わせて記録する。突き合わせが食い違う、または対象が 0 件、記録が無い、実行されていないは成功に数えない。
-- 再帰の回避: 門の試験は、一時 directory に作る架空の小さな repo を使い、実物の `scripts/coverage-gate/**` を入口の分母にした実行は、コード生成の検証の 1 回（試験の中ではなく、記録のための実行）だけにする。試験が門を走らせる門を走らせることを避ける。
+- 再帰の回避: 門の試験は、一時 directory に作る架空の小さな repo を使い、実物の `scripts/coverage-gate/`（directory の宣言）を入口の分母にした実行は、コード生成の検証の 1 回（試験の中ではなく、記録のための実行）だけにする。試験が門を走らせる門を走らせることを避ける。
 - 記録の置き場: 単位の PR に含める追跡表（construction の記録）の中の証拠として書く案を第一とする。置き場の確定は、コード生成の計画で行う（Open Question 1）。
 
 ### OB6 持たない物
@@ -56,7 +56,7 @@
 ### Assumptions
 
 - [assumption] notice は 1 実行につき 1 つで、GitHub の注釈の表示の上限に収まる。
-- [assumption] 実物の `scripts/coverage-gate/**` を分母にした 1 回の実行は、Node 22 で、Node の組込みの網羅率と一致する。一致しない場合は、一致しない事実を記録し、原因を調べるまで成功と数えない。
+- [assumption] 実物の `scripts/coverage-gate/`（directory の宣言）を分母にした 1 回の実行は、Node 22 で、Node の組込みの網羅率と一致する。一致しない場合は、一致しない事実を記録し、原因を調べるまで成功と数えない。
 
 ### Open Questions
 
