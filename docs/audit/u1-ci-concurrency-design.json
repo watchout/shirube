@@ -1,0 +1,57 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "261110-shared-coverage-gate / U1 u1-ci-concurrency の同PR・設計だけheadを対象とする独立設計監査。AI-DLCのInception、U1 NFR Requirements/NFR Design/Infrastructure Design、Code Generationの計画・試験手順を一度の監査で照合する。以下のU1CC-xxは本項目集合の識別子であり新しい社内規格・工程・権限ではない。全10項目必須。製品未実装につき、実装・試験の実行・GitHub Actions上の取り消しの動作・統合の合格を要求も主張もせず、その設計・検証計画と未達の扱いを監査する。旧SDS工程・旧道筋・判定4/5・退役PR/own-code予算を復活させない。今後は同PRに実装を追加し、新headで別途実装監査とOwner exact-headを要する。",
+  "items": [
+    {
+      "id": "U1CC-01",
+      "criterion": "目的・範囲・受入の整合: 単位の対象が `.github/workflows/ci.yml` 1 file の変更に限られ、FR10.3(同じPRの古い実行の取り消し)・FR10.4(既存の検査を弱めない)・FR10.5(守る物としての扱い)と US7.3/US7.4/US8.1 が設計・計画・試験手順へ欠落なく対応している。U2(kitの起動の絞り)・U3以降(網羅率の門)の作業をU1へ混ぜず、U1の完成をそれらの完了として扱わない。",
+      "basis": "D1/D2、requirements、unit-of-work/story-map、各段の traceability.json"
+    },
+    {
+      "id": "U1CC-02",
+      "criterion": "取り消しの式: 最上位に `concurrency:` を1つだけ置き、group が PR の番号から作られ、`cancel-in-progress` が `pull_request` の実行のときだけ真になる。main への push の実行は取り消されず(取り消し0件)、PR以外の実行の group は実行ごとに一意(`github.run_id`)で他の実行と衝突しない。式の評価そのものは設計監査では実行できないことを区別し、実行の証拠を実装後のCIの記録に回している。",
+      "basis": "D1/D2、NFR3.1/4.2/4.3、security-design の式と試験の表、infrastructure-specification"
+    },
+    {
+      "id": "U1CC-03",
+      "criterion": "group の鍵の安全と名前の衝突: group に作者が選べる値(ブランチ名・PRのタイトル・作者名・ref・head)を使わず、接頭語 `ci-` が kit の `sds-gate-` と重ならない。再利用される `hygiene.yml` 側に別の `concurrency` を持ち込まない。別のPR・別のworkflowの実行を巻き込んで取り消す経路が無いことを、設計の重なりの表と試験で確かめられる。",
+      "basis": "D3/D6、NFR5.2/5.3、infrastructure-specification の group 名前空間の表、T3/T4"
+    },
+    {
+      "id": "U1CC-04",
+      "criterion": "既存の検査を弱めず失敗を隠さない: `on:`・job の名前と数(`test`・`hygiene`)・必須の検査名・`permissions:` の有無を変えない。`continue-on-error`・`|| true`・必須stepの `--if-present` ・無条件PASS・表明の無い試験を足さない。取り消された古い実行が成功として数えられず、最新の head の実行が必須の検査として完走する前提を保つ。",
+      "basis": "D1/D5、S8、NFR4.1/4.4/8.1、T5"
+    },
+    {
+      "id": "U1CC-05",
+      "criterion": "最小権限と依存: 新しい secret・資格情報・`permissions:`・外部action・npm依存・サービスを足さない(NFR5.1/6.1)。`permissions:` の明示を、この単位の範囲外(セキュリティ設計の変更)として扱い、勝手に広げない。新しい外部依存や権限の追加が要るなら、実装を止めて Owner の判断を待つ構成になっている。",
+      "basis": "D3、S9、escalation-policy、NFR5.1/6.1、tech-stack-decisions"
+    },
+    {
+      "id": "U1CC-06",
+      "criterion": "TDDと試験計画: 8件(T1正例、T2〜T6負例N1〜N5、T7逆向き、T8同居)が要件・NFRへ対応し、先に変更前の `ci.yml` で失敗する試験を書いて失敗を確かめ、次に最小の変更で通す順序になっている。試験は Node 組込みの `node:test` で新しい file(300行以内)に置き、既存の試験を変更せず、規則の値を複数箇所に literal で複製しない(S3)。読めない・解釈できない `ci.yml`(無い・2つ・jobの中・groupの行が無い・空)が失敗になり、成功へ読み替えない。",
+      "basis": "D2/D5、S3/S5/S8、team実践(TDD)、NFR4.4/7.1、code-generation-plan Steps 1〜7、unit-test-instructions"
+    },
+    {
+      "id": "U1CC-07",
+      "criterion": "網羅率の正直さ: 確認コマンドの網羅率の対象(`scripts/coverage-gate/**`)がこの単位では0件で、空のまま100%と出て通ることを明示し、U1の合否の根拠にしていない。確認コマンドが保証するのは既存の試験とこの単位の試験が通ることだけだと書き、未計測・未実行・計測不能・skipを成功に数えない。観測した値(実行数・合格数・失敗数)は申告値を写さず実測から記録する計画になっている。",
+      "basis": "D5、S5/S8、NFR7.2/7.3、verification-command の注意、project の学び(対象0件を成功と読まない)"
+    },
+    {
+      "id": "U1CC-08",
+      "criterion": "観測と復旧: PR自身のActionsの実行の記録で、古いheadの実行が取り消され、最新のheadの実行が最後まで流れ、main への push の実行が取り消されないことを観測する計画があり、観測できなかった場合を成功と書かない。戻し方(追加した `concurrency:` を取り除く)が、変更前の構造の試験(T7/T8)で確かめられ、それ自体も workflow の変更として同じ承認の流れを通す。段階的展開・feature flag を使わない理由が示されている。",
+      "basis": "D4/D6、NFR4.2/4.3/8.2/8.3/10.1、monitoring-design、cicd-pipeline の戻し方"
+    },
+    {
+      "id": "U1CC-09",
+      "criterion": "守る物と独立性: workflow の変更を保護対象として扱い、設計監査PASSの前に `ci.yml` と試験を編集せず、実装を同じPRへ足した後は新headでCI・独立実装監査・作者の受領を揃え、統合前にOwnerの対象headへの公開決定を確認し、作者以外のsuite-leadが統合する。段の承認・arcの答え・中継の通知をOwnerの許可に読み替えない。`.github/workflows/` を含むpushの前に、ghのトークンの権限の確認を arc へ1行知らせる前提がある。1単位1PR、前の単位の統合後に次の単位へ進む。",
+      "basis": "D6、protected-surface-owner-gate R1、aidlc-only §2、team実践(P1/P3)、external-dependency-map E2〜E5、cicd-pipeline"
+    },
+    {
+      "id": "U1CC-10",
+      "criterion": "公開差分と基準の正直さ: 公開PRに含める記録が、同取り組みの必要なIdeation/Inception/U1の設計・計画・試験・追跡表・確認コマンドに限られ、`audit/`・`.aidlc-engine/`・段の日記・state/cursor・非公開の土台の識別子/コード/path・私的な会話・秘密を含まない。非公開の土台の名前と手元のpathを含む2つの記録(取り組みの初期の説明と、その写しを含む最初の問い)を公開から外した理由が明示されている。標準S1〜S9は適用/非該当(DBを持たないためS1/DB基準は非該当)が根拠付きで、S6の逆向きと同居、S8を保つ。未実装・未実測・未配布を残件として保持し、文書のsensor成功を製品の成功に拡張しない。",
+      "basis": "D1/D5/D6、team Forbidden、engineering-standards S1〜S9、db-standard の適用範囲、project の学び(非公開の土台は一般化した所見だけ)"
+    }
+  ]
+}
