@@ -1,0 +1,29 @@
+{
+  "stage": "nfr-design",
+  "unit": "u2-gate-trigger-narrowing",
+  "upstream_ids": ["NFR1.1", "NFR3.1", "NFR4.1", "NFR4.2", "NFR4.3", "NFR4.4", "NFR4.5", "NFR4.6", "NFR5.1", "NFR5.2", "NFR5.3", "NFR6.1", "NFR7.1", "NFR7.2", "NFR7.3", "NFR8.1", "NFR8.2", "NFR8.3", "NFR8.4", "NFR9.1", "NFR10.1", "NFR11.1"],
+  "coverage": [
+    { "id": "NFR1.1", "status": "OK", "target": "設計 1・設計 8（caller は GitHub Actions の構文だけ。再利用 workflow の runner・Node、engines を変えない）" },
+    { "id": "NFR3.1", "status": "OK", "target": "設計 1・SD1・SD6・試験 P1（絞りの規則は job の if: の 1 か所。印の集合は門の実物の印と過不足なく一致することを試験で守る）" },
+    { "id": "NFR4.1", "status": "OK", "target": "設計 1・試験 N5（失敗を隠す記述を足さない。uses: の形を変えない）" },
+    { "id": "NFR4.2", "status": "OK", "target": "設計 2・設計 4・SD2・SD3（判定が読むものを変える出来事は流す。迷う時は流す側。計画の印を足す）" },
+    { "id": "NFR4.3", "status": "OK", "target": "設計 2・SD3・試験 N3（編集・削除は本文を見ずに常に流す。作成だけを絞る）" },
+    { "id": "NFR4.4", "status": "OK", "target": "設計 2・設計 6・SD7・SD9（skip は成功ではなく流れていない。既存の status は書き換えない見込みを定義から導き、実測は利用先で観測するまで観測できなかったと書く。caller の注記）" },
+    { "id": "NFR4.5", "status": "OK", "target": "設計 5 の P1・P2・N1〜N7（関係の無い作成は流れない、印のある作成は流れる、編集・削除は流れる、label の扱い、読めない時は失敗）" },
+    { "id": "NFR4.6", "status": "OK", "target": "設計 4（流れなくなるのは印を含まないコメントの作成だけ。門が読むものを実物から列挙し、利用先の設定で読むものは確かめていないと書く）" },
+    { "id": "NFR5.1", "status": "OK", "target": "設計 1・設計 8・試験 N6（権限 6 つ、pull_request_target の使用、checkout の無さ、起動の種類、secret を変えない・足さない）" },
+    { "id": "NFR5.2", "status": "OK", "target": "設計 1・SD5・試験 N5（本文は if: の contains() の引数と空かどうかの判定 ! の対象だけ。run:・with: に渡さない）" },
+    { "id": "NFR5.3", "status": "OK", "target": "設計 2・設計 4（コメントの投稿者や権限による絞りを足さない。印を偽ったコメントが流れても判定は固定の checker が行う）" },
+    { "id": "NFR6.1", "status": "OK", "target": "設計 5・SD6（新しい action・依存・資源を足さない。評価器は試験 file の中）" },
+    { "id": "NFR7.1", "status": "OK", "target": "設計 5（TDD。変更前の caller で失敗する試験を先に書く。正例と負例 N1〜N7）" },
+    { "id": "NFR7.2", "status": "OK", "target": "設計 5（確認コマンドの網羅率は対象 0 件のため U2 の合否の根拠にしない。保証は既存の試験とこの単位の試験が通ることだけ）" },
+    { "id": "NFR7.3", "status": "OK", "target": "設計 5（試験の数と合否を観測として Build and Test の記録に残す。申告値を写さない）" },
+    { "id": "NFR8.1", "status": "OK", "target": "設計 8（利用先の caller は版上げまで古いまま動く。再利用 workflow の入力 pr と出力 status を変えない。新旧どちらの組み合わせでも動く）" },
+    { "id": "NFR8.2", "status": "OK", "target": "設計 1・SD1・SD8・試験 N1（issue_comment の types を created, edited, deleted のまま残し、既存の試験を変えない）" },
+    { "id": "NFR8.3", "status": "OK", "target": "設計 5 の逆向き・同居・設計 8・設計 9（追加の節を取り除くと元に戻る。取り除いた結果が元から追加分だけを削ったものと一致する。実装の段で base の SHA-256 との一致を 1 回観測する）" },
+    { "id": "NFR8.4", "status": "OK", "target": "設計 3・設計 8（追加だけで既存の行の削除・改名を含まない。labeled・unlabeled も残す）" },
+    { "id": "NFR9.1", "status": "OK", "target": "設計 5 と Open Question 1（新しい試験 file は 300 行以内。置き場は Code Generation の計画で決める）" },
+    { "id": "NFR10.1", "status": "OK", "target": "設計 6（定義の試験の結果と base の実物との突き合わせだけで判断する。PR 自身の実行では観測できない点を明記。数え方は実装の段の記録）" },
+    { "id": "NFR11.1", "status": "OK", "target": "設計 1・設計 6（新しい有料サービス・常設の資源を足さない。流れる回数が減る主張は利用先での観測まで書かない）" }
+  ]
+}
