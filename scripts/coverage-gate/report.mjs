@@ -33,6 +33,7 @@ export const MESSAGES = Object.freeze({
 const HEADINGS = Object.freeze({ match: "Match", mismatch: "Mismatch", unobservable: "Not observable" });
 
 // hundredths of a percent -> "NN.NN", on integers only, so a shortfall never shows as 100.00.
+/** @public */
 export function formatPercent(hundredths) {
   const whole = (hundredths - (hundredths % 100)) / 100;
   return `${whole}.${String(hundredths % 100).padStart(2, "0")}`;

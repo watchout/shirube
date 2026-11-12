@@ -6,15 +6,19 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
+/** @public */
 export const GRACE_MS = 5000;
 
+/** @public */
 export function buildChildEnv({ nodeDir, homeDir }) {
   return { PATH: `${nodeDir}:/usr/bin:/bin`, HOME: homeDir, LANG: "C.UTF-8", LC_ALL: "C.UTF-8", TZ: "UTC" };
 }
 
 // The names the child may have: the names buildChildEnv sets, kept in one place.
+/** @public */
 export const CHILD_ENV_ALLOWLIST = Object.freeze(Object.keys(buildChildEnv({ nodeDir: "", homeDir: "" })));
 
+/** @public */
 export function tempPrefix(runId) {
   return `coverage-gate-${runId}-`;
 }

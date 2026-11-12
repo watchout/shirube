@@ -2,7 +2,9 @@
 // The checks run in a fixed order; the first failure is the one reported.
 import { compareCodePoint } from "./order.mjs";
 
+/** @public */
 export const DEFAULT_DEADLINE_SECONDS = 600;
+/** @public */
 export const DEFAULT_TOTAL_BUDGET_SECONDS = 900;
 const TEST_FILE_PATTERN = /\.test\.(?:js|mjs|cjs)$/u;
 const KNOWN_TOP = new Set(["schemaVersion", "shape", "denominator", "testTargets", "deadlineSeconds", "totalBudgetSeconds"]);

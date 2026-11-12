@@ -19,6 +19,7 @@ export function removeOldResult(path, io = FILE_IO) {
   return attempt(() => io.remove(path, { force: true })) && !io.exists(path);
 }
 
+/** @public */
 export function writeResult(path, text, io = FILE_IO) {
   const temporary = `${path}.tmp`;
   if (attempt(() => { io.write(temporary, text); io.rename(temporary, path); })) return true;

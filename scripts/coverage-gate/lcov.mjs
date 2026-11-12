@@ -3,6 +3,7 @@
 import { posix } from "node:path";
 import { sortPaths } from "./order.mjs";
 
+/** @public */
 export const LCOV_MAX_BYTES = 64 * 1024 * 1024;
 
 export function isLcovTooLarge(bytes) {

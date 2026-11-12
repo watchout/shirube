@@ -6,11 +6,14 @@ import { parseEventLines, tallyEvents } from "./events.mjs";
 import { isLcovTooLarge, parseLcov } from "./lcov.mjs";
 import { runInTempDir } from "./runner.mjs";
 
+/** @public */
 export const GUARANTEED_NODE_MAJOR = 22;
+/** @public */
 export const OBSERVATION_FILES = Object.freeze({ lcov: "coverage.lcov", events: "events.jsonl" });
 const REPORTER_PATH = join(import.meta.dirname, "events-reporter.mjs");
 const VERSION_PATTERN = /^(\d+)\.\d+\.\d+/u;
 
+/** @public */
 export function isGuaranteedNode(version) {
   const match = VERSION_PATTERN.exec(version);
   return match !== null && Number(match[1]) >= GUARANTEED_NODE_MAJOR;
@@ -55,6 +58,7 @@ function summarize(observations) {
 }
 
 // Reads what the child left in its directory. A missing or unreadable piece is never a success.
+/** @public */
 export function observeDir({ dir, run, cwd, requiredTestPaths }) {
   const early = runCause(run);
   if (early !== null) return unobservable(early);

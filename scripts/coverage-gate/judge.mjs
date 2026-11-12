@@ -5,11 +5,15 @@ import { createHash } from "node:crypto";
 import { sortPaths } from "./order.mjs";
 
 export const SCHEMA_VERSION = 1;
+/** @public */
 export const MODE = "enforce";
+/** @public */
 export const OUTCOMES = Object.freeze(["match", "mismatch", "unobservable"]);
+/** @public */
 export const DEFAULT_THRESHOLD_HUNDREDTHS = 10000;
 
 // Every reason code and the class it belongs to. The set and its meaning live here and nowhere else.
+/** @public */
 export const REASON_CODES = Object.freeze({
   INPUT_UNREADABLE: "input",
   INPUT_VERSION_INVALID: "input",
