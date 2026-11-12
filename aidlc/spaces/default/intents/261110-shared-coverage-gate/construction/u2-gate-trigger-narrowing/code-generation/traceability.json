@@ -1,0 +1,29 @@
+{
+  "stage": "code-generation",
+  "unit": "u2-gate-trigger-narrowing",
+  "upstream_ids": ["NFR1.1", "NFR3.1", "NFR4.1", "NFR4.2", "NFR4.3", "NFR4.4", "NFR4.5", "NFR4.6", "NFR5.1", "NFR5.2", "NFR5.3", "NFR6.1", "NFR7.1", "NFR7.2", "NFR7.3", "NFR8.1", "NFR8.2", "NFR8.3", "NFR8.4", "NFR9.1", "NFR10.1", "NFR11.1"],
+  "coverage": [
+    { "id": "NFR1.1", "status": "OK", "target": "kit/sds-gate-caller.yml" },
+    { "id": "NFR3.1", "status": "OK", "target": "kit/sds-gate-caller.yml" },
+    { "id": "NFR4.1", "status": "OK", "target": "tests/sds-gate-caller-trigger.test.mjs" },
+    { "id": "NFR4.2", "status": "OK", "target": "kit/sds-gate-caller.yml" },
+    { "id": "NFR4.3", "status": "OK", "target": "tests/sds-gate-caller-trigger.test.mjs" },
+    { "id": "NFR4.4", "status": "OK", "target": "aidlc/spaces/default/intents/261110-shared-coverage-gate/construction/u2-gate-trigger-narrowing/code-generation/code-summary.md" },
+    { "id": "NFR4.5", "status": "OK", "target": "tests/sds-gate-caller-trigger.test.mjs" },
+    { "id": "NFR4.6", "status": "OK", "target": "tests/sds-gate-caller-trigger.test.mjs" },
+    { "id": "NFR5.1", "status": "OK", "target": "tests/sds-gate-caller-trigger.test.mjs" },
+    { "id": "NFR5.2", "status": "OK", "target": "tests/sds-gate-caller-trigger.test.mjs" },
+    { "id": "NFR5.3", "status": "OK", "target": "kit/sds-gate-caller.yml" },
+    { "id": "NFR6.1", "status": "OK", "target": "kit/sds-gate-caller.yml" },
+    { "id": "NFR7.1", "status": "OK", "target": "tests/sds-gate-caller-trigger.test.mjs" },
+    { "id": "NFR7.2", "status": "OK", "target": "tests/sds-gate-caller-trigger.test.mjs" },
+    { "id": "NFR7.3", "status": "OK", "target": "aidlc/spaces/default/intents/261110-shared-coverage-gate/construction/u2-gate-trigger-narrowing/code-generation/code-summary.md" },
+    { "id": "NFR8.1", "status": "OK", "target": "kit/sds-gate-caller.yml" },
+    { "id": "NFR8.2", "status": "OK", "target": "tests/sds-gate-caller-trigger.test.mjs" },
+    { "id": "NFR8.3", "status": "OK", "target": "tests/sds-gate-caller-trigger.test.mjs" },
+    { "id": "NFR8.4", "status": "OK", "target": "tests/sds-gate-caller-trigger.test.mjs" },
+    { "id": "NFR9.1", "status": "OK", "target": "tests/sds-gate-caller-trigger.test.mjs" },
+    { "id": "NFR10.1", "status": "OK", "target": "aidlc/spaces/default/intents/261110-shared-coverage-gate/construction/u2-gate-trigger-narrowing/code-generation/code-summary.md" },
+    { "id": "NFR11.1", "status": "OK", "target": "kit/sds-gate-caller.yml" }
+  ]
+}
