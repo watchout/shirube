@@ -49,6 +49,12 @@ test("paths outside the repository are unresolved", () => {
   assert.equal(resolveInput(repo, input(["/etc"], ["tests"])).failure.reasonCode, "TARGET_UNRESOLVED");
 });
 
+test("a declaration outside the repository is named without its path", () => {
+  const f = resolveInput(repo, input(["src", "/fixture-private/home/x.mjs", "../fixture-escape/y.mjs", "nope"], ["tests"])).failure;
+  assert.ok(!f.detail.includes("fixture-private") && !f.detail.includes("fixture-escape"));
+  assert.ok(f.detail.includes("<outside the repository>") && f.detail.includes("nope"));
+});
+
 test("test targets with no test file in them are empty, not a pass", () => {
   const f = resolveInput(repo, input(["src"], ["src"])).failure;
   assert.deepEqual([f.reasonCode, f.field], ["TARGET_EMPTY", "testTargets"]);

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, linkSync, lstatSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -117,6 +117,47 @@ test("the result may not be the input, nor a tracked file, and its folder must e
   }
   assert.equal(readFileSync(fresh("input.json"), "utf8"), GOOD_INPUT);
   assert.equal(readFileSync(fresh("notes.txt"), "utf8"), "tracked file\n");
+});
+
+// Audit round 1 F01, on the real filesystem: a link must never carry the write to another file.
+test("a link at the old temporary name cannot carry the result into a tracked file", async () => {
+  symlinkSync(fresh("notes.txt"), fresh("r-tmp-link.json.tmp"));
+  const r = await inProcess(std("r-tmp-link.json"));
+  assert.equal(r.code, 0);
+  assert.equal(readFileSync(fresh("notes.txt"), "utf8"), "tracked file\n");
+  assert.equal(readJson("r-tmp-link.json").outcome, "match");
+});
+
+test("a folder link that points back at the repository cannot make the input the result", async () => {
+  symlinkSync(".", fresh("alias"));
+  const r = await inProcess(["--input", "input.json", "--result", "alias/input.json"]);
+  assert.deepEqual([r.code, stderrJson(r.stderr).code], [2, "ENTRY_ARGUMENTS_INVALID"]);
+  assert.equal(readFileSync(fresh("input.json"), "utf8"), GOOD_INPUT);
+});
+
+test("a result path that is itself a link, or a hard link of the input, or reaches a tracked file by a link, is refused and nothing changes", async () => {
+  symlinkSync(fresh("notes.txt"), fresh("link-to-notes.json"));
+  linkSync(fresh("input.json"), fresh("hard-input.json"));
+  symlinkSync(fresh("src"), fresh("src-alias"));
+  for (const result of ["link-to-notes.json", "hard-input.json", "src-alias/a.mjs"]) {
+    const r = await inProcess(["--input", "input.json", "--result", result]);
+    assert.deepEqual([r.code, stderrJson(r.stderr).code], [2, "ENTRY_ARGUMENTS_INVALID"], result);
+  }
+  assert.equal(readFileSync(fresh("notes.txt"), "utf8"), "tracked file\n");
+  assert.equal(readFileSync(fresh("input.json"), "utf8"), GOOD_INPUT);
+  assert.equal(readFileSync(fresh("src/a.mjs"), "utf8"), SOURCE_A);
+  assert.equal(lstatSync(fresh("link-to-notes.json")).isSymbolicLink(), true);
+});
+
+// Audit round 1 O01: a path the caller wrote outside the repository is not echoed back.
+test("an absolute or escaping path in a rejected input is not shown in the result or the summary", async () => {
+  writeFileSync(fresh("far.json"), JSON.stringify({ schemaVersion: 1, shape: "node-builtin", denominator: { targets: ["/fixture-private/home/project/source.mjs", "../fixture-escape/x.mjs"] }, testTargets: ["tests"] }));
+  const r = await inProcess(["--input", "far.json", "--result", "r-far.json"], { env: { GITHUB_STEP_SUMMARY: fresh("far-summary.md") } });
+  assert.deepEqual([r.code, readJson("r-far.json").inputFailure.reasonCode], [2, "TARGET_UNRESOLVED"]);
+  for (const surface of [readFileSync(fresh("r-far.json"), "utf8"), readFileSync(fresh("far-summary.md"), "utf8"), r.stdout, r.stderr]) {
+    assert.ok(!surface.includes("fixture-private") && !surface.includes("fixture-escape"));
+  }
+  assert.ok(readFileSync(fresh("r-far.json"), "utf8").includes("<outside the repository>"));
 });
 
 test("a result path outside the repository is allowed when its folder exists", async () => {
