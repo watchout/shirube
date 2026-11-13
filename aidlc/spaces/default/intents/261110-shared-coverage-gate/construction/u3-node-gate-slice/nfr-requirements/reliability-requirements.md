@@ -1,0 +1,54 @@
+# U3 u3-node-gate-slice — 信頼性・失敗の扱いの要件
+
+この単位の門は、成功と数えてはならない物（読めない入力、壊れた記録、失敗した試験、上限超過、未計測）を、すべて名前つきで落とす。ここでは、決定性、失敗の扱い、上限、新旧の同居の要件を、NFR2・NFR4・NFR8 の枝番で書く。可用性の目標（SLA）は、CI の一部として動く command なので持たない。
+
+## Sources
+
+- [desc] Initial description: 共有の網羅率の門を新しい AI-DLC の取り組みとして始める（Owner の指示 https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6759071065、本文 SHA-256 `c5d9ccc3510ff46e5d6661bc8c528cafb7e08d4ce2c86f39f049782eaf7e524b`）。
+- [scope] Workflow-selected scope: feature
+- 要件: [requirements.md](../../../inception/requirements-analysis/requirements.md) の NFR2・NFR4・NFR8、FR4.1〜FR4.4。社内の標準 S4（時刻・乱数・識別子は明示入力）、S5（宣言は証拠でない）、S6（可逆）、S8（失敗を隠さない）。
+- 機能の設計: [rules.md](../functional-design/rules.md)（BR1.x 入力、BR2.3・BR2.4・BR2.7 測定の終わり方、BR3.4・BR3.5・BR3.7 判定、BR3.8 決定性、BR5.2・BR5.3 入口）。答え [Q1]（試験の失敗 = 観測できず）・[Q3]（期限 600 秒、総予算 900 秒）は [functional-design-questions.md](../functional-design/functional-design-questions.md)（arc の答え。Owner の委任 iyasaka-arc#49 6762288830。Owner の言葉ではない）。
+
+## 要件
+
+### NFR2 決定性
+
+- **NFR2.1** 判定の核と文書の組み立てに、現在時刻・乱数・識別子・環境変数・file の読み書きを置かない。核の file にこれらが現れないことを試験で確かめる（`Date`、`Math.random`、`randomUUID`、`process.env`、`node:fs` の import が無い）。時計を読むのは入口と測定の部品だけ。[NFR2、S4、BR3.8]
+- **NFR2.2** 同じ入力（固定した検査済みの入力、固定した MeasurementResult、固定した runId）で、判定と整形を 2 回行うと、結果の文書の文字列がバイトまで一致する。入力の 1 要素（閾値でなく記録の 1 件、runId、path 1 つ）を変えると、出力が変わる。読み捨てる入力が無い。[NFR2、AC10.2.1〜AC10.2.3]
+- **NFR2.3** 実行の識別子は入口が環境から 1 回だけ読んで核へ渡す。`GITHUB_RUN_ID` と `GITHUB_RUN_ATTEMPT` がともに数字だけなら `<ID>-<ATTEMPT>`、ともに無ければ定数 `local`、それ以外は入口の失敗（終了コード 2）。乱数で作らない。[NFR2、S4、BR5.4]
+- **NFR2.4** 実測の経過秒（`measurementAttempt.spentSeconds`）は、時計から作る観測で、実行ごとに異なりうる。決定性の主張は「固定した MeasurementResult（経過秒を含む）に対して」であり、実際の 2 回の実行の経過秒が一致することは主張しない。[NFR2]
+- **NFR2.5** 並べ順は決まっている: path は code-point 順、行の記録は path と行番号の順、理由コードは決まった順、結果の文書の項目は決まった順。ロケールや file システムの列挙の順に依らない。[NFR2、BR3.7、BR4.1]
+
+### NFR4 失敗を隠さない
+
+- **NFR4.1** 入力が読めない・JSON でない・版が違う・未知のキーがある・必須の項目が無い・分母が解決できない・分母が 0 件の時は、成功にせず、結果の文書に `inputFailure`（理由コード・項目・名前つきの説明）を残して終了コード 2 にする。測定には進まない。[NFR4、BR1.1〜BR1.8、AC10.1.1]
+- **NFR4.2** 結果は 3 値（一致・不一致・観測できず）で、観測できずを一致に読み替えない。一致でない結果は（この単位の固定の動作 enforce で）落とす。測定の失敗・失敗した試験・期限と総予算の超過・記録が無い・壊れた記録・数えられた行が 0 件・観測の一時 directory を消せなかった（TEMP_CLEANUP_FAILED）は、すべて観測できず。未計測・流れていない必須の試験・閾値未満は不一致。[NFR4、FR4.1、FR4.2、BR3.4〜BR3.7]
+- **NFR4.3** 測定は 1 回だけ実行し、再試行しない。期限（既定 600 秒）と総予算（既定 900 秒）を宣言し、小さい方を上限にする。超えたら試験の子プロセスの全体（process group）を止め、観測できずにする。止めた後に孫の process が残らないことを、架空の遅い試験の負例で確かめる。[NFR4、FR4.4、BR2.3、Q3]
+- **NFR4.4** 門の code に、失敗を握りつぶす書き方（空の catch、エラーを無視する `.catch`、失敗を成功の値に変える既定値）を置かない。予期しない例外は、入口の最上位で捕まえて終了コード 2 にする。エラーの後に 0 で終わらない。必須の後始末（観測の一時 directory の削除）の失敗は、警告だけで流さず、名前つきの失敗（TEMP_CLEANUP_FAILED）にする。[NFR4、S8、BR5.3、BR2.8]
+- **NFR4.5** 終了コードは 0（落とさない）、1（落とす = 一致でない判定）、2（判定に至らなかった = 入力の失敗・入口の失敗・予期しない例外）の 3 つ。書く物（結果の file、job summary、出力値）の書き込みの失敗は 2。[NFR4、BR5.3]
+- **NFR4.6** 入口は始める時に、`--result` の path の既存の file を消す。実行が途中で止まっても、前の実行の結果が今の結果に見えない。消せない時は終了コード 2。結果の file は一時の file への書き込みと名前の置き換えで作り、書きかけを残さない。[NFR4、S5、BR5.2]
+- **NFR4.7** 必須の試験が 1 本も流れない、流れた試験が全部 skip・todo、試験を 1 件も呼ばない file（空の file、import だけの file。Node が file 全体に出す暗黙の合格は試験に数えない）、試験 file の読み込みの失敗（構文の誤りなど）は、成功と数えない。流れたとは、skip でも todo でもない合格した試験が 1 つ以上あること（暗黙の合格を除く）。[NFR4、FR4.1、Q1、BR2.4、BR3.3]
+- **NFR4.8** 観測値は観測した記録から再計算する。道具が出した割合の数字（`LH`/`LF` を含む）は値に使わず、`DA` の行から数えた件数と食い違う記録は壊れた記録として扱う。観測できない値は null にし、申告された値や前回の値を入れない。[NFR4、S5、BR2.5、BR3.1、BR4.3]
+
+### NFR8 新旧の同居
+
+- **NFR8.1** この単位は、新しい file（`scripts/coverage-gate/`、その試験）を足すだけで、既存の `scripts/hygiene`・`scripts/sds`・workflow・kit を変えない。既存の呼び出し側と利用先は変わらない。既存の `trackedFiles`・`resolveTargets` は、変更せずに呼ぶ。[NFR8、ADR-003]
+- **NFR8.2** 逆向きがある: 足した file を取り除くと、この単位の前の状態に戻り、既存の試験が全部通る。戻した後の状態で既存の試験を流して確かめる（S6）。実装の段で、base の実物の SHA-256 と突き合わせる。[NFR8、S6]
+- **NFR8.3** 入力・結果の JSON は版 1。後の単位（U4・U5・U6）が足す項目は、追加の順で足し、既存の項目の意味と型を変えない。U3 が受け付けない項目（threshold、mode、exclusions、measurement）は未知のキーとして失敗にし、黙って無視しない。[NFR8、契約の追加の規則]
+- **NFR8.4** 入口はまだどの workflow にも呼ばれない（U7 が配線する）ので、この単位が統合されても CI の挙動は変わらない。[NFR8]
+
+## 気づいたこと
+
+- NFR2.4 のとおり、「再実行でバイト一致」は核の性質で、実測の経過秒を含む文書全体の主張ではない。要件 NFR2 の文言（判定の核が時刻などを取らない）と整合する。
+
+## Assumptions & Open Questions
+
+### Assumptions
+
+- [assumption] process group の全体を止める実装が、GitHub Actions の Linux で孫まで確実に止める。コード生成で、架空の遅い試験（孫を起こして眠る）を使って確かめる。確かめられない場合は、設計に戻して直す。
+- [assumption] 結果の file の名前の置き換えが、同じ directory 内で原子的である。`--result` の親 directory が書けない場合は、入口の失敗（終了コード 2）にする。
+- [assumption] 予期しない例外の最上位の捕捉でも、結果の file を書けるとは限らない。その場合は標準エラーに 1 行の JSON を書いて 2 にする。
+
+### Open Questions
+
+1. 総予算を使い切るまでに、期限が先に来た測定と総予算が先に来た測定の見分けは、`endState`（timed_out と budget_exceeded）で行う。後の単位が複数回の測定を足す場合に、この見分けの意味を保てるか（この単位は 1 回だけ）。

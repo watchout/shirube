@@ -1,0 +1,57 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "261110-shared-coverage-gate / U3 u3-node-gate-slice の同PR・設計だけheadを対象とする独立設計監査。AI-DLCのInception(同取り組みはU1のPRで統合済み)を前提に、U3 Functional Design/NFR Requirements/NFR Design/Infrastructure Design、Code Generationの計画・試験手順を一度の監査で照合する。以下のU3NG-xxは本項目集合の識別子であり新しい社内規格・工程・権限ではない。全10項目必須。製品未実装につき、実装・試験の実行・統合の合格を要求も主張もせず、その設計・検証計画と未達の扱いを監査する。旧SDS工程・旧道筋・判定4/5・退役PR/own-code予算を復活させない。今後は同PRに実装を追加し、新headで別途実装監査を要する。",
+  "items": [
+    {
+      "id": "U3NG-01",
+      "criterion": "目的・範囲・受入の整合: 単位の対象が `scripts/coverage-gate/` の新しい部品群(order, judge, input, resolve, lcov, events, events-reporter, runner, measure-node, report, sanitize, emit, cli の13file、行数の見込みで統合・分割は可)と `tests/coverage-gate-*.test.mjs`・`tests/coverage-gate-fixtures.mjs` の追加だけであり、FR1.1・FR1.3・FR1.4・FR2.1〜FR2.3・FR3.1・FR4.1〜FR4.4・FR8.1〜FR8.4(最小)・NFR2〜NFR4・NFR7・NFR9 と、割り当てられた US/AC(functional-design の traceability.json の41件)が設計・計画・試験手順へ欠落なく対応している。閾値の例外・動作の切り替え(U4)、除外(U5)、TypeScript と vitest(U6)、workflow への配線と利用先への配布(U7)、運用の手引き(U8)を混ぜず、U3の完成をそれらの完了として扱わない。U3が受け付けない入力項目(threshold, mode, exclusions, measurement)は未知のキーとして失敗にする。AC10.1.3(workflow の定義の中身の確かめ)をU7へ回す扱い(Deferred)が根拠付きで残っている。",
+      "basis": "D1/D2、requirements、unit-of-work U3、各段の traceability.json、functional-spec、rules BR1〜BR5、infrastructure-specification の変更の中身"
+    },
+    {
+      "id": "U3NG-02",
+      "criterion": "判定の核: 区分は「一致/不一致/観測できず」の3値で、21個の理由コード(入力8、不一致3、観測できず7(TEMP_CLEANUP_FAILED を含む)、入口3。entities.md の集合。数は書いた file から数え直した値)がそれぞれ1つの区分と終了コードへ決まる表(RL1)があり、観測の一時 directory を消せなかった実行が成功の測定でも観測できず(TEMP_CLEANUP_FAILED、値と一覧は null、終了コード1)になり、観測できずが一致へ読み替えられない。割合は切り捨て2桁の表示と整数の厳密比較で、足りない時に100と見せない(Q2)。未計測の file、NOT_RUN(流れた試験が1件も合格していない)、閾値未満、対象行0件が、それぞれどの理由コードと区分になるかが規則(BR3.1〜BR3.8)に漏れなく書かれ、設計の表と規則の文が食い違わない。試験が1つでも失敗(読み込みの失敗を含む)した実行は「観測できず」で、失敗した実行の割合で判定しない(Q1)。判定の核が時計・乱数・環境・file・子プロセスを持たず、同じ入力で同じ出力になる(S4、RL7)。記録からの再計算であり、宣言値(申告された割合や file 数)を観測側へ写さない(S5、RL6)。",
+      "basis": "D2/D5、S4/S5/S8、NFR2.1〜2.5/4.2/4.5/4.7/4.8、rules BR3、reliability-design RL1・RL6・RL7、functional-design-questions Q1・Q2"
+    },
+    {
+      "id": "U3NG-03",
+      "criterion": "入力の契約(版1): 受け付ける項目が schemaVersion(整数1)、shape(\"node-builtin\")、denominator.targets、testTargets、deadlineSeconds、totalBudgetSeconds だけで、それ以外のキー(環境変数経由の追加も含む)は未知のキーとして理由コードと field つきで失敗になる。版違い・欠落・不正値・未対応の shape・分母の解決失敗・分母0件・必須の試験の集合が空、がそれぞれ失敗(入力の失敗は inputFailure つきの結果と終了コード2)になり、成功へ読み替えない。既定値(期限600秒、総予算900秒)の根拠(Q3)が記録され、後の単位が項目を追加の順で足せる(NFR8.3)ことと、既存の意味と型を変えないことが書かれている。解決は既存の `scripts/hygiene/lib.mjs`(blob 90195d5e…、SHA-256 294ca623…)の `resolveTargets`・`trackedFiles` を変更せず呼ぶだけで、重複を1件にして code-point 順に並べる。契約の要約(contract-summary)の記述と矛盾しない。",
+      "basis": "D1/D2/D5、S3/S6、NFR3.3/4.1/8.3、rules BR1.1〜BR1.8、contract-summary、entities、基準 origin/main の bytes(lib.mjs の export)"
+    },
+    {
+      "id": "U3NG-04",
+      "criterion": "測定と子プロセス: 試験の実行が shell を使わず、期限(deadlineSeconds)と総予算(totalBudgetSeconds)の小さい方で process group ごと止まり、止める際の猶予(5秒)の後に孫まで残らない設計(RL2、NFR4.3)になっている。孫まで止まることと、Node 22 未満で試験を走らせず観測できず(CHILD_PROCESS_NOT_COUNTABLE)とすること(PF1、Q4)が検証の計画に入っている。子の環境が、許可した名前の一覧(childEnvAllowlist: PATH, HOME, LANG, LC_ALL, TZ。値は門が置き、親から写さない。NODE_OPTIONS と NODE_PATH は渡さない)だけで空から作られ、一覧が1か所で定義されている(名前を挙げて除く方式ではない)。完全一致の確かめは門が起動に渡す環境(spawn の境界)で行い、実際の子の中では Node 自身が足す変数(NODE_TEST_CONTEXT, NODE_V8_COVERAGE など)を問わず否定だけを確かめる設計になっている(親の環境を継承する形に戻さない)。副作用(親の環境変数に頼る試験は失敗して観測できずになり、成功には倒れない)と、一覧だけで測れない時の扱いが書かれている。一時 directory が成功でも失敗でも消え、消せなかった時は警告で流さず名前つきの失敗(TEMP_CLEANUP_FAILED、観測できず)になり、残りは絶対 path でなく runId で示され、片付けと流し直しの手順(SC6)と、削除関数を差し替えて失敗を注入する負例が計画にある。子の終わり方(起動失敗、signal、非0終了、出来事の有無、記録の有無)が全部どれかの区分になり、再試行しない(NFR11.2)。保証は Node 22 だけで、24・26 は実測の事実として記録するだけで保証しないこと(Q4)が書かれ、「process group の停止が孫まで届く」前提が Assumption として明示され、成り立たない時は設計に戻す扱いが書かれている。",
+      "basis": "D3/D5、S5/S8、NFR1.1〜1.3/1.7/4.3/5.1/5.3/5.6/11.2、rules BR2.1〜BR2.3・BR2.7・BR2.8、reliability-design RL2、performance-design PF1、security-design SC1・SC3"
+    },
+    {
+      "id": "U3NG-05",
+      "criterion": "記録の読み(lcov と試験の出来事): lcov の変換が DA 行だけを使い、LF/LH と DA の整合、重複 (path, line)、cwd の外の path、先頭 `./`、DA が0件のときの扱い(no_records)、読み込みの上限(64 MiB)が規則(BR2.5・BR2.6)に漏れなく書かれ、壊れた記録を成功へ読み替えない(RL6)。試験の出来事の数え上げ(skip・todo・passed・failed・読み込みの失敗・suite の除外)で「流れた試験」の定義(skip でも todo でもない試験が1件以上合格した file だけ)が1つの規則に決まり(BR2.4)、判定の核の入力と食い違わない。Node 22 が試験を1件も呼ばない file(空、import だけ)にも出す file 全体の暗黙の合格(nesting 0・line 1・column 1・name が file の path と等しい test:pass)を試験に数えず、実際の reporter に流した6例(空、import だけ、普通の合格、全 skip、全 todo、読み込みの失敗)と入れ子の path・同名の試験の観測(node22-reporter-observations.md)に基づいていて、空・import だけが ran にならず(TESTS_NOT_RUN)、見分けが外れる向きが安全側(成功に倒れない)で、同じ6例を実際の reporter に流す試験が計画にある。コメントだけの file が未計測に見えることや、LF/LH と DA が実際の Node の出力で一致するという前提が、Assumption として明示され、成り立たない場合に設計へ戻す(または LF/LH の検査を外して理由を記録する)扱いが書かれている。20万件の記録を10秒以内で処理する網(PF2)が性能の保証ではなく二乗の時間を見つけるための確かめとして書かれている。",
+      "basis": "D2/D5、S5/S8、NFR1.4/2.5/4.7/4.8、rules BR2.4〜BR2.6、performance-design PF2、reliability-design RL6"
+    },
+    {
+      "id": "U3NG-06",
+      "criterion": "出力と書き込み: 結果の JSON(版1)、job summary、notice、出力値、標準エラーの5つの面が同じ1つの結果の文書から作られ(OB3)、観測できない値は null で値ありに数えない(OB4、NFR10.2)。項目の順・インデント・改行・末尾改行が固定され、同じ入力でバイト一致する(RL7)。書き込みは、始めに古い結果を消し、一時 file に書いて名前を替える原子的な置き換えで、途中で失敗した実行の後に前の結果が見えない(RL4、T5)。`--result` が `--input` と同じ path か追跡された file の場合は入力の失敗として拒否する(SC4)。notice の `%`・CR・LF、summary のバッククォートなど命令・書式として解釈される文字の無害化(SC5、BR4.7)と、出力値に自由な文字列を載せないこと(SC7)が設計され、環境変数・資格情報・絶対 path を出力に載せない。結果の file の書き込みの失敗と output file の書き込みの失敗が、成功へ読み替えられず終了コード2になる。",
+      "basis": "D2/D3/D5、S5/S8、NFR2.2/4.4〜4.6/5.4/5.7/10.2/10.3、rules BR4.1〜BR4.7・BR5.1〜BR5.5、security-design SC4〜SC7、reliability-design RL3・RL4、observability-design OB1〜OB4"
+    },
+    {
+      "id": "U3NG-07",
+      "criterion": "最小権限と信頼の境界: 新しい secret・資格情報・権限・外部 action・npm 依存・サービスを足さず(NFR6.1〜6.3)、外への通信を持たず(通信の module を import しない)、書く場所が `--result` の file と実行ごとの一時 directory と job summary と出力値の file だけに限られる(SC4、NFR5.5)。入力の経路が `--input` と `--result` の2つだけで、環境変数で入力の項目を足せない(SC2)。子プロセスの起こし方(SC3)で、利用先の追跡された試験を走らせる境界(試験の中身の安全は保証しない、fork の code を書ける資格情報のある文脈で走らせない使い方は U7 が受ける。SC8)が設計に残っている。脅威 T1〜T6 のそれぞれに設計が対応している。子の環境は許可した名前の一覧だけを渡す方式(SC1。知らない名前の秘密も渡らない)で、完全一致は spawn の境界(起動関数を差し替えた単体の試験)で確かめ、実際の子の中では、親に置いた既知・未知・小文字の名前の偽の秘密3種類と NODE_OPTIONS・NODE_PATH の名前も値も子が書き出した環境と出力に現れないことの否定だけを確かめる試験が計画にある(Node 自身が起動後に足す変数は問わない)。この2段が、要件(NFR5.1)・設計(SC1)・機能の規則(BR2.8)・計画(Step 6)・試験の手順・監視設計の観測表で同じ意味にそろい、実際の子に名前の完全一致を求める記述がどこにも残っていない。一時 directory の削除の失敗は成功と記録されず(SC6、TEMP_CLEANUP_FAILED)、警告だけで流す道が無い。残る面(試験の中身の安全は保証しない、U7 の本防御)が、security-design の KY の先読みと整合して判定できる。",
+      "basis": "D3/D5、S9、escalation-policy、NFR5.1〜5.8/6.1〜6.3、security-design SC1〜SC8・脅威との対応・Open Question 1、design-approval-records の KY の先読み"
+    },
+    {
+      "id": "U3NG-08",
+      "criterion": "構造と知識の重複: 論理部品(LC1)の依存の向きが一方向で循環せず、純粋な核(order, judge, input, lcov, events, report, sanitize)が時計・乱数・UUID・環境・file・子プロセスを持たない(S4)ことを機械で確かめる試験が計画にある。区分・理由コード・閾値の既定・入力の既定・子に渡す名前の一覧の literal が持ち主の file にだけ現れる(S3、LC4)ことと、code-point 順の比較の持ち主が1か所であることが決まっている。13 file はいずれも300行以内の見込みで、既存の dependency-cruiser・knip・jscpd・ESLint・OWN-01 に新しい file が当たる場合は設定を変えず PR に理由を書く扱い(NFR9.3)が書かれ、「作者が基準を緩めて通す」道が無い。時刻・乱数・識別子は呼ぶ側が渡す。S2(抽象は3例目)に照らして、将来のために先に作る抽象が無い。",
+      "basis": "D2/D5、S2/S3/S4、NFR2.1/3.1〜3.3/9.1〜9.3、logical-components LC1〜LC5"
+    },
+    {
+      "id": "U3NG-09",
+      "criterion": "TDD・網羅率・観測の正直さ: 部品ごとに5〜8件の標準の方針と、境界の結合の試験を、Red(失敗を確かめて別 commit)→Green→Refactor で行う計画で、正例・負例(対象違い、古い記録、欠落、改変、実行不能、再実行、人待ちの停止)が規則・要件へ対応付けられている。試験は Node 組込みの node:test、skip と todo を置かず、fixture は架空の名前と値だけ(gitleaks を踏む形を使わない)。行の網羅率の床は100%で、門自身を `scripts/coverage-gate/`(directory の宣言。入力に `**` を書かない)に向けた結果と Node 組込みの lcov の別計算を突き合わせる計画(OB5)があり、対象0件・記録なし・不一致・申告だけの値を成功に数えない。観測した値(実行数・合格数・失敗数・skip 数)を申告値で写さない。実装は clone の worktree で base の実物から作り、最初に package.json・ci.yml・lib.mjs の SHA-256 が基準と一致することを観測する(今回の設計記録の作成時にも一致を観測した)。配線された workflow での実行、Node 22 以外の CI での確かめは「観測できなかった」と書き、成功と書かない。",
+      "basis": "D2/D5、S5/S8、team実践(TDD、行の網羅率100%、観測値の機械可読な記録)、NFR7.1〜7.6/10.1、observability-design OB5、monitoring-design、code-generation-plan Steps 1〜11、unit-test-instructions"
+    },
+    {
+      "id": "U3NG-10",
+      "criterion": "復旧・守る物・独立性・公開差分の正直さ: 変更が追加だけ(既存の hygiene・sds・workflow・kit・package.json・設定を変えない)で、足した file を除くと base の状態に戻り、既存の試験が通ることを1回観測する計画がある(RL8)。どの workflow も門を呼ばないので統合しても CI の挙動は変わらない(NFR8.4)。この単位が触れない保護対象(workflow、必須検査、branch protection、DB の構造、資格情報、本番、料金、契約 .v2)が列挙され、門を必須の検査へつなぐ U7 が R3 以上でその Owner の対象 head の承認を U7 で取ることが、リスク R2 の理由(新しい file と試験だけ。どの CI からも呼ばれない)とともに記録されている。段の承認・arc の答え・中継の通知を Owner の許可に読み替えていない(arc の答えは Owner の言葉でないと各記録に書かれている)。設計監査PASSの前に `scripts/` と `tests/` を作らず、PASS の後に同じ PR へ実装を足し、新 head で CI・独立実装監査・作者の受領を揃え、作者以外の suite-lead が統合する。1単位1PR。公開 PR に含める記録が U3 の設計・計画・試験手順・読み戻し・本項目集合に限られ、`audit/`・`.aidlc-engine/`・段の日記・state/cursor・非公開の土台の識別子/コード/path・私的な会話・秘密を含まない。DB を持たないため S1・DB 基準は非該当、S6 の逆向きと同居、S7(外部への効果を持たない)の非該当、S8 を保つ根拠が書かれている。",
+      "basis": "D1/D4/D5/D6、S1/S6/S7/S8、protected-surface-owner-gate R1、aidlc-only §2、team実践(P1/P3)、NFR8.1〜8.4、cicd-pipeline、design-approval-records"
+    }
+  ]
+}
