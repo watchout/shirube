@@ -72,6 +72,11 @@ test("the real write creates the file private to the owner", () => {
   assert.equal(statSync(path("private.json")).mode & 0o077, 0);
 });
 
+test("a file that was created but could not be filled is removed again, not left half-made", () => {
+  assert.throws(() => FILE_IO.write(path("half.tmp"), 42));
+  assert.equal(existsSync(path("half.tmp")), false);
+});
+
 test("guarding a result path: a plain new file in an existing folder is accepted as its real path", () => {
   const ok = guardResultPath({ cwd: dir, input: "in.json", result: "new-result.json", tracked: () => [] });
   assert.equal(ok, join(realpathSync(dir), "new-result.json"));

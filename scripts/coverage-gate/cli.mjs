@@ -2,11 +2,11 @@
 // Order is fixed: check the arguments, read the run id, remove the old result, check the input, measure, judge, write.
 // Exit 0 = nothing to fail on, 1 = a verdict that fails, 2 = no verdict was reached (bad input, bad invocation, an
 // output that could not be written, an unexpected exception). An entry failure is one JSON line on stderr and no result.
-import { existsSync, readFileSync, statSync } from "node:fs";
-import { dirname, relative, resolve } from "node:path";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { trackedFiles } from "../hygiene/lib.mjs";
-import { FILE_IO, emitOutputs, removeOldResult } from "./emit.mjs";
+import { FILE_IO, emitOutputs, guardResultPath, removeOldResult } from "./emit.mjs";
 import { checkInput } from "./input.mjs";
 import { judge } from "./judge.mjs";
 import { measureNode } from "./measure-node.mjs";
@@ -36,14 +36,11 @@ function parseArguments(argv) {
   return { input: found.get("--input"), result: found.get("--result") };
 }
 
-// The result path is deleted at the start, so it must never be the input or a tracked file, and its folder must exist.
+// The result path is deleted at the start and written at the end, so it must never be the input, a tracked file or a
+// link (judged by the real file, not the spelling), and its folder must exist. Everything later uses the path returned.
 function checkResultPath({ cwd, input, result }) {
-  const resultPath = resolve(cwd, result);
-  const parent = dirname(resultPath);
-  const inside = relative(cwd, resultPath);
-  const tracked = !inside.startsWith("..") && trackedFiles(cwd).includes(inside);
-  const parentOk = existsSync(parent) && statSync(parent).isDirectory();
-  if (resultPath === resolve(cwd, input) || tracked || !parentOk) throw new EntryError("ENTRY_ARGUMENTS_INVALID");
+  const resultPath = guardResultPath({ cwd, input, result, tracked: () => trackedFiles(cwd) });
+  if (resultPath === null) throw new EntryError("ENTRY_ARGUMENTS_INVALID");
   return resultPath;
 }
 

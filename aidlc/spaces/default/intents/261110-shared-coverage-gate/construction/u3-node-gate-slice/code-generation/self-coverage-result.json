@@ -5,8 +5,8 @@
   "shouldFail": false,
   "mode": "enforce",
   "reasonCodes": [],
-  "coveredLines": 1004,
-  "totalLines": 1004,
+  "coveredLines": 1067,
+  "totalLines": 1067,
   "lineRatioPercent": "100.00",
   "effectiveThresholdPercent": "100.00",
   "thresholdException": null,
@@ -14,7 +14,7 @@
     "name": "node-builtin",
     "measuredTarget": "declared tracked sources",
     "toolName": "node --test coverage",
-    "toolVersion": "24.22.1"
+    "toolVersion": "24.22.3"
   },
   "denominator": {
     "declaredTargets": [
@@ -31,13 +31,13 @@
   "perFile": [
     {
       "path": "scripts/coverage-gate/cli.mjs",
-      "coveredLines": 106,
-      "totalLines": 106
+      "coveredLines": 103,
+      "totalLines": 103
     },
     {
       "path": "scripts/coverage-gate/emit.mjs",
-      "coveredLines": 43,
-      "totalLines": 43
+      "coveredLines": 100,
+      "totalLines": 100
     },
     {
       "path": "scripts/coverage-gate/events-reporter.mjs",
@@ -81,8 +81,8 @@
     },
     {
       "path": "scripts/coverage-gate/resolve.mjs",
-      "coveredLines": 33,
-      "totalLines": 33
+      "coveredLines": 42,
+      "totalLines": 42
     },
     {
       "path": "scripts/coverage-gate/runner.mjs",
@@ -95,7 +95,7 @@
       "totalLines": 17
     }
   ],
-  "recordsSha256": "4ffb8b846378c2dded1d37d2431101d4817f87c75230def3a6ba6732137c9f93",
+  "recordsSha256": "5adc73457ce12cb647733885f2642528bb1b1e2169bc1940d11c56406b0e3db3",
   "measurementAttempt": {
     "toolName": "node",
     "deadlineSeconds": 600,

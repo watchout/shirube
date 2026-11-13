@@ -30,7 +30,7 @@
     },
     {
       "id": "U3IA-06",
-      "criterion": "出力と書き込みの実物: 結果の JSON(版1)、job summary、notice、出力値、標準エラーが同じ1つの結果の文書から作られ、判定を読み直さない。観測できない値は null。項目の順・インデント・改行・末尾改行が固定され、同じ入力でバイト一致する(固定した MeasurementResult と runId に対して)。始めに古い結果を消し、一時 file に書いて名前を替える。`--result` が `--input` と同じ path か追跡された file なら入力の失敗として拒否する。notice の `%`・CR・LF、summary のバッククォートの無害化があり、出力値は区分の名前と数だけ。環境変数・資格情報・絶対 path を出力に載せない。書き込みの失敗は成功へ読み替えられず終了コード2。入口の失敗(引数・環境・書き込み・予期しない例外)は結果の文書を作らず標準エラーに1行の JSON `{\"code\",\"message\"}` だけを書き、予期しない例外では message・stack・絶対 path を書かない(入力の失敗だけは結果の文書に残す。設計の NFR4.10 と食い違わない)。終了コード 0・1・2 の写像が1か所。",
+      "criterion": "出力と書き込みの実物: 結果の JSON(版1)、job summary、notice、出力値、標準エラーが同じ1つの結果の文書から作られ、判定を読み直さない。観測できない値は null。項目の順・インデント・改行・末尾改行が固定され、同じ入力でバイト一致する(固定した MeasurementResult と runId に対して)。始めに古い結果を消し、毎回新しい名前の一時 file(`O_CREAT|O_EXCL|O_NOFOLLOW`、fsync)に書いて名前を替える。`--result` が `--input` と同じ実体(リンク・hard link・別名の folder 経由を含む)、追跡された file の実体、または既にリンクなら、実際の filesystem で入力・追跡 file・リンク先がバイト不変のまま拒否する(round 1 の F01)。notice の `%`・CR・LF、summary のバッククォートの無害化があり、出力値は区分の名前と数だけ。環境変数・資格情報・絶対 path を出力に載せない(拒まれた入力に書かれた repo の外の path は `<outside the repository>` に置き換わる。round 1 の O01)。書き込みの失敗は成功へ読み替えられず終了コード2。入口の失敗(引数・環境・書き込み・予期しない例外)は結果の文書を作らず標準エラーに1行の JSON `{\"code\",\"message\"}` だけを書き、予期しない例外では message・stack・絶対 path を書かない(入力の失敗だけは結果の文書に残す。設計の NFR4.10 と食い違わない)。終了コード 0・1・2 の写像が1か所。",
       "basis": "D2/D3/D5、S5/S8、NFR2.2/2.3/4.4〜4.6/4.9〜4.11/5.4/5.7/10.2/10.3、rules BR4・BR5、security-design SC4〜SC7、reliability-design RL3・RL4、observability-design OB1〜OB4"
     },
     {
@@ -45,7 +45,7 @@
     },
     {
       "id": "U3IA-09",
-      "criterion": "TDD・網羅率・観測の正直さ: Red の commit(試験だけ。実装なし)が先にあり、その時点で試験が失敗した出力(ERR_MODULE_NOT_FOUND、tests/pass/fail の数)が PR 本文にあり、次の Green の commit が通した記録がある。試験は node:test と assert/strict、skip と todo が無い。門の試験175件が Node 22・24・26 で合格し、`npm test` 全体の実行数・合格数・失敗数・skip 数が base の761件と新しい175件の和に一致する(PR本文の数と実測が一致)。行の網羅率: 門自身を `scripts/coverage-gate/` に向けた結果(coveredLines/totalLines、解決した file 数、未計測・流れていない・失敗の一覧が空)と、Node 組込みの lcov の別計算の突き合わせが file ごとに一致し、対象0件・記録なし・不一致・申告だけの値を成功に数えていない。CI の `test`(Node 26)と hygiene の結果を、この head の実測として記録し、配線された workflow での実行(U7)、Node 22 以外・Linux の runner での process group の停止は「観測できなかった」と書かれ、成功と書かれていない。見直し役とサブエージェントを呼んでいない(区分 none)ことが書かれている。",
+      "criterion": "TDD・網羅率・観測の正直さ: Red の commit(試験だけ。実装なし)が先にあり、その時点で試験が失敗した出力(ERR_MODULE_NOT_FOUND、tests/pass/fail の数)が PR 本文にあり、次の Green の commit が通した記録がある。試験は node:test と assert/strict、skip と todo が無い。門の試験187件(round 1 の是正で12件増)が Node 22・24・26 で合格し、`npm test` 全体の実行数・合格数・失敗数・skip 数が base の761件と新しい187件の和に一致する(PR本文の数と実測が一致)。行の網羅率: 門自身を `scripts/coverage-gate/` に向けた結果(coveredLines/totalLines、解決した file 数、未計測・流れていない・失敗の一覧が空)と、Node 組込みの lcov の別計算の突き合わせが file ごとに一致し、対象0件・記録なし・不一致・申告だけの値を成功に数えていない。CI の `test`(Node 26)と hygiene の結果を、この head の実測として記録し、配線された workflow での実行(U7)、Node 22 以外・Linux の runner での process group の停止は「観測できなかった」と書かれ、成功と書かれていない。見直し役とサブエージェントを呼んでいない(区分 none)ことが書かれている。",
       "basis": "D2/D5、S5/S8、team実践(TDD、行の網羅率100%、観測値の機械可読な記録)、NFR7.1〜7.6/10.1、observability-design OB5、monitoring-design、code-generation-plan Steps 1〜11、unit-test-instructions"
     },
     {
