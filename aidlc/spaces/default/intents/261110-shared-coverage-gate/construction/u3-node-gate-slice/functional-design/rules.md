@@ -303,7 +303,7 @@ rules:
     statement: 入口の引数は --input と --result を 1 回ずつ、値つきだけ。環境変数や別の引数で入力の項目を足したり上書きしたりしない。
     applies_to: CoverageGateCli
     trigger: 入口の起動
-    logic: 引数がこの形でない THEN ENTRY_ARGUMENTS_INVALID を標準エラーに 1 行（JSON）で書いて終了コード 2。「この形でない」には、--result の path が --input の path と同じ、または追跡されている file の path（BR5.2 で消す対象が利用先の file になるのを防ぐ）の場合を含む（NFR 設計 SC4 で足した具体化）。
+    logic: 引数がこの形でない THEN ENTRY_ARGUMENTS_INVALID を標準エラーに 1 行（JSON）で書いて終了コード 2。「この形でない」には、--result の path が --input の path と同じ実体、または追跡されている file の実体、または既にリンクである場合を含む（BR5.2 で消す対象・書く対象が利用先の file になるのを防ぐ。比較は文字列でなく実体 path（親 directory の実体 path と file 名）と、存在すれば dev・ino で行う。NFR 設計 SC4 の具体化。独立の実装監査 round 1 の F01 を受けて、文字列の比較からリンクを考慮した実体の比較に直した。arc の答え。Owner の言葉ではない）。
     violation: 測定に進まない。
     source: [NFR4, FR5.4, NFR5]
 

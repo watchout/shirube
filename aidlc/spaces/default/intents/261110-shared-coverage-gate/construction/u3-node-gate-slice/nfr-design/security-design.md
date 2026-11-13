@@ -33,7 +33,8 @@ NFR5.1〜NFR5.8 と脅威 T1〜T6 に対する設計。認証・認可・暗号�
 ### SC4 書く面を限る（NFR5.5・T5）
 
 - 書くのは 5 つだけ: `--result` の path（結果の JSON）、その一時の file、実行ごとの一時 directory、job summary、出力値の file（`GITHUB_OUTPUT`）、標準出力（notice）、標準エラー。それ以外の path を作らない。
-- `--result` の path は、`--input` の path と同じ、または追跡されている file の path であれば ENTRY_ARGUMENTS_INVALID（測定の前に判定する）。入口が始めに既存の結果を消す（NFR4.6）ので、これを許すと利用先の追跡された file（入力そのもの、ソースなど）を消せてしまう。結果の path の親 directory は存在し書ける物に限り、無ければ作らず失敗にする。
+- `--result` の path は、実体で判定する（独立の実装監査 round 1 の F01。文字列の比較ではリンクを経由した別名を見逃す）。(1) 親 directory の実体 path（`realpath`）を求め、実体 path と file 名で結果の実体 path を作る。(2) 結果の path が既にリンク（`lstat`）なら拒む。(3) 結果の実体 path が `--input` の実体 path と同じ、または dev・ino が同じ（存在する場合）なら拒む。(4) 結果の実体 path が repo の root の実体 path の下で、追跡されている file なら拒む。いずれも ENTRY_ARGUMENTS_INVALID（測定の前に判定する）。入口が始めに既存の結果を消し（NFR4.6）、あとで書くので、これを許すと利用先の追跡された file（入力そのもの、ソースなど）を消せる・書き換えられる。以降の削除と書き込みは、検査した実体 path だけを使う。結果の path の親 directory は存在し書ける物に限り、無ければ作らず失敗にする。repo の外の directory への結果は、実体で見て追跡された file でなければ許す（外の directory に追跡された file は無い）。
+- 結果の一時の file は、毎回新しい名前（`<結果の file 名>.<乱数>.tmp`。乱数は adapter の `emit.mjs` が作り、核は持たない。S4）を、`O_CREAT|O_EXCL|O_NOFOLLOW` で開く（既存の file やリンクがあれば開けず失敗）。書いて `fsync` し、閉じてから `rename` する。固定の名前を使わない（リンクを置かれても書き込みが届かない）。
 - 読むのは、`--input` の file、観測の file（子が作った一時 directory 内の 2 つ）、既存の `trackedFiles`・`resolveTargets` が読む物だけ。ネットワークの module を import しない（試験で、`scripts/coverage-gate/` の import に `node:net`・`node:http`・`node:https`・`node:dns`・`fetch` が無いことを確かめる）。
 
 ### SC5 出力の無害化（NFR5.4・T2）
@@ -51,11 +52,11 @@ NFR5.1〜NFR5.8 と脅威 T1〜T6 に対する設計。認証・認可・暗号�
 - 消せなかった場合は、成功と記録しない（設計監査 round 1 の F03。arc の答え。Owner の委任 iyasaka-arc#49 6762288830。Owner の言葉ではない）。消す処理の失敗は `runner.mjs` が `cleanupFailed` を真にして返し、判定は観測できず（理由コード TEMP_CLEANUP_FAILED）、終了コードはほかの観測できずと同じ 1（落とす）。測定がほかの点で成功していても、成功とは記録しない。警告だけで流す道を持たない（S8、NFR4.4）。
 - 残った directory は、絶対 path でなく runId で示す（結果の文書にも標準エラーにも絶対 path を載せない。NFR5.7）。流れの手順: (1) 結果の文書の runId を読む、(2) 担当が OS の一時領域から、名前が `coverage-gate-<runId>-` で始まる directory の権限を直して消す、(3) 同じ入力で門を流し直す。消さずに流し直しても、runId の違う新しい directory を作るので、前の実行の観測は混ざらない。
 - 検証: 削除関数を差し替えて失敗を注入する負例を置く（実際の fs で消せない状況は、権限の無い fixture が環境に依るので、再現を成功の根拠にしない）。この負例で、(a) 成功する測定でも cleanupFailed が真になり、判定が観測できず・TEMP_CLEANUP_FAILED・終了コード 1 になること、(b) 結果の文書に絶対 path が無く runId があること、(c) 次の実行で前の directory の中身が混ざらないこと、(d) 削除が成功する通常の実行では偽のままであること、を確かめる。
-- 結果の file は、`--result` と同じ directory に一時の名前で書き、`rename` で置き換える（同じ directory 内は原子的）。書きかけを残さない。書けなかった場合は一時の file を消して ENTRY_OUTPUT_FAILED。
+- 結果の file は、`--result` と同じ directory に、上の SC4 の一時の file（毎回新しい名前、`O_EXCL|O_NOFOLLOW`、`fsync`）で書き、`rename` で置き換える（同じ directory 内は原子的）。書きかけを残さない。書けなかった場合は一時の file を消して ENTRY_OUTPUT_FAILED。
 
 ### SC7 出力に載せない物（NFR5.7・T3）
 
-- 載せるのは、repo からの相対 path、固定の文型、観測した数、runId、工具の版だけ。環境変数の値、資格情報の名前の値、絶対 path は載せない。
+- 載せるのは、repo からの相対 path、固定の文型、観測した数、runId、工具の版だけ。環境変数の値、資格情報の名前の値、絶対 path は載せない。拒まれた入力に書かれた repo の外の path（絶対 path、`..` で外へ出る path）は、結果と summary に出す時に `<outside the repository>` に置き換える（独立の実装監査 round 1 の O01。入力の自由な文字列の反映でも SC7 を守る）。
 - 例外の説明（予期しない例外）には、例外の名前（`error.name`）と固定の分類だけを書き、`error.message` や stack をそのまま載せない（絶対 path や環境の値が混じりうる）。
 - 検証: 環境に架空の目印（`FIXTURE_SECRET_MARK`）を置き、すべての出力面（結果の JSON、summary、notice、出力値、標準出力、標準エラー）にその値と一時 directory の絶対 path が現れないことを確かめる。
 
