@@ -229,9 +229,9 @@ READYはAsia/Tokyoの2026-11-06（含む）、UTC 2026-11-05T15:00:00Zから。s
 
 ### Step 11 — 実PR取得→核→実CI停止の統合
 
-- [ ] real-pr試験2シナリオ（実取得した現在PRの評価と、同じ取得対象に結ぶ負例/不能停止）を作り、前提不足はskip/PASSへ変えない。実対象番号/head/base/版/完全性/実digest/理由/exit/CI runを対応付ける。
-- [ ] 候補コードは資格情報なしの試験jobで評価し、read-only readerが別境界で取得した公開実PRデータだけを注入する。導入前は固定caller側の既存gh apiを許可したREST route/固定argvで使ってraw応答を採取し、新しい候補evidence moduleへは資格情報なしで応答/受信metadataを渡す。候補のreader moduleを資格情報付きで実行して自身を信頼版と呼ばない。reader jobで候補script/test/buildを実行せず、候補をtrusted toolsへ自動昇格しない。
-- [ ] 必要Owner権限成立後、U1 workflowを既存受付workflowから分離して結線し、job不合格が実際に停止へ伝わることを確認する。ci.yml/hygiene.ymlとの相互needs、設計モードPASS、mandatory削除/checks空は作らない。
+- [ ] real-pr試験2シナリオ（実取得した現在PRの評価と、同じ取得対象に結ぶ負例/不能停止）を作り、前提不足はskip/PASSへ変えない。実対象番号/head/base/版/完全性/実digest/理由/exit/CI runを対応付ける。 **【持ち越し: 後の単位へ移す（arc の判断、委任 #49 6762288830）。この PR では行わず、完了扱いにしない。理由 = U1 の entry は workflow が入るまで CI から呼ばれず、実 PR の取得予算（固定 100 request 対 必要 133 blob）は設計の変更と設計監査のやり直しが要り、cutoff 後の 6 段の可読 READY が実 PR に無いため】**
+- [ ] 候補コードは資格情報なしの試験jobで評価し、read-only readerが別境界で取得した公開実PRデータだけを注入する。導入前は固定caller側の既存gh apiを許可したREST route/固定argvで使ってraw応答を採取し、新しい候補evidence moduleへは資格情報なしで応答/受信metadataを渡す。候補のreader moduleを資格情報付きで実行して自身を信頼版と呼ばない。reader jobで候補script/test/buildを実行せず、候補をtrusted toolsへ自動昇格しない。 **【持ち越し: 後の単位へ移す（arc の判断、委任 #49 6762288830）。この PR では行わず、完了扱いにしない。理由 = U1 の entry は workflow が入るまで CI から呼ばれず、実 PR の取得予算（固定 100 request 対 必要 133 blob）は設計の変更と設計監査のやり直しが要り、cutoff 後の 6 段の可読 READY が実 PR に無いため】**
+- [ ] 必要Owner権限成立後、U1 workflowを既存受付workflowから分離して結線し、job不合格が実際に停止へ伝わることを確認する。ci.yml/hygiene.ymlとの相互needs、設計モードPASS、mandatory削除/checks空は作らない。 **【持ち越し: 後の単位へ移す（arc の判断、委任 #49 6762288830）。この PR では行わず、完了扱いにしない。理由 = U1 の entry は workflow が入るまで CI から呼ばれず、実 PR の取得予算（固定 100 request 対 必要 133 blob）は設計の変更と設計監査のやり直しが要り、cutoff 後の 6 段の可読 READY が実 PR に無いため】**
 
 対応: FD-T01〜05/17/19/20、US2.1/2.2/3.2/4.2/4.3、NFR1.2/2.1/8.1/10.2。現時点でroot pinなし/base固定版にU1なし、live check名/branch protection未観測。既存受付は指定checkと対応t.workflow全体successを必要とし、repo全workflow成功へ拡大しない。保護設定が未成立U1をrequiredにしている等なら既存権限経路で停止し、条件を弱めない。
 
@@ -240,7 +240,7 @@ READYはAsia/Tokyoの2026-11-06（含む）、UTC 2026-11-05T15:00:00Zから。s
 ### Step 12 — 文書・追跡・同PRの完了条件
 
 - [ ] 実装後にだけcode-summary/traceability/source-manifestを正規Step 5で生成し、実source/試験/FD-T/BR/NFR/AC/コマンド/実結果を結ぶ。planのcheckboxは実施したStepだけチェックする。engine専用questions/diary/stateを直接編集しない。
-- [ ] 公開pr-records.jsonを既存権限下のallowlist変換で作り、初回Inceptionと自単位必要記録を同PRへ含める。private audit/.aidlc-engine/他repo記録/人返信を含めない。掲載file自身/監査comment/CI結果は固定自己参照除外だけを使い、別の構造/対象/充足検査は残す。
+- [ ] 公開pr-records.jsonを既存権限下のallowlist変換で作り、初回Inceptionと自単位必要記録を同PRへ含める。private audit/.aidlc-engine/他repo記録/人返信を含めない。掲載file自身/監査comment/CI結果は固定自己参照除外だけを使い、別の構造/対象/充足検査は残す。 **【持ち越し: 後の単位へ移す（arc の判断、委任 #49 6762288830）。この PR では行わず、完了扱いにしない。理由 = U1 の entry は workflow が入るまで CI から呼ばれず、実 PR の取得予算（固定 100 request 対 必要 133 blob）は設計の変更と設計監査のやり直しが要り、cutoff 後の 6 段の可読 READY が実 PR に無いため】**
 - [ ] 実装headの新CI/独立実装監査/作者受領/必要公開Owner判断・R3/R4 exact-head/別suite-lead統合をそれぞれ確認する。U1 PASSや設計監査で代用しない。適用Build and Test/CI Pipeline/Operationは正式案内どおり続く。
 - [ ] U1が済む境目で指定順U1→U4→U2→U3→U5→U7→U6の正式runtime反映を親が確認し、不成立ならU4前にOwnerへ差を返す。7依存辺・名前・state/cache/jump/new toolで回避しない。
 

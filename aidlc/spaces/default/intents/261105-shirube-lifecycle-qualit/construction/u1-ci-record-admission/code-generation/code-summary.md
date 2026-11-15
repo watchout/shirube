@@ -154,6 +154,18 @@ node --test --experimental-test-coverage --test-coverage-lines=100 --test-covera
 | `scripts/sds/stage.mjs` | 27/27 | 100.00% |
 | `scripts/sds/yaml.mjs` | 8/8 | 100.00% |
 
+## Carried Over to a Later Unit
+
+arc の判断（委任 #49 6762288830）で、次の4件はこの PR では行わず、後の単位（u1 の続き。名前は engine の単位の一覧に合わせる）へ移した。計画 Step 11 の 3 手順と Step 12 の `pr-records.json` の手順に、移した印を付けた（計画の承認の問いに arc が Approve Plan と答えた）。完了扱いにしていない。
+
+| 持ち越し | 理由 | 後の単位での扱い |
+|---|---|---|
+| 実 PR/CI の試験 U1-REAL01・U1-REAL02 | U1 の entry は workflow が入るまで CI から呼ばれず動かない。実 PR の完全取得は固定 100 request に対し必要 blob が 133 件で、予算は設計の変更になる。cutoff 後の 6 段（scope-definition・team-formation・approval-handoff・reverse-engineering・practices-discovery・delivery-planning）の可読 READY が実 PR に無く、実評価は正しく FAIL になる | 取得予算は設計の記録を直して設計監査をやり直す。試験は `tests/u1-real/` に置き root の glob に入れない（計画の path・command の変更）。READY の不足は、実 PR の記録がそろうまで REAL01 が成り立たない事実として記録し、そろえ方は後の単位の設計で決める |
+| 公開 `pr-records.json` | 内部記録から公開用へ写す producer も schema も新設しない計画で、手書きは申告値になる | 後の単位で、実 PR の記録の取得方式とあわせて決める |
+| 別 workflow `.github/workflows/ci-record-admission.yml` の新設 | 守る物（Owner の判断）。この PR に入れない | 後の単位の設計監査 PASS の後に、arc が Owner に exact-head を伺う |
+
+この PR で保証する範囲は、単位の試験 80 件、新 module の行網羅率 100%、既存の既定の呼び出しの互換までである。四条件の判定が実 PR で CI を止めること、実取得が予算内で完了することは、この PR では示していない。
+
 ## Traceability and Pending Work
 
 [traceability.json](traceability.json) は割当AC30、詳細NFR19、BR25の74 IDを一度ずつ列挙し、60 OK・4 N/A・10 GAPを区別した。OKは現在存在する実装/試験pathを指し、単位全体の完了を意味しない。元の4 N/Aと後続担当境界は保持した。Ownerが省略を指示していない未完項目をDeferredへ変えていない。
