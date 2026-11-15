@@ -48,6 +48,8 @@ export function projectApproval(input) {
   const choice = checkpointChoice(input);
   if (!POSITIVE_CHOICES[input.kind].includes(choice)) return null;
   const approval = { kind: input.kind, choice, recordRef: input.recordRef };
+  // Only a choice the checkpoint formally offered reaches here (completionChoice), so the public record keeps that fact for the consumer.
+  if (choice === "Accept as-is") approval.acceptAsIsOffered = true;
   if (input.kind === "stage-completion") {
     validateRef(input.approvalRecordRef);
     if (typeof input.native.recordedAt !== "string") return null;

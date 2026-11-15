@@ -15,7 +15,7 @@
     },
     {
       "id": "U1IM-03",
-      "criterion": "四条件の判定と三値（S5/S8）: 必要記録/承認・適用 READY・実内容 digest・同 PR 先行設計監査の四条件だけを集約し、FAIL が UNKNOWN より優先し、必須の UNKNOWN を PASS に読み替えない。観測できず・部分入力・未知の critical/major・予算超過・空の必須集合が PASS にならない。READY は段完了承認日で 2026-11-06 Asia/Tokyo を含む境界を使い、閾値後の不足・再開/再承認を免除しない。負例が試験にある。",
+      "criterion": "四条件の判定と三値（S5/S8）: 必要記録/承認・適用 READY・実内容 digest・同 PR 先行設計監査の四条件だけを集約し、FAIL が UNKNOWN より優先し、必須の UNKNOWN を PASS に読み替えない。観測できず・部分入力・未知の critical/major・予算超過・空の必須集合が PASS にならない。READY は段完了承認日で 2026-11-06 Asia/Tokyo を含む境界を使い、閾値後の不足・再開/再承認を免除しない。負例が試験にある。 受け入れる計画の表は段の定義から決まる下限（construction は見直しの実施、reverse-engineering・code-generation 以外は要約の確認、construction 以外は完了）を下回れず、下回れば INPUT_UNOBSERVABLE の UNKNOWN になる。Accept as-is は projection が正式に提示された選択にだけ残す印（acceptAsIsOffered）がある時だけ承認として数え、印の無い Accept as-is は REQUIRED_RECORD_MISSING になる。両方の正例と負例が試験にある。",
       "basis": "D3/D4/D5/D11、S5/S8"
     },
     {
@@ -40,7 +40,7 @@
     },
     {
       "id": "U1IM-08",
-      "criterion": "TDD と行網羅率: 試験が node:test と assert だけで書かれ、正例と負例（対象違い・古い記録・欠落・改変・実行不能・再実行）が各 module にある。skip・todo・空登録・assert の無い試験が無い。新 7 module と変更 2 file の行網羅率が実測で 100%（code-summary の表と実測が一致）で、除外 pragma・閾値の低下が無い。entry 試験が壁時計に依存しない（expires_at を固定）。",
+      "criterion": "TDD と行網羅率: 試験が node:test と assert だけで書かれ、正例と負例（対象違い・古い記録・欠落・改変・実行不能・再実行）が各 module にある。skip・todo・空登録・assert の無い試験が無い。新 7 module と変更 2 file の行網羅率が実測で 100%（code-summary の表と実測が一致）で、除外 pragma・閾値の低下が無い。entry 試験が壁時計に依存しない（expires_at を固定）。 分母は code-summary の exact command が列挙する 14 file で、既存の design-gate の単位の試験 3 file と graphql の試験を command に含む。",
       "basis": "D15、team の Testing Posture、S4/S8"
     },
     {

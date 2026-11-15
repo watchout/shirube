@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { fullRepositoryFixture } from "./ci-record-fixtures.mjs";
+import { fullRepositoryFixture, nativeApproval } from "./ci-record-fixtures.mjs";
+import { projectApproval } from "../scripts/sds/ci-record-projection.mjs";
 import { createReader, collectAdmissionInput } from "../scripts/sds/ci-record-evidence.mjs";
 import { gate, failure } from "../scripts/sds/gate.mjs";
 import { decodeEnvelope } from "../scripts/sds/ci-record-envelope.mjs";
@@ -75,4 +76,37 @@ async function movedBaseFixture() {
 test("U1-INT08 transported C01 C03 C05 C07 preserve source debt and assurance", async () => {
   const output = await run(fullRepositoryFixture());
   for (const boundary of ["C01", "C03", "C05", "C07"]) { const carried = { boundary, source: decodeEnvelope(JSON.stringify(output), output), destination: "public:other-consumer" }; assert.deepEqual(carried.source.assessment.knownRemaining, output.assessment.knownRemaining); assert.equal(carried.source.assessment.authorization, "NONE"); }
+});
+
+function lowerObligation(stage, from, to, { drop }) {
+  const f = fullRepositoryFixture(), summary = [...f.files.keys()].find((p) => p.endsWith("code-generation/code-summary.md"));
+  const row = new RegExp(`\\| ${stage} \\| attempt-${stage} \\| (?:true|false) \\| (?:true|false) \\| (?:true|false) \\| (?:true|false) \\|`);
+  const before = f.files.get(summary).toString(); assert.match(before, row);
+  f.files.set(summary, Buffer.from(before.replace(row, (m) => m.replace(from, to))));
+  f.updateRecord((r) => { const s = r.stages.find((x) => x.stage === stage); drop(s); }); f.refreshRecordArtifacts();
+  return f;
+}
+test("U1-INT08 lowering the summary or READY obligation of an earlier stage in the published table is not a PASS", async () => {
+  // The fixture row is `completed | summaryConfirmed | planApproved | reviewPerformed`; the audit reproduction used functional-design.
+  await assert.rejects(() => run(lowerObligation("functional-design", "false | true | false | true |", "false | false | false | false |", { drop: (s) => { s.approvals = []; s.review = null; } })), /INPUT_UNOBSERVABLE/);
+  await assert.rejects(() => run(lowerObligation("nfr-design", "false | true | false | true |", "false | true | false | false |", { drop: (s) => { s.review = null; } })), /INPUT_UNOBSERVABLE/);
+  await assert.rejects(() => run(lowerObligation("domain-design", "true | true | false | false |", "true | false | false | false |", { drop: (s) => { s.approvals = s.approvals.filter((a) => a.kind !== "summary"); } })), /INPUT_UNOBSERVABLE/);
+});
+function acceptAsIsFixture(offered) {
+  const f = fullRepositoryFixture(), input = nativeApproval("stage-completion");
+  input.target = { ...input.target, stage: "intent-capture", unit: null, attempt: "attempt-intent-capture" };
+  input.native.fields = { Stage: "intent-capture", "User Input": "Accept as-is" }; input.offeredChoices = offered ? ["Approve", "Accept as-is"] : ["Approve"];
+  const projected = projectApproval(input);
+  f.updateRecord((r) => { const a = r.stages.find((s) => s.stage === "intent-capture").approvals.find((x) => x.kind === "stage-completion"); a.choice = "Accept as-is"; if (projected?.acceptAsIsOffered !== undefined) a.acceptAsIsOffered = projected.acceptAsIsOffered; });
+  return { f, projected };
+}
+test("U1-INT09 a formally offered Accept as-is passes the collector, core and entry; an unoffered one does not", async () => {
+  const offered = acceptAsIsFixture(true); assert.equal(offered.projected.acceptAsIsOffered, true);
+  const pass = await run(offered.f); assert.equal(pass.outcome, "PASS"); assert.equal(pass.assessment.conditions.records.outcome, "PASS");
+  const unoffered = acceptAsIsFixture(false); assert.equal(unoffered.projected, null);
+  const fail = await run(unoffered.f); assert.equal(fail.outcome, "FAIL"); assert.deepEqual(fail.assessment.conditions.records.reasonCodes, ["REQUIRED_RECORD_MISSING"]);
+  const wrong = acceptAsIsFixture(true); wrong.f.updateRecord((r) => { r.stages.find((s) => s.stage === "intent-capture").approvals.find((x) => x.kind === "stage-completion").acceptAsIsOffered = false; });
+  await assert.rejects(() => run(wrong.f), /UNSUPPORTED_SCHEMA/);
+  const plain = fullRepositoryFixture(); plain.updateRecord((r) => { r.stages.find((s) => s.stage === "intent-capture").approvals.find((x) => x.kind === "stage-completion").acceptAsIsOffered = true; });
+  await assert.rejects(() => run(plain), /UNSUPPORTED_SCHEMA/);
 });

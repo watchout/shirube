@@ -9,8 +9,8 @@ export const sameTarget = (a, b) => ["repo", "workspace", "space", "intent", "un
 const condition = (outcome, codes = []) => ({ outcome, reasonCodes: [...new Set(codes)] });
 const samePaths = (a, b) => compareArtifactPaths(a.map((path) => ({ path })), b);
 const requiredStage = (records, slot) => records.stages.find((s) => slotKey(s) === slotKey(slot));
-function approvalMatches(approval, kind, slot) {
-  return approval && POSITIVE_CHOICES[kind].includes(approval.choice) && (approval.choice !== "Accept as-is" || slot.acceptAsIsOffered === true);
+function approvalMatches(approval, kind) {
+  return approval && POSITIVE_CHOICES[kind].includes(approval.choice) && (approval.choice !== "Accept as-is" || approval.acceptAsIsOffered === true);
 }
 function recordCondition(input) {
   const { records, policy, target } = input, codes = [];
@@ -21,7 +21,7 @@ function recordCondition(input) {
     if (!samePaths(slot.artifactPaths, stage.artifactPaths)) codes.push("ARTIFACT_SET_MISMATCH");
     for (const kind of slot.kinds) {
       const approval = stage.approvals.find((a) => a.kind === kind);
-      if (!approvalMatches(approval, kind, slot)) codes.push("REQUIRED_RECORD_MISSING");
+      if (!approvalMatches(approval, kind)) codes.push("REQUIRED_RECORD_MISSING");
     }
   }
   return condition(codes.length ? "FAIL" : "PASS", codes);

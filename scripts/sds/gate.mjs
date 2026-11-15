@@ -27,7 +27,8 @@ function github(path) {
   return path.endsWith("/logs") ? body : JSON.parse(body);
 }
 const QUERY = "query($ids:[ID!]!){nodes(ids:$ids){__typename ...on PullRequestReview{databaseId}...on IssueComment{databaseId}...on Comment{lastEditedAt userContentEdits(first:100){totalCount pageInfo{hasNextPage}nodes{editor{login}editedAt deletedAt}}}}}"; // 5.3u (j): the one GraphQL query, a read of two nodes
-function graphql(ids) { return JSON.parse(execFileSync("gh", ["api", "graphql", "-f", `query=${QUERY}`, ...ids.flatMap((id) => ["-f", `ids[]=${id}`])], { encoding: "utf8", timeout: 20000, maxBuffer: 8000000 })); }
+/** @public */
+export function graphql(ids) { return JSON.parse(execFileSync("gh", ["api", "graphql", "-f", `query=${QUERY}`, ...ids.flatMap((id) => ["-f", `ids[]=${id}`])], { encoding: "utf8", timeout: 20000, maxBuffer: 8000000 })); }
 function need(ok, why) { if (!ok) throw new Error(why); }
 function block(body) {
   const blocks = [...(body ?? "").matchAll(/^```json sds-pr\r?\n([\s\S]*?)^```\s*$/gm)];

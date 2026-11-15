@@ -65,3 +65,12 @@ test("U1-POL08 self-reference exclusions have fixed identity and structure", () 
   assert.equal(p.requiredArtifacts.some((x) => x.path === p.recordPath), false);
   assert.deepEqual(api.BUDGET, { timeoutMs: 20000, totalTimeoutMs: 120000, maxRequests: 100, maxBytesPerResponse: 8000000, automaticRetries: 0 });
 });
+test("U1-POL10 a published table cannot lower the summary and review obligations of earlier stages", () => {
+  const lowered = (stage, key) => { const v = plan(); v.stages.find((s) => s.stage === stage)[key] = false; return v; };
+  for (const [stage, key] of [["intent-capture", "summaryConfirmed"], ["domain-design", "summaryConfirmed"], ["functional-design", "summaryConfirmed"], ["functional-design", "reviewPerformed"], ["infrastructure-design", "reviewPerformed"], ["intent-capture", "completed"]]) {
+    assert.deepEqual(derive(lowered(stage, key)), { outcome: "UNKNOWN", reasonCodes: ["INPUT_UNOBSERVABLE"] }, `${stage}.${key}`);
+  }
+  assert.equal(derive().outcome, "PASS");
+  const exempt = plan(); exempt.stages.find((s) => s.stage === "reverse-engineering").summaryConfirmed = false; assert.equal(derive(exempt).outcome, "PASS");
+  assert.deepEqual(Object.keys(api.stageFloor(api.STAGE_DEFINITIONS[0])).sort(), ["completed", "review", "summary"]);
+});

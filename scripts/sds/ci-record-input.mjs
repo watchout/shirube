@@ -104,8 +104,9 @@ export function validateArtifact(entry) {
 }
 function pathArray(paths) { unique(paths); need(paths.length > 0); paths.forEach(validatePublicPath); }
 function validateApproval(approval) {
-  fields(approval, ["kind", "choice", "recordRef"], ["approvedAt", "approvedAtFormat", "approvalRecordRef"]);
+  fields(approval, ["kind", "choice", "recordRef"], ["approvedAt", "approvedAtFormat", "approvalRecordRef", "acceptAsIsOffered"]);
   need(Object.hasOwn(POSITIVE_CHOICES, approval.kind) && typeof approval.choice === "string"); validateRef(approval.recordRef);
+  need(approval.acceptAsIsOffered === undefined || (approval.acceptAsIsOffered === true && approval.choice === "Accept as-is"));
   if (approval.kind === "stage-completion") {
     need(typeof approval.approvedAt === "string" && ["date", "timestamp"].includes(approval.approvedAtFormat)); validateRef(approval.approvalRecordRef);
   }

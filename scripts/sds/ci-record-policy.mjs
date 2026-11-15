@@ -32,6 +32,14 @@ const DEFINITIONS = [
   ["construction", "code-generation", "code-generation-plan unit-test-instructions code-summary traceability source-manifest", "4273ed491e99a176e97863a400bc7bab4a22c2337958820c64c012fd9a63da92", "aidlc-architecture-reviewer-agent"],
 ];
 export const STAGE_DEFINITIONS = Object.freeze(DEFINITIONS.map(([phase, stage, names, sha256, reviewer]) => Object.freeze({ phase, stage, outputs: Object.freeze(names.split(" ").filter(Boolean)), sha256, reviewer })));
+// Obligations no published table may lower (BR1.2): the fixed stage rules decide them, never the PR's own table.
+// Stages after the current one are not asked for, and a dispatched pipeline stage has no summary confirmation.
+const NO_SUMMARY_STAGES = Object.freeze(["reverse-engineering", "code-generation"]);
+export const stageFloor = (definition) => ({
+  completed: definition.phase !== "construction",
+  summary: !NO_SUMMARY_STAGES.includes(definition.stage),
+  review: definition.phase === "construction" && definition.stage !== "code-generation",
+});
 export function resolveProfile(purpose, checkpoint) {
   if (purpose !== PURPOSE || checkpoint !== CHECKPOINT) throw new Error("INPUT_UNOBSERVABLE: unsupported caller profile");
   return Object.freeze({ purpose: PURPOSE, checkpoint: CHECKPOINT, rulesetVersion: RULESET });
@@ -79,7 +87,7 @@ function planMatches(plan) {
   if (!profilePlan(plan)) return false;
   if (!plan.reference || !plan.baselineReference || plan.exclude !== undefined || !Array.isArray(plan.stages)) return false;
   if (!compareArtifactPaths(STAGE_DEFINITIONS.map((d) => ({ path: d.stage })), plan.stages.map((s) => s.stage))) return false;
-  if (STAGE_DEFINITIONS.some((d) => d.phase !== "construction" && plan.stages.find((s) => s.stage === d.stage).completed !== true)) return false;
+  if (STAGE_DEFINITIONS.some((d) => { const floor = stageFloor(d), row = plan.stages.find((s) => s.stage === d.stage); return (floor.completed && row.completed !== true) || (floor.summary && row.summaryConfirmed !== true) || (floor.review && row.reviewPerformed !== true); })) return false;
   return plan.stages.every((s) => typeof s.attempt === "string" && s.attempt.trim() && [s.completed, s.summaryConfirmed, s.reviewPerformed, s.planApproved].every((x) => typeof x === "boolean"));
 }
 function stageSlot(definition, entry, target, root) {

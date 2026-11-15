@@ -23,6 +23,8 @@ test("U1-PRO03 stage completion and formally offered Accept as-is", () => {
   assert.equal(project(v).approvedAt, "2026-11-09T01:00:00Z");
   v.native.fields["User Input"] = "Accept as-is"; assert.equal(project(v), null);
   v.offeredChoices.push("Accept as-is"); assert.equal(project(v).choice, "Accept as-is");
+  assert.equal(project(v).acceptAsIsOffered, true);
+  assert.equal(Object.hasOwn(project(nativeApproval("stage-completion")), "acceptAsIsOffered"), false);
 });
 test("U1-PRO04 negative empty unknown or wrong-kind choice never approves", () => {
   project(nativeApproval());
