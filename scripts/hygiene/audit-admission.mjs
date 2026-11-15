@@ -22,7 +22,7 @@ function comment(url, api) {
   need(typeof c.body === "string", "Missing comment body");
   return c;
 }
-function payload(body) {
+export function payload(body) {
   const blocks = [...body.matchAll(/^```json\r?\n([\s\S]*?)^```\s*$/gm)];
   need(blocks.length === 1, "Exactly one JSON payload is required");
   const raw = blocks[0][1].trim(), value = JSON.parse(raw);
@@ -35,11 +35,11 @@ function file(target, path, api) {
   need(r.type === "file" && r.encoding === "base64", "Evidence is not an observed file");
   return Buffer.from(r.content, "base64").toString("utf8");
 }
-function requestChecks(r, c, now) {
+export function requestChecks(r, c, now, verifierSha256 = digest(readFileSync(fileURLToPath(import.meta.url)))) {
   need(c.user?.login === "watchout", "Request publisher is not the configured owner account");
   need(r.schema === "sds-audit-request/1", "Unknown request schema");
   need(Date.parse(r.expires_at) > now, "Expired or invalid request");
-  need(r.verifier_sha256 === digest(readFileSync(fileURLToPath(import.meta.url))), "Verifier version differs");
+  need(r.verifier_sha256 === verifierSha256, "Verifier version differs");
   need(nonempty(r.author) && nonempty(r.reviewer?.actor) && r.author !== r.reviewer.actor, "Maker/checker conflict");
   need(nonempty(r.reviewer.github) && r.reviewer.github !== c.user.login, "Reviewer account is not independent");
   need(unique(r.targets.map((t) => t.id)), "Duplicate or empty targets");
@@ -59,7 +59,7 @@ function baseMoved(t, p, api) {
   return { target: t.id, from: t.base, to: p.base.sha, moved_files: since.files.length };
 }
 // With base_moved declared, the branch must match whether or not the SHA moved: a same-SHA retarget is still a different base.
-function baseCheck(t, p, api, notes) {
+export function baseCheck(t, p, api, notes) {
   const asked = t.base_moved && nonempty(t.base_moved.ref) && t.base_moved.ref === p.base.ref;
   need(asked || (!t.base_moved && p.base.sha === t.base), "PR base changed and base_moved is not requested for this base branch");
   if (p.base.sha !== t.base) notes.push(baseMoved(t, p, api));
@@ -84,12 +84,12 @@ function targetCheck(t, api, notes = []) {
   }
   return observed;
 }
-function successfulRun(runs, name, head) {
+export function successfulRun(runs, name, head) {
   const run = runs.filter((x) => x.name === name && x.app?.slug === "github-actions").sort((a, b) => b.id - a.id)[0];
   need(run?.head_sha === head && run.status === "completed" && run.conclusion === "success", `Required check not successful: ${name}`);
   return run;
 }
-function workflowCheck(run, t, api) {
+export function workflowCheck(run, t, api) {
   const prefix = `https://github.com/${t.repo}/actions/runs/`;
   const ids = run.html_url?.startsWith(prefix) && /^(\d+)\/job\/(\d+)$/.exec(run.html_url.slice(prefix.length));
   need(ids && nonempty(t.workflow), "Unbound workflow run");
@@ -124,7 +124,7 @@ function evidence(ref, targets, api) {
   need(text.split(/\r?\n/)[ref.line - 1]?.includes(ref.quote), "Evidence quote does not match target bytes");
   return { target: t.id, head: t.head, path: ref.path, sha256: digest(text), line: ref.line };
 }
-function itemResults(record, items, targets, api) {
+export function itemResults(record, items, targets, api) {
   const expected = items.map((x) => x.id);
   const actual = record.items.map((x) => x.id);
   need(unique(actual) && same(expected, actual), "Missing, duplicate or extra audit items");
@@ -136,6 +136,15 @@ function itemResults(record, items, targets, api) {
     for (const ref of item.evidence) observed.push({ item: item.id, ...evidence(ref, targets, api) });
   }
   return observed;
+}
+export function reviewChecks({ r, c, review, record, requestDigest }) {
+  need(review.issue_url === c.issue_url, "Review is outside the request control source");
+  need(review.user?.login === r.reviewer.github, "Review publisher differs from assigned reviewer");
+  need(Date.parse(review.updated_at) >= Date.parse(c.created_at), "Review predates request");
+  need(record.schema === "sds-audit-review/1" && record.request_digest === requestDigest, "Review request binding differs");
+  need(record.reviewer === r.reviewer.actor, "Reviewer actor differs");
+  need(Array.isArray(record.blocking_findings) && record.blocking_findings.length === 0, "Open or unspecified blocking findings");
+  need(same(record.targets.map((t) => `${t.id}:${t.head}`), r.targets.map((t) => `${t.id}:${t.head}`)), "Reviewed targets differ");
 }
 export function verifyAudit(args, api = github, now = Date.now()) {
   const c = comment(args.request, api);
@@ -158,14 +167,8 @@ export function verifyAudit(args, api = github, now = Date.now()) {
   }
   need(args.review, "Independent review missing");
   const review = comment(args.review, api);
-  need(review.issue_url === c.issue_url, "Review is outside the request control source");
-  need(review.user?.login === r.reviewer.github, "Review publisher differs from assigned reviewer");
-  need(Date.parse(review.updated_at) >= Date.parse(c.created_at), "Review predates request");
   const record = payload(review.body);
-  need(record.schema === "sds-audit-review/1" && record.request_digest === requestDigest, "Review request binding differs");
-  need(record.reviewer === r.reviewer.actor, "Reviewer actor differs");
-  need(Array.isArray(record.blocking_findings) && record.blocking_findings.length === 0, "Open or unspecified blocking findings");
-  need(same(record.targets.map((t) => `${t.id}:${t.head}`), r.targets.map((t) => `${t.id}:${t.head}`)), "Reviewed targets differ");
+  reviewChecks({ r, c, review, record, requestDigest });
   const refs = itemResults(record, set.items, r.targets, api);
   const last = [];
   for (const t of r.targets) targetCheck(t, api, last); // Re-observe after reading evidence; later edits require another run.
