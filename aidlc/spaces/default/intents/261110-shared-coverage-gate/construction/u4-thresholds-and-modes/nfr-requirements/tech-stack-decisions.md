@@ -25,7 +25,7 @@ U3 と同じ。新しい選択は無い。
 
 ### NFR3 規則は 1 か所
 
-- **NFR3.1** 動作の集合と既定（modes、defaultMode）と閾値の既定（行 100%）は、判定の核の定数の 1 か所だけが持つ。例外の根拠の上限と URL の上限と形（rationaleMaxLength、decisionUrlMaxLength、decisionUrlShape）は入力の検査が、動作・例外の表示の文型は整形が、それぞれ 1 か所だけ持つ。ほかの file はそこを参照し、値を literal で写さない。例外の値の上限（100 未満）は、既定の閾値の定数から導き、100 という数字を 2 か所に書かない。[NFR3、S3、GateConstants]
+- **NFR3.1** 動作の集合と既定（modes、defaultMode）と閾値の既定（行 100%）は、判定の核の定数の 1 か所だけが持つ。例外の根拠の上限と含めない並びと URL の上限と形（rationaleMaxLength、rationaleForbidden、decisionUrlMaxLength、decisionUrlShape）は入力の検査が、動作・例外の表示の文型は整形が、それぞれ 1 か所だけ持つ。ほかの file はそこを参照し、値を literal で写さない。例外の値の上限（100 未満）は、既定の閾値の定数から導き、100 という数字を 2 か所に書かない。[NFR3、S3、GateConstants]
 - **NFR3.2** U3 の NFR3.2 の試験（規則の値が持ち主以外の file に literal で現れたら失敗にする）を、この単位が足す値（`enforce`、`record-only`、`300`、URL の形）にも広げる。判定: 持ち主以外の `scripts/coverage-gate/` の file にこれらが現れない。[NFR3、S3]
 - **NFR3.3** 動作に応じた分岐は判定の核だけが持つ（ADR-004）。入口・整形・workflow は shouldFail を写すだけで、mode による分岐を持たない。整形が mode を見るのは表示の文面を変えるためだけで、落とすかどうかを決めない。判定: shouldFail を書き換える code が判定の核以外に無いことを、file の中身を調べる試験で確かめる。[NFR3、ADR-004]
 

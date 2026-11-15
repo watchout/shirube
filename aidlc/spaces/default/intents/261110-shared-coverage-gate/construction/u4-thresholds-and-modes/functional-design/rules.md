@@ -54,10 +54,10 @@ rules:
 
   - id: BR6.5
     category: validation
-    statement: 根拠（rationale）は、空白だけでない 1 行の文字列で、GateConstants.rationaleMaxLength 文字（code point）以内、制御文字を含まない。入力のとおりに保存し、整形し直さない。
+    statement: 根拠（rationale）は、空白だけでない 1 行の文字列で、GateConstants.rationaleMaxLength 文字（code point）以内、制御文字を含まず、GitHub の命令・改行の符号・表の区切りになる並び（GateConstants.rationaleForbidden = `::`、`%0A`・`%0D`（`%0a`・`%0d` も）、バッククォート、縦線 `|`）を含まない。入力のとおりに保存し、整形し直さない。
     applies_to: CoverageInputContract
     trigger: BR6.4 を通った後
-    logic: IF rationale が文字列でない、空白だけ、制御文字（U+0000〜U+001F、U+007F）を含む、または上限を超える THEN INPUT_FIELD_INVALID（field "threshold.rationale"）。
+    logic: IF rationale が文字列でない、空白だけ、制御文字（U+0000〜U+001F、U+007F）を含む、GateConstants.rationaleForbidden のどれかを含む、または上限を超える THEN INPUT_FIELD_INVALID（field "threshold.rationale"）。長さの確かめを先に行う。入口で拒むのは、曖昧な根拠を受けずに止める（失敗側に倒す）ため。出口の無害化（BR8.2、SC4）は、入口を通ったものにも通す二重の防御として残す。
     violation: BR6.1 と同じ。
     source: [FR3.2, FR3.3, NFR4]
 
@@ -91,10 +91,10 @@ rules:
 
   - id: BR7.3
     category: policy
-    statement: 入力の失敗と入口の失敗は、動作が record-only でも終了コード 2 のままで、結果の文書の mode は null にする。動作を信じられない入力は動作として扱わない。
+    statement: 入力の失敗（結果の文書を作れない失敗）は、動作が record-only でも終了コード 2 のままで、結果の文書の mode は null にする。動作を信じられない入力は動作として扱わない。入口の失敗（判定の後の結果・summary・出力値の書き込みの失敗、予期しない例外）も終了コード 2 のままだが、先に書けた結果の文書は書き直さず、その mode は判定に使った本当の値のまま残る。
     applies_to: CoverageGateCli, ResultReporter
     trigger: 入力の失敗または入口の失敗の時（U3 の BR5.3、BR4.2 のまま）
-    logic: 判定に至ったとき（verdict がある）の終了コードは shouldFail が偽なら 0、真なら 1。入力の失敗は 2。結果の file・summary・出力値の書き込みの失敗は record-only でも 2（記録が残らないので隠さない）。
+    logic: 判定に至ったとき（verdict がある）の終了コードは shouldFail が偽なら 0、真なら 1。入力の失敗は 2。結果の file・summary・出力値の書き込みの失敗は record-only でも 2（記録が残らないので隠さない）。門・監査は終了コードを正とし、結果の文書だけで成功と読まない（後の面の書き込みが失敗しても、先に書けた文書は残るため）。
     violation: 成功と見える終了を作らない。
     source: [NFR4, FR6.3]
 
@@ -146,7 +146,7 @@ rules:
 
   - id: BR8.3
     category: policy
-    statement: notice は、同じ文書から、区分と動作と例外に応じた注釈の種類で書く。実際の閾値を必ず書く。例外を使ったときは成功でも通常の notice にせず、目立つ種類にする。
+    statement: notice は、同じ文書から、区分と動作と例外に応じた注釈の種類で書く。実際の閾値は、U3 の notice が閾値を出す形（outcome が match か mismatch で割合が観測できている形）と、例外を使った、または動作が record-only の実行の notice（この単位が文面を足す・変える notice）では必ず書く。例外なしで enforce の観測できない結果の notice は U3 のまま（閾値を出さない。BR8.5 を優先する）。例外を使ったときは成功でも通常の notice にせず、目立つ種類にする。
     applies_to: ResultReporter
     trigger: notice を作る時（U3 の BR4.4・BR4.5 に足す）
     logic: |
@@ -156,7 +156,7 @@ rules:
         outcome が match で、例外あり                -> warning
         outcome が match でなく、mode が enforce     -> error（U3 のまま。例外があれば例外の一言を足す）
         outcome が match でなく、mode が record-only -> warning（落とさないことを一言で書く）
-      文面は固定の文型で、実際の閾値（effectiveThresholdPercent）を含む。例外あり: 「threshold lowered by exception」と決定の URL（形を検査済みなので無害）を含む。record-only で outcome が unobservable: 「not observable (計測不能)」と書く。record-only の文面は成功とは書かず、「recorded only, the job is not failed」の旨を含む。根拠（rationale）は notice に載せない（job summary と JSON にある）。
+      文面は固定の文型で、上の範囲では実際の閾値（effectiveThresholdPercent）を含む。例外なし・enforce の観測できない結果は、U3 の文面のまま閾値を足さない（U3 の文面は閾値を出さない。バイト一致の互換を保つ S6）。例外あり: 「threshold lowered by exception」と決定の URL（形を検査済みなので無害）を含む。record-only で outcome が unobservable: 「not observable (計測不能)」と書く。record-only の文面は成功とは書かず、「recorded only, the job is not failed」の旨を含む。根拠（rationale）は notice に載せない（job summary と JSON にある）。
     violation: 該当なし。
     source: [FR3.5, FR6.3, FR8.2]
 

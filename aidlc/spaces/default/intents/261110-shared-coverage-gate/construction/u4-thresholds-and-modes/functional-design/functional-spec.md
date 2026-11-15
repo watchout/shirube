@@ -74,6 +74,8 @@ U3 の W1〜W5 の順は変えない（検査 → 測定 → 判定 → 出力�
 | 一致でなく、record-only | warning | warning（例外の一言を足す） |
 | 入力の失敗 | error | （例外は読み取れていない） |
 
+実際の閾値を書く範囲は、U3 の notice が閾値を出す形（match・mismatch）と、例外あり・record-only の実行。例外なし・enforce の観測できない結果は U3 のまま閾値を足さない（BR8.3、BR8.5）。
+
 ## 状態の遷移
 
 動作と閾値の例外は入力で固定され、1 回の実行の中で変わらない。状態の遷移は U3 の入口の 1 回の実行のとおりで、この単位は遷移を足さない。違いは判定の最後の分岐だけである。
@@ -101,7 +103,7 @@ stateDiagram-v2
 - 失敗（URL が無い）: threshold に percent と rationale だけ → INPUT_FIELD_MISSING、field threshold.decisionUrl、終了コード 2。
 - 失敗（値）: percent が "95"（文字列）、100、100.5、-1、95.123 → すべて INPUT_FIELD_INVALID、field threshold.percent。95、95.5、95.07、0 は受け付ける。
 - 失敗（URL の形）: http、別の host、query つき、fragment が違う、資格情報つき（user@host）、前後に空白 → INPUT_FIELD_INVALID、field threshold.decisionUrl。
-- 失敗（根拠）: 空、空白だけ、改行を含む、301 文字 → INPUT_FIELD_INVALID、field threshold.rationale。
+- 失敗（根拠）: 空、空白だけ、改行を含む、`::error::`・`%0A`・バッククォート・縦線を含む、301 文字 → INPUT_FIELD_INVALID、field threshold.rationale。
 - 失敗（未知のキー）: threshold の中に note を足す → INPUT_FIELD_UNKNOWN、field threshold.note。
 - 動作の既定: mode を書かない呼び出しで一致でない結果 → 落とす（終了コード 1）。
 - 記録だけ・不足: mode が record-only で割合が閾値未満 → mismatch、BELOW_THRESHOLD、終了コード 0、値と不足が書かれ、見出しは Mismatch。
@@ -140,7 +142,7 @@ erDiagram
 
 - [assumption] 決定の URL の形は、GitHub の issue または pull request の**コメント**（`#issuecomment-` つき）に限る。Owner の決定は issue・PR のコメントとして公開され、引用は `#issuecomment-<id>` まで特定する決まり（権限の置き場の規則）に合わせた。レビューのコメントや discussion の URL は受け付けない。要望が出れば形の集合を足す別の変更になる。
 - [assumption] 下げる値は JSON の数に限り、文字列の "95" は受け付けない。「数として読めない値は失敗」（AC4.2.3）を、曖昧さを残さない側に倒した。小数は第 2 位までで、結果の割合の書式（NN.NN）と揃える。
-- [assumption] 根拠は 1 行・300 文字以内・制御文字なし。長い説明は決定の本文にあり、門の出力は URL で結び付ける。上限の 300 は読める長さの目安で、変える場合は GateConstants の 1 か所を変える。
+- [assumption] 根拠は 1 行・300 文字以内・制御文字なし・命令や表の区切りの並びなし（BR6.5）。長い説明は決定の本文にあり、門の出力は URL で結び付ける。上限の 300 は読める長さの目安で、変える場合は GateConstants の 1 か所を変える。
 - [assumption] 注釈の種類（notice・warning・error）は、例外を使った成功と、record-only の一致でない結果を warning にする。成功の表示に隠れない（FR3.5）ことと、落とさない結果を error（赤）に見せないことを両立するため。GitHub Actions の画面での見え方は利用先の環境次第なので、試験は文面と種類の行を確かめ、画面の見え方は確かめない。
 - [assumption] 「計測不能」の文字列は、record-only で結果が unobservable のときの notice と summary の見出しにだけ足す。受入条件（AC5.1.2）が「計測不能」と明記するよう求めているのは record-only のときで、enforce の文面は U3 のまま保つ（後ろ向きの互換）。ほかの文面は U3 に合わせた英語の固定の文型。
 - [assumption] 入力の失敗は record-only でも終了コード 2 で、文書の mode は null。契約の Q2 の答え（入力不正と入口の失敗は別に伝える）に沿う。動作の値そのものが不正な入力で、どちらの動作を採るかを決められないため。

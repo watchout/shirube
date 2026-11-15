@@ -25,6 +25,7 @@ entities:
       - { name: modes, type: enum-set, required: true, allowed: [enforce, record-only], owner: CoverageJudge, note: "動作の集合と意味は判定の核だけが持つ（ADR-004）。入力の検査は集合を参照するだけ" }
       - { name: defaultMode, type: enum, required: true, defaults: enforce, owner: CoverageJudge, note: "何も指定しなければ落とす（FR6.2）" }
       - { name: rationaleMaxLength, type: integer, required: true, defaults: 300, owner: CoverageInputContract, note: "根拠の文字数の上限（code point）。job summary と JSON を読める長さに保つ" }
+      - { name: rationaleForbidden, type: "string[]", required: true, defaults: ["::", "%0A", "%0D", "`", "|"], owner: CoverageInputContract, note: "根拠に含めない並び（GitHub の命令・改行の符号・表の区切り）。%0A・%0D は大文字小文字を区別しない。入口で拒み、出口の無害化も残す" }
       - { name: decisionUrlMaxLength, type: integer, required: true, defaults: 300, owner: CoverageInputContract, note: "決定の URL の文字数の上限。形の確かめより先に長さで失敗にする（検査の時間を線形に保つ）" }
       - { name: decisionUrlShape, type: string, required: true, defaults: "https://github.com/<owner>/<repo>/(issues|pull)/<番号>#issuecomment-<番号>", owner: CoverageInputContract, note: "決定の URL の形。形だけを確かめる（FR3.3）" }
     reuses:
@@ -35,7 +36,7 @@ entities:
     attributes:
       - { name: percentHundredths, type: integer, required: true, min: 0, max: 9999, constraints: "入力の percent（小数第 2 位までの数）を 100 倍した整数。defaultThresholdHundredths 未満" }
       - { name: decisionUrl, type: string, required: true, constraints: "decisionUrlShape に合う。実在は確かめない" }
-      - { name: rationale, type: string, required: true, constraints: "1 行。空白だけでない。制御文字なし。rationaleMaxLength 以内" }
+      - { name: rationale, type: string, required: true, constraints: "1 行。空白だけでない。制御文字なし。rationaleForbidden のどれも含まない。rationaleMaxLength 以内" }
 
   GateInput:
     description: 検査済みの入力。U3 の項目に 2 つ足す。
@@ -79,7 +80,7 @@ entities:
 
 ## 実体の一覧（人が読む要約）
 
-- 足す値: GateConstants に modes、defaultMode（判定の核）と rationaleMaxLength、decisionUrlMaxLength、decisionUrlShape（入力の検査）。
+- 足す値: GateConstants に modes、defaultMode（判定の核）と rationaleMaxLength、rationaleForbidden、decisionUrlMaxLength、decisionUrlShape（入力の検査）。
 - 足す実体: ThresholdException 1 つ（検査済みの閾値の例外）。
 - 項目を足す・値の出どころを広げる実体: GateInput（threshold、mode）、GateVerdict（mode、shouldFail、effectiveThresholdHundredths、thresholdException）、ResultDocument（mode、thresholdException、effectiveThresholdPercent に値）。
 - 足さない物: 理由コード、結果の JSON の項目の名前、出力値の名前、結果の区分（3 値）。

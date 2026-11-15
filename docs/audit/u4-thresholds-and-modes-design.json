@@ -10,7 +10,7 @@
     },
     {
       "id": "U4TM-02",
-      "criterion": "閾値の例外の入力の検査(BR6): threshold が持てる項目は percent・decisionUrl・rationale の3つだけで、どの階層の余分なキーも INPUT_FIELD_UNKNOWN になる。3つのうち1つでも欠ければ INPUT_FIELD_MISSING(欠けたキーの順は percent→decisionUrl→rationale の最初の1件)、threshold が object でなければ INPUT_FIELD_INVALID(field threshold)で、下げた値を受け付けない。percent は JSON の数で、0以上・既定の閾値(行100%)未満・小数第2位までに限り、文字列の \"95\"、100、100.5、-1、95.123 が失敗になり、上限の100を別に書かず既定の閾値の定数から導く(S3)。decisionUrl は GitHub の issue または pull request のコメントを指す完全一致の形(https、query なし、fragment は #issuecomment-<番号>、資格情報つき・別の host・前後の空白・http は不可)に限り、長さの確かめを形の確かめより先に行う(ReDoS を避ける)。rationale は空白だけでない1行、制御文字なし、上限以内で、入力のとおりに保存する。検査は最初の1件の失敗で止まり、既定の閾値にも下げた値にも倒れず、測定に進まず終了コード2になる。決定の実在・書き手・本文を門が確かめないこと(BR6.6、T9)と、それを今ある独立の監査で補う分担が「門が保証しないこと」に書かれ、新しい道具や別の取り組みへ広げていない。",
+      "criterion": "閾値の例外の入力の検査(BR6): threshold が持てる項目は percent・decisionUrl・rationale の3つだけで、どの階層の余分なキーも INPUT_FIELD_UNKNOWN になる。3つのうち1つでも欠ければ INPUT_FIELD_MISSING(欠けたキーの順は percent→decisionUrl→rationale の最初の1件)、threshold が object でなければ INPUT_FIELD_INVALID(field threshold)で、下げた値を受け付けない。percent は JSON の数で、0以上・既定の閾値(行100%)未満・小数第2位までに限り、文字列の \"95\"、100、100.5、-1、95.123 が失敗になり、上限の100を別に書かず既定の閾値の定数から導く(S3)。decisionUrl は GitHub の issue または pull request のコメントを指す完全一致の形(https、query なし、fragment は #issuecomment-<番号>、資格情報つき・別の host・前後の空白・http は不可)に限り、長さの確かめを形の確かめより先に行う(ReDoS を避ける)。rationale は空白だけでない1行、制御文字なし、命令・表の区切りの並び(`::`・`%0A`・`%0D`・バッククォート・縦線)を含まず、上限以内で、入力のとおりに保存する(拒否の条件が BR6.5・NFR5.4・SC4・試験の期待値で一致している)。検査は最初の1件の失敗で止まり、既定の閾値にも下げた値にも倒れず、測定に進まず終了コード2になる。決定の実在・書き手・本文を門が確かめないこと(BR6.6、T9)と、それを今ある独立の監査で補う分担が「門が保証しないこと」に書かれ、新しい道具や別の取り組みへ広げていない。",
       "basis": "FR3.2〜FR3.5、NFR4、NFR5.1〜5.3、BR6.1〜BR6.6、security-design SC1・SC2・SC4・SC5・SC7、プロジェクトの訂正の記録(門で証明できないことの補い方)"
     },
     {
@@ -20,12 +20,12 @@
     },
     {
       "id": "U4TM-04",
-      "criterion": "終了コードと失敗を隠さない(S8): 判定に至ったとき終了コードは shouldFail が偽なら0、真なら1。入力の失敗(mode や threshold の不正を含む)と入口の失敗(結果の file・summary・出力値の書き込みの失敗、予期しない例外)は、動作が record-only でも終了コード2で、結果の文書の mode は null(動作を信じられない入力は動作として扱わない)。record-only の間も未計測・NOT_RUN・閾値未満・計測不能は CI を落とさない代わりに、値と不足と名前つきの一覧が enforce と同じに出て、結果の見出しは成功と書かれず、計測不能は「計測不能」と明示される。入口(cli)は shouldFail を終了コードへ写すだけで、mode による分岐を持たない(ADR-004)。record-only が「失敗の握りつぶし」の入口にならない根拠(区分と理由を書き換えない、入力の失敗と書き込みの失敗は隠さない、結果の文書に mode が残る)が設計の記録から読める。",
+      "criterion": "終了コードと失敗を隠さない(S8): 判定に至ったとき終了コードは shouldFail が偽なら0、真なら1。入力の失敗(mode や threshold の不正を含む)と入口の失敗(結果の file・summary・出力値の書き込みの失敗、予期しない例外)は、動作が record-only でも終了コード2で、結果の文書の mode が null になるのは入力の失敗(結果の文書を作る失敗)だけ(動作を信じられない入力は動作として扱わない)。判定の後に書き込みが失敗した時は、先に書けた結果の文書を書き直さず mode は本当の値のまま残り、門・監査は終了コードを正とし結果の文書だけで成功と読まない(summary だけが失敗する負例で終了コードが2のまま)。record-only の間も未計測・NOT_RUN・閾値未満・計測不能は CI を落とさない代わりに、値と不足と名前つきの一覧が enforce と同じに出て、結果の見出しは成功と書かれず、計測不能は「計測不能」と明示される。入口(cli)は shouldFail を終了コードへ写すだけで、mode による分岐を持たない(ADR-004)。record-only が「失敗の握りつぶし」の入口にならない根拠(区分と理由を書き換えない、入力の失敗と書き込みの失敗は隠さない、結果の文書に mode が残る)が設計の記録から読める。",
       "basis": "FR6.3、FR6.4、NFR4.2〜4.5、BR7.2、BR7.3、BR8.4、functional-spec 動作と結果の表、reliability-design RL1・RL3、S8、契約Q2"
     },
     {
       "id": "U4TM-05",
-      "criterion": "出力(BR8): 結果のJSON・job summary・notice・出力値が、判定の結果と同じ1つの文書から1つの整形で作られ(例外・動作の表示を別の経路で読み直さない)、結果のJSONの版は1のまま項目の名前を増やさず、U3が null や固定値で出していた mode・thresholdException・effectiveThresholdPercent に値を持たせる。閾値を下げて使った事実が、job summary の最初の行(成功の見出しより前)と表の閾値の欄と専用の節に、結果の区分に関わらず出て、例外が無いときは出ない。noticeの注釈の種類が表で決まり(入力の失敗=error、一致で例外なし=notice、一致で例外あり=warning、一致でなく enforce=error、一致でなく record-only=warning)、実際の閾値を必ず含み、根拠は notice に載せない。自由な文字列(決定のURL・根拠)は入口で厳しく検査し、出口で面ごとに無害化し(summary は縦線・改行・バッククォートが表を壊さない、noticeは命令の区切りが入らない)、出力値には動作の名前と実際の閾値の数だけを載せて自由な文字列を載せない。出力値の名前は7つのまま増やさない。観測できない値は null で、値ありに数えない(NFR10.2)。",
+      "criterion": "出力(BR8): 結果のJSON・job summary・notice・出力値が、判定の結果と同じ1つの文書から1つの整形で作られ(例外・動作の表示を別の経路で読み直さない)、結果のJSONの版は1のまま項目の名前を増やさず、U3が null や固定値で出していた mode・thresholdException・effectiveThresholdPercent に値を持たせる。閾値を下げて使った事実が、job summary の最初の行(成功の見出しより前)と表の閾値の欄と専用の節に、結果の区分に関わらず出て、例外が無いときは出ない。noticeの注釈の種類が表で決まり(入力の失敗=error、一致で例外なし=notice、一致で例外あり=warning、一致でなく enforce=error、一致でなく record-only=warning)、実際の閾値は U3 の notice が閾値を出す形(一致・不一致)と例外あり・record-only の実行で必ず含み、例外なし・enforce の観測できない結果は U3 のまま閾値を足さず(BR8.5 を優先。範囲が BR8.3・OB2・NFR4.9・項目の期待値で一致している)、根拠は notice に載せない。自由な文字列(決定のURL・根拠)は入口で厳しく検査し、出口で面ごとに無害化し(summary は縦線・改行・バッククォートが表を壊さない、noticeは命令の区切りが入らない)、出力値には動作の名前と実際の閾値の数だけを載せて自由な文字列を載せない。出力値の名前は7つのまま増やさない。観測できない値は null で、値ありに数えない(NFR10.2)。",
       "basis": "FR3.4、FR3.5、FR6.3、FR8.3、FR8.4、NFR4.8〜4.12、NFR10.2、BR8.1〜BR8.6、observability-design OB1〜OB6、security-design SC4"
     },
     {
