@@ -1,0 +1,32 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "取り組み 261115-audit-rounds-rule（bugfix）の小さい変更の軽い道（社内の開発の決まり §1、iyasaka-arc#49 6818948239）の1回の独立監査。docs/sds/audit-method.md §2 の項6（再監査の回数の規定）の書き換え1行と、本項目集合 docs/audit/audit-method-rounds-rule.json だけが対象。KYの表（#49 6806956918）で差し戻しを決める規則と、Suiteの5回まで自動で出す決定（#49 6626354201）に、項6の文を揃える変更であり、新しい決定・規格・工程・権限を作らない。以下のARR-xxは本項目集合の識別子であって新しい社内規格ではない。全5項目必須。",
+  "items": [
+    {
+      "id": "ARR-01",
+      "criterion": "範囲と PR: 変更 path が docs/sds/audit-method.md と docs/audit/audit-method-rounds-rule.json だけ。docs/sds/audit-method.md の差分が §2 の項6の1行だけ（項1〜5・§1・§3 以降を変えていない）。.github/**・.shirube/**・kit/**・scripts/**・tests/**・package.json を変えていない。新しい外部の依存が無い。PR 本文の sds-pr block が risk_class R1 で、changed_paths が diff と一致し、risk:R1 の label が1つある。対象 head の CI（test・hygiene / hygiene）が成功している。",
+      "basis": "社内の開発の決まり §1（軽い道）、PR 本文"
+    },
+    {
+      "id": "ARR-02",
+      "criterion": "引いた決定との一致: 項6が引く iyasaka-arc#49 の comment（6806956918・6626354201）が実在し、書いた内容（KYの表で差し戻しを決める、同じPRの監査を作者が5回まで自動で出してよい、5回でも止まればarcが範囲を絞る案でOwnerに伺い6回目以降は自動で出さない）を、その comment の本文が述べている。監査席が各 comment を取得して照合し、述べていない内容を項6が足していない。置き換えたと書いた以前の扱い（#52 6074051742・6055720316）が、その comment の内容と一致している。",
+      "basis": "iyasaka-arc#49 の各 comment、iyasaka-arc#52 の各 comment"
+    },
+    {
+      "id": "ARR-03",
+      "criterion": "食い違いが残らない: 項6の新しい文が、同じ文書の項1〜5と矛盾しない。リポジトリ内（docs・kit・scripts・README・.github）に、項6が置き換えた「3回目まで」「3回目でも未解決ならOwnerへ返す」「4回目以降」の扱いを前提にする記述や、回数で判定する script・試験が残っていない（grep と読みで確かめた結果が PR 本文または返却にある）。",
+      "basis": "docs/sds/audit-method.md、リポジトリの検索"
+    },
+    {
+      "id": "ARR-04",
+      "criterion": "変えないものが残る: 項6が、各回の独立監査・受領・統合の条件、回数到達を合格にしない規則、監査者が2回目以降の返却に指摘が前回の部分集合か新しい指摘かを記録する義務（部分集合の定義を含む）を、そのまま保っている。作者≠監査≠merge、必要な Owner の認可の規則を弱めていない。",
+      "basis": "docs/sds/audit-method.md §2、社内の開発の決まり §2"
+    },
+    {
+      "id": "ARR-05",
+      "criterion": "知識の重複と値の写し: 項6が KYの表の値・差し戻す組み合わせ・起きやすさと困る大きさの段階を写さず、正本（社内の決まり）への参照だけを置いている（S3）。項6が、5回目の後の扱い・Owner へ返す条件・回数の上限を、引いた決定（#49 6626354201）の文のとおりに書き、それに無い内容を新しく決めていない。新しい語（権限・工程・役割・状態に聞こえる造語）を作っていない。",
+      "basis": "設計・実装の標準 S3、社内の開発の決まり §2 の最後の項"
+    }
+  ]
+}
