@@ -13,7 +13,7 @@
 
 | ID | 要件 | 測り方 |
 |---|---|---|
-| NFR1.7 | 拒否の理由は固定の文で、どの条件で止まったかを区別できる。宣言を持たない対象の理由は基準の版と同じ。宣言を持つ対象の新しい理由は次の 8 つだけ: `Invalid extra_checkouts declaration`／`Too many extra_checkouts declarations`／`Duplicate extra_checkouts commit`／`extra_checkouts repo equals the PR repo`／`extra_checkouts requires a required check`／`Undeclared extra checkout commit`／`Declared extra checkout not in CI log`／`Declared extra checkout not found in declared repo`（`rules.md` の一覧が正本） | 負例ごとに、期待する理由の文と一致すること。理由の文の集合が `rules.md` の一覧と一致すること |
+| NFR1.7 | 拒否の理由は固定の文で、どの条件で止まったかを区別できる。宣言を持たない対象の理由は基準の版と同じ。宣言を持つ対象の新しい理由は次の 9 つだけ: `Invalid extra_checkouts declaration`／`Too many extra_checkouts declarations`／`Duplicate extra_checkouts commit`／`extra_checkouts repo equals the PR repo`／`extra_checkouts requires a required check`／`Undeclared extra checkout commit`／`Declared extra checkout not in CI log`／`Declared extra checkout not found in declared repo`／`Declared extra checkout derives from requested base/head`（`rules.md` の一覧が正本） | 負例ごとに、期待する理由の文と一致すること。理由の文の集合が `rules.md` の一覧と一致すること |
 | NFR8.4 | 受付の出力に宣言の値を載せない（D7・BR3.3）。ログ・警報・追跡は足さない（理由: 常駐しない読み取りの処理で、出力は 1 行の JSON だけ。足せば秘密・宣言の値を載せる経路が増える） | 受理した出力のキーの集合が、宣言なしの出力と同じであること |
 
 ## 行の網羅率の記録（NFR3。観測した値から作る）

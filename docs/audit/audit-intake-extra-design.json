@@ -15,8 +15,8 @@
     },
     {
       "id": "AIE-03",
-      "criterion": "判定の核が、照らされていない code を通さない: 宣言を持つ対象で、統合の版の候補(job の記録の commit から宣言の commit を除いたもの)が、job ごとにちょうど1つで、その両親が依頼の base と head(並びを問わない)であり、全桁一致(40桁・小文字16進)だけで比べ、job の名前・step の名前・順序を読まない(BR2.2〜BR2.6)。宣言の commit が統合の版と同じなら候補が0件で拒否になり(T2)、宣言に無い追加の checkout は候補が2件以上で拒否になり、宣言にあって対象のどの job の記録にも出ない組は拒否になる(BR3.1)。0件・2件以上・宣言の不在・両親の不一致が、別の固定の理由で区別される。これらの判定を、設計の規則どおりに作ると、宣言を悪用して照らしていない統合の版を受け付ける経路が無いことを、反例(宣言の commit の入れ替え、同じ commit の重複行、候補の入れ替え)で確かめられる。",
-      "basis": "FR2.1〜FR2.4・FR2.7〜FR2.9・FR2.11、BR2.2〜BR2.6、BR3.1、functional-spec.md §3 W3・W4・§4、security-requirements の T1・T2"
+      "criterion": "判定の核が、照らされていない code を通さない: 宣言を持つ対象で、統合の版の候補(job の記録の commit から宣言の commit を除いたもの)が、job ごとにちょうど1つで、その両親が依頼の base と head(並びを問わない)であり、全桁一致(40桁・小文字16進)だけで比べ、job の名前・step の名前・順序を読まない(BR2.2〜BR2.6)。宣言の commit が統合の版と同じなら候補が0件で拒否になり(T2)、宣言に無い追加の checkout は候補が2件以上で拒否になり、宣言にあって対象のどの job の記録にも出ない組は拒否になる(BR3.1)。0件・2件以上・宣言の不在・両親の不一致が、別の固定の理由で区別される。これらの判定を、設計の規則どおりに作ると、宣言を悪用して照らしていない統合の版を受け付ける経路が無いことを、反例(宣言の commit の入れ替え、同じ commit の重複行、候補の入れ替え、および同じ両親(base・head)で木の違う統合の版が2つあり片方を別の repo の宣言に入れて候補の数え方から外す形)で確かめられる。後者は、宣言の commit が対象の base か head そのもの、または両親のどれかが base か head なら拒否する規則(BR3.7、同じ応答を読むだけで問い合わせを足さない)で塞がれ、job が2つに分かれた形・宣言の commit の両親が読めない形・親が無関係な正例も、設計の試験の計画(NFR1.8)に含まれている。",
+      "basis": "FR2.1〜FR2.4・FR2.7〜FR2.9・FR2.11、BR2.2〜BR2.6、BR3.1、BR3.7、functional-spec.md §3 W3・W4・§4・D8、security-requirements の T1・T2・T8"
     },
     {
       "id": "AIE-04",
@@ -25,8 +25,8 @@
     },
     {
       "id": "AIE-05",
-      "criterion": "観測と fail closed(S5・S8): 受け入れの根拠は、job の記録から観測した commit と、宣言の repo への問い合わせ(宣言1件につき1回、再試行なし)で観測した実在だけであり、返った sha が宣言の commit と全桁一致した時だけ「実在」と数える。応答の失敗・404・期限切れ・読めない形・別の sha・受付の資格で読めない repo は、すべて「観測できず」で依頼全体の拒否になり、成功に読み替えられない。依頼の宣言の値を、観測した証拠として受付の出力に写さず、出力の形は宣言なしの依頼と同じ。拒否の理由は固定の文だけで、宣言の repo・commit・応答の本文・job の記録の中身・token を載せず、新しい理由は8つ(`Invalid extra_checkouts declaration`・`Too many extra_checkouts declarations`・`Duplicate extra_checkouts commit`・`extra_checkouts repo equals the PR repo`・`extra_checkouts requires a required check`・`Undeclared extra checkout commit`・`Declared extra checkout not in CI log`・`Declared extra checkout not found in declared repo`)に尽きる。例外を飲み込んで続ける分岐を設計が許していない。",
-      "basis": "FR2.5・FR2.6・FR2.10・FR2.11、BR3.2〜BR3.4・BR3.6、NFR1.1〜NFR1.5、NFR8.1・NFR8.4・NFR1.7、security-requirements の T1・T7、社内の設計・実装の標準 S5・S8"
+      "criterion": "観測と fail closed(S5・S8): 受け入れの根拠は、job の記録から観測した commit と、宣言の repo への問い合わせ(宣言1件につき1回、再試行なし)で観測した実在だけであり、返った sha が宣言の commit と全桁一致した時だけ「実在」と数える。応答の失敗・404・期限切れ・読めない形・別の sha・受付の資格で読めない repo は、すべて「観測できず」で依頼全体の拒否になり、成功に読み替えられない。依頼の宣言の値を、観測した証拠として受付の出力に写さず、出力の形は宣言なしの依頼と同じ。拒否の理由は固定の文だけで、宣言の repo・commit・応答の本文・job の記録の中身・token を載せず、新しい理由は9つ(`Invalid extra_checkouts declaration`・`Too many extra_checkouts declarations`・`Duplicate extra_checkouts commit`・`extra_checkouts repo equals the PR repo`・`extra_checkouts requires a required check`・`Undeclared extra checkout commit`・`Declared extra checkout not in CI log`・`Declared extra checkout not found in declared repo`・`Declared extra checkout derives from requested base/head`)に尽きる。例外を飲み込んで続ける分岐を設計が許していない。",
+      "basis": "FR2.5・FR2.6・FR2.10・FR2.11、BR3.2〜BR3.4・BR3.6・BR3.7、NFR1.1〜NFR1.5・NFR1.8、NFR8.1・NFR8.4・NFR1.7、security-requirements の T1・T7・T8、社内の設計・実装の標準 S5・S8"
     },
     {
       "id": "AIE-06",
@@ -45,7 +45,7 @@
     },
     {
       "id": "AIE-09",
-      "criterion": "KY の表への照らしと残る前提: 設計・NFR の脅威の見取り図(T1〜T7)が、社内の決まり版11の KY の表(起きやすさ × 困る大きさ)と読み方の足し0・1・2に従って、差し戻す組み合わせ(致命×全部・重大×低以上・中×中以上・軽×高)に当たるかを、指摘ごとに「この場面を作るのに攻める側に要る最小の権限」つきで判断できる形で書かれている。受付が保証しないこと(宣言した commit の中身・宣言した repo の妥当性は照らさず、保証するのは完全一致と実在だけで、受けるか差し戻すかは独立の監査の席が依頼の宣言を見て決める)が、文書に書く内容(BR4.2)として設計に含まれ、保証の範囲を超えた安全を主張していない。宣言の repo が PR 自身の repo の別名(fork など)でも実在と数えうる点を含め、受付の保証の外に残る事柄が、隠されず記録されている。",
+      "criterion": "KY の表への照らしと残る前提: 設計・NFR の脅威の見取り図(T1〜T7)が、社内の決まり版11の KY の表(起きやすさ × 困る大きさ)と読み方の足し0・1・2に従って、差し戻す組み合わせ(致命×全部・重大×低以上・中×中以上・軽×高)に当たるかを、指摘ごとに「この場面を作るのに攻める側に要る最小の権限」つきで判断できる形で書かれている。受付が保証しないこと(宣言した commit の中身・宣言した repo の妥当性は照らさず、保証するのは完全一致と実在だけで、受けるか差し戻すかは独立の監査の席が依頼の宣言を見て決める)が、文書に書く内容(BR4.2)として設計に含まれ、保証の範囲を超えた安全を主張していない。宣言の repo が PR 自身の repo の別名(fork など)でも実在と数えうる点(ただし base・head に由来する宣言は BR3.7 で拒否する)を含め、受付の保証の外に残る事柄が、隠されず記録されている。",
       "basis": "security-requirements.md の脅威の見取り図、BR4.2、BR1.6、社内の決まり版11(iyasaka-arc#49 の決定と読み方の足し)、requirements の Assumptions"
     },
     {

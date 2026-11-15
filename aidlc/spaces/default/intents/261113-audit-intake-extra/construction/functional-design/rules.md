@@ -147,11 +147,11 @@ rules:
     source: FR2.4, FR2.11
 
   - id: BR3.2
-    statement: 宣言した各組は、宣言の repo に実在しなければならない。宣言 1 件につき 1 回だけ、宣言の repo の `git/commits/<commit>` を問い合わせ、返った sha が宣言の commit と全桁一致した時だけ「実在」と数える。失敗・404・期限切れ・読めない形・不一致は、すべて拒否する。再試行はしない。宣言した commit が別の repo にだけある場合も拒否になる。
+    statement: 宣言した各組は、宣言の repo に実在しなければならない。宣言 1 件につき 1 回だけ、宣言の repo の `git/commits/<commit>` を問い合わせ、返った sha が宣言の commit と全桁一致し、かつ両親（`parents`）が 40 桁の小文字 16 進の配列として読めた時だけ「実在」と数える。失敗・404・期限切れ・読めない形（両親が読めない場合を含む）・不一致は、すべて拒否する。再試行はしない。宣言した commit が別の repo にだけある場合も拒否になる。
     category: validation
     applies_to: ExistenceObservation
     trigger: BR3.1 を通った後。宣言の並びの順に、1 件ずつ
-    logic: FOR 各宣言: 応答を取る（例外は観測できず）。IF 応答の sha が宣言の commit と全桁一致しない（応答なしを含む）THEN 拒否。問い合わせの上限は 1 回の判定で対象ごとに最大 4 回。
+    logic: FOR 各宣言: 応答を取る（例外は観測できず）。IF 応答の sha が宣言の commit と全桁一致しない（応答なしを含む）OR 両親が読めない THEN 拒否。実在と数えた応答の両親は BR3.7 へ渡す（同じ応答を読むだけで、問い合わせを足さない）。問い合わせの上限は 1 回の判定で対象ごとに最大 4 回。
     violation: 依頼全体を拒否。理由「Declared extra checkout not found in declared repo」。
     source: FR2.5, FR2.6, FR2.10, NFR1, NFR5
 
@@ -191,6 +191,15 @@ rules:
     violation: 該当なし（設計の制約）
     source: NFR8
 
+  - id: BR3.7
+    statement: 宣言した commit は、対象 PR の base・head に由来してはならない。宣言の commit が依頼の base か head そのものである、または両親のどれかが依頼の base か head である宣言は拒否する。これで、宣言を使って「統合の版の候補」の数え方（BR2.2）から、同じ両親を持つ別の統合の版を外す経路を塞ぐ。判定の根拠は BR3.2 の同じ応答の `sha` と `parents` だけで、問い合わせを足さない。
+    category: validation
+    applies_to: ExistenceObservation, ExtraCheckoutDeclaration
+    trigger: BR3.2 が 1 件を「実在」と数えた時（宣言の並びの順に、1 件ずつ）
+    logic: IF 宣言の commit が base か head と全桁一致 OR 応答の両親のどれかが base か head と全桁一致 THEN 拒否。
+    violation: 依頼全体を拒否。理由「Declared extra checkout derives from requested base/head」。
+    source: FR2.1, FR2.7, FR2.11, NFR1
+
   # --- 文書の揃い ---
   - id: BR4.1
     statement: 欄の名前と件数の上限の値の持ち主は、実装の 1 か所の定数だけ。`docs/sds/audit-method.md` と `kit/skills/sds-audit/SKILL.md` §2 はそれを書き写し、判定には使わない。3 か所の食い違いは、試験が実装の定数と 2 つの文書の文を照らして検出する。
@@ -217,7 +226,7 @@ rules:
 |---|---|---|---|
 | 1 宣言の読み取り | BR1.1〜BR1.8 | 欄は任意・対象ごと・4 件まで・形と commit の書式・重複なし・PR 自身の repo と同じは不可・必須の検査が空は不可・問い合わせの前に全部検査 | Invalid extra_checkouts declaration／Too many extra_checkouts declarations／Duplicate extra_checkouts commit／extra_checkouts repo equals the PR repo／extra_checkouts requires a required check |
 | 2 job ごと | BR2.1〜BR2.6 | 宣言なしは今と同じ。宣言あり: 統合の版の候補がちょうど 1・両親は base と head・全桁一致・名前と順序を読まない | Missing or ambiguous checkout commit／Undeclared extra checkout commit／Tested merge parents differ from requested base/head |
-| 3 対象ごと | BR3.1〜BR3.6 | 宣言はどれかの job に出る・宣言の repo に実在（1 件 1 回）・出力は同じ形・全体を拒否・決定性・固定の理由 | Declared extra checkout not in CI log／Declared extra checkout not found in declared repo |
+| 3 対象ごと | BR3.1〜BR3.7 | 宣言はどれかの job に出る・宣言の repo に実在し両親が読める（1 件 1 回）・出力は同じ形・全体を拒否・決定性・固定の理由・宣言は対象の base と head に由来しない | Declared extra checkout not in CI log／Declared extra checkout not found in declared repo／Declared extra checkout derives from requested base/head |
 | 4 文書 | BR4.1〜BR4.2 | 3 か所の揃い・文書に書く内容 | （試験の失敗） |
 
 ## 上流
@@ -231,3 +240,4 @@ rules:
 - 採った判断: 重複は commit だけで判定する。採らなかった代替: repo と commit の組で判定（job の記録は commit しか見えず、同じ commit を 2 つの repo に宣言すると、どちらの宣言が job の記録に対応するか決められない）。
 - 採った判断: 宣言の要素のキーは repo と commit だけ（ほかのキーは不正）。この新しい欄にだけ厳しくする。採らなかった代替: 知らないキーを無視する今の依頼の流儀（宣言に意味の無い欄が紛れても気づけない）。
 - 採った判断: 必須の検査が空の対象の宣言を拒否する（BR1.7）。採らなかった代替: 宣言を黙って無視して通す（観測されない宣言を成功に数える）。
+- 採った判断: 宣言の commit が対象の base か head、または両親のどれかが base か head なら拒否する（BR3.7）。同じ両親を持つ統合の版が 2 つあり片方を別の repo に宣言する経路（設計監査 1 回目の F01）を塞ぐ。採らなかった代替: 宣言の commit ごとに対象の repo へ両親を問い合わせて数え直す（問い合わせが宣言の件数ぶん増え、予算の式 NFR5.2 を変える）、宣言した commit も統合の版の数に入れる（宣言の repo の commit の両親を対象の repo から観測できない）。

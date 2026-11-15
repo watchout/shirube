@@ -17,6 +17,7 @@
 | D5 | 宣言の commit の重複は commit だけで判定する | job の記録は commit しか見えず、repo を見分けられない | repo と commit の組で判定 |
 | D6 | 既存の 3 つの拒否の文（`Missing or ambiguous checkout commit`・`Tested merge parents differ from requested base/head`・ほか）は変えない。宣言を持つ対象にだけ新しい固定の文を足す | NFR2 の後方互換。古い checker が理由を読む側の script を壊さない | 全部の拒否の文を新しくする |
 | D7 | 受付の出力（receipt）は変えない。受け入れた追加の checkout を出力に載せない | 要件の対象外（出力の利用側の読み方を確かめてから別に決める） | 出力に `extra_checkouts_observed` を足す |
+| D8 | 宣言の commit が対象の base・head に由来する（それ自身、または両親のどれか）なら拒否する（BR3.7）。判定は BR3.2 の同じ応答から読み、問い合わせを足さない | 統合の版の候補の数え方（BR2.2）は、宣言の commit を除いてから数える。除かれた側が、同じ両親を持つ別の統合の版だと、2 つの統合の版のうち 1 つが数えられない（設計監査 1 回目の F01） | 宣言した commit の両親を対象の repo へ問い合わせて数え直す（問い合わせが増え予算の式が変わる。宣言の repo の commit は対象の repo から観測できない） |
 
 ## 2. 依頼の形（追加の欄）
 
@@ -67,8 +68,9 @@
 ### W4 対象ごとの宣言の確認（宣言を持つ対象だけ）
 
 1. 宣言の commit のどれかが `seen` に無ければ `Declared extra checkout not in CI log`（BR3.1）。
-2. 宣言を並びの順に 1 件ずつ、宣言の repo の `git/commits/<commit>` を 1 回だけ問い合わせる。応答が取れない・読めない・期限切れ・sha が全桁一致しないなら `Declared extra checkout not found in declared repo`（BR3.2）。再試行しない。
-3. 全部が一致すれば、その対象の判定を終える。
+2. 宣言を並びの順に 1 件ずつ、宣言の repo の `git/commits/<commit>` を 1 回だけ問い合わせる。応答が取れない・読めない（両親が 40 桁の小文字 16 進の配列として読めない場合を含む）・期限切れ・sha が全桁一致しないなら `Declared extra checkout not found in declared repo`（BR3.2）。再試行しない。
+3. 同じ応答で、宣言の commit が依頼の base か head と全桁一致する、または両親のどれかが base か head と全桁一致するなら `Declared extra checkout derives from requested base/head`（BR3.7）。問い合わせは足さない。
+4. 全部が通れば、その対象の判定を終える。
 
 ### W5 全体の流れの中での位置
 
@@ -91,7 +93,8 @@ START
                  └─ 全部 seen
                       └─ 宣言ごとに EXISTENCE（W4 の 2）
                            ├─ 1 件でも不一致／取得不能 ──→ REJECTED
-                           └─ 全部一致 ──→ ACCEPTED
+                           ├─ 1 件でも base／head に由来（BR3.7） ──→ REJECTED
+                           └─ 全部一致で由来なし ──→ ACCEPTED
 ```
 
 - REJECTED は終端で、依頼全体の拒否になる（BR3.4）。部分的な受け入れを作らない。
@@ -118,7 +121,7 @@ erDiagram
 |---|---|---|
 | BR1.1〜BR1.8 | W1 | 欄は任意・対象ごと・4 件まで・形・commit の書式・重複なし・自 repo と同じは不可・必須の検査なしは不可・問い合わせ前に全部検査 |
 | BR2.1〜BR2.6 | W3 | 宣言なしは今と同じ・候補はちょうど 1・両親は base と head・全桁一致・名前と順序を読まない・見えた宣言を `seen` に足す |
-| BR3.1〜BR3.6 | W4 | 宣言はどれかの job に出る・宣言の repo に実在（1 件 1 回）・出力は同じ形・全体を拒否・決定性・固定の理由 |
+| BR3.1〜BR3.7 | W4 | 宣言はどれかの job に出る・宣言の repo に実在し両親が読める（1 件 1 回）・出力は同じ形・全体を拒否・決定性・固定の理由・宣言は対象の base と head に由来しない |
 | BR4.1〜BR4.2 | 文書 | 3 か所の揃い・文書に書く内容 |
 
 ## 7. 次の段（nfr-requirements）に渡す事柄

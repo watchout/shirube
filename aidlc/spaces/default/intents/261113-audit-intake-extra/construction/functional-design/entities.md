@@ -66,7 +66,8 @@ entities:
     description: 宣言 1 件について、宣言の repo の `git/commits/<commit>` を GitHub に問い合わせて観測した結果。宣言の値をそのまま写さない。
     attributes:
       - { name: returned_sha, type: string, required: false, constraints: ["応答が取れた時だけ。宣言の commit と全桁一致した時だけ「実在」"] }
-      - { name: outcome, type: enum, allowed: [exists, not_exists_or_mismatch, unobservable], required: true, constraints: ["exists 以外はすべて拒否。unobservable（失敗・期限切れ・読めない形）を成功に数えない"] }
+      - { name: parents, type: array<string>, required: false, constraints: ["応答が取れた時だけ。各 40 桁の小文字 16 進の配列として読めない時は unobservable"] }
+      - { name: outcome, type: enum, allowed: [exists, derives_from_target, not_exists_or_mismatch, unobservable], required: true, constraints: ["exists 以外はすべて拒否。derives_from_target = 宣言の commit か両親のどれかが依頼の base・head と全桁一致（BR3.7）。unobservable（失敗・期限切れ・読めない形）を成功に数えない"] }
 
   - name: Rejection
     status: existing-extended
