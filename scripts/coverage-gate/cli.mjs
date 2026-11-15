@@ -2,9 +2,9 @@
 // Order is fixed: check the arguments, read the run id, remove the old result, check the input, measure, judge, write.
 // Exit 0 = nothing to fail on, 1 = a verdict that fails, 2 = no verdict was reached (bad input, bad invocation, an
 // output that could not be written, an unexpected exception). An entry failure is one JSON line on stderr and no result.
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { resolve } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { trackedFiles } from "../hygiene/lib.mjs";
 import { FILE_IO, emitOutputs, guardResultPath, removeOldResult } from "./emit.mjs";
 import { checkInput } from "./input.mjs";
@@ -98,6 +98,16 @@ export async function runCli({ argv, env, cwd, stdout, stderr, measure = measure
   }
 }
 
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+// True when this file is the one node was started on, judged by the real file, so a link to the folder or to the file counts.
+/** @public */
+export function isDirectRun(moduleUrl, startedPath) {
+  try {
+    return realpathSync(fileURLToPath(moduleUrl)) === realpathSync(startedPath);
+  } catch {
+    return false;
+  }
+}
+
+if (isDirectRun(import.meta.url, process.argv[1])) {
   process.exitCode = await runCli({ argv: process.argv.slice(2), env: process.env, cwd: process.cwd(), stdout: process.stdout, stderr: process.stderr });
 }

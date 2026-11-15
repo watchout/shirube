@@ -2,11 +2,12 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, linkSync, lstatSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import test from "node:test";
-import { runCli } from "../scripts/coverage-gate/cli.mjs";
+import { pathToFileURL } from "node:url";
+import { isDirectRun, runCli } from "../scripts/coverage-gate/cli.mjs";
 import { REASON_CODES } from "../scripts/coverage-gate/judge.mjs";
-import { CLI, PASS_TEST, SOURCE_A, makeRepo, removeDir } from "./coverage-gate-fixtures.mjs";
+import { CLI, PASS_TEST, SOURCE_A, makeDir, makeRepo, removeDir } from "./coverage-gate-fixtures.mjs";
 
 const GOOD_INPUT = JSON.stringify({ schemaVersion: 1, shape: "node-builtin", denominator: { targets: ["src"] }, testTargets: ["tests"] });
 const repo = makeRepo({ "src/a.mjs": SOURCE_A, "tests/a.test.mjs": PASS_TEST, "input.json": GOOD_INPUT, "notes.txt": "tracked file\n" });
@@ -147,6 +148,52 @@ test("a result path that is itself a link, or a hard link of the input, or reach
   assert.equal(readFileSync(fresh("input.json"), "utf8"), GOOD_INPUT);
   assert.equal(readFileSync(fresh("src/a.mjs"), "utf8"), SOURCE_A);
   assert.equal(lstatSync(fresh("link-to-notes.json")).isSymbolicLink(), true);
+});
+
+// Audit round 2 F01: the same tracked file under another spelling (letter case on a case-insensitive disk, a hard link)
+// is refused before anything is deleted or written.
+test("a result path that is the same tracked file under another spelling is refused and the file is unchanged", async () => {
+  linkSync(fresh("notes.txt"), fresh("hard-notes.json"));
+  const sameFileInOtherCase = existsSync(fresh("NOTES.TXT"));
+  const hard = await inProcess(["--input", "input.json", "--result", "hard-notes.json"]);
+  assert.deepEqual([hard.code, stderrJson(hard.stderr).code], [2, "ENTRY_ARGUMENTS_INVALID"]);
+  const cased = await inProcess(["--input", "input.json", "--result", "NOTES.TXT"]);
+  if (sameFileInOtherCase) assert.deepEqual([cased.code, stderrJson(cased.stderr).code], [2, "ENTRY_ARGUMENTS_INVALID"]);
+  else assert.equal(cased.code, 0);
+  assert.equal(readFileSync(fresh("notes.txt"), "utf8"), "tracked file\n");
+});
+
+// Audit round 2 F02: started through a link to its folder or to the file, the command still runs and still fails loudly.
+test("the real command started through a link runs: a missing input is exit 2 and the old result is replaced", () => {
+  const holder = makeDir();
+  try {
+    symlinkSync(resolve(CLI, "../../.."), join(holder, "tool-alias"));
+    symlinkSync(CLI, join(holder, "cli-link.mjs"));
+    for (const entry of [join(holder, "tool-alias", "scripts", "coverage-gate", "cli.mjs"), join(holder, "cli-link.mjs")]) {
+      writeFileSync(fresh("r-link-stale.json"), JSON.stringify({ outcome: "match", stale: true }));
+      const r = spawnSync(process.execPath, [entry, "--input", "missing-input.json", "--result", "r-link-stale.json"], { cwd: repo, env: process.env, encoding: "utf8" });
+      assert.equal(r.status, 2, r.stderr);
+      assert.equal(readJson("r-link-stale.json").outcome, "unobservable");
+    }
+  } finally {
+    removeDir(holder);
+  }
+});
+
+test("a direct start is recognised by the real file: the same file, a link to it; not another file, nothing, or a missing path", () => {
+  const holder = makeDir();
+  try {
+    writeFileSync(join(holder, "other.mjs"), "export {};\n");
+    symlinkSync(CLI, join(holder, "link.mjs"));
+    const url = pathToFileURL(CLI).href;
+    assert.equal(isDirectRun(url, CLI), true);
+    assert.equal(isDirectRun(url, join(holder, "link.mjs")), true);
+    assert.equal(isDirectRun(url, join(holder, "other.mjs")), false);
+    assert.equal(isDirectRun(url, join(holder, "no-such.mjs")), false);
+    assert.equal(isDirectRun(url, undefined), false);
+  } finally {
+    removeDir(holder);
+  }
 });
 
 // Audit round 1 O01: a path the caller wrote outside the repository is not echoed back.

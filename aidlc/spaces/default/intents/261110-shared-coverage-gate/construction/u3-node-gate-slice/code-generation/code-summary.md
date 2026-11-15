@@ -35,6 +35,17 @@ round 1（返却 https://github.com/watchout/shirube/pull/104#issuecomment-68397
 - 観測: 追加 12 件（emit 7・cli 4・resolve 1）。門の試験 187 件が Node 24.22.3 で合格（失敗・skip・todo 0）。`npm test` 全体 948 件合格（761 + 187）。lint:structural・lint:guard・jscpd・dependency-cruiser（46 module）・knip・OWN-01（3,846 / 4,000）は指摘なし。自己の網羅率は 13 file で 1067 / 1067（100.00%、toolVersion 24.22.3、runId `local`。`self-coverage-result.json` を取り直した。手元の実行で、workflow 上の実行ではない）。`scripts/coverage-gate/` の行数は cli 103・emit 100・resolve 42（ほかは変更なし。合計 1,067 行、いずれも 300 行以内）。
 - 観測していない: Node 22・26 での再実行、Linux の runner でのリンク関連の試験（push 後の CI の Node 26 job で確かめる）。リンクを置く試験は macOS の手元の実行。Windows は対象外（`O_NOFOLLOW` が無い環境の保証はしない）。
 
+## 独立の実装監査 round 2 の是正（F01・F02）
+
+round 2（返却 https://github.com/watchout/shirube/pull/104#issuecomment-6842995633）は、F01（大小文字の別名で追跡 file を結果で上書きできる。重大 × 低）と F02（CLI を directory のリンク経由で起動すると処理せず exit 0 になり古い結果が残る。重大 × 低）で BLOCK。作者は返却の BLOCK を、機械の受領ではなく作者の記録として受けた。設計の文（security-design「追跡されている file なら拒む」、BR5.1、NFR4.4〜4.6）は実体の同一性の判定と矛盾しないので、設計の記録は変えていない。順序は、試験だけの Red（emit 1 件・cli 3 件。実際の filesystem で hard link と別の綴り、リンク経由の起動）、その後に実装の Green。
+
+- 採った判断（F01）: 追跡 file の判定を、名前の一致に加えて実体の同一性（dev・ino）でも行う（`emit.mjs` の `isTracked`。repo の外は対象にしない）。大小文字を区別しない disk では別の綴りが同じ実体になり拒否され、区別する disk では別 file として扱う（試験は disk の性質を調べて両方の場合を assert する）。hard link も同じ実体として拒否する。
+- 採らなかった代替（F01）: 全 path を小文字にして比べる — 大小文字を区別する環境の別 file を混同する（監査の remediation も同じ注意）。
+- 採った判断（F02）: 直接起動の判定を、実体の path 同士の比較にする（`cli.mjs` の `isDirectRun`: `realpathSync` で `import.meta.url` の file と `process.argv[1]` を比べ、解決できなければ false）。import されたときは動かない性質を保ち、directory のリンク・file のリンクのどちらで起動しても入口へ届く。
+- 採らなかった代替（F02）: `--preserve-symlinks-main` を前提にする — 利用者の起動の仕方を縛る。文字列の比較のまま例外を足す — リンクの形ごとに漏れる。
+- 観測: 追加 4 件（emit 1・cli 3）。作業木（Node 24）で確認コマンドの実行 634 件すべて合格（失敗・skip・cancelled 0）、`scripts/coverage-gate/` の行の網羅率 100.00%。lint:structural・lint:guard は指摘なし、knip は今回の変更に新しい指摘なし（残りは既存）。`scripts/coverage-gate/` の行数は emit 104・cli 113（いずれも 300 行以内、合計 1,081 行）。自己の網羅率は門で 13 file を測り、一致、1081 / 1081（100.00%、toolVersion 24.22.3、runId `local`。`self-coverage-result.json` を取り直した。手元の実行で、workflow 上の実行ではない）。実際の子の process でリンク経由の起動（directory のリンク・file のリンク）が exit 2 になり古い結果が置き換わることを確かめた。
+- 観測していない: Node 22・26 での再実行、Linux の runner での別名の試験（大小文字を区別する disk の側の assert は手元の macOS では実行されない。push 後の CI で確かめる）。独立の再監査、作者の受領、統合は未実施。
+
 ## 実行していない・観測していないもの
 
 - 配線された workflow での実行（AC10.1.3）は U7 の範囲で、この単位では観測していない。入口はどの workflow からも呼ばれない。

@@ -5,8 +5,8 @@
   "shouldFail": false,
   "mode": "enforce",
   "reasonCodes": [],
-  "coveredLines": 1067,
-  "totalLines": 1067,
+  "coveredLines": 1081,
+  "totalLines": 1081,
   "lineRatioPercent": "100.00",
   "effectiveThresholdPercent": "100.00",
   "thresholdException": null,
@@ -31,13 +31,13 @@
   "perFile": [
     {
       "path": "scripts/coverage-gate/cli.mjs",
-      "coveredLines": 103,
-      "totalLines": 103
+      "coveredLines": 113,
+      "totalLines": 113
     },
     {
       "path": "scripts/coverage-gate/emit.mjs",
-      "coveredLines": 100,
-      "totalLines": 100
+      "coveredLines": 104,
+      "totalLines": 104
     },
     {
       "path": "scripts/coverage-gate/events-reporter.mjs",
@@ -95,7 +95,7 @@
       "totalLines": 17
     }
   ],
-  "recordsSha256": "5adc73457ce12cb647733885f2642528bb1b1e2169bc1940d11c56406b0e3db3",
+  "recordsSha256": "7049171aebbfc397d26aa4db8f083fda1bbe6cba4292e5dd2b9cf68114e3d772",
   "measurementAttempt": {
     "toolName": "node",
     "deadlineSeconds": 600,

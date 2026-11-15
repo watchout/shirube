@@ -100,6 +100,19 @@ test("guarding a result path: a link, the input, a hard link of the input, a tra
   assert.equal(readFileSync(path("kept.txt"), "utf8"), "kept\n");
 });
 
+// Audit round 2 F01: a tracked file is recognised by what it is on disk, not by how its name is spelled.
+test("guarding a result path: a hard link of a tracked file, and a spelling that reaches the same tracked file, are refused", () => {
+  writeFileSync(path("tracked-kept.txt"), "kept\n");
+  linkSync(path("tracked-kept.txt"), path("tracked-alias.json"));
+  const guard = (result) => guardResultPath({ cwd: dir, input: "in.json", result, tracked: () => ["tracked-kept.txt"] });
+  assert.equal(guard("tracked-alias.json"), null);
+  const sameFileInOtherCase = existsSync(path("TRACKED-KEPT.TXT"));
+  assert.equal(guard("TRACKED-KEPT.TXT") === null, sameFileInOtherCase);
+  assert.equal(guard("tracked-kept.txt"), null);
+  assert.notEqual(guard("tracked-new.json"), null);
+  assert.equal(readFileSync(path("tracked-kept.txt"), "utf8"), "kept\n");
+});
+
 test("all four outputs are written, in order: result, summary, outputs, notice", () => {
   const notices = [];
   const r = emitOutputs({ document, resultPath: path("e1.json"), summaryPath: path("e1.md"), outputPath: path("e1.out"), writeNotice: (line) => notices.push(line) });

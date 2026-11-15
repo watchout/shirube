@@ -54,9 +54,13 @@ function sameFile(a, b) {
   return x !== null && y !== null && x.dev === y.dev && x.ino === y.ino;
 }
 
+// A tracked file is recognised by its name and by what it is on disk (same device and file number), so another
+// spelling of it (letter case on a case-insensitive disk, a hard link) is refused too.
 function isTracked(root, target, tracked) {
   const inside = relative(root, target);
-  return inside !== ".." && !inside.startsWith(`..${sep}`) && tracked().includes(inside.split(sep).join("/"));
+  if (inside === ".." || inside.startsWith(`..${sep}`)) return false;
+  const names = tracked();
+  return names.includes(inside.split(sep).join("/")) || names.some((name) => sameFile(target, join(root, name)));
 }
 
 // Returns the real path the result may be written to, or null. Refused: a missing folder, a path that is already a
