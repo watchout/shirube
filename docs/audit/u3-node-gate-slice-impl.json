@@ -20,7 +20,7 @@
     },
     {
       "id": "U3IA-04",
-      "criterion": "測定と子プロセスの実物: 子が shell を使わず引数の配列で起動され、環境が許可した名前の一覧(PATH, HOME, LANG, LC_ALL, TZ。値は門が置く。NODE_OPTIONS と NODE_PATH は渡さない)だけで空から作られ、一覧が1か所で定義されている。完全一致を spawn の境界(起動関数を差し替えた単体の試験)で、実際の子の中は既知・未知・小文字の名前の偽の秘密3種類と NODE_OPTIONS・NODE_PATH の否定だけで確かめている。期限と総予算の小さい方で process group ごと止まり(終了の signal、猶予5秒、強制終了)、孫が残らないことを試験が観測している。Node 22 未満では試験を走らせず観測できず(CHILD_PROCESS_NOT_COUNTABLE)。先頭が `-` の試験 file は、Node が `./` の前置を取り除くことを実際の子で確かめた結果に基づき、絶対 path で渡して出来事の名前を相対に戻す形で、オプションとして解釈されない(設計の記録を先に直した記録がある)。起動の失敗・signal・非0終了・出来事なし・記録なしがすべて区分に落ち、再試行しない。一時 directory は所有者のみで作り、成功でも失敗でも消え、消せなければ TEMP_CLEANUP_FAILED(観測できず、残りは絶対 path でなく runId で示す)。",
+      "criterion": "測定と子プロセスの実物: 子が shell を使わず引数の配列で起動され、環境が許可した名前の一覧(PATH, HOME, TMPDIR, LANG, LC_ALL, TZ の6つ。値は門が置き、TMPDIR は実行ごとの一時 directory の下に門が権限 0700 で作る子専用の directory。NODE_OPTIONS と NODE_PATH は渡さない)だけで空から作られ、一覧が1か所で定義されている。完全一致を spawn の境界(起動関数を差し替えた単体の試験)で、実際の子の中は既知・未知・小文字の名前の偽の秘密3種類と NODE_OPTIONS・NODE_PATH の否定だけで確かめている。子の一時ファイル(Node の coverage を含む)が共有の一時領域でなく子専用の directory に入ることを、実際の子の os.tmpdir() で確かめている。期限と総予算の小さい方で process group ごと止まり(終了の signal、猶予5秒、強制終了)、孫が残らないことを試験が観測している。Node 22 未満では試験を走らせず観測できず(CHILD_PROCESS_NOT_COUNTABLE)。先頭が `-` の試験 file は、Node が `./` の前置を取り除くことを実際の子で確かめた結果に基づき、絶対 path で渡して出来事の名前を相対に戻す形で、オプションとして解釈されない(設計の記録を先に直した記録がある)。起動の失敗・signal・非0終了・出来事なし・記録なしがすべて区分に落ち、再試行しない。一時 directory は所有者のみで作り、成功でも失敗でも消え、消せなければ TEMP_CLEANUP_FAILED(観測できず、残りは絶対 path でなく runId で示す)。",
       "basis": "D3/D5、S5/S8、NFR1.1〜1.3/1.7/4.3/5.1/5.3/5.6/11.2、rules BR2.1〜BR2.3・BR2.7・BR2.8、reliability-design RL2、security-design SC1・SC3・SC6"
     },
     {
