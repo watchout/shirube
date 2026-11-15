@@ -10,6 +10,11 @@ on:
 
 permissions: {}
 
+# A newer push to the same pull request cancels the older run; pushes to main and manual runs are never cancelled (each has its own group).
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   test:
     runs-on: ubuntu-latest

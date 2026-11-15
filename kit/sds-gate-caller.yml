@@ -3,6 +3,8 @@
 # required on the default branch; until then it is report-only.
 # pull_request_target: this definition is read from the default branch, so a PR cannot rewrite the check that judges it.
 # The gate never checks out or runs the PR's code; it only reads the GitHub API (ARC, iyasaka-arc#57 6051365638).
+# A skipped job (its if: is false) does not change the commit status sds-gate; the required check is that commit status, not this job's check run.
+# The job runs on a PR comment only when the comment is created with an audit or plan mark in its body (or an empty body), or is edited or deleted.
 name: sds-gate
 on:
   pull_request_target:
@@ -18,7 +20,12 @@ permissions:
   statuses: write
 jobs:
   sds-gate:
-    if: ${{ github.event_name == 'pull_request_target' || github.event.issue.pull_request }}
+    if: ${{ github.event_name == 'pull_request_target' || (github.event.issue.pull_request && (
+      github.event.action != 'created' ||
+      !github.event.comment.body ||
+      contains(github.event.comment.body, 'sds-audit-request/1') ||
+      contains(github.event.comment.body, 'sds-audit-review/1') ||
+      contains(github.event.comment.body, 'shirube-v3:control-handoff'))) }}
     uses: watchout/shirube/.github/workflows/sds-gate.yml@<SHIRUBE_COMMIT>
     with:
       pr: ${{ github.event.pull_request.number || github.event.issue.number }}
