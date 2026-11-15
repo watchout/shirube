@@ -12,11 +12,11 @@ NFR5.1〜NFR5.8 と脅威 T1〜T6 に対する設計。認証・認可・暗号�
 
 ### SC1 子の環境は許可した名前の一覧だけ（NFR5.1・T3・T4）
 
-- `runner.mjs` が子の環境を、空から「`childEnvAllowlist`（`PATH`・`HOME`・`LANG`・`LC_ALL`・`TZ`）の 5 つの名前に、門が置いた値を入れた物」として作る。親の環境の値は 1 つも写さない。値は、`PATH` = 実行中の Node の directory と固定の `/usr/bin`・`/bin` だけ、`HOME` = 実行ごとの一時 directory、`LANG` と `LC_ALL` = `C.UTF-8`、`TZ` = `UTC`。`NODE_OPTIONS` と `NODE_PATH` は渡さない。名前を挙げて除く方式（denylist）にはしない: 知らない名前の秘密（`GH_TOKEN`・各社の API key・`*_SECRET` など）を通してしまい、資格の漏れ（致命）が起きやすさに関わらず差し戻しになるため（arc の答え。Owner の委任 iyasaka-arc#49 6762288830。Owner の言葉ではない）。
+- `runner.mjs` が子の環境を、空から「`childEnvAllowlist`（`PATH`・`HOME`・`TMPDIR`・`LANG`・`LC_ALL`・`TZ`）の 6 つの名前に、門が置いた値を入れた物」として作る。親の環境の値は 1 つも写さない。値は、`PATH` = 実行中の Node の directory と固定の `/usr/bin`・`/bin` だけ、`HOME` = 実行ごとの一時 directory、`TMPDIR` = その下に門が作る子専用の directory（権限 0700）、`LANG` と `LC_ALL` = `C.UTF-8`、`TZ` = `UTC`。`NODE_OPTIONS` と `NODE_PATH` は渡さない。名前を挙げて除く方式（denylist）にはしない: 知らない名前の秘密（`GH_TOKEN`・各社の API key・`*_SECRET` など）を通してしまい、資格の漏れ（致命）が起きやすさに関わらず差し戻しになるため（arc の答え。Owner の委任 iyasaka-arc#49 6762288830。Owner の言葉ではない）。
 - 一覧は `GateConstants.childEnvAllowlist` の 1 か所に置き、ほかの file は参照する。名前の大文字小文字を変えた別名（小文字の `github_token` など）も、一覧に無いので渡らない。
 - 利用先の試験が親の環境変数（例: `CI`）を必要とする場合、その試験は失敗し「観測できず」になる（成功には倒れない）。要る名前の追加は入力の項目を足す別の単位で扱う。
 - 検証は 2 段に分ける。Node 自身が起動後に子へ足す変数（`NODE_TEST_CONTEXT`、`NODE_V8_COVERAGE` など。Node 22.23.4 で観測。macOS ではさらに増える）は門が渡した物ではないので、実際の子の中の名前の完全一致は成り立たない（設計監査 round 1 の F02。arc の答え。Owner の委任 iyasaka-arc#49 6762288830。Owner の言葉ではない）。
-  - (1) 完全一致は spawn の境界で確かめる: `runner.mjs` が起動関数に渡す環境の object を、起動関数を差し替えた単体の試験で受け取り、名前の集合が `childEnvAllowlist` の 5 つと等しいこと、値が門の置いた値（`PATH` = 実行中の Node の directory と `/usr/bin`・`/bin` だけ、`HOME` = 一時 directory、`LANG`・`LC_ALL` = `C.UTF-8`、`TZ` = `UTC`）であること、親に置いた架空の秘密の名前も値も入っていないことを確かめる。
+  - (1) 完全一致は spawn の境界で確かめる: `runner.mjs` が起動関数に渡す環境の object を、起動関数を差し替えた単体の試験で受け取り、名前の集合が `childEnvAllowlist` の 6 つと等しいこと、値が門の置いた値（`PATH` = 実行中の Node の directory と `/usr/bin`・`/bin` だけ、`HOME` = 一時 directory、`TMPDIR` = その下の子専用の directory、`LANG`・`LC_ALL` = `C.UTF-8`、`TZ` = `UTC`）であること、親に置いた架空の秘密の名前も値も入っていないことを確かめる。
   - (2) 実際の子の中では否定だけを確かめる: 親の環境に、架空の秘密を 3 種類（既知の名前 `GITHUB_TOKEN`、未知の名前 `FIXTURE_UNKNOWN_SECRET`、小文字の名前 `fixture_lowercase_secret`）と `NODE_OPTIONS`・`NODE_PATH` を置く。子が自分の環境と出力を書き出す架空の試験で、(a) 3 つの偽の名前も値も、書き出した環境にも子の出力にも現れないこと、(b) `NODE_OPTIONS`・`NODE_PATH` が無いこと、(c) `HOME` が一時 directory で、終わりの後に消えることを確かめる。子の環境の名前の完全一致は求めない。
   - 親の環境を継承する形（`env` を渡さない・親の環境に足す形）に戻さない。(1) の試験は、継承する実装を落とす（親の秘密が渡った環境で失敗する）。
 

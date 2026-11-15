@@ -2,7 +2,7 @@
 // parent), under a deadline and a total budget, and removes the directory afterwards. No retry.
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 
@@ -10,13 +10,13 @@ import { dirname, join } from "node:path";
 export const GRACE_MS = 5000;
 
 /** @public */
-export function buildChildEnv({ nodeDir, homeDir }) {
-  return { PATH: `${nodeDir}:/usr/bin:/bin`, HOME: homeDir, LANG: "C.UTF-8", LC_ALL: "C.UTF-8", TZ: "UTC" };
+export function buildChildEnv({ nodeDir, homeDir, tmpDir }) {
+  return { PATH: `${nodeDir}:/usr/bin:/bin`, HOME: homeDir, TMPDIR: tmpDir, LANG: "C.UTF-8", LC_ALL: "C.UTF-8", TZ: "UTC" };
 }
 
 // The names the child may have: the names buildChildEnv sets, kept in one place.
 /** @public */
-export const CHILD_ENV_ALLOWLIST = Object.freeze(Object.keys(buildChildEnv({ nodeDir: "", homeDir: "" })));
+export const CHILD_ENV_ALLOWLIST = Object.freeze(Object.keys(buildChildEnv({ nodeDir: "", homeDir: "", tmpDir: "" })));
 
 /** @public */
 export function tempPrefix(runId) {
@@ -75,10 +75,14 @@ export async function runInTempDir({ runId, cwd, buildArgs, deadlineSeconds, tot
   let observation = null;
   let cleanupFailed = true;
   try {
+    // The child's own temporary area lives inside the gate's private directory, so Node's coverage
+    // handling never writes to the shared temporary area (BR2.3).
+    const tmpDir = join(dir, "tmp");
+    await mkdir(tmpDir, { mode: 0o700 });
     const startedAt = performance.now();
     const child = spawnFn(process.execPath, buildArgs(dir), {
       cwd,
-      env: buildChildEnv({ nodeDir: dirname(process.execPath), homeDir: dir }),
+      env: buildChildEnv({ nodeDir: dirname(process.execPath), homeDir: dir, tmpDir }),
       detached: true,
       stdio: ["ignore", "ignore", "ignore"],
     });

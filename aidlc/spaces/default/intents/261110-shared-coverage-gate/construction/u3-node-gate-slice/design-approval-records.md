@@ -48,6 +48,13 @@ U3 の NFR Requirements・NFR Design・Infrastructure Design・Functional Design
 6. 一時 directory の削除の失敗（設計監査 round 1 の F03、低 × 重大）。最初の案は「警告だけで結果を変えない」で、NFR5.6・BR2.8 の「消す」・S8 と食い違い、削除の失敗が成功の記録のまま残った。直し（arc の答え。Owner の委任 iyasaka-arc#49 6762288830。Owner の言葉ではない）: 削除の失敗は名前つきの必須の失敗にする。理由コード TEMP_CLEANUP_FAILED（観測できずの区分。理由コードは 20 から 21。観測できず 6 から 7）。**採った判断**: 終了コードはほかの観測できずと同じ 1（落とす）。**採らなかった代替**: 終了コード 2（監査の依頼文は例として 2 を挙げたが、2 は判定に至らなかった = 入力・入口の失敗に限る BR5.3 の定義で、削除の失敗は判定に至った後の観測できずなので、区分の表を 1 か所に保つため 1 にした。成功と記録されないこと、非 0 で落ちることは同じ）。残った directory は絶対 path でなく runId で示し、手順（runId の接頭辞で OS の一時領域から消して流し直す）は security-design SC6 に書いた。試験は削除関数を差し替えて失敗を注入する。実際の fs で消せない状況の再現は環境に依るので、成功の根拠にしない。
 7. 設計監査 round 1 の観測のうち、軽い物は同じ直しで扱った: O01（自己の測定の入力は directory の宣言 `scripts/coverage-gate/` にし `**` を書かない）、O03（cause の名前を `child_process_not_countable` に統一）、O04（cicd-pipeline の再依頼の回数を、採択された監査の手順に従うと書き、この記録は回数を決めない）。O02（期限と残りの総予算が等しいときの timed_out と budget_exceeded の見分けの違い。どちらも観測できず）は、この単位は測定 1 回なので意味に影響せず、実装の前に BR2.3 と RL2 のどちらかに揃える記録として持ち越す。
 
+## 設計監査 round 4 の直し（子の一時 directory。BR2.3）
+
+- 第 3 回は監査の環境の制約（git init）、第 4 回は監査の環境の制約（共有の /tmp）で止まった。第 4 回は、子の環境に `TMPDIR` が無く、Node の coverage が共有の `/tmp/node-coverage-XXXXXX` に書こうとして EPERM になり、U3IA-09 が UNKNOWN になった。
+- arc の答え（Owner の委任 iyasaka-arc#49 6762288830。Owner の言葉ではない）: 監査の sandbox は緩めない。製品側で、門が子だけの一時 directory を作り、その path を子の `TMPDIR` として渡す。許可した名前は 5 つから 6 つ（`PATH`・`HOME`・`TMPDIR`・`LANG`・`LC_ALL`・`TZ`）。
+- 直した記録: BR2.3（rules.md）、entities.md の childEnvAllowlist、functional-spec.md、security-design.md の SC1、security-requirements.md の NFR5.1、monitoring-design.md、unit-test-instructions.md、code-summary.md、code-generation-plan.md（Step 6 の内容の名前一覧だけ）、nfr-design/traceability.json の NFR5.1。子の `TMPDIR` は実行ごとの一時 directory の下に門が作る（権限 0700）。上の「環境は 5 つ」の記述は第 3 回までの履歴として残す。
+- 試験: 名前の集合が 6 つ（`TMPDIR` を含む）と等しい（spawn の境界）、子の `os.tmpdir()` が門の子専用の directory の中に入り共有の一時領域を使わない（実際の子）、子が起動する前に門が権限 0700 で作る。
+
 ## 公開の範囲
 
 - 含めた記録: U3 の Functional Design・NFR・配置の設計、コード生成の計画と試験の手順、設計監査の項目集合（`docs/audit/u3-node-gate-slice-design.json`）、Node 22 の reporter の観測（functional-design/node22-reporter-observations.md）、この読み戻し。

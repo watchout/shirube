@@ -10,6 +10,7 @@ import { FAKE_SECRETS, makeDir, removeDir, withEnv } from "./coverage-gate-fixtu
 const NODE_DIR = dirname(process.execPath);
 const scripts = makeDir({
   "env-dump.mjs": 'import { writeFileSync } from "node:fs";\nimport { join } from "node:path";\nwriteFileSync(join(process.env.HOME, "env.json"), JSON.stringify(process.env));\n',
+  "tmp-probe.mjs": 'import { mkdtempSync, writeFileSync } from "node:fs";\nimport { tmpdir } from "node:os";\nimport { join } from "node:path";\nconst made = mkdtempSync(join(tmpdir(), "probe-"));\nwriteFileSync(join(process.env.HOME, "probe.json"), JSON.stringify({ made, tmpdir: tmpdir() }));\n',
   "exit-three.mjs": "process.exit(3);\n",
   "self-kill.mjs": 'process.kill(process.pid, "SIGKILL");\n',
   "sleep-with-grandchild.mjs":
@@ -42,14 +43,14 @@ function fakeSpawn(calls) {
   };
 }
 
-test("the allowlist is exactly five names", () => {
-  assert.deepEqual([...CHILD_ENV_ALLOWLIST].sort(), ["HOME", "LANG", "LC_ALL", "PATH", "TZ"]);
+test("the allowlist is exactly six names", () => {
+  assert.deepEqual([...CHILD_ENV_ALLOWLIST].sort(), ["HOME", "LANG", "LC_ALL", "PATH", "TMPDIR", "TZ"]);
   assert.equal(GRACE_MS, 5000);
 });
 
 test("buildChildEnv sets only the gate's own values", () => {
-  const env = buildChildEnv({ nodeDir: "/n/bin", homeDir: "/t/home" });
-  assert.deepEqual(env, { PATH: "/n/bin:/usr/bin:/bin", HOME: "/t/home", LANG: "C.UTF-8", LC_ALL: "C.UTF-8", TZ: "UTC" });
+  const env = buildChildEnv({ nodeDir: "/n/bin", homeDir: "/t/home", tmpDir: "/t/home/tmp" });
+  assert.deepEqual(env, { PATH: "/n/bin:/usr/bin:/bin", HOME: "/t/home", TMPDIR: "/t/home/tmp", LANG: "C.UTF-8", LC_ALL: "C.UTF-8", TZ: "UTC" });
 });
 
 test("spawn boundary: the environment handed to spawn has exactly the allowed names, gate-set values, no parent secrets", async () => {
@@ -63,7 +64,7 @@ test("spawn boundary: the environment handed to spawn has exactly the allowed na
   assert.equal(command, process.execPath);
   assert.deepEqual(args, ["a.mjs", "-b"]);
   assert.deepEqual(Object.keys(options.env).sort(), [...CHILD_ENV_ALLOWLIST].sort());
-  assert.deepEqual(options.env, buildChildEnv({ nodeDir: NODE_DIR, homeDir: tempDir }));
+  assert.deepEqual(options.env, buildChildEnv({ nodeDir: NODE_DIR, homeDir: tempDir, tmpDir: join(tempDir, "tmp") }));
   const serialized = JSON.stringify(options.env);
   for (const [name, value] of Object.entries(FAKE_SECRETS)) {
     assert.ok(!serialized.includes(name), name);
@@ -97,6 +98,35 @@ test("a real child never sees the parent's secrets, NODE_OPTIONS or NODE_PATH; H
   assert.equal(existsSync(tempDir), false);
   assert.equal(result.cleanupFailed, false);
   assert.equal(result.run.exitCode, 0);
+});
+
+test("a real child's temporary files land in the gate's private directory, never in the shared temporary area", async () => {
+  let tempDir;
+  const result = await runInTempDir(base({
+    buildArgs: (dir) => { tempDir = dir; return [join(scripts, "tmp-probe.mjs")]; },
+    observe: (dir) => JSON.parse(readFileSync(join(dir, "probe.json"), "utf8")),
+  }));
+  const { made, tmpdir: seen } = result.observation;
+  assert.equal(seen, join(tempDir, "tmp"));
+  assert.equal(dirname(made), join(tempDir, "tmp"));
+  assert.notEqual(seen, tmpdir());
+  assert.equal(existsSync(tempDir), false);
+  assert.equal(result.cleanupFailed, false);
+});
+
+test("the child's temporary directory is created by the gate with owner-only access before the child starts", async () => {
+  let seenMode;
+  let seenIsDir;
+  const spawnFn = (command, args, options) => {
+    const dir = options.env.TMPDIR;
+    seenIsDir = existsSync(dir) && statSync(dir).isDirectory();
+    seenMode = statSync(dir).mode & 0o777;
+    return fakeSpawn([])(command, args, options);
+  };
+  const result = await runInTempDir(base({ spawnFn }));
+  assert.equal(seenIsDir, true);
+  assert.equal(seenMode, 0o700);
+  assert.equal(result.cleanupFailed, false);
 });
 
 test("the temp directory is named by the run id under the OS temp area and removed afterwards", async () => {
