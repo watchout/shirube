@@ -115,13 +115,14 @@ export async function collectEvidence({ target, number, head, requiredPaths, rec
     completeness: { files: files.length, commits: commits.length, tree: true, blobs: artifacts.length, complete: true } };
   return { prObservation, artifacts, artifactSetDigest: digest, blobs, tree, commits, observation, budgetResult: reader.statistics() };
 }
-async function readPolicy({ args, target, root, at, records, summaryBytes }) {
+async function readPolicy({ args, target, root, at, atDesign, records, summaryBytes }) {
   const planBytes = await at(`${root}/construction/${target.unit}/code-generation/code-generation-plan.md`);
   const contractBlock = /## Testing Contract\r?\n\r?\n```json\r?\n([\s\S]*?)\r?\n```/.exec(planBytes.toString("utf8"));
   need(contractBlock, "INPUT_UNOBSERVABLE"); const testingContract = parseRecordJson(contractBlock[1]);
   const unitBytes = await at(`${root}/inception/units-generation/unit-of-work.md`), boltBytes = await at(`${root}/inception/delivery-planning/bolt-plan.md`);
-  const plan = readAcceptedPlan({ testingContract, summary: summaryBytes.toString("utf8"), unitText: unitBytes.toString("utf8"), boltText: boltBytes.toString("utf8"), target,
-    reference: `public:accepted-plan:${sha256(summaryBytes)}`, baselineReference: records.designAudit?.designHead ? `public:design-head:${records.designAudit.designHead}` : "" });
+  const designPlan = await atDesign(`${root}/construction/${target.unit}/code-generation/code-generation-plan.md`);
+  const plan = readAcceptedPlan({ testingContract, summary: summaryBytes.toString("utf8"), baselineText: designPlan.toString("utf8"), unitText: unitBytes.toString("utf8"), boltText: boltBytes.toString("utf8"), target,
+    reference: `public:accepted-plan:${sha256(summaryBytes)}`, baselineReference: `public:design-head:${records.designAudit.designHead}:plan:${sha256(designPlan)}` });
   const policy = derivePolicy({ target, checkpoint: args.checkpoint, plan }); need(policy.outcome === "PASS", "INPUT_UNOBSERVABLE");
   return policy;
 }
@@ -134,7 +135,13 @@ export async function collectAdmissionInput(args, { reader = createReader() } = 
   const recordPath = `${root}/construction/${target.unit}/code-generation/pr-records.json`;
   const records = parseRecordJson(await at(recordPath));
   const summaryBytes = await at(`${root}/construction/${target.unit}/code-generation/code-summary.md`);
-  const policy = await readPolicy({ args, target, root, at, records, summaryBytes });
+  // The audited design head is the independent reference for the stage table (content-addressed, so the PR cannot move it).
+  const atDesign = async (path) => {
+    const designHead = records.designAudit?.designHead; need(isGitOid(designHead), "INPUT_UNOBSERVABLE"); validatePublicPath(path);
+    const entry = (await readTree(reader, prefix, designHead)).find((e) => e.path === path); need(entry, "INPUT_UNOBSERVABLE");
+    return readBlob(reader, prefix, entry);
+  };
+  const policy = await readPolicy({ args, target, root, at, atDesign, records, summaryBytes });
   const files = await readPages(reader, `${prefix}/pulls/${number}/files`);
   need(files.length === meta.changed_files && files.length < 3000, "INPUT_UNOBSERVABLE");
   extendChangedArtifacts(policy, files.flatMap((f) => [f.filename, f.previous_filename].filter(Boolean)), target);

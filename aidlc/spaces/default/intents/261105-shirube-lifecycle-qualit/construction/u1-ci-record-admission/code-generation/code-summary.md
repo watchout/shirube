@@ -135,7 +135,7 @@ Node組込みV8 provider、承認済みexact commandで、実import閉包14file�
 node --test --experimental-test-coverage --test-coverage-lines=100 --test-coverage-include='scripts/sds/ci-record-*.mjs' --test-coverage-include='scripts/sds/gate.mjs' --test-coverage-include='scripts/hygiene/audit-admission.mjs' --test-coverage-include='scripts/hygiene/lib.mjs' --test-coverage-include='scripts/sds/yaml.mjs' --test-coverage-include='scripts/sds/plan-binding.mjs' --test-coverage-include='scripts/sds/design-gate.mjs' --test-coverage-include='scripts/sds/stage.mjs' tests/ci-record-policy.test.mjs tests/ci-record-input.test.mjs tests/ci-record-projection.test.mjs tests/ci-record-evidence.test.mjs tests/ci-record-design-audit.test.mjs tests/ci-record-admission.test.mjs tests/ci-record-envelope.test.mjs tests/ci-record-entry.test.mjs tests/ci-record-integration.test.mjs tests/ci-record-security.test.mjs tests/sds-gate.test.mjs tests/sds-gate-binding.test.mjs tests/sds-gate-graphql.test.mjs tests/design-gate.test.mjs tests/design-gate-unit.test.mjs tests/design-gate-unit-approval.test.mjs tests/design-gate-placements.test.mjs tests/audit-admission.test.mjs tests/audit-counterexamples.test.mjs tests/guards.test.mjs tests/lines-baseline.test.mjs tests/pr-size.test.mjs tests/secret-suppressions.test.mjs
 ```
 
-実装監査 1 回目の差し戻し（BF-U1IM-01〜03）の直しの後の実測（対象 head は push 後の PR の head。この記録の commit の 1 つ前の実装 commit）: **1,704/1,704行 = 100.00%**、未実行行0。branch 95.88%、function 99.37%。command 全体の exit は0、385 件中 385 PASS、fail・cancelled・skipped・todo はいずれも0。分母の 14 file は上の command の実 report で数え直した。coverage 床は行に適用し、branch/function を100%と偽らない。
+実装監査 2 回目の差し戻し（BF-U1IM-01 の独立の参照の結び付け）の直しの後の実測（対象 head は push 後の PR の head。この記録の commit の 1 つ前の実装 commit）: **1,726/1,726行 = 100.00%**、未実行行0。branch 95.86%、function 99.38%。command 全体の exit は0、388 件中 388 PASS、fail・cancelled・skipped・todo はいずれも0。分母の 14 file は上の command の実 report で数え直した。coverage 床は行に適用し、branch/function を100%と偽らない。
 
 差し戻しの前の実測（1,625/1,625行、323 PASS）は、`design-gate.mjs` を 63 行しか分母に入れていない（既存の `design-gate` の単位の試験 3 file を command に入れていなかった）。今回は、その 3 file と `tests/sds-gate-graphql.test.mjs` を command に足して、`design-gate.mjs` 117/117 行、`gate.mjs` の `graphql` を含む 197/197 行を実測した。過去の値は消さず、この段落で区別する。
 
@@ -146,15 +146,22 @@ node --test --experimental-test-coverage --test-coverage-lines=100 --test-covera
 | `scripts/sds/ci-record-admission.mjs` | 123/123 | 100.00% |
 | `scripts/sds/ci-record-design-audit.mjs` | 105/105 | 100.00% |
 | `scripts/sds/ci-record-envelope.mjs` | 72/72 | 100.00% |
-| `scripts/sds/ci-record-evidence.mjs` | 228/228 | 100.00% |
+| `scripts/sds/ci-record-evidence.mjs` | 235/235 | 100.00% |
 | `scripts/sds/ci-record-input.mjs` | 134/134 | 100.00% |
-| `scripts/sds/ci-record-policy.mjs` | 113/113 | 100.00% |
+| `scripts/sds/ci-record-policy.mjs` | 128/128 | 100.00% |
 | `scripts/sds/ci-record-projection.mjs` | 60/60 | 100.00% |
 | `scripts/sds/design-gate.mjs` | 117/117 | 100.00% |
 | `scripts/sds/gate.mjs` | 197/197 | 100.00% |
 | `scripts/sds/plan-binding.mjs` | 152/152 | 100.00% |
 | `scripts/sds/stage.mjs` | 27/27 | 100.00% |
 | `scripts/sds/yaml.mjs` | 8/8 | 100.00% |
+
+実装監査 2 回目の直し（BF-U1IM-01、arc の判断 C）で変えた物:
+
+- BF-U1IM-01（表の独立の参照）: PR の `code-summary.md` の段の表（stage・attempt・completed・summaryConfirmed・planApproved・reviewPerformed）は PR の作者が書ける申告値で、`stageFloor` は下限しか見ない。そこで、表を**設計監査で PASS した設計 head の `code-generation-plan.md` の表**（git の object id で内容が固定され、PR が後から動かせない公開の参照）と突き合わせる。`code-generation` 以外の全段で、5 つの欄がすべて一致しなければ INPUT_UNOBSERVABLE の UNKNOWN。設計 head の plan が読めない・表が無い・空・段が欠ける・段が重複・`designHead` が object id でない場合も UNKNOWN で、PASS に読み替えない（S5・S8）。試験は U1-POL11、U1-INT10（2 件）。新しい 2 件の試験は、結び付けを外すと失敗することを確かめた（RED）。
+- 取得の予算（式）: 追加の問い合わせは、1 回の評価につき 設計 head の tree の読み 1 回 + plan の blob の読み 1 回 = 観測の回数 1 × 宣言の件数 1（`code-generation-plan.md`）× 対象の数 1（設計 head）で 2 request。既存の固定の予算（20,000ms/request・総 120,000ms・100 request・retry 0）は変えず、予算を黙って足していない。
+- 保証しないこと（門が保証しないこと）: 実 PR #101 は、設計 head の `code-generation-plan.md` にまだ段の表が無いため、この結び付けでは UNKNOWN になる。表の独立の発行元（公開の `pr-records.json` の producer）は後の単位へ持ち越した（下の「Carried Over」）。表が一致しても、設計 head の plan 自体の正しさは独立の監査が見る。
+- 持ち越し: より強い producer は後の単位。この PR では新しい producer・新 schema・新 workflow を足していない。
 
 実装監査 1 回目の直し（BF-U1IM-01〜03）で変えた物:
 
@@ -190,7 +197,7 @@ arc の判断（委任 #49 6762288830）で、次の4件はこの PR では行�
 
 PR #101 branch（merge `e9d2867` + 実装 `ae2b357`）で、依存を `npm ci --ignore-scripts` で入れた作業木から実行した。Node v24 のローカル実行で、CI（Node 22/26）の結果ではない。
 
-- `npm test`: 841 PASS / 0 FAIL（実装 `ae2b357` の時点）。実装監査 1 回目の直しの後は 845 PASS / 0 FAIL / skip・cancel・todo 0（Node v24 のローカル実行）、`hygiene:lines`・`lint:structural`・`lint:guard` は exit 0。
+- `npm test`: 841 PASS / 0 FAIL（実装 `ae2b357` の時点）。実装監査 1 回目の直しの後は 845 PASS / 0 FAIL / skip・cancel・todo 0（Node v24 のローカル実行）。実装監査 2 回目の直しの後は 848 PASS / 0 FAIL、`hygiene:lines`・`lint:structural`・`lint:guard` は exit 0。
 - `npm run hygiene:lines` / jscpd / budget / coverage、`npm run lint:structural` / `lint:guard`: いずれも exit 0。
 - CI と同じ coverage command（`--test-coverage-include-all` は local Node が未対応のため除く）: exit 0、全体 99.78% 行。新 module の行は 100%。
 - entry 試験は実 CLI が壁時計を読むため、合成 request の `expires_at` を遠い将来に固定した（S4。試験が日付に依存しない）。
@@ -198,20 +205,20 @@ PR #101 branch（merge `e9d2867` + 実装 `ae2b357`）で、依存を `npm ci --
 
 ## Source Bytes at This Observation
 
-以下は実装監査 1 回目の直しの後の実装/試験21 fileのbytes（実装commit `ae2b357` の後に、直した 8 fileと新しい試験 1 fileを更新）。凍結設計/承認plan/UTinstructionsをこの一覧で上書きしない。
+以下は実装監査 2 回目の直しの後の実装/試験21 fileのbytes（実装commit `ae2b357` の後に、直した 8 fileと新しい試験 1 fileを更新）。凍結設計/承認plan/UTinstructionsをこの一覧で上書きしない。
 
 | workspace-relative file | bytes | SHA-256 |
 |---|---:|---|
-| `scripts/sds/ci-record-policy.mjs` | 12553 | `8366f465d7841f017d52fc84ec9b686339703e982afe81e53b412f800f89c705` |
+| `scripts/sds/ci-record-policy.mjs` | 13757 | `d71d780f43d2c949fbd3b6f8d78d323288bef22c24a7ffb9e857c723a44cd184` |
 | `scripts/sds/ci-record-input.mjs` | 7201 | `a45f551baddb0c605a220a0093e9ba22eb65fbe85feddd37b925c6c2b5b8e9b2` |
 | `scripts/sds/ci-record-projection.mjs` | 3875 | `ea7110acada7a325ecaada542b43e0938c210bd5b08a858c187afff3e4f08672` |
-| `scripts/sds/ci-record-evidence.mjs` | 19747 | `a0e9e2a7dd6f3caf3d22358a86d1a452b6088bc62b2a6243370f029d6b2dd673` |
+| `scripts/sds/ci-record-evidence.mjs` | 20385 | `61fb4e62ac28312fccd924bd0e3ebb1b52f8f8ca8789163d1fdf01887d981ec0` |
 | `scripts/sds/ci-record-design-audit.mjs` | 7373 | `c4ff684fb7dced8435d8eb898db509c9405558b6e7dcd05e4257bc93fdf5f7c9` |
 | `scripts/sds/ci-record-admission.mjs` | 9707 | `3339fa66a445fba6e3024fb35f205e1967321a45535596af11db6ef5924682f1` |
 | `scripts/sds/ci-record-envelope.mjs` | 6124 | `6723f45b167f16a3eeb51887e511fce1737950b92cabf3854bb8116437177f11` |
 | `scripts/sds/gate.mjs` | 17503 | `07bbacb74c5950eae69d3dba061a0cfc265356d5980deaf7f88d7a9e54c198f5` |
 | `scripts/hygiene/audit-admission.mjs` | 12385 | `b348db71aa849cbdbc63864b033a12cc2f8acc4ebf5a62d56d0be2b398065931` |
-| `tests/ci-record-policy.test.mjs` | 5953 | `21a00e3cb4e682bc02d96a5db0071eef3c0ad7ef394ef28f841d44435050746c` |
+| `tests/ci-record-policy.test.mjs` | 7535 | `a3b333940bae61eb7b59e72c47efe7034173e13cfdc1530f7ea30319184b21c1` |
 | `tests/ci-record-input.test.mjs` | 4399 | `600f8d03cfa8f8ffc6ea685a3c51d9dcde54686ffa3609a884ea4eaf00f00c8b` |
 | `tests/ci-record-projection.test.mjs` | 4270 | `3adaf6111a8b30b14a38705cce840b48f059bad0c6454f0cfb5dc7dcf81e3ceb` |
 | `tests/ci-record-evidence.test.mjs` | 7014 | `63707c95ac5ba6479a56e81a398972ac5cc7e595f099d9a92431f351482bf6f4` |
@@ -219,8 +226,8 @@ PR #101 branch（merge `e9d2867` + 実装 `ae2b357`）で、依存を `npm ci --
 | `tests/ci-record-admission.test.mjs` | 6256 | `9dee707fdf056860f2846cbb64e19a9dc237856201cba1bcc7c3734e6666111a` |
 | `tests/ci-record-envelope.test.mjs` | 4424 | `327607f2ecb942e8bc4af850c13ef9ceb82373a2761d32941712e2bae2f51274` |
 | `tests/ci-record-entry.test.mjs` | 8916 | `ae3fb589fc0daa35ffac73b814002d7cd7c76d846169406fed34971c7038e907` |
-| `tests/ci-record-integration.test.mjs` | 11054 | `14a15797ad875abe2fdd444b1d608254b67640950210b985a5aa0552b387a292` |
+| `tests/ci-record-integration.test.mjs` | 13150 | `984baec0809a56e3cfa93d579d6e91be3272b0aaf923157456158767fa09203f` |
 | `tests/ci-record-security.test.mjs` | 4469 | `c1a2605ddcd11b2d057e942f4d92962fefc3f071829921d6777c4924b827b011` |
 | `tests/sds-gate-graphql.test.mjs` | 1279 | `e4974f6c5b9d7acd7e9280665634d9d064dade4269d4d72ad35acec8c9d6b2bf` |
-| `tests/ci-record-fixtures.mjs` | 16134 | `5c04ae3b07200b855293d85cca14f5c184989e3a138495075e7254dba8c5a84b` |
+| `tests/ci-record-fixtures.mjs` | 16208 | `9dddeff28032ba7dc9353d8218209b0ee051cb8da7d5d2f3fbb1a7dbc3b3f040` |
 

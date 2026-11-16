@@ -45,17 +45,20 @@ export function resolveProfile(purpose, checkpoint) {
   return Object.freeze({ purpose: PURPOSE, checkpoint: CHECKPOINT, rulesetVersion: RULESET });
 }
 export const isSelfReference = (path, recordPath) => path === recordPath;
-export function readAcceptedPlan({ testingContract, summary, unitText, boltText, target, reference, baselineReference }) {
+// One reading of the published stage table, used for the PR's own table and for the audited baseline.
+export const parsePlanRows = (text) => [...text.matchAll(/^\| ([\w-]+) \| ([^|\r\n]+) \| (true|false) \| (true|false) \| (true|false) \| (true|false) \|$/gm)]
+  .map((m) => ({ stage: m[1], attempt: m[2], completed: m[3] === "true", summaryConfirmed: m[4] === "true", planApproved: m[5] === "true", reviewPerformed: m[6] === "true" }));
+export function readAcceptedPlan({ testingContract, summary, baselineText, unitText, boltText, target, reference, baselineReference }) {
   // A readable view inside the planned code-summary artifact, separate from evidence records.
   // These labels describe observations; they never become native stage state or a new schema.
   const scope = testingContract?.scope, projectType = testingContract?.project_type;
-  const rows = [...summary.matchAll(/^\| ([\w-]+) \| ([^|\r\n]+) \| (true|false) \| (true|false) \| (true|false) \| (true|false) \|$/gm)];
   const escaped = target.unit.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const unitRows = [...unitText.matchAll(/^\| (U\d+) \| ([\w-]+) \|[^\n]*\| (service|embedded|packaging|library|ui|spec) \|/gm)];
   const kind = unitRows.find((row) => row[2] === target.unit)?.[3];
   if (!unitRows.length || !new RegExp(`\\| B1 \\| U1 / ${escaped} \\|`).test(boltText)) return null;
+  // No readable baseline means no independent reference: the plan then never matches (UNKNOWN, never PASS).
   return { scope, projectType, kind, firstUnit: unitRows[0][2] === target.unit, reference, baselineReference,
-    stages: rows.map((m) => ({ stage: m[1], attempt: m[2], completed: m[3] === "true", summaryConfirmed: m[4] === "true", planApproved: m[5] === "true", reviewPerformed: m[6] === "true" })) };
+    stages: parsePlanRows(summary), baselineStages: typeof baselineText === "string" ? parsePlanRows(baselineText) : null };
 }
 function changedArtifactSlot(policy, path, target) {
   const root = `aidlc/spaces/${target.space}/intents/${target.intent}/`;
@@ -83,9 +86,21 @@ const invalidPlan = () => ({ outcome: "UNKNOWN", reasonCodes: ["INPUT_UNOBSERVAB
 function profilePlan(plan) {
   return plan && plan.scope === "feature" && plan.projectType === "brownfield" && plan.kind === "service" && plan.firstUnit === true;
 }
+const PLAN_FIELDS = Object.freeze(["attempt", "completed", "summaryConfirmed", "planApproved", "reviewPerformed"]);
+// Every stage before the current one must read the same in the PR's table and in the table audited at the design head,
+// so the table cannot lower its own obligations or swap an attempt (BR1.2). The current stage has no baseline yet.
+function baselineBinds(plan) {
+  const base = plan.baselineStages;
+  if (!Array.isArray(base) || !base.length || new Set(base.map((s) => s.stage)).size !== base.length) return false;
+  return STAGE_DEFINITIONS.filter((d) => d.stage !== "code-generation").every((d) => {
+    const row = plan.stages.find((s) => s.stage === d.stage), was = base.find((s) => s.stage === d.stage);
+    return row && was && PLAN_FIELDS.every((k) => row[k] === was[k]);
+  });
+}
 function planMatches(plan) {
   if (!profilePlan(plan)) return false;
   if (!plan.reference || !plan.baselineReference || plan.exclude !== undefined || !Array.isArray(plan.stages)) return false;
+  if (!baselineBinds(plan)) return false;
   if (!compareArtifactPaths(STAGE_DEFINITIONS.map((d) => ({ path: d.stage })), plan.stages.map((s) => s.stage))) return false;
   if (STAGE_DEFINITIONS.some((d) => { const floor = stageFloor(d), row = plan.stages.find((s) => s.stage === d.stage); return (floor.completed && row.completed !== true) || (floor.summary && row.summaryConfirmed !== true) || (floor.review && row.reviewPerformed !== true); })) return false;
   return plan.stages.every((s) => typeof s.attempt === "string" && s.attempt.trim() && [s.completed, s.summaryConfirmed, s.reviewPerformed, s.planApproved].every((x) => typeof x === "boolean"));

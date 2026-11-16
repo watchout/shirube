@@ -41,6 +41,7 @@ export function fullRepositoryFixture() {
   const hash = (b) => createHash("sha256").update(b).digest("hex"), gitHash = (b) => createHash("sha1").update(`blob ${b.length}\0`).update(b).digest("hex");
   const plan = { scope: "feature", projectType: "brownfield", kind: "service", firstUnit: true, reference: "public:accepted-plan", baselineReference: `public:design-head:${designHead}`,
     stages: STAGE_DEFINITIONS.map((d) => ({ stage: d.stage, attempt: d.stage === "code-generation" ? t.attempt : `attempt-${d.stage}`, completed: d.phase !== "construction", summaryConfirmed: !["code-generation", "reverse-engineering"].includes(d.stage), planApproved: d.stage === "code-generation", reviewPerformed: d.phase === "construction" && d.stage !== "code-generation" })) };
+  plan.baselineStages = structuredClone(plan.stages);
   const policy = derivePolicy({ target: t, checkpoint: "code-generation-submission", plan }), itemPath = "docs/audit/example-design.json", sourcePath = "scripts/sds/ci-record-policy.mjs";
   extendChangedArtifacts(policy, [itemPath, sourcePath], t);
   const files = new Map(policy.requiredArtifacts.map((a) => [a.path, Buffer.from("synthetic design")]));
@@ -50,7 +51,7 @@ export function fullRepositoryFixture() {
   const summary = plan.stages.map((s) => `| ${s.stage} | ${s.attempt} | ${s.completed} | ${s.summaryConfirmed} | ${s.planApproved} | ${s.reviewPerformed} |`).join("\n");
   const dates = plan.stages.filter((s) => s.completed).map((s) => `| ${s.stage} | null | ${s.attempt} | public:approval-${s.stage} | 2026-11-05 | date |`).join("\n");
   files.set(`${root}/construction/${t.unit}/code-generation/code-summary.md`, Buffer.from(`${summary}\n${dates}\n- Design Audit Review: ${reviewUrl}\n- Implementation After: ${reviewUrl}\n`));
-  files.set(`${root}/construction/${t.unit}/code-generation/code-generation-plan.md`, Buffer.from('## Testing Contract\n\n```json\n{"scope":"feature","project_type":"brownfield"}\n```\n'));
+  files.set(`${root}/construction/${t.unit}/code-generation/code-generation-plan.md`, Buffer.from(`## Testing Contract\n\n\`\`\`json\n{"scope":"feature","project_type":"brownfield"}\n\`\`\`\n\n${summary}\n`));
   files.set(`${root}/inception/units-generation/unit-of-work.md`, Buffer.from(`| U1 | ${t.unit} | Synthetic unit | service | shared | L |\n`));
   files.set(`${root}/inception/delivery-planning/bolt-plan.md`, Buffer.from(`| B1 | U1 / ${t.unit} | none | synthetic |\n`));
   files.set(sourcePath, Buffer.from("export const synthetic = true;\n"));

@@ -92,6 +92,28 @@ test("U1-INT08 lowering the summary or READY obligation of an earlier stage in t
   await assert.rejects(() => run(lowerObligation("nfr-design", "false | true | false | true |", "false | true | false | false |", { drop: (s) => { s.review = null; } })), /INPUT_UNOBSERVABLE/);
   await assert.rejects(() => run(lowerObligation("domain-design", "true | true | false | false |", "true | false | false | false |", { drop: (s) => { s.approvals = s.approvals.filter((a) => a.kind !== "summary"); } })), /INPUT_UNOBSERVABLE/);
 });
+const planPathOf = (f) => [...f.files.keys()].find((k) => k.endsWith("code-generation/code-generation-plan.md"));
+test("U1-INT10 a table and records changed together are not a PASS without the audited baseline to match", async () => {
+  const swap = (f, stage) => {
+    const summary = [...f.files.keys()].find((k) => k.endsWith("code-generation/code-summary.md"));
+    f.files.set(summary, Buffer.from(f.files.get(summary).toString().replaceAll(`attempt-${stage}`, `attempt-${stage}-2`)));
+    f.updateRecord((r) => { Object.assign(r, JSON.parse(JSON.stringify(r).replaceAll(`attempt-${stage}"`, `attempt-${stage}-2"`))); }); f.refreshRecordArtifacts();
+    return f;
+  };
+  await assert.rejects(() => run(swap(fullRepositoryFixture(), "nfr-design")), /INPUT_UNOBSERVABLE/, "attempt swapped in the table, the dates and the records together");
+  const lowered = fullRepositoryFixture(), path = planPathOf(lowered);
+  lowered.designFiles.set(path, Buffer.from(lowered.designFiles.get(path).toString().replace(/(\| nfr-design \| attempt-nfr-design \| false \| true \| )false/, "$1true")));
+  await assert.rejects(() => run(lowered), /INPUT_UNOBSERVABLE/, "plan approval present in the audited baseline but dropped from the published table");
+});
+test("U1-INT10 an unreadable or table-less audited baseline is UNKNOWN, never a PASS", async () => {
+  const none = fullRepositoryFixture(); none.designFiles.delete(planPathOf(none));
+  await assert.rejects(() => run(none), /INPUT_UNOBSERVABLE/, "no plan at the design head");
+  const bare = fullRepositoryFixture(), path = planPathOf(bare);
+  bare.designFiles.set(path, Buffer.from(bare.designFiles.get(path).toString().split("\n\n")[0] + "\n"));
+  await assert.rejects(() => run(bare), /INPUT_UNOBSERVABLE/, "a plan at the design head without the stage table");
+  const forged = fullRepositoryFixture(); forged.updateRecord((r) => { r.designAudit.designHead = "not-an-oid"; }); forged.refreshRecordArtifacts();
+  await assert.rejects(() => run(forged), /INPUT_UNOBSERVABLE|TARGET_MISMATCH|DESIGN_AUDIT/, "a design head that is not a commit id");
+});
 function acceptAsIsFixture(offered) {
   const f = fullRepositoryFixture(), input = nativeApproval("stage-completion");
   input.target = { ...input.target, stage: "intent-capture", unit: null, attempt: "attempt-intent-capture" };

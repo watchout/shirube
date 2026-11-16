@@ -15,6 +15,8 @@ const plan = () => ({ scope: "feature", projectType: "brownfield", kind: "servic
     planApproved: stage === "code-generation" })) });
 function derive(value = plan()) {
   assert.equal(typeof api.derivePolicy, "function", "BR1.2 requires independent fixed-set derivation");
+  // Unless a test names its own baseline, the audited baseline reads the same as the published table.
+  if (value?.stages && !("baselineStages" in value)) value = { ...value, baselineStages: structuredClone(value.stages) };
   return api.derivePolicy({ target: target(), checkpoint: "code-generation-submission", plan: value });
 }
 test("U1-POL01 fixed nonempty sets include applicable Inception", () => {
@@ -73,4 +75,19 @@ test("U1-POL10 a published table cannot lower the summary and review obligations
   assert.equal(derive().outcome, "PASS");
   const exempt = plan(); exempt.stages.find((s) => s.stage === "reverse-engineering").summaryConfirmed = false; assert.equal(derive(exempt).outcome, "PASS");
   assert.deepEqual(Object.keys(api.stageFloor(api.STAGE_DEFINITIONS[0])).sort(), ["completed", "review", "summary"]);
+});
+test("U1-POL11 the published table must read the same as the audited baseline for every earlier stage", () => {
+  const unknown = { outcome: "UNKNOWN", reasonCodes: ["INPUT_UNOBSERVABLE"] };
+  const withBase = (edit) => { const v = plan(); v.baselineStages = structuredClone(v.stages); edit(v.baselineStages, v); return v; };
+  assert.equal(derive(withBase(() => {})).outcome, "PASS");
+  assert.deepEqual(derive({ ...plan(), baselineStages: null }), unknown, "no independent reference");
+  assert.deepEqual(derive(withBase((b) => b.splice(0, b.length))), unknown, "empty baseline");
+  assert.deepEqual(derive(withBase((b) => b.splice(b.findIndex((x) => x.stage === "nfr-design"), 1))), unknown, "a stage missing from the baseline");
+  assert.deepEqual(derive(withBase((b) => b.push({ ...b[0] }))), unknown, "duplicate baseline stage");
+  for (const key of ["attempt", "completed", "summaryConfirmed", "planApproved", "reviewPerformed"]) {
+    const edited = withBase((b) => { const row = b.find((x) => x.stage === "nfr-design"); row[key] = key === "attempt" ? "attempt-other" : !row[key]; });
+    assert.deepEqual(derive(edited), unknown, key);
+  }
+  const current = withBase((b) => { b.find((x) => x.stage === "code-generation").attempt = "attempt-not-yet"; });
+  assert.equal(derive(current).outcome, "PASS", "the current stage has no baseline yet");
 });
