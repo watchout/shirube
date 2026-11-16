@@ -231,7 +231,8 @@ test("the notice kind and text follow the table, always from the document, alway
   const lowered = renderNotice(make(full, { threshold: EXCEPTION }));
   warning(lowered);
   assert.ok(lowered.includes("100.00%25 of 60.00%25 required") && lowered.includes(`threshold lowered by exception: ${URL_OK}`));
-  assert.match(renderNotice(make(measurement(), { threshold: EXCEPTION })), /^::error::Coverage gate: mismatch \(BELOW_THRESHOLD\)\. Line coverage 66\.66%25 of 60\.00%25 required\./u);
+  const stricter = { ...EXCEPTION, percentHundredths: 9000 };
+  assert.match(renderNotice(make(measurement(), { threshold: stricter })), /^::error::Coverage gate: mismatch \(BELOW_THRESHOLD\)\. Line coverage 66\.66%25 of 90\.00%25 required\. \(threshold lowered by exception: /u);
   const recorded = renderNotice(make(measurement(), { mode: "record-only" }));
   warning(recorded);
   assert.ok(recorded.includes("Recorded only, the job is not failed.") && recorded.includes("66.66%25 of 100.00%25 required"));
@@ -258,7 +259,7 @@ test("an exception text that got past the input check is still made harmless in 
   const d = make(full, { threshold: { ...EXCEPTION, rationale: "ok\n::error::fake`x`|%0A" } });
   const summary = renderSummary(d);
   assert.ok(!summary.split("\n").some((line) => line.startsWith("::")));
-  assert.ok(summary.includes("- Rationale: `ok?::error::fakex|%0A`"));
+  assert.ok(summary.includes("- Rationale: `ok?::error::fake'x'|%0A`"));
   const hostile = { ...d, thresholdException: { ...d.thresholdException, decisionUrl: "https://github.com/a/b/issues/1#issuecomment-2%0A::error::x\n" } };
   const notice = renderNotice(hostile);
   assert.doesNotMatch(notice, /[\r\n]/u);
