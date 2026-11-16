@@ -1,0 +1,453 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-ci-record-admission",
+  "upstream_ids": [
+    "AC2.1.1",
+    "AC2.1.2",
+    "AC2.1.3",
+    "AC2.1.4",
+    "AC2.1.5",
+    "AC2.2.1",
+    "AC2.2.2",
+    "AC2.2.3",
+    "AC2.2.4",
+    "AC2.2.5",
+    "AC3.2.1",
+    "AC3.2.2",
+    "AC3.2.3",
+    "AC3.2.4",
+    "AC3.2.5",
+    "AC4.1.1",
+    "AC4.1.2",
+    "AC4.1.3",
+    "AC4.1.4",
+    "AC4.1.5",
+    "AC4.2.1",
+    "AC4.2.2",
+    "AC4.2.3",
+    "AC4.2.4",
+    "AC4.2.5",
+    "AC4.3.1",
+    "AC4.3.2",
+    "AC4.3.3",
+    "AC4.3.4",
+    "AC4.3.5",
+    "NFR1.1",
+    "NFR1.2",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR8.1",
+    "NFR8.2",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR10.1",
+    "NFR10.2",
+    "BR1.1",
+    "BR1.2",
+    "BR1.3",
+    "BR1.4",
+    "BR2.1",
+    "BR2.2",
+    "BR2.3",
+    "BR3.1",
+    "BR3.2",
+    "BR3.3",
+    "BR3.4",
+    "BR4.1",
+    "BR4.2",
+    "BR5.1",
+    "BR5.2",
+    "BR5.3",
+    "BR6.1",
+    "BR6.2",
+    "BR7.1",
+    "BR7.2",
+    "BR7.3",
+    "BR8.1",
+    "BR8.2",
+    "BR9.1",
+    "BR9.2"
+  ],
+  "coverage": [
+    {
+      "id": "AC2.1.1",
+      "status": "GAP",
+      "target": "実PR/CI接続と実装headの必須条件は未成立。"
+    },
+    {
+      "id": "AC2.1.2",
+      "status": "N/A",
+      "target": "前単位統合後の正規進行はU3。U1は別の進行許可を発行しない。"
+    },
+    {
+      "id": "AC2.1.3",
+      "status": "GAP",
+      "target": "設計監査の実受領とは別に、未公開実装headの新CI/独立実装監査/作者受領/別担当統合を要する。"
+    },
+    {
+      "id": "AC2.1.4",
+      "status": "OK",
+      "target": "tests/ci-record-entry.test.mjs"
+    },
+    {
+      "id": "AC2.1.5",
+      "status": "OK",
+      "target": "tests/ci-record-entry.test.mjs"
+    },
+    {
+      "id": "AC2.2.1",
+      "status": "OK",
+      "target": "tests/ci-record-integration.test.mjs"
+    },
+    {
+      "id": "AC2.2.2",
+      "status": "OK",
+      "target": "tests/ci-record-integration.test.mjs"
+    },
+    {
+      "id": "AC2.2.3",
+      "status": "OK",
+      "target": "tests/ci-record-integration.test.mjs"
+    },
+    {
+      "id": "AC2.2.4",
+      "status": "OK",
+      "target": "tests/ci-record-integration.test.mjs"
+    },
+    {
+      "id": "AC2.2.5",
+      "status": "OK",
+      "target": "tests/ci-record-integration.test.mjs"
+    },
+    {
+      "id": "AC3.2.1",
+      "status": "N/A",
+      "target": "初回全体の実ゴールはU1〜U5の統合受入。U1の局所結果だけでは完了しない。"
+    },
+    {
+      "id": "AC3.2.2",
+      "status": "N/A",
+      "target": "対話のA不足/B不能と安全案内はU2。"
+    },
+    {
+      "id": "AC3.2.3",
+      "status": "GAP",
+      "target": "U1局所TDD/行100%は実測したが、SEC-T正本ID照合・実PR/CI・U4実証は未成立。"
+    },
+    {
+      "id": "AC3.2.4",
+      "status": "GAP",
+      "target": "架空実CLIのPASS/FAILは確認済み。固定100requestに対し公開予定133unique blob以上を要する不整合とcutoff後6段READY不足があり、実PR正例/実CI停止は未達。"
+    },
+    {
+      "id": "AC3.2.5",
+      "status": "N/A",
+      "target": "設定/履歴/体制保持はU5、実追加はU6、AUN全体受入はU7。"
+    },
+    {
+      "id": "AC4.1.1",
+      "status": "OK",
+      "target": "tests/ci-record-admission.test.mjs"
+    },
+    {
+      "id": "AC4.1.2",
+      "status": "OK",
+      "target": "tests/ci-record-admission.test.mjs"
+    },
+    {
+      "id": "AC4.1.3",
+      "status": "OK",
+      "target": "tests/ci-record-admission.test.mjs"
+    },
+    {
+      "id": "AC4.1.4",
+      "status": "OK",
+      "target": "tests/ci-record-admission.test.mjs"
+    },
+    {
+      "id": "AC4.1.5",
+      "status": "OK",
+      "target": "tests/ci-record-admission.test.mjs"
+    },
+    {
+      "id": "AC4.2.1",
+      "status": "OK",
+      "target": "tests/ci-record-design-audit.test.mjs"
+    },
+    {
+      "id": "AC4.2.2",
+      "status": "OK",
+      "target": "tests/ci-record-design-audit.test.mjs"
+    },
+    {
+      "id": "AC4.2.3",
+      "status": "OK",
+      "target": "tests/ci-record-design-audit.test.mjs"
+    },
+    {
+      "id": "AC4.2.4",
+      "status": "OK",
+      "target": "tests/ci-record-design-audit.test.mjs"
+    },
+    {
+      "id": "AC4.2.5",
+      "status": "OK",
+      "target": "tests/ci-record-design-audit.test.mjs"
+    },
+    {
+      "id": "AC4.3.1",
+      "status": "OK",
+      "target": "tests/ci-record-projection.test.mjs"
+    },
+    {
+      "id": "AC4.3.2",
+      "status": "OK",
+      "target": "tests/ci-record-projection.test.mjs"
+    },
+    {
+      "id": "AC4.3.3",
+      "status": "OK",
+      "target": "tests/ci-record-projection.test.mjs"
+    },
+    {
+      "id": "AC4.3.4",
+      "status": "OK",
+      "target": "tests/ci-record-projection.test.mjs"
+    },
+    {
+      "id": "AC4.3.5",
+      "status": "OK",
+      "target": "tests/ci-record-projection.test.mjs"
+    },
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "tests/ci-record-integration.test.mjs"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "GAP",
+      "target": "FD-T対応の局所80ケースとexact coverage323件はPASS。U1-REAL01/02は未生成/未実行で、100request対133blobの不整合と実READY不足を保持する。"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "GAP",
+      "target": "候補子processの資格情報なしを試験した。別read-only job→候補data供給とcheckout残留資格情報の実CI確認は未実施。匿名RESTで充分とはしない。"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "GAP",
+      "target": "公開allowlist/安全性8ケースはPASS。SEC-T正本版/項目IDの同定は未成立。"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-envelope.mjs"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-input.mjs"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-input.mjs"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "scripts/sds/gate.mjs"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-evidence.mjs"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-admission.mjs"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-envelope.mjs"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-evidence.mjs"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "scripts/sds/gate.mjs"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "GAP",
+      "target": "rootで版/実測を記録した。公開main文脈・clean checkoutの再現性は未検証。"
+    },
+    {
+      "id": "NFR8.2",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-input.mjs"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "scripts/sds/gate.mjs"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-admission.mjs"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "GAP",
+      "target": "ESM/実行時依存0/JSON互換、323/323PASS、structural/guard/depcruise/knipを実確認。gitleaks実scannerとclean公開候補検証は未実施。"
+    },
+    {
+      "id": "NFR10.2",
+      "status": "GAP",
+      "target": "架空実CLIの負例exit1は確認した。実PR/CI停止と必要なworkflow権限/結線は未成立。"
+    },
+    {
+      "id": "BR1.1",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-policy.mjs"
+    },
+    {
+      "id": "BR1.2",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-policy.mjs"
+    },
+    {
+      "id": "BR1.3",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-policy.mjs"
+    },
+    {
+      "id": "BR1.4",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-policy.mjs"
+    },
+    {
+      "id": "BR2.1",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-projection.mjs"
+    },
+    {
+      "id": "BR2.2",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-projection.mjs"
+    },
+    {
+      "id": "BR2.3",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-projection.mjs"
+    },
+    {
+      "id": "BR3.1",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-admission.mjs"
+    },
+    {
+      "id": "BR3.2",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-admission.mjs"
+    },
+    {
+      "id": "BR3.3",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-admission.mjs"
+    },
+    {
+      "id": "BR3.4",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-admission.mjs"
+    },
+    {
+      "id": "BR4.1",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-evidence.mjs"
+    },
+    {
+      "id": "BR4.2",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-evidence.mjs"
+    },
+    {
+      "id": "BR5.1",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-design-audit.mjs"
+    },
+    {
+      "id": "BR5.2",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-design-audit.mjs"
+    },
+    {
+      "id": "BR5.3",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-design-audit.mjs"
+    },
+    {
+      "id": "BR6.1",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-input.mjs"
+    },
+    {
+      "id": "BR6.2",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-input.mjs"
+    },
+    {
+      "id": "BR7.1",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-envelope.mjs"
+    },
+    {
+      "id": "BR7.2",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-envelope.mjs"
+    },
+    {
+      "id": "BR7.3",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-envelope.mjs"
+    },
+    {
+      "id": "BR8.1",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-evidence.mjs"
+    },
+    {
+      "id": "BR8.2",
+      "status": "OK",
+      "target": "scripts/sds/ci-record-evidence.mjs"
+    },
+    {
+      "id": "BR9.1",
+      "status": "OK",
+      "target": "scripts/sds/gate.mjs"
+    },
+    {
+      "id": "BR9.2",
+      "status": "OK",
+      "target": "scripts/sds/gate.mjs"
+    }
+  ],
+  "reverse": []
+}

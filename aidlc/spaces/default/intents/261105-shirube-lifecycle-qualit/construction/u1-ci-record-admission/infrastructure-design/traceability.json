@@ -1,0 +1,32 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u1-ci-record-admission",
+  "upstream_ids": [
+    "NFR1.1", "NFR1.2", "NFR2.1", "NFR2.2", "NFR2.3",
+    "NFR3.1", "NFR3.2", "NFR4.1", "NFR4.2", "NFR5.1",
+    "NFR5.2", "NFR6.1", "NFR6.2", "NFR8.1", "NFR8.2",
+    "NFR9.1", "NFR9.2", "NFR10.1", "NFR10.2"
+  ],
+  "coverage": [
+    {"id": "NFR1.1", "status": "OK", "target": "cicd-pipeline.md#test-automation-and-coverage — Node組込み試験job、scriptsと適用srcの実行コード集合/実分母100%/除外理由と独立確認"},
+    {"id": "NFR1.2", "status": "OK", "target": "cicd-pipeline.md#test-automation-and-coverage — tests/ci-record-admission.test.mjs等のFD-T01–20、既存entryのJSON/exitと実PR取得→核→CI停止の統合"},
+    {"id": "NFR2.1", "status": "OK", "target": "infrastructure-specification.md#trusted-execution-and-credentials — 信頼する固定toolsのread-only metadata jobとPR test/buildの資格情報分離"},
+    {"id": "NFR2.2", "status": "OK", "target": "infrastructure-specification.md#public-input-and-compatibility — ci-record-projection/ci-record-envelopeの公開allowlist。cicd-pipeline.md#test-automation-and-coverage — synthetic境界/SEC-T/秘密転記0"},
+    {"id": "NFR2.3", "status": "OK", "target": "monitoring-design.md#complete-result-and-diagnostic-boundary — 完全assessmentの非保証固定field/authorization NONEをentry JSONと輸送境界で保持"},
+    {"id": "NFR3.1", "status": "OK", "target": "infrastructure-specification.md#public-input-and-compatibility — 公開viewの共有schema /1、必須型/enum、上書き前のJSON重複key、未知major/critical/部分/過大入力の拒否"},
+    {"id": "NFR3.2", "status": "OK", "target": "infrastructure-specification.md#public-input-and-compatibility — 固定headのGit tree/raw bytes、path境界/symlink/submodule拒否、文字列の非実行"},
+    {"id": "NFR4.1", "status": "OK", "target": "monitoring-design.md#complete-result-and-diagnostic-boundary — evidence→既存entryの前処理診断/exit1、完全assessment非生成、偽hash/nullable化/未評価残件空化の禁止"},
+    {"id": "NFR4.2", "status": "OK", "target": "infrastructure-specification.md#finite-collection-and-evaluation-isolation — 呼出しごとのtarget/head/base/attempt/観測、前後照合、途中変更停止、共有mutable latestなし"},
+    {"id": "NFR5.1", "status": "OK", "target": "infrastructure-specification.md#file-placement — scripts/sds/ci-record-admission.mjs案の単一純粋核と明示now/ID/規則/必要集合/観測。cicd-pipeline.md#entry-integration-and-result-separation — 意味/理由の一元化"},
+    {"id": "NFR5.2", "status": "OK", "target": "monitoring-design.md#complete-result-and-diagnostic-boundary — ci-record-envelope案のserialize/decode共通検査、元assessment/knownRemaining/evaluationScope/同梱observationsの一致と一意参照解決"},
+    {"id": "NFR6.1", "status": "OK", "target": "infrastructure-specification.md#finite-collection-and-evaluation-isolation — ci-record-evidence.mjs案の信頼版5予算/受信bytes/取消し/取得完全性/最終照合"},
+    {"id": "NFR6.2", "status": "OK", "target": "cicd-pipeline.md#failure-stop-and-output-contract — 既存entryの一回実行、人待ち一回通知停止、自動retry0、正当な再評価時の実再取得"},
+    {"id": "NFR8.1", "status": "OK", "target": "infrastructure-specification.md#runtime-and-standards — Node/lockfile/runner/道具/検査版のclean checkout適合。cicd-pipeline.md#candidate-verification-and-fixed-revision-rollout — 候補試験と監査統合固定版の区別"},
+    {"id": "NFR8.2", "status": "OK", "target": "infrastructure-specification.md#public-input-and-compatibility — 既存schema major/型/enum/extensions保持。cicd-pipeline.md#deployment-promotion-and-rollback — 意味変更の新旧同居/試験済み逆向き/必要判断"},
+    {"id": "NFR9.1", "status": "OK", "target": "monitoring-design.md#logs--tracing — 既存entry/CIのJSONと公開テキスト診断、対象/不足/不一致/不能/次操作/保証範囲、秘密echoなし"},
+    {"id": "NFR9.2", "status": "OK", "target": "monitoring-design.md#approval-and-remaining-work-visibility — 固定READY日付/legacy/再承認/現在checkpointとknownRemaining全field保持、未来承認の先取りなし"},
+    {"id": "NFR10.1", "status": "OK", "target": "infrastructure-specification.md#runtime-and-standards — ESM/既存Node宣言/実行時npm依存なし/構造・依存・秘密検査。cicd-pipeline.md#entry-integration-and-result-separation — 既存entry互換/旧4–5の非採用"},
+    {"id": "NFR10.2", "status": "OK", "target": "cicd-pipeline.md#design-audit-intake-without-circular-dependency — 既存mandatory/受付workflow全体successを維持しU1を別workflowへ配置。cicd-pipeline.md#failure-stop-and-output-contract — FAIL/UNKNOWN/前処理失敗をexit1へ伝播"}
+  ],
+  "reverse": []
+}

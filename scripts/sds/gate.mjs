@@ -13,6 +13,11 @@ import { verifyAudit } from "../hygiene/audit-admission.mjs";
 import { planBinding, planBlock, comment } from "./plan-binding.mjs";
 import { refOf, hex, show, designGate, failed, approve, fenced } from "./design-gate.mjs";
 import { parseYaml } from "./yaml.mjs";
+import { ASSURANCE, REASONS, resolveProfile } from "./ci-record-policy.mjs";
+import { validateTarget, validateRef, isGitOid } from "./ci-record-input.mjs";
+import { collectAdmissionInput } from "./ci-record-evidence.mjs";
+import { assessRecords, sameTarget } from "./ci-record-admission.mjs";
+import { encodeEnvelope } from "./ci-record-envelope.mjs";
 
 const RISKS = ["R0", "R1", "R2", "R3", "R4"];
 // Every location GitHub reads CODEOWNERS from (root, .github/, docs/) is protected.
@@ -22,7 +27,8 @@ function github(path) {
   return path.endsWith("/logs") ? body : JSON.parse(body);
 }
 const QUERY = "query($ids:[ID!]!){nodes(ids:$ids){__typename ...on PullRequestReview{databaseId}...on IssueComment{databaseId}...on Comment{lastEditedAt userContentEdits(first:100){totalCount pageInfo{hasNextPage}nodes{editor{login}editedAt deletedAt}}}}}"; // 5.3u (j): the one GraphQL query, a read of two nodes
-function graphql(ids) { return JSON.parse(execFileSync("gh", ["api", "graphql", "-f", `query=${QUERY}`, ...ids.flatMap((id) => ["-f", `ids[]=${id}`])], { encoding: "utf8", timeout: 20000, maxBuffer: 8000000 })); }
+/** @public */
+export function graphql(ids) { return JSON.parse(execFileSync("gh", ["api", "graphql", "-f", `query=${QUERY}`, ...ids.flatMap((id) => ["-f", `ids[]=${id}`])], { encoding: "utf8", timeout: 20000, maxBuffer: 8000000 })); }
 function need(ok, why) { if (!ok) throw new Error(why); }
 function block(body) {
   const blocks = [...(body ?? "").matchAll(/^```json sds-pr\r?\n([\s\S]*?)^```\s*$/gm)];
@@ -129,7 +135,7 @@ function judgment5(mode, input, io) { // like judgment 4: a FAIL stops the gate 
   if (design.result === "FAIL" && design.mode !== "report-only") throw Object.assign(new Error(`5 design binding: ${design.reason}`), { binding: input.binding, design_binding: design });
   return design;
 }
-export function gate({ repo, pr: number, head }, api = github, now = Date.now(), verify = verifyAudit, parse = parseYaml, query) {
+function legacyGate({ repo, pr: number, head }, api = github, now = Date.now(), verify = verifyAudit, parse = parseYaml, query) {
   const p = api(`repos/${repo}/pulls/${number}`);
   need(!head || p.head.sha === head, `the PR head moved from ${head} to ${p.head.sha}; the newer run reports it`);
   const ctx = { repo, pr: Number(number), head: p.head.sha, base: p.base.sha };
@@ -147,10 +153,45 @@ export function gate({ repo, pr: number, head }, api = github, now = Date.now(),
   const design = judgment5(design_binding_mode, { pr, effective, binding, paths, repo }, { api, parse, query });
   return { check: "sds-gate", verdict: "PASS", head: ctx.head, risk_class: declared, effective_risk: effective, protected_touched: protectedTouched, owner_approval: "NOT_CHECKED_BY_MACHINE", authorization: "NONE", plan_binding: binding, design_binding: design };
 }
-export const failure = (error, args) =>
+const recordPurpose = (args) => ["purpose", "checkpoint", "profile"].some((key) => Object.hasOwn(args, key));
+const RECORD_ARGS = ["repo", "pr", "head", "purpose", "checkpoint", "workspace", "space", "intent", "unit", "attempt", "now", "assessment-id"];
+function recordArguments(args) {
+  need(Object.keys(args).every((key) => RECORD_ARGS.includes(key)), "UNSUPPORTED_SCHEMA");
+  resolveProfile(args.purpose, args.checkpoint);
+  const target = { repo: args.repo, workspace: args.workspace, space: args.space, intent: args.intent, unit: args.unit, stage: "code-generation", attempt: args.attempt };
+  validateTarget(target); validateRef(args["assessment-id"]);
+  need(/^[1-9]\d*$/.test(String(args.pr)) && Number.isSafeInteger(Number(args.pr)) && isGitOid(args.head), "UNSUPPORTED_SCHEMA");
+  need(typeof args.now === "string" && Number.isFinite(Date.parse(args.now)) && /(?:Z|[+-]\d{2}:\d{2})$/.test(args.now), "UNSUPPORTED_SCHEMA");
+  return target;
+}
+async function recordGate(args, io) {
+  const target = recordArguments(args);
+  const input = await (typeof io?.readRecords === "function" ? io.readRecords(args) : collectAdmissionInput(args));
+  need(sameTarget(input.target, target) && input.prObservation.number === Number(args.pr) && input.prObservation.head === args.head && input.now === args.now && input.assessmentId === args["assessment-id"], "TARGET_MISMATCH");
+  const assessment = assessRecords(input);
+  const evaluationScope = { repo: target.repo, pr: Number(args.pr), head: input.prObservation.head, base: input.prObservation.base, target, checkpoint: args.checkpoint, rulesetVersion: assessment.rulesetVersion, artifactSetDigest: assessment.artifactSetDigest };
+  return encodeEnvelope({ assessment, evaluationScope, observations: input.observations });
+}
+// Preserve all legacy callback parameters (including additions in a newer distribution).
+export function gate(args, ...legacy) {
+  return recordPurpose(args) ? recordGate(args, legacy[0]) : legacyGate(args, ...legacy);
+}
+const legacyFailure = (error, args) =>
   ({ check: "sds-gate", verdict: "FAIL", head: args.head ?? null, reason: error.message, owner_approval: "NOT_CHECKED_BY_MACHINE", authorization: "NONE", plan_binding: error.binding ?? { mode: null, result: "NOT_CHECKED", reason: "an earlier judgment failed" }, design_binding: error.design_binding ?? { mode: null, result: "NOT_CHECKED", reason: "an earlier judgment failed" } });
+export function failure(error, args) {
+  if (!recordPurpose(args)) return legacyFailure(error, args);
+  const safe = new Error(REASONS.includes(error.message) ? error.message : "INPUT_UNOBSERVABLE");
+  return { ...legacyFailure(safe, args), head: isGitOid(args.head) ? args.head : null, ...ASSURANCE, knownRemainingStatus: "not-evaluated" };
+}
+function cliArguments(values) {
+  const args = parseArgs(values);
+  if (!recordPurpose(args)) return args;
+  const keys = values.filter((_, index) => index % 2 === 0);
+  need(values.length % 2 === 0 && keys.every((key) => /^--[a-z-]+$/.test(key)) && new Set(keys).size === keys.length, "UNSUPPORTED_SCHEMA");
+  recordArguments(args); return args;
+}
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const args = parseArgs(process.argv.slice(2));
-  try { process.stdout.write(`${JSON.stringify(gate(args))}\n`); }
+  let args = parseArgs(process.argv.slice(2));
+  try { args = cliArguments(process.argv.slice(2)); const output = await gate(args); process.stdout.write(`${JSON.stringify(output)}\n`); if (output.outcome && output.outcome !== "PASS") process.exitCode = 1; }
   catch (error) { process.stdout.write(`${JSON.stringify(failure(error, args))}\n`); process.exitCode = 1; }
 }
