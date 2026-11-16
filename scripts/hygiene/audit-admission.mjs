@@ -5,6 +5,16 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "./lib.mjs";
 
+// The one owner of the rule values (S3): the two docs (audit-method §2 and the sds-audit skill §2) copy them, and
+// tests/audit-intake-extra-docs.test.mjs fails when the three differ. The fixed reasons never carry a declared value.
+export const EXTRA_FIELD = "extra_checkouts", EXTRA_MAX = 4;
+const WHY = {
+  shape: `Invalid ${EXTRA_FIELD} declaration`, many: `Too many ${EXTRA_FIELD} declarations`, dup: `Duplicate ${EXTRA_FIELD} commit`,
+  self: `${EXTRA_FIELD} repo equals the PR repo`, noCheck: `${EXTRA_FIELD} requires a required check`,
+  missing: "Missing or ambiguous checkout commit", extra: "Undeclared extra checkout commit", parents: "Tested merge parents differ from requested base/head",
+  unseen: "Declared extra checkout not in CI log", absent: "Declared extra checkout not found in declared repo",
+  derives: "Declared extra checkout derives from requested base/head",
+};
 const digest = (s) => createHash("sha256").update(s).digest("hex");
 const nonempty = (s) => typeof s === "string" && s.trim().length > 0;
 function need(ok, why) { if (!ok) throw new Error(why); }
@@ -35,6 +45,20 @@ function file(target, path, api) {
   need(r.type === "file" && r.encoding === "base64", "Evidence is not an observed file");
   return Buffer.from(r.content, "base64").toString("utf8");
 }
+const text = (v, re) => typeof v === "string" && re.test(v);
+const isPair = (e) => e !== null && typeof e === "object" && !Array.isArray(e) && Object.keys(e).sort().join() === "commit,repo" && text(e.commit, /^[a-f0-9]{40}$/) && text(e.repo, /^[A-Za-z0-9-]+\/(?!\.+$)[\w.-]+$/);
+// Reads one target's declaration from the request alone (no GitHub read); a target without the field, or with an empty list, declares nothing.
+function declared(t) {
+  if (!Object.hasOwn(t, EXTRA_FIELD)) return [];
+  const list = t[EXTRA_FIELD], self = String(t.repo).toLowerCase();
+  need(Array.isArray(list), WHY.shape);
+  need(list.length <= EXTRA_MAX, WHY.many);
+  need(list.every(isPair), WHY.shape);
+  need(new Set(list.map((d) => d.commit)).size === list.length, WHY.dup);
+  need(list.every((d) => d.repo.toLowerCase() !== self), WHY.self);
+  need(list.length === 0 || (Array.isArray(t.checks) && t.checks.length > 0), WHY.noCheck);
+  return list.map(({ repo, commit }) => ({ repo, commit }));
+}
 export function requestChecks(r, c, now, verifierSha256 = digest(readFileSync(fileURLToPath(import.meta.url)))) {
   need(c.user?.login === "watchout", "Request publisher is not the configured owner account");
   need(r.schema === "sds-audit-request/1", "Unknown request schema");
@@ -44,6 +68,7 @@ export function requestChecks(r, c, now, verifierSha256 = digest(readFileSync(fi
   need(nonempty(r.reviewer.github) && r.reviewer.github !== c.user.login, "Reviewer account is not independent");
   need(unique(r.targets.map((t) => t.id)), "Duplicate or empty targets");
   need(unique(r.targets.map((t) => `${t.repo}#${t.pr}`)), "Repeated target PR");
+  for (const t of r.targets) declared(t);
 }
 // A request may opt in with `base_moved: {ref}`: the PR base moved on after the request, which stays acceptable only while the move
 // is provably unrelated (docs/sds/audit-method.md §4). The CI proof below still binds the requested base, so the audited bytes are unchanged.
@@ -71,7 +96,7 @@ function targetCheck(t, api, notes = []) {
   const p = api(`repos/${t.repo}/pulls/${t.pr}`);
   need(p.state === "open" && p.head.sha === t.head, "PR head/base/state changed");
   baseCheck(t, p, api, notes);
-  const observed = [];
+  const observed = [], decl = declared(t), seen = new Set();
   need(Array.isArray(t.checks), "Required checks must be explicit");
   if (t.checks.length === 0) return observed;
   need(unique(t.checks), "Duplicate check names");
@@ -79,17 +104,38 @@ function targetCheck(t, api, notes = []) {
   need(runs.total_count === runs.check_runs.length, "Incomplete checks observation");
   for (const name of t.checks) {
     const run = successfulRun(runs.check_runs, name, t.head);
-    const testedMerge = workflowCheck(run, t, api);
+    const testedMerge = workflowCheck(run, t, api, seen);
     observed.push({ name, id: run.id, url: run.html_url, tested_merge: testedMerge });
   }
+  confirmDeclared(decl, seen, api, t);
   return observed;
+}
+// After every required job of the target was read: each declared commit was seen in some job's log, and exists in its declared repo
+// (one read each, no retry; a failed, expired or mismatching read is "not observed", never a pass).
+function confirmDeclared(decl, seen, api, t) {
+  need(decl.every((d) => seen.has(d.commit)), WHY.unseen);
+  const from = new Set([t.base, t.head]);
+  for (const d of decl) {
+    const parents = existsIn(d, api);
+    need(parents !== null, WHY.absent);
+    need(!from.has(d.commit) && !parents.some((p) => from.has(p)), WHY.derives);
+  }
+}
+// One read per declaration. Gives the parents' SHAs when the answer's sha matches all 40 characters and the parents read as 40 lower-case
+// hex SHAs; otherwise null. An error thrown while reading is also "not observed" (a fixed reason, never the error text).
+function existsIn(d, api) {
+  try {
+    const answer = api(`repos/${d.repo}/git/commits/${d.commit}`), parents = Array.isArray(answer?.parents) ? answer.parents.map((p) => p?.sha) : null;
+    return answer.sha === d.commit && parents?.every((s) => text(s, /^[a-f0-9]{40}$/)) ? parents : null;
+  } catch { return null; }
 }
 export function successfulRun(runs, name, head) {
   const run = runs.filter((x) => x.name === name && x.app?.slug === "github-actions").sort((a, b) => b.id - a.id)[0];
   need(run?.head_sha === head && run.status === "completed" && run.conclusion === "success", `Required check not successful: ${name}`);
   return run;
 }
-export function workflowCheck(run, t, api) {
+// `seen` is the caller's set of declared commits seen in job logs; a caller that passes none (and so cannot confirm the declaration) is judged by the one-checkout rule.
+export function workflowCheck(run, t, api, seen) {
   const prefix = `https://github.com/${t.repo}/actions/runs/`;
   const ids = run.html_url?.startsWith(prefix) && /^(\d+)\/job\/(\d+)$/.exec(run.html_url.slice(prefix.length));
   need(ids && nonempty(t.workflow), "Unbound workflow run");
@@ -97,7 +143,7 @@ export function workflowCheck(run, t, api) {
   need(w.path === t.workflow && w.head_sha === t.head && w.event === "pull_request", "Wrong workflow/trigger/head");
   need(w.status === "completed" && w.conclusion === "success", "Workflow not successful");
   workflowPr(w, t);
-  return checkoutProof(run, ids, t, api);
+  return checkoutProof(run, ids, t, api, seen);
 }
 function workflowPr(w, t) {
   const repoUrl = `https://api.github.com/repos/${t.repo}`;
@@ -107,14 +153,23 @@ function workflowPr(w, t) {
   const p = prs[0];
   need(p.head?.sha === t.head && p.base?.sha === t.base && p.base?.repo?.url === repoUrl, "CI PR/head/base differs");
 }
-function checkoutProof(run, ids, t, api) {
+// The merge version is the one commit in the log that no declaration names; it must be exactly one.
+function mergeCandidate(shas, declaredShas) {
+  const open = shas.filter((s) => !declaredShas.includes(s));
+  need(open.length > 0, WHY.missing);
+  need(open.length === 1, declaredShas.length > 0 ? WHY.extra : WHY.missing);
+  return open[0];
+}
+function checkoutProof(run, ids, t, api, seen) {
   const job = api(`repos/${t.repo}/actions/jobs/${ids[2]}`);
   need(job.run_id === Number(ids[1]) && job.head_sha === t.head && job.check_run_url === `https://api.github.com/repos/${t.repo}/check-runs/${run.id}`, "Check/job/run binding differs");
   const logs = api(`repos/${t.repo}/actions/jobs/${ids[2]}/logs`);
   const shas = [...new Set([...logs.matchAll(/^\S+ \[command\]\/\S*git log -1 --format=%H\r?\n\S+ ([a-f0-9]{40})(?:\r?\n|$)/gm)].map((m) => m[1]))];
-  need(shas.length === 1, "Missing or ambiguous checkout commit");
-  const commit = api(`repos/${t.repo}/git/commits/${shas[0]}`);
-  need(commit.sha === shas[0] && same(commit.parents.map((p) => p.sha), [t.base, t.head]), "Tested merge parents differ from requested base/head");
+  const declaredShas = seen ? declared(t).map((d) => d.commit) : [];
+  const merge = mergeCandidate(shas, declaredShas);
+  const commit = api(`repos/${t.repo}/git/commits/${merge}`);
+  need(commit.sha === merge && same(commit.parents.map((p) => p.sha), [t.base, t.head]), WHY.parents);
+  for (const sha of shas) if (declaredShas.includes(sha)) seen.add(sha);
   return commit.sha;
 }
 function evidence(ref, targets, api) {
