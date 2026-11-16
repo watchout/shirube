@@ -46,10 +46,21 @@ round 2（返却 https://github.com/watchout/shirube/pull/104#issuecomment-68429
 - 観測: 追加 4 件（emit 1・cli 3）。作業木（Node 24）で確認コマンドの実行 634 件すべて合格（失敗・skip・cancelled 0）、`scripts/coverage-gate/` の行の網羅率 100.00%。lint:structural・lint:guard は指摘なし、knip は今回の変更に新しい指摘なし（残りは既存）。`scripts/coverage-gate/` の行数は emit 104・cli 113（いずれも 300 行以内、合計 1,081 行）。自己の網羅率は門で 13 file を測り、一致、1081 / 1081（100.00%、toolVersion 24.22.3、runId `local`。`self-coverage-result.json` を取り直した。手元の実行で、workflow 上の実行ではない）。実際の子の process でリンク経由の起動（directory のリンク・file のリンク）が exit 2 になり古い結果が置き換わることを確かめた。
 - 観測していない: Node 22・26 での再実行、Linux の runner での別名の試験（大小文字を区別する disk の側の assert は手元の macOS では実行されない。push 後の CI で確かめる）。独立の再監査、作者の受領、統合は未実施。
 
+## 実装監査 5 回目の直し（記録の版の整合、F01）
+
+実装は広げていない。TMPDIR の是正（commit b3978e1、head 224d961）で runner が 94 行から 98 行、試験が 191 件から 193 件になったのに、自己の網羅率の結果と項目 U3IA-09 の数が前の版のままだった。現在の head の値に揃えた。
+
+- 現在の版（head 224d961050ee8e6ab4d438626c9ab1f9ac4152e1、Node 24.22.3、手元の実行）: 門の試験 193 件が合格（失敗・skip・cancelled・todo 0）。`npm test` 全体 954 件が合格（base 761 + 193）。自己の網羅率は 13 file で 1085 / 1085（100.00%）、runner は 98 / 98。`self-coverage-result.json` を `node scripts/coverage-gate/cli.mjs --input self-coverage-input.json --result …` で取り直し（exit 0、outcome match、未計測・未実行・試験失敗の一覧は空）、前の結果との差は coveredLines/totalLines の 1081→1085、runner の 94→98、recordsSha256 だけ。
+- 過去の版の値（現在の版の証拠ではない）: 上の「観測」にある 1,081 行・1081 / 1081・runner 94 / 94・門の試験 191 件・全体 952 件は、それぞれ実装監査 round 2 の直しの commit 7edebf6 の時点の実測。TMPDIR の是正の前で、現在の head には当たらない。
+- 項目 U3IA-09 を 193 件・954 件に直した（`docs/audit/u3-node-gate-slice-impl.json`、項目集合の SHA-256 は取り直す）。`traceability.json` の NFR7.3・NFR7.4 は同じ `self-coverage-result.json` を指しており、取り直した結果が現在の証拠になる。
+- file ごとの lcov の突き合わせ（現在の版、Node 24.22.3、手元の実行）: 門の試験 14 file を `node --test --experimental-test-coverage --test-reporter=lcov` で別に流し（exit 0、16 record）、`scripts/coverage-gate/` の 13 file の LH/LF を、保存した `self-coverage-result.json` の `perFile` と file ごとに比べた。13 file すべて一致し、合計 1085 / 1085。内訳（LH/LF）: cli 113/113、emit 104/104、events-reporter 27/27、events 53/53、input 94/94、judge 138/138、lcov 101/101、measure-node 116/116、order 14/14、report 168/168、resolve 42/42、runner 98/98、sanitize 17/17。source は TMPDIR の是正 head 224d961 から変えていない（この記録の commit は記録の file だけを変える）。
+- 範囲: Owner の決定 https://github.com/watchout/shirube/pull/104#issuecomment-6909088047（本文 SHA-256 `1c94aab897f9a4ca28375b96b2a3861a7eab8cad8faa0965a1a468cb0ca91e17`、この PR のこの 1 回だけの 6 回目。記録の試験と網羅率の数を今の head に揃えることだけ）。実装は広げていない。
+- 観測していない: Node 22・26 での再実行（監査 5 回目の返却に 22.23.5・24.22.3・26.13.1 で門の試験 193 件の合格の記録があるが、この記録の実行ではない）、配線された workflow での実行（U7）。
+
 ## 実行していない・観測していないもの
 
 - 配線された workflow での実行（AC10.1.3）は U7 の範囲で、この単位では観測していない。入口はどの workflow からも呼ばれない。
-- CI の `test` job（Node 26）と hygiene（Node 22）の結果は、この head を push して確かめるまで観測していない。Linux の runner で process group の停止が孫まで届くことは、手元（macOS）の試験では確かめたが、Linux では未観測。
+- CI の `test` job（Node 26）と hygiene（Node 22）の結果は、実装監査 6 回目の依頼で新しい head に固定してから確かめる（この記録を書いた時点では新しい head の CI は未観測。224d961 の CI は test 954 件合格、hygiene 成功）。Linux の runner で process group の停止が孫まで届くことは、手元（macOS）の試験では確かめたが、Linux では未観測。
 - Node 23 以上の保証はしない。24・26 の実測は手元の事実で、CI の保証ではない。
 - 見直し役は、この作業場の区分が `none`（Owner 決定 https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6811761125）のため呼んでいない。見直し済みとは書かない。サブエージェントも呼んでいない。
 - この head の独立の実装監査・作者の受領・作者以外の suite-lead による統合は、未実施。
