@@ -159,7 +159,7 @@ node --test --experimental-test-coverage --test-coverage-lines=100 --test-covera
 実装監査 2 回目の直し（BF-U1IM-01、arc の判断 C）で変えた物:
 
 - BF-U1IM-01（表の独立の参照）: PR の `code-summary.md` の段の表（stage・attempt・completed・summaryConfirmed・planApproved・reviewPerformed）は PR の作者が書ける申告値で、`stageFloor` は下限しか見ない。そこで、表を**設計監査で PASS した設計 head の `code-generation-plan.md` の表**（git の object id で内容が固定され、PR が後から動かせない公開の参照）と突き合わせる。`code-generation` 以外の全段で、5 つの欄がすべて一致しなければ INPUT_UNOBSERVABLE の UNKNOWN。設計 head の plan が読めない・表が無い・空・段が欠ける・段が重複・`designHead` が object id でない場合も UNKNOWN で、PASS に読み替えない（S5・S8）。試験は U1-POL11、U1-INT10（2 件）。新しい 2 件の試験は、結び付けを外すと失敗することを確かめた（RED）。
-- 取得の予算（式）: 追加の問い合わせは、1 回の評価につき 設計 head の tree の読み 1 回 + plan の blob の読み 1 回 = 観測の回数 1 × 宣言の件数 1（`code-generation-plan.md`）× 対象の数 1（設計 head）で 2 request。既存の固定の予算（20,000ms/request・総 120,000ms・100 request・retry 0）は変えず、予算を黙って足していない。
+- 取得の予算（式）: 追加の問い合わせは、1 回の評価につき 観測の回数 1 × 宣言の件数 1（`code-generation-plan.md`）× 対象の数 1（設計 head）で、設計 head の commit の読み 1 回（`readTree` が先に取る）+ tree の読み 1 回 + 未取得の plan の blob の読み最大 1 回 = 最大 3 request。同じ評価の中で同じ blob をすでに取得していれば blob は再利用され 2 request。根拠は実の transport の呼び出しの記録（fixture の transport で、現在の plan と設計 head の plan が同じ bytes の評価は設計 head の読みが commit・tree の 2 本、現在の plan に 1 行足して bytes を違えた評価は commit・tree・blob の 3 本、評価全体は 40 と 41 request）。既存の固定の予算（20,000ms/request・総 120,000ms・100 request・retry 0）は変えず、予算を黙って足していない。
 - 保証しないこと（門が保証しないこと）: 実 PR #101 は、設計 head の `code-generation-plan.md` にまだ段の表が無いため、この結び付けでは UNKNOWN になる。表の独立の発行元（公開の `pr-records.json` の producer）は後の単位へ持ち越した（下の「Carried Over」）。表が一致しても、設計 head の plan 自体の正しさは独立の監査が見る。
 - 持ち越し: より強い producer は後の単位。この PR では新しい producer・新 schema・新 workflow を足していない。
 

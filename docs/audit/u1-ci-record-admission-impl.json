@@ -20,7 +20,7 @@
     },
     {
       "id": "U1IM-04",
-      "criterion": "証拠の取得と予算: ci-record-evidence の取得が read-only GET、注入可能な transport/clock、20,000ms/request・120,000ms 総期限・100 request・8,000,000 byte/response・retry 0 を超えたら観測できずになる。bytes は raw で Git object id と size を照合し、取得前後の head/base を再確認する。過去の cache を観測に昇格しない。宣言された値（PR 本文・request の自己申告）を観測側へ写して一致にしていない。 設計 head の参照の読み（tree 1 回 + plan の blob 1 回 = 2 request）が同じ予算の中で数えられ、予算の式が記録にある。",
+      "criterion": "証拠の取得と予算: ci-record-evidence の取得が read-only GET、注入可能な transport/clock、20,000ms/request・120,000ms 総期限・100 request・8,000,000 byte/response・retry 0 を超えたら観測できずになる。bytes は raw で Git object id と size を照合し、取得前後の head/base を再確認する。過去の cache を観測に昇格しない。宣言された値（PR 本文・request の自己申告）を観測側へ写して一致にしていない。 設計 head の参照の読み（commit 1 回 + tree 1 回 + 未取得の plan の blob 最大 1 回 = 最大 3 request。同じ評価で blob を再利用した時は 2）が同じ予算の中で数えられ、予算の式が実の transport の呼び出しの記録と一致している。",
       "basis": "D6/D12、S5"
     },
     {
