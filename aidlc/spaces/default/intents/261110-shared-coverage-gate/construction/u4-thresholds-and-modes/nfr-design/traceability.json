@@ -1,7 +1,7 @@
 {
   "stage": "nfr-design",
   "unit": "u4-thresholds-and-modes",
-  "upstream_ids": ["NFR1.1", "NFR1.2", "NFR1.3", "NFR1.4", "NFR1.5", "NFR1.6", "NFR1.7", "NFR2.1", "NFR2.2", "NFR2.3", "NFR3.1", "NFR3.2", "NFR3.3", "NFR4.1", "NFR4.2", "NFR4.3", "NFR4.4", "NFR4.5", "NFR4.6", "NFR4.7", "NFR4.8", "NFR4.9", "NFR4.10", "NFR4.11", "NFR4.12", "NFR5.1", "NFR5.2", "NFR5.3", "NFR5.4", "NFR5.5", "NFR5.6", "NFR6.1", "NFR6.2", "NFR7.1", "NFR7.2", "NFR7.3", "NFR7.4", "NFR8.1", "NFR8.2", "NFR8.3", "NFR8.4", "NFR8.5", "NFR9.1", "NFR9.2", "NFR9.3", "NFR10.1", "NFR10.2", "NFR11.1", "NFR11.2"],
+  "upstream_ids": ["NFR1.1", "NFR1.2", "NFR1.3", "NFR1.4", "NFR1.5", "NFR1.6", "NFR1.7", "NFR2.1", "NFR2.2", "NFR2.3", "NFR3.1", "NFR3.2", "NFR3.3", "NFR4.1", "NFR4.2", "NFR4.3", "NFR4.4", "NFR4.5", "NFR4.6", "NFR4.7", "NFR4.8", "NFR4.9", "NFR4.10", "NFR4.11", "NFR4.12", "NFR5.1", "NFR5.2", "NFR5.3", "NFR5.4", "NFR5.5", "NFR5.6", "NFR6.1", "NFR6.2", "NFR7.1", "NFR7.2", "NFR7.3", "NFR7.4", "NFR8.1", "NFR8.2", "NFR8.3", "NFR8.4", "NFR8.5", "NFR9.1", "NFR9.2", "NFR9.3", "NFR10.1", "NFR10.2", "NFR11.1", "NFR11.2", "NFR1.8", "NFR2.5", "NFR5.8"],
   "coverage": [
     { "id": "NFR1.1", "status": "OK", "target": "performance-design PF1（動作環境を変えない。新しい module を import しない。数は 100 倍した整数）" },
     { "id": "NFR1.2", "status": "OK", "target": "performance-design PF2（足す処理は一定の量。入力の大きさに比例しない）" },
@@ -51,6 +51,9 @@
     { "id": "NFR10.1", "status": "OK", "target": "observability-design OB6（mode・例外の有無・実際の閾値を集計の元として出す。集計の仕方は U8）" },
     { "id": "NFR10.2", "status": "OK", "target": "observability-design OB6（観測できない時は null。申告された値を入れない）" },
     { "id": "NFR11.1", "status": "OK", "target": "scalability-design SL3・SL4（新しい有料サービス・常設の資源を足さない）" },
-    { "id": "NFR11.2", "status": "OK", "target": "scalability-design SL3（record-only でも測定の量は enforce と同じ）" }
+    { "id": "NFR11.2", "status": "OK", "target": "scalability-design SL3（record-only でも測定の量は enforce と同じ）" },
+    { "id": "NFR1.8", "status": "N/A", "target": "requirement of u3-node-gate-slice, cited as the base; this unit carries it as NFR1.6 (scalability-design SL2)" },
+    { "id": "NFR2.5", "status": "N/A", "target": "requirement of u3-node-gate-slice, cited as the base; covered by the u3 design records" },
+    { "id": "NFR5.8", "status": "N/A", "target": "requirement of u3-node-gate-slice, cited as the base; covered by the u3 design records" }
   ]
 }
