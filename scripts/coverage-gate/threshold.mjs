@@ -6,11 +6,16 @@ import { DEFAULT_THRESHOLD_HUNDREDTHS } from "./judge.mjs";
 import { compareCodePoint } from "./order.mjs";
 
 // The exception's constants. Each is written here and nowhere else.
+/** @public */
 export const RATIONALE_MAX_LENGTH = 300;
+/** @public */
 export const RATIONALE_FORBIDDEN = Object.freeze(["::", "%0A", "%0D", "`", "|"]);
+/** @public */
 export const DECISION_URL_MAX_LENGTH = 300;
+/** @public */
 export const THRESHOLD_KEYS = Object.freeze(["percent", "decisionUrl", "rationale"]);
 // An issue or pull request comment on github.com, exactly. No query, no other fragment, no user, no port.
+/** @public */
 export const DECISION_URL_SHAPE = /^https:\/\/github\.com\/[A-Za-z0-9-]{1,39}\/(?!\.{1,2}\/)[A-Za-z0-9._-]{1,100}\/(?:issues|pull)\/[1-9][0-9]{0,11}#issuecomment-[1-9][0-9]{0,11}$/u;
 
 const HUNDREDTHS_PER_PERCENT = 100;
