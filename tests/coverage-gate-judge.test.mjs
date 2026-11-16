@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import test from "node:test";
-import { DEFAULT_THRESHOLD_HUNDREDTHS, MODE, OUTCOMES, REASON_CODES, SCHEMA_VERSION, judge } from "../scripts/coverage-gate/judge.mjs";
+import { DEFAULT_MODE, DEFAULT_THRESHOLD_HUNDREDTHS, MODE, MODES, OUTCOMES, REASON_CODES, SCHEMA_VERSION, judge } from "../scripts/coverage-gate/judge.mjs";
 
 const rec = (path, lineNumber, hitCount) => ({ path, lineNumber, hitCount });
 const measurement = (over = {}) => ({
@@ -140,4 +140,84 @@ test("the per-file totals add up to the verdict totals", () => {
   const v = run(measurement({ records: [rec("src/a.mjs", 1, 0), rec("src/a.mjs", 2, 1), rec("src/b.mjs", 5, 3), rec("src/b.mjs", 9, 0)] }));
   assert.equal(v.perFile.reduce((n, f) => n + f.coveredLines, 0), v.coveredLines);
   assert.equal(v.perFile.reduce((n, f) => n + f.totalLines, 0), v.totalLines);
+});
+
+// U4: the threshold exception and the mode (BR7.2, BR7.4 to BR7.6). Every value here is fictional.
+const EXCEPTION = { percentHundredths: 9500, decisionUrl: "https://github.com/example-org/example-repo/issues/12#issuecomment-345", rationale: "Example rationale for a lowered line." };
+const PARTLY = measurement({ records: [rec("src/a.mjs", 1, 1), rec("src/a.mjs", 2, 0), rec("src/b.mjs", 1, 1)] });
+const UNREAD = { kind: "unobservable", cause: "failed", cleanupFailed: false };
+const SAMPLES = { match: () => measurement(), mismatch: () => PARTLY, unobservable: () => UNREAD };
+
+test("the modes are enforce and record-only, the default is enforce, and the old MODE is the default", () => {
+  assert.deepEqual([...MODES], ["enforce", "record-only"]);
+  assert.equal(DEFAULT_MODE, "enforce");
+  assert.equal(MODE, DEFAULT_MODE);
+  assert.throws(() => MODES.push("other"), TypeError);
+});
+
+test("shouldFail is true only for a non-match in enforce mode: six cases of class and mode", () => {
+  const expected = { match: [false, false], mismatch: [true, false], unobservable: [true, false] };
+  for (const [name, [enforce, recordOnly]] of Object.entries(expected)) {
+    assert.equal(run(SAMPLES[name](), { mode: "enforce" }).shouldFail, enforce, `${name} enforce`);
+    assert.equal(run(SAMPLES[name](), { mode: "record-only" }).shouldFail, recordOnly, `${name} record-only`);
+    assert.equal(run(SAMPLES[name]()).shouldFail, enforce, `${name} with no mode given`);
+  }
+});
+
+test("record-only changes nothing but shouldFail and mode: outcome, reasons and numbers are the same as in enforce", () => {
+  for (const name of Object.keys(SAMPLES)) {
+    const strict = run(SAMPLES[name](), { mode: "enforce" });
+    const recorded = run(SAMPLES[name](), { mode: "record-only" });
+    assert.equal(recorded.mode, "record-only", name);
+    assert.deepEqual({ ...recorded, shouldFail: strict.shouldFail, mode: strict.mode }, strict, name);
+  }
+});
+
+test("an exception sets the line the comparison uses, and the verdict keeps the claimed and the compared values apart", () => {
+  const v = run(PARTLY, { threshold: { ...EXCEPTION, percentHundredths: 6666 } });
+  assert.deepEqual([v.outcome, v.reasonCodes, v.effectiveThresholdHundredths], ["match", [], 6666]);
+  assert.deepEqual(v.thresholdException, { decisionUrl: EXCEPTION.decisionUrl, claimedHundredths: 6666, rationale: EXCEPTION.rationale });
+  const below = run(PARTLY, { threshold: { ...EXCEPTION, percentHundredths: 6667 } });
+  assert.deepEqual([below.outcome, below.reasonCodes, below.effectiveThresholdHundredths], ["mismatch", ["BELOW_THRESHOLD"], 6667]);
+});
+
+test("a run that meets the default line still records that an exception was used", () => {
+  const v = run(measurement(), { threshold: EXCEPTION });
+  assert.deepEqual([v.outcome, v.shouldFail, v.lineRatioHundredths, v.effectiveThresholdHundredths], ["match", false, 10000, 9500]);
+  assert.deepEqual(v.thresholdException, { decisionUrl: EXCEPTION.decisionUrl, claimedHundredths: 9500, rationale: EXCEPTION.rationale });
+});
+
+test("an unobservable run carries the exception, the effective value and the mode as well", () => {
+  for (const mode of MODES) {
+    const v = run(UNREAD, { mode, threshold: EXCEPTION });
+    assert.deepEqual([v.outcome, v.mode, v.effectiveThresholdHundredths], ["unobservable", mode, 9500], mode);
+    assert.deepEqual(v.thresholdException, { decisionUrl: EXCEPTION.decisionUrl, claimedHundredths: 9500, rationale: EXCEPTION.rationale }, mode);
+    assert.equal(v.shouldFail, mode === "enforce", mode);
+  }
+  const noRecords = run(measurement({ records: [rec("lib/other.mjs", 1, 1)] }), { threshold: EXCEPTION });
+  assert.deepEqual([noRecords.reasonCodes, noRecords.effectiveThresholdHundredths, noRecords.thresholdException.claimedHundredths], [["NO_RECORDS"], 9500, 9500]);
+});
+
+test("an exception never makes the line stricter: what passes by default also passes with the exception", () => {
+  for (const m of [measurement(), measurement({ testFilesRun: [] })]) {
+    const plain = run(m);
+    const lowered = run(m, { threshold: EXCEPTION });
+    assert.ok(lowered.effectiveThresholdHundredths <= DEFAULT_THRESHOLD_HUNDREDTHS);
+    assert.ok(plain.outcome !== "match" || lowered.outcome === "match");
+  }
+  assert.equal(run(measurement(), { threshold: null }).effectiveThresholdHundredths, DEFAULT_THRESHOLD_HUNDREDTHS);
+});
+
+test("a mode that is not in the set is refused, never read as a pass", () => {
+  for (const mode of ["Enforce", "record", "", null, 1, false]) assert.throws(() => run(measurement(), { mode }), /mode/, String(mode));
+});
+
+test("the same input gives the same output with an exception and a mode, and neither input object is changed", () => {
+  const threshold = { ...EXCEPTION };
+  const before = JSON.stringify(threshold);
+  const first = run(PARTLY, { mode: "record-only", threshold });
+  assert.deepEqual(run(PARTLY, { mode: "record-only", threshold }), first);
+  assert.equal(JSON.stringify(threshold), before);
+  first.thresholdException.rationale = "changed afterwards";
+  assert.equal(threshold.rationale, EXCEPTION.rationale);
 });
