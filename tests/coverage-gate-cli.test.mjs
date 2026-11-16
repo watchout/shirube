@@ -81,12 +81,12 @@ test("the run id is read once from the environment: both set, both absent, or an
 });
 
 test("an input that does not pass is a result document with the failure, no measurement, and exit 2", async () => {
-  writeFileSync(fresh("bad-input.json"), JSON.stringify({ schemaVersion: 1, threshold: 50 }));
+  writeFileSync(fresh("bad-input.json"), JSON.stringify({ schemaVersion: 1, exclusions: 50 }));
   let measured = false;
   const r = await inProcess(["--input", "bad-input.json", "--result", "r-bad.json"], { measure: async () => { measured = true; return fakeMeasurement(); } });
   assert.deepEqual([r.code, measured], [2, false]);
   const doc = readJson("r-bad.json");
-  assert.deepEqual([doc.outcome, doc.shouldFail, doc.mode, doc.inputFailure.reasonCode, doc.inputFailure.field], ["unobservable", true, null, "INPUT_FIELD_UNKNOWN", "threshold"]);
+  assert.deepEqual([doc.outcome, doc.shouldFail, doc.mode, doc.inputFailure.reasonCode, doc.inputFailure.field], ["unobservable", true, null, "INPUT_FIELD_UNKNOWN", "exclusions"]);
   assert.match(r.stdout, /^::error::/u);
 });
 

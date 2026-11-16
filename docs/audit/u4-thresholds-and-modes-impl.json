@@ -1,0 +1,47 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "261110-shared-coverage-gate / U4 u4-thresholds-and-modes の実装監査(PR #109)。設計は統合済みの #106(設計監査 round 2 PASS、merge commit e1c2aea0)に従う。対象: `scripts/coverage-gate/` の新規2 file(`threshold.mjs`・`report-exception.mjs`)と変更4 file(`input.mjs`・`judge.mjs`・`report.mjs`・`cli.mjs`)、`tests/coverage-gate-*` の新規6 file と変更5 file、U4のcode-generation記録、functional-design と nfr-design の追跡表の行の追加、本項目集合のfile `docs/audit/u4-thresholds-and-modes-impl.json`。以下のU4TMI-xxは本項目集合の識別子であり新しい社内規格・工程・権限ではない。全8項目必須。統合の許可・Ownerの対象headの承認はこの監査の外で、監査のPASSはそれらを代替しない。配線された workflow での実行(U7)、Node 22 以外・Linux の runner での実行は本PRでは観測できず、監査も実行できないと区別し、観測できなかったものを成功と読まない。決定のURLが実在すること・書き手・本文が下げた値を許していることは門が確かめない(BR6.6)ので、この監査が公開の記録に照らして確かめる範囲を返却に書く。旧SDS工程・旧道筋・判定4/5・退役PR/own-code予算を復活させない。",
+  "items": [
+    {
+      "id": "U4TMI-01",
+      "criterion": "範囲と差分の形: base(`43819a56…`)からの差分が、`scripts/coverage-gate/` の新規2 file と変更4 file、`tests/coverage-gate-*` の試験と補助、U4のcode-generation記録、functional-design・nfr-design の追跡表の行の追加、本項目集合のfile、PR本文だけである。base の `package.json`・`.github/**`・`kit/**`・`scripts/hygiene/**`・`scripts/sds/**`・`knip.jsonc`・`.shirube/` に差分が無い(git の差分と SHA-256 の突き合わせ)。新しい npm 依存・secret・権限・外部 action・サービスが無い。除外(U5)・TypeScript と vitest(U6)・workflow への配線(U7)・運用の手引き(U8)を混ぜていない。PR本文の `json sds-pr` が risk_class R3、`changed_paths` が差分と一致し、`audit` の欄がこの実装監査の依頼・返却を指す(設計監査のものを流用していない)。差分の file 数・行数を数え直した値が PR 本文・code-summary と食い違わない。",
+      "basis": "D1/D4/D5、NFR6.1〜6.3/8.4/8.5/9.1、code-generation-plan Step 1・10・11、source-manifest.json"
+    },
+    {
+      "id": "U4TMI-02",
+      "criterion": "閾値の例外の検査の実物(BR6): `threshold.mjs` が、object でない → キーの欠落(percent・decisionUrl・rationale の順で最初の1件)→ 未知のキー → 値の順に最初の1件だけを返す。percent が JSON の数で 0 以上・既定の閾値(行100%)未満・小数第2位までで、文字列 \"95\"・100・100.01・負・3桁の小数が失敗になり、上限を別に書かず既定の閾値の定数から導く(S3)。decisionUrl が GitHub の issue または pull のコメントを指す完全一致の形(https、query なし、fragment は #issuecomment-<番号>、資格情報つき・別の host・http・前後の空白・0始まりの番号・13桁の番号は不可)に限られ、長さの確かめが形の確かめより先にある(ReDoS を避ける。長い入力でも時間が線形であることを試験が見る)。rationale が空白だけでない1行・制御文字なし・`::`・`%0A`・`%0a`・`%0D`・バッククォート・縦線を含まず・上限以内で、入力のとおりに保存される。失敗の文が入力の文字列を写さない(未知のキー名を除く)。この module が時計・乱数・環境・file・通信を持たず、import が `judge.mjs` と `order.mjs` だけである。決定のURLを読みに行かない。",
+      "basis": "FR3.2〜FR3.5、NFR1.3/4.5/5.1〜5.4、BR6.1〜BR6.6、security-design SC1・SC2・SC4・SC5・SC7"
+    },
+    {
+      "id": "U4TMI-03",
+      "criterion": "動作と判定の実物(BR7): 動作が `enforce` か `record-only` の完全一致だけで、省略は enforce、大文字小文字・別名・前後の空白・null・数・真偽は INPUT_FIELD_INVALID(field mode、終了コード2)になり、書き間違いが「落とさない」に読み替えられない。落とすかどうか(shouldFail = 区分が match でない かつ 動作が enforce)を決める code が `judge.mjs` の1か所だけで、record-only のために区分・理由コード・割合を書き換えていない(6通りの区分×動作で shouldFail だけが違う試験)。実際の閾値は例外の値(整数の hundredths)か既定で、比較は整数どうしの厳密比較。観測できない区分でも例外と effectiveThresholdHundredths が結果に載り、割合が100%でも例外を使った事実が消えない。核が時計・乱数・環境・file を持たず、同じ入力で同じ出力になる。知らない `mode` を渡された `judge` が TypeError を投げ(設計に無い防御。deviation_ledger に記録)、通常の経路では起きないこと、これを成功へ読み替えていないこと。",
+      "basis": "FR6.1〜FR6.4、NFR2.1/2.2/4.1/4.6/4.7、BR7.1〜BR7.6、reliability-design RL1・RL2・RL4・RL5、security-design SC6、S4/S5/S8"
+    },
+    {
+      "id": "U4TMI-04",
+      "criterion": "終了コードと失敗を隠さない(S8): 入口(`cli.mjs`)が shouldFail を終了コードへ写すだけで、動作で分岐しない(判定の後、0 または 1)。入力の失敗(mode・threshold の不正を含む)と入口の失敗(結果の file・summary・出力値の書き込みの失敗、予期しない例外)が、record-only でも終了コード2で、結果の文書の mode が null になるのは入力の失敗だけ。判定の後に書き込みが失敗した時は、先に書けた結果を書き直さず終了コード2(summary だけが失敗する負例を含む)。record-only で閾値未満・未計測・NOT_RUN・計測不能が終了コード0になっても、値・不足・名前つきの一覧が enforce と同じに結果の文書・summary・notice に残り、見出しは成功と書かれず、観測できない時は「Not observable (計測不能)」と明示される。環境変数・追加の引数で例外や動作を指定できない(試験)。record-only が失敗の握りつぶしの入口になっていない根拠を、差分から読める。",
+      "basis": "FR6.3/6.4、NFR4.2〜4.5/5.3/8.5、BR7.2・BR7.3・BR8.4、functional-spec 動作と結果の表、reliability-design RL1・RL3、S8"
+    },
+    {
+      "id": "U4TMI-05",
+      "criterion": "出力の実物(BR8)と後ろ向きの互換: 結果のJSON(版1)・job summary・notice・出力値が同じ1つの文書から作られ、判定を読み直さない。例外ありのとき、結果の文書に `thresholdException {decisionUrl, claimedPercent, rationale}`、summary の最初の行(見出しより前)・表の閾値の欄(lowered from 100.00%)・`Threshold exception` の節が出て、例外なしでは出ない。notice の注釈の種類が表どおり(例外ありの一致=warning、一致でなく enforce=error、一致でなく record-only=warning)で、根拠を notice に載せず決定のURLを載せる。URL・根拠は出口でも面ごとに無害化される(入口を通り抜けた形で二重の防御を試験が確かめる)。出力値の名前が7つのまま増えず、自由な文字列を載せない。例外も動作も指定しない入力の出力(4経路×4面)が、U3 の code から固定した golden とバイトまで一致する(golden は U3 の code を変える前に作られている)。置き換えた U3 の試験が4件で、いずれも同じ性質を別の不正な入力で確かめる形になっており、試験を弱めていない(逆向きの観測: 基準の U3 の試験193件中189件合格、失敗は置き換えた4件だけ)。",
+      "basis": "FR3.4/3.5/6.3/8.3/8.4、NFR2.3/4.8〜4.12/8.1〜8.4/10.2、BR8.1〜BR8.6、observability-design OB1〜OB6、security-design SC4"
+    },
+    {
+      "id": "U4TMI-06",
+      "criterion": "最小権限と信頼の境界と「門が保証しないこと」: 新しい secret・資格情報・権限・外部 action・npm 依存・サービスが無く、通信の module を import せず、トークンの名前の環境変数を読まない。入力の経路が入力JSONの threshold と mode だけ。書く場所と出力の内容(絶対path・環境変数の値・資格情報つきのURLを載せない)が U3 のまま。下げる値を受け付ける設計が、既定より厳しい値・100%以上を例外にせず、閾値の緩和の窓口を広げていない。決定のURLの実在・書き手・本文が下げた値を許しているかを門が確かめないこと(BR6.6)が、PR本文と結果の文書の事実(URL・値・根拠・実際の閾値・動作)から独立の監査が確かめられる形で残っている。この監査の返却・arc の答え・中継の通知を Owner の許可に読み替えていない。公開 repo の fixture が架空の owner・repo・番号・根拠だけで、gitleaks を踏む形を使っていない。",
+      "basis": "FR3.3、NFR5.1〜5.6/6、security-design SC1〜SC7、escalation-policy(セキュリティの設計の変更)、プロジェクトの訂正の記録(門で証明できないことの補い方)"
+    },
+    {
+      "id": "U4TMI-07",
+      "criterion": "構造と知識の重複: 依存の向きが一方向で循環せず(dependency-cruiser 違反なし)、動作の集合・既定(MODES・DEFAULT_MODE)と閾値の既定は `judge.mjs`、例外の上限・URLの形・許すキーは `threshold.mjs`、例外・動作の表示の文型と注釈の種類の表は `report-exception.mjs` だけが持ち、literal が持ち主以外に現れない(構造の試験)。shouldFail を決める code が judge 以外に無い(構造の試験)。`scripts/coverage-gate/` の15 file がいずれも300行以内、ESLint の関数50行・複雑さ10を保ち、jscpd の重複0、OWN-01 が上限内。`knip.jsonc` や検査の設定を変えず、`threshold.mjs` の試験だけが使う5つの export に `/** @public */` を付けた判断が deviation_ledger に「採った判断」と「採らなかった代替」で書かれている。MODE を `MODES[0]` から作る判断(同じ値を2か所に書かない)が記録されている。作者が基準を緩めて通す道が無い。",
+      "basis": "S2/S3/S4、NFR2.1/3.1〜3.3/9.1〜9.3、logical-components LC1〜LC5、code-generation-plan Step 10"
+    },
+    {
+      "id": "U4TMI-08",
+      "criterion": "TDD・網羅率・観測の正直さ・復旧・記録の整合: 部品ごとに Red の commit(失敗を確かめた出力が記録にある。判定と例外の検査の Red は読み込みの失敗で、個々の件の失敗でないと書かれている)が Green の commit より先にある。試験は node:test と assert/strict、skip と todo が無い。この head で全体の `npm test` が1109件合格・失敗0・skip0である観測と、CI の `test`・hygiene の結果が記録され、CI の結果を手元の観測と混ぜていない。行の網羅率が `scripts/coverage-gate/` の15 file すべてで100%で、門自身を `scripts/coverage-gate/` に向けた結果(1286/1286、未計測0・試験の未実行0・失敗0)と Node 組込みの lcov の別計算が一致し、対象0件・記録なし・不一致・申告だけの値を成功に数えていない。配線された workflow での実行(U7)、Node 22 以外・Linux の runner での実行、この head の監査・受領・Owner の exact-head・統合が「観測していない」と書かれ、成功と書かれていない。見直し役とサブエージェントを呼んでいない(区分 none)ことが書かれ、見直し済みと書かれていない。変更が追加と置き換えだけで取り消すと U3 の状態に戻り、どの workflow も門を呼ばないので統合しても CI の挙動は変わらない。作業場の木へ写した file の事実が code-summary に正直に書かれている。code-summary・traceability.json(102行)・source-manifest.json・self-coverage の2 file が差分と食い違わず、含めた記録が `audit/`・`.aidlc-engine/`・段の日記・state/cursor・非公開の土台の識別子・私的な会話・秘密・モデル名・絶対path を含まない。作者以外の suite-lead が統合し、1単位1PR。DB を持たないため S1・DB 基準は非該当、S7 は非該当。",
+      "basis": "D2/D5、S5/S6/S8、team実践(TDD、行の網羅率100%、観測値の機械可読な記録)、NFR7.1〜7.6/8.3〜8.5/10.1、observability-design OB5、cicd-pipeline、code-generation-plan Steps 1〜11、unit-test-instructions、protected-surface-owner-gate R1、aidlc-only §2"
+    }
+  ]
+}

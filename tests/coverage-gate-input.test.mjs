@@ -14,7 +14,7 @@ const code = (t) => fails(t).reasonCode;
 test("a complete input is accepted and gets the default time limits", () => {
   const r = checkInput(text());
   assert.equal(r.ok, true);
-  assert.deepEqual(r.input, { schemaVersion: 1, shape: "node-builtin", declaredTargets: ["src"], testTargets: ["tests"], deadlineSeconds: 600, totalBudgetSeconds: 900 });
+  assert.deepEqual(r.input, { schemaVersion: 1, shape: "node-builtin", declaredTargets: ["src"], testTargets: ["tests"], deadlineSeconds: 600, totalBudgetSeconds: 900, mode: "enforce", threshold: null });
   assert.deepEqual([DEFAULT_DEADLINE_SECONDS, DEFAULT_TOTAL_BUDGET_SECONDS], [600, 900]);
 });
 
@@ -43,7 +43,7 @@ test("schemaVersion must be the integer 1", () => {
 });
 
 test("keys this version does not know are refused at every level, including the later-unit fields", () => {
-  for (const key of ["threshold", "mode", "exclusions", "measurement", "extra"]) {
+  for (const key of ["exclusions", "measurement", "extra", "Threshold", "Mode", "thresholds", "modes"]) {
     const f = fails(text({ [key]: 1 }));
     assert.deepEqual([f.reasonCode, f.field], ["INPUT_FIELD_UNKNOWN", key]);
     assert.ok(f.detail.includes(key));
@@ -129,4 +129,80 @@ test("a failure always has a code, a field and a plain sentence", () => {
 test("a test file is recognized by its basename pattern", () => {
   for (const path of ["a.test.js", "t/a.test.mjs", "x/y/z.test.cjs", "-x.test.mjs"]) assert.equal(isTestFile(path), true, path);
   for (const path of ["a.js", "a.test.ts", "t/atest.mjs", "a.test.mjs.bak", "tests/helpers.mjs", "a.test"]) assert.equal(isTestFile(path), false, path);
+});
+
+// U4: the threshold exception and the mode (BR6.1, BR6.2, BR7.1). Every value here is fictional.
+const URL_OK = "https://github.com/example-org/example-repo/issues/12#issuecomment-345";
+const EXCEPTION = { percent: 95, decisionUrl: URL_OK, rationale: "Example rationale for a lowered line." };
+const where = (t) => [fails(t).reasonCode, fails(t).field];
+
+test("threshold and mode are known keys now; exclusions and measurement are still unknown", () => {
+  assert.equal(checkInput(text({ mode: "enforce", threshold: EXCEPTION })).ok, true);
+  for (const key of ["exclusions", "measurement"]) assert.deepEqual(where(text({ mode: "enforce", [key]: 1 })), ["INPUT_FIELD_UNKNOWN", key]);
+  assert.deepEqual(where(text({ threshold: { ...EXCEPTION, extra: 1 } })), ["INPUT_FIELD_UNKNOWN", "threshold.extra"]);
+  assert.deepEqual(where(text({ threshold: { ...EXCEPTION, exclusions: [] } })), ["INPUT_FIELD_UNKNOWN", "threshold.exclusions"]);
+});
+
+test("an input with no threshold and no mode is the old input plus mode enforce and threshold null, nothing else", () => {
+  const r = checkInput(text());
+  assert.deepEqual(Object.keys(r.input), ["schemaVersion", "shape", "declaredTargets", "testTargets", "deadlineSeconds", "totalBudgetSeconds", "mode", "threshold"]);
+  assert.deepEqual([r.input.mode, r.input.threshold], ["enforce", null]);
+});
+
+test("mode: enforce and record-only are accepted exactly; an omitted mode is enforce", () => {
+  for (const mode of ["enforce", "record-only"]) assert.deepEqual([checkInput(text({ mode })).ok, checkInput(text({ mode })).input.mode], [true, mode]);
+  assert.equal(checkInput(text()).input.mode, "enforce");
+});
+
+test("mode: any other value is refused as invalid and is never read as enforce or record-only", () => {
+  for (const mode of ["fail", "Enforce", "ENFORCE", "record", "record_only", "Record-Only", " enforce", "enforce ", "record-only\n", "", null, 0, 1, true, false, [], ["enforce"], {}]) {
+    assert.deepEqual(where(text({ mode })), ["INPUT_FIELD_INVALID", "mode"], JSON.stringify(mode));
+  }
+});
+
+test("threshold: a complete exception is carried into the input as whole hundredths, with the other two kept as given", () => {
+  const r = checkInput(text({ mode: "record-only", threshold: { ...EXCEPTION, percent: 99.99 } }));
+  assert.deepEqual([r.ok, r.input.mode], [true, "record-only"]);
+  assert.deepEqual(r.input.threshold, { percentHundredths: 9999, decisionUrl: URL_OK, rationale: EXCEPTION.rationale });
+});
+
+test("threshold: each failure has its own reason code and field, as the exception check gives them", () => {
+  const cases = [
+    [null, ["INPUT_FIELD_INVALID", "threshold"]], [[], ["INPUT_FIELD_INVALID", "threshold"]], ["95", ["INPUT_FIELD_INVALID", "threshold"]], [95, ["INPUT_FIELD_INVALID", "threshold"]],
+    [{}, ["INPUT_FIELD_MISSING", "threshold.percent"]], [{ percent: 95, rationale: "r" }, ["INPUT_FIELD_MISSING", "threshold.decisionUrl"]], [{ percent: 95, decisionUrl: URL_OK }, ["INPUT_FIELD_MISSING", "threshold.rationale"]],
+    [{ ...EXCEPTION, percent: 100 }, ["INPUT_FIELD_INVALID", "threshold.percent"]], [{ ...EXCEPTION, percent: "95" }, ["INPUT_FIELD_INVALID", "threshold.percent"]],
+    [{ ...EXCEPTION, decisionUrl: "http://github.com/a/b/issues/1#issuecomment-2" }, ["INPUT_FIELD_INVALID", "threshold.decisionUrl"]],
+    [{ ...EXCEPTION, rationale: "a | b" }, ["INPUT_FIELD_INVALID", "threshold.rationale"]], [{ ...EXCEPTION, rationale: "" }, ["INPUT_FIELD_INVALID", "threshold.rationale"]],
+  ];
+  for (const [threshold, expected] of cases) assert.deepEqual(where(text({ threshold })), expected, JSON.stringify(threshold));
+});
+
+test("a failed exception never falls back to the default line or to no exception: the input is refused whole", () => {
+  for (const threshold of [{ percent: 95 }, { ...EXCEPTION, decisionUrl: "" }, { ...EXCEPTION, percent: 100 }]) {
+    const r = checkInput(text({ mode: "record-only", threshold }));
+    assert.equal(r.ok, false);
+    assert.equal(r.input, undefined);
+  }
+});
+
+test("record-only does not soften an input failure: the input is refused in either mode", () => {
+  for (const mode of ["enforce", "record-only"]) {
+    assert.equal(checkInput(text({ mode, testTargets: [] })).ok, false);
+    assert.equal(checkInput(text({ mode, threshold: { percent: 95 } })).ok, false);
+    assert.equal(checkInput(text({ mode, extra: 1 })).ok, false);
+  }
+});
+
+test("the checks run in a fixed order: the time limits, then mode, then threshold", () => {
+  assert.deepEqual(where(text({ deadlineSeconds: 0, mode: "fail", threshold: null })), ["INPUT_FIELD_INVALID", "deadlineSeconds"]);
+  assert.deepEqual(where(text({ totalBudgetSeconds: 0, mode: "fail", threshold: null })), ["INPUT_FIELD_INVALID", "totalBudgetSeconds"]);
+  assert.deepEqual(where(text({ mode: "fail", threshold: null })), ["INPUT_FIELD_INVALID", "mode"]);
+  assert.deepEqual(where(text({ mode: "enforce", threshold: null })), ["INPUT_FIELD_INVALID", "threshold"]);
+  assert.deepEqual(where(text({ threshold: { percent: 95 }, extra: 1 })), ["INPUT_FIELD_UNKNOWN", "extra"]);
+});
+
+test("the input text with prototype-looking names inside threshold is refused without changing any object", () => {
+  const body = `{"schemaVersion":1,"shape":"node-builtin","denominator":{"targets":["src"]},"testTargets":["tests"],"threshold":{"percent":95,"decisionUrl":"${URL_OK}","rationale":"r","__proto__":{"polluted":true}}}`;
+  assert.deepEqual(where(body), ["INPUT_FIELD_UNKNOWN", "threshold.__proto__"]);
+  assert.equal({}.polluted, undefined);
 });

@@ -1,6 +1,7 @@
 // Builds the one result document and renders every output from it: the JSON file, the job summary, the notice line and
 // the output values. Pure: no clock, environment or file. The set of codes comes from the judge; this file only words them.
-import { SCHEMA_VERSION } from "./judge.mjs";
+import { DEFAULT_THRESHOLD_HUNDREDTHS, SCHEMA_VERSION } from "./judge.mjs";
+import { exceptionSection, headLines, modeLines, noticeExtras, noticeLevel, outcomeLabel, refineHeading, thresholdCell } from "./report-exception.mjs";
 import { sanitizeNotice, sanitizeSummaryText, summaryPath } from "./sanitize.mjs";
 
 export const SUMMARY_LIST_LIMIT = 20;
@@ -40,6 +41,8 @@ export function formatPercent(hundredths) {
 }
 
 const orNull = (value, make) => (value === null ? null : make(value));
+const DEFAULT_PERCENT = formatPercent(DEFAULT_THRESHOLD_HUNDREDTHS);
+const exceptionField = ({ decisionUrl, claimedHundredths, rationale }) => ({ decisionUrl, claimedPercent: formatPercent(claimedHundredths), rationale });
 
 function judgmentFields(verdict) {
   return {
@@ -51,7 +54,7 @@ function judgmentFields(verdict) {
     totalLines: verdict.totalLines,
     lineRatioPercent: orNull(verdict.lineRatioHundredths, formatPercent),
     effectiveThresholdPercent: formatPercent(verdict.effectiveThresholdHundredths),
-    thresholdException: verdict.thresholdException,
+    thresholdException: orNull(verdict.thresholdException, exceptionField),
   };
 }
 
@@ -125,16 +128,18 @@ function inputFailureLines(failure) {
 
 export function renderSummary(document) {
   const ratio = document.lineRatioPercent === null ? "not measured" : `${document.lineRatioPercent}%`;
-  const threshold = document.effectiveThresholdPercent === null ? "not applied" : `${document.effectiveThresholdPercent}%`;
   return [
-    `## Coverage gate: ${HEADINGS[document.outcome]}`,
+    ...headLines(document, DEFAULT_PERCENT),
+    `## Coverage gate: ${refineHeading(document, HEADINGS[document.outcome])}`,
     "",
     "| Item | Value |",
     "|---|---|",
     `| Line coverage | ${ratio} |`,
-    `| Threshold | ${threshold} |`,
+    `| Threshold | ${thresholdCell(document, DEFAULT_PERCENT)} |`,
     `| Mode | ${document.mode ?? "not applied"} |`,
     `| Exclusions | ${document.exclusionCount} |`,
+    ...modeLines(document),
+    ...exceptionSection(document),
     "",
     "Reasons:",
     ...document.reasonCodes.map((code) => `- ${code}: ${MESSAGES[code]}`),
@@ -146,10 +151,14 @@ export function renderSummary(document) {
   ].join("\n");
 }
 
-export function renderNotice(document) {
-  if (document.outcome === "match") return `::notice::${sanitizeNotice(`Coverage gate: match, ${document.lineRatioPercent}% of ${document.effectiveThresholdPercent}% required.`)}`;
+function noticeText(document) {
+  if (document.outcome === "match") return `Coverage gate: match, ${document.lineRatioPercent}% of ${document.effectiveThresholdPercent}% required.`;
   const ratio = document.lineRatioPercent === null ? "" : ` Line coverage ${document.lineRatioPercent}% of ${document.effectiveThresholdPercent}% required.`;
-  return `::error::${sanitizeNotice(`Coverage gate: ${document.outcome} (${document.reasonCodes.join(", ")}).${ratio}`)}`;
+  return `Coverage gate: ${outcomeLabel(document)} (${document.reasonCodes.join(", ")}).${ratio}`;
+}
+
+export function renderNotice(document) {
+  return `::${noticeLevel(document)}::${sanitizeNotice(`${noticeText(document)}${noticeExtras(document)}`)}`;
 }
 
 export function renderOutputs(document) {

@@ -10,11 +10,11 @@ import { GATE_DIR } from "./coverage-gate-fixtures.mjs";
 const FILES = readdirSync(GATE_DIR).filter((name) => name.endsWith(".mjs")).sort();
 const source = (name) => readFileSync(join(GATE_DIR, name), "utf8");
 // The files that decide or format: they may not read a clock, a random source, the environment or a file.
-const CORE = ["judge.mjs", "report.mjs", "input.mjs", "order.mjs", "sanitize.mjs", "lcov.mjs", "events.mjs"];
+const CORE = ["judge.mjs", "report.mjs", "report-exception.mjs", "threshold.mjs", "input.mjs", "order.mjs", "sanitize.mjs", "lcov.mjs", "events.mjs"];
 const importsOf = (text) => [...text.matchAll(/^(?:import|export)\s[^;]*?from\s+"([^"]+)"/gmu)].map((m) => m[1]);
 
 test("the gate is made of the expected files", () => {
-  assert.deepEqual(FILES, ["cli.mjs", "emit.mjs", "events-reporter.mjs", "events.mjs", "input.mjs", "judge.mjs", "lcov.mjs", "measure-node.mjs", "order.mjs", "report.mjs", "resolve.mjs", "runner.mjs", "sanitize.mjs"]);
+  assert.deepEqual(FILES, ["cli.mjs", "emit.mjs", "events-reporter.mjs", "events.mjs", "input.mjs", "judge.mjs", "lcov.mjs", "measure-node.mjs", "order.mjs", "report-exception.mjs", "report.mjs", "resolve.mjs", "runner.mjs", "sanitize.mjs", "threshold.mjs"]);
 });
 
 test("the core files take no clock, no random source, no environment and no file", () => {
@@ -67,9 +67,35 @@ test("a rule's value lives in one file: the threshold, the time limits, the Node
   assert.equal(Object.keys(REASON_CODES).length, 21);
 });
 
+// U4: the modes and the exception rule each have one owner, and only the judge decides whether a result fails the job.
+const holdersOf = (pattern) => FILES.filter((name) => pattern.test(source(name))).sort();
+
+test("the mode names live in the judge, and the exception limits and shape live in the threshold check", () => {
+  assert.deepEqual(holdersOf(/"record-only"/u), ["judge.mjs"]);
+  assert.deepEqual(holdersOf(/"enforce"/u), ["judge.mjs"]);
+  assert.deepEqual(holdersOf(/\bRATIONALE_MAX_LENGTH\s*=|\bDECISION_URL_MAX_LENGTH\s*=|\bDECISION_URL_SHAPE\s*=|\bRATIONALE_FORBIDDEN\s*=|\bTHRESHOLD_KEYS\s*=/u), ["threshold.mjs"]);
+  assert.deepEqual(holdersOf(/Record-only mode: this result is recorded/u), ["report-exception.mjs"]);
+});
+
+test("only the judge decides that a result fails the job: the others pass its answer on, or set it for an input failure", () => {
+  assert.deepEqual(holdersOf(/\bfailsJob\b/u), ["judge.mjs"]);
+  for (const name of FILES.filter((file) => file !== "judge.mjs")) {
+    for (const line of source(name).split("\n").filter((text) => /\bshouldFail\b/u.test(text))) {
+      assert.match(line, /shouldFail: (?:verdict\.shouldFail|true),|"should-fail", String\(document\.shouldFail\)|Number\(document\.shouldFail\)/u, `${name}: ${line.trim()}`);
+    }
+  }
+});
+
+test("the exception check holds no network, no lookup of the decision and no clock: it only looks at the text", () => {
+  const text = source("threshold.mjs");
+  const code = text.split("\n").filter((line) => !line.trimStart().startsWith("//")).join("\n");
+  assert.deepEqual(importsOf(text).sort(), ["./judge.mjs", "./order.mjs"]);
+  assert.doesNotMatch(code, /\b(?:fetch|URL|XMLHttpRequest|Date)\b|process\.|node:/u);
+});
+
 test("tests of the gate contain no skipped or placeholder test", () => {
   const tests = readdirSync(join(GATE_DIR, "../../tests")).filter((name) => name.startsWith("coverage-gate-") && name.endsWith(".test.mjs"));
-  assert.ok(tests.length >= 13);
+  assert.ok(tests.length >= 17);
   for (const name of tests) {
     const text = readFileSync(join(GATE_DIR, "../../tests", name), "utf8");
     assert.doesNotMatch(text, /\b(?:test|it|describe|suite)\.(?:skip|todo)\s*\(|assert\.ok\(true\)|assert\.equal\(true, true\)/u, name);

@@ -70,7 +70,8 @@ async function produceDocument({ cwd, runId, inputPath, measure }) {
   if (!resolved.ok) return buildInputFailureDocument({ runId, failure: resolved.failure });
   const { denominatorPaths, requiredTestPaths } = resolved;
   const measurement = await measure({ cwd, runId, input: checked.input, requiredTestPaths });
-  const verdict = judge({ denominatorPaths, requiredTestPaths, measurement });
+  const { mode, threshold } = checked.input;
+  const verdict = judge({ denominatorPaths, requiredTestPaths, measurement, mode, threshold });
   return buildDocument({ runId, declaredTargets: checked.input.declaredTargets, denominatorPaths, measurement, verdict });
 }
 

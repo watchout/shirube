@@ -1,0 +1,58 @@
+{
+  "stage": "code-generation",
+  "unit": "u4-thresholds-and-modes",
+  "version": 1,
+  "writes": [
+    {
+      "path": "scripts/coverage-gate/threshold.mjs"
+    },
+    {
+      "path": "scripts/coverage-gate/report-exception.mjs"
+    },
+    {
+      "path": "scripts/coverage-gate/input.mjs"
+    },
+    {
+      "path": "scripts/coverage-gate/judge.mjs"
+    },
+    {
+      "path": "scripts/coverage-gate/report.mjs"
+    },
+    {
+      "path": "scripts/coverage-gate/cli.mjs"
+    },
+    {
+      "path": "tests/coverage-gate-cli-modes.test.mjs"
+    },
+    {
+      "path": "tests/coverage-gate-cli.test.mjs"
+    },
+    {
+      "path": "tests/coverage-gate-golden-text.mjs"
+    },
+    {
+      "path": "tests/coverage-gate-golden.mjs"
+    },
+    {
+      "path": "tests/coverage-gate-golden.test.mjs"
+    },
+    {
+      "path": "tests/coverage-gate-input.test.mjs"
+    },
+    {
+      "path": "tests/coverage-gate-judge.test.mjs"
+    },
+    {
+      "path": "tests/coverage-gate-report-exception.test.mjs"
+    },
+    {
+      "path": "tests/coverage-gate-report.test.mjs"
+    },
+    {
+      "path": "tests/coverage-gate-structure.test.mjs"
+    },
+    {
+      "path": "tests/coverage-gate-threshold.test.mjs"
+    }
+  ]
+}

@@ -5,8 +5,15 @@ import { createHash } from "node:crypto";
 import { sortPaths } from "./order.mjs";
 
 export const SCHEMA_VERSION = 1;
+// The modes. "enforce" fails the job on anything but a match; "record-only" records the same result and never fails.
+// The names are written here and nowhere else.
+const ENFORCE = "enforce";
+export const RECORD_ONLY = "record-only";
+export const MODES = Object.freeze([ENFORCE, RECORD_ONLY]);
+export const DEFAULT_MODE = MODES[0];
+// The name U3 used for the only mode there was; it is the default.
 /** @public */
-export const MODE = "enforce";
+export const MODE = MODES[0];
 /** @public */
 export const OUTCOMES = Object.freeze(["match", "mismatch", "unobservable"]);
 /** @public */
@@ -47,17 +54,29 @@ const CAUSE_TO_CODE = Object.freeze({
   child_process_not_countable: "CHILD_PROCESS_NOT_COUNTABLE",
 });
 
-function unobservableVerdict(reasonCodes) {
+// What the caller asked for, fixed before anything is measured: the mode, the line the comparison uses, and the
+// exception (if any) that lowered it. An exception is recorded even when the run turns out unobservable or fully covered.
+function settings(mode, threshold) {
+  if (!MODES.includes(mode)) throw new TypeError("mode is not one of the known modes");
+  if (threshold === null) return { mode, effectiveThresholdHundredths: DEFAULT_THRESHOLD_HUNDREDTHS, thresholdException: null };
+  const { percentHundredths, decisionUrl, rationale } = threshold;
+  return { mode, effectiveThresholdHundredths: percentHundredths, thresholdException: { decisionUrl, claimedHundredths: percentHundredths, rationale } };
+}
+
+// The one place that decides whether the job fails: anything but a match, and only in enforce mode.
+const failsJob = (outcome, mode) => outcome !== "match" && mode === ENFORCE;
+
+function unobservableVerdict(reasonCodes, { mode, effectiveThresholdHundredths, thresholdException }) {
   return {
     outcome: "unobservable",
-    shouldFail: true,
-    mode: MODE,
+    shouldFail: failsJob("unobservable", mode),
+    mode,
     reasonCodes,
     coveredLines: null,
     totalLines: null,
     lineRatioHundredths: null,
-    effectiveThresholdHundredths: DEFAULT_THRESHOLD_HUNDREDTHS,
-    thresholdException: null,
+    effectiveThresholdHundredths,
+    thresholdException,
     unmeasuredPaths: null,
     notRunPaths: null,
     perFile: null,
@@ -106,30 +125,31 @@ function unobservableCodes(measurement) {
   return codes;
 }
 
-export function judge({ denominatorPaths, requiredTestPaths, measurement }) {
+export function judge({ denominatorPaths, requiredTestPaths, measurement, mode = DEFAULT_MODE, threshold = null }) {
+  const chosen = settings(mode, threshold);
   const codes = unobservableCodes(measurement);
-  if (codes.length > 0) return unobservableVerdict(codes);
+  if (codes.length > 0) return unobservableVerdict(codes, chosen);
   const denominator = new Set(denominatorPaths);
   const measured = new Set(measurement.measuredPaths);
   const { perFile, coveredLines, totalLines, recordsSha256 } = summarize(groupTargetRecords(measurement.records, denominator, measured));
-  if (totalLines === 0) return unobservableVerdict(["NO_RECORDS"]);
+  if (totalLines === 0) return unobservableVerdict(["NO_RECORDS"], chosen);
   const unmeasuredPaths = setDifference(denominatorPaths, measurement.measuredPaths);
   const notRunPaths = setDifference(requiredTestPaths, measurement.testFilesRun);
   const reasonCodes = [];
   if (unmeasuredPaths.length > 0) reasonCodes.push("UNMEASURED_FILES");
   if (notRunPaths.length > 0) reasonCodes.push("TESTS_NOT_RUN");
-  if (coveredLines * 10000 < totalLines * DEFAULT_THRESHOLD_HUNDREDTHS) reasonCodes.push("BELOW_THRESHOLD");
+  if (coveredLines * 10000 < totalLines * chosen.effectiveThresholdHundredths) reasonCodes.push("BELOW_THRESHOLD");
   const outcome = reasonCodes.length === 0 ? "match" : "mismatch";
   return {
     outcome,
-    shouldFail: outcome !== "match",
-    mode: MODE,
+    shouldFail: failsJob(outcome, chosen.mode),
+    mode: chosen.mode,
     reasonCodes,
     coveredLines,
     totalLines,
     lineRatioHundredths: floorDiv(coveredLines * 10000, totalLines),
-    effectiveThresholdHundredths: DEFAULT_THRESHOLD_HUNDREDTHS,
-    thresholdException: null,
+    effectiveThresholdHundredths: chosen.effectiveThresholdHundredths,
+    thresholdException: chosen.thresholdException,
     unmeasuredPaths,
     notRunPaths,
     perFile,

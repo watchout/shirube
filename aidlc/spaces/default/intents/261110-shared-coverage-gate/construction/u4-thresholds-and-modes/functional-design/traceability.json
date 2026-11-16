@@ -31,5 +31,18 @@
     { "id": "AC6.3.2", "status": "OK", "target": "BR7.6, BR8.6" },
     { "id": "AC6.3.3", "status": "OK", "target": "BR8.6" }
   ],
-  "reverse": []
+  "reverse": [
+    { "id": "BR1.3", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR1.8", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR3.1", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR3.6", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR3.7", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR3.8", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR4.2", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR4.4", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR4.5", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR4.7", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR5.3", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR5.4", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" }
+  ]
 }
