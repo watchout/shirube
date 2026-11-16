@@ -1,0 +1,70 @@
+{
+  "stage": "code-generation",
+  "unit": "u1-ci-record-admission",
+  "version": 1,
+  "writes": [
+    {
+      "path": "scripts/sds/ci-record-policy.mjs"
+    },
+    {
+      "path": "scripts/sds/ci-record-input.mjs"
+    },
+    {
+      "path": "scripts/sds/ci-record-projection.mjs"
+    },
+    {
+      "path": "scripts/sds/ci-record-evidence.mjs"
+    },
+    {
+      "path": "scripts/sds/ci-record-design-audit.mjs"
+    },
+    {
+      "path": "scripts/sds/ci-record-admission.mjs"
+    },
+    {
+      "path": "scripts/sds/ci-record-envelope.mjs"
+    },
+    {
+      "path": "scripts/sds/gate.mjs"
+    },
+    {
+      "path": "scripts/hygiene/audit-admission.mjs"
+    },
+    {
+      "path": "tests/ci-record-policy.test.mjs"
+    },
+    {
+      "path": "tests/ci-record-input.test.mjs"
+    },
+    {
+      "path": "tests/ci-record-projection.test.mjs"
+    },
+    {
+      "path": "tests/ci-record-evidence.test.mjs"
+    },
+    {
+      "path": "tests/ci-record-design-audit.test.mjs"
+    },
+    {
+      "path": "tests/ci-record-admission.test.mjs"
+    },
+    {
+      "path": "tests/ci-record-envelope.test.mjs"
+    },
+    {
+      "path": "tests/ci-record-entry.test.mjs"
+    },
+    {
+      "path": "tests/ci-record-integration.test.mjs"
+    },
+    {
+      "path": "tests/ci-record-security.test.mjs"
+    },
+    {
+      "path": "tests/ci-record-fixtures.mjs"
+    },
+    {
+      "path": "tests/sds-gate-graphql.test.mjs"
+    }
+  ]
+}

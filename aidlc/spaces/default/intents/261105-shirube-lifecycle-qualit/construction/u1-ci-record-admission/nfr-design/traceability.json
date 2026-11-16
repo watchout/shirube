@@ -1,0 +1,31 @@
+{
+  "stage": "nfr-design",
+  "unit": "u1-ci-record-admission",
+  "upstream_ids": [
+    "NFR1.1", "NFR1.2", "NFR2.1", "NFR2.2", "NFR2.3",
+    "NFR3.1", "NFR3.2", "NFR4.1", "NFR4.2", "NFR5.1",
+    "NFR5.2", "NFR6.1", "NFR6.2", "NFR8.1", "NFR8.2",
+    "NFR9.1", "NFR9.2", "NFR10.1", "NFR10.2"
+  ],
+  "coverage": [
+    {"id": "NFR1.1", "status": "OK", "target": "SOL9 — 検証できる境界 (logical-components.md)"},
+    {"id": "NFR1.2", "status": "OK", "target": "SOL9 — 検証できる境界 (logical-components.md)"},
+    {"id": "NFR2.1", "status": "OK", "target": "SOL2 — 公開viewの境界検査 (security-design.md)"},
+    {"id": "NFR2.2", "status": "OK", "target": "SOL2 — 公開viewの境界検査 (security-design.md)"},
+    {"id": "NFR2.3", "status": "OK", "target": "SOL3 — 固定規則と純粋核 (logical-components.md); SOL7 — 完全inline出力と診断 (observability-design.md)"},
+    {"id": "NFR3.1", "status": "OK", "target": "SOL2 — 公開viewの境界検査 (security-design.md)"},
+    {"id": "NFR3.2", "status": "OK", "target": "SOL2 — 公開viewの境界検査 (security-design.md)"},
+    {"id": "NFR4.1", "status": "OK", "target": "SOL5 — 完全結果と前処理診断の分離 (reliability-design.md)"},
+    {"id": "NFR4.2", "status": "OK", "target": "SOL4 — 評価の分離 (scalability-design.md)"},
+    {"id": "NFR5.1", "status": "OK", "target": "SOL3 — 固定規則と純粋核 (logical-components.md)"},
+    {"id": "NFR5.2", "status": "OK", "target": "SOL7 — 完全inline出力と診断 (observability-design.md)"},
+    {"id": "NFR6.1", "status": "OK", "target": "SOL1 — 有限な取得 (performance-design.md)"},
+    {"id": "NFR6.2", "status": "OK", "target": "SOL6 — 一回実行と停止 (reliability-design.md)"},
+    {"id": "NFR8.1", "status": "OK", "target": "SOL8 — 版と互換の受入境界 (logical-components.md)"},
+    {"id": "NFR8.2", "status": "OK", "target": "SOL8 — 版と互換の受入境界 (logical-components.md)"},
+    {"id": "NFR9.1", "status": "OK", "target": "SOL7 — 完全inline出力と診断 (observability-design.md)"},
+    {"id": "NFR9.2", "status": "OK", "target": "SOL7 — 完全inline出力と診断 (observability-design.md)"},
+    {"id": "NFR10.1", "status": "OK", "target": "SOL3 — 固定規則と純粋核 (logical-components.md); SOL8 — 版と互換の受入境界 (logical-components.md)"},
+    {"id": "NFR10.2", "status": "OK", "target": "SOL5 — 完全結果と前処理診断の分離 (reliability-design.md); SOL6 — 一回実行と停止 (reliability-design.md)"}
+  ]
+}

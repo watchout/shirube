@@ -1,0 +1,57 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "261105-shirube-lifecycle-qualit / U1 u1-ci-record-admission の実装監査（同じ PR #101。設計監査 round 2 PASS の head 6795535a に公開 main e1c2aea0 を取り込み、実装と作る段の記録を足した head）。対象: scripts/sds/ci-record-{policy,input,projection,evidence,design-audit,admission,envelope}.mjs（新規 7）、scripts/sds/gate.mjs と scripts/hygiene/audit-admission.mjs（U1 用途の分岐と共有 export の限定変更）、tests/ci-record-*.test.mjs 10 file と tests/ci-record-fixtures.mjs、U1 の code-generation 記録（plan・questions・code-summary・source-manifest・traceability・unit-test-instructions）、本項目集合の file。設計は設計監査（https://github.com/watchout/shirube/pull/101#issuecomment-6736186362）で確かめ済みの docs/audit/u1-ci-record-admission-design.json の 18 項目に従う。以下の U1IM-xx は本項目集合の識別子であり新しい社内規格・工程・権限ではない。全項目必須。実 PR/CI の統合 2 件、公開掲載 JSON、別 workflow は計画の残件で、この PR に含まれない。残件を完了扱いにしていないかを監査する。統合の許可・Owner の対象 head の承認はこの監査の外で、PASS はそれらを代替しない。旧 SDS 工程・旧道筋・判定 4/5・退役 PR/own-code 予算を復活させない。",
+  "items": [
+    {
+      "id": "U1IM-01",
+      "criterion": "範囲と差分の形: 設計監査の head（6795535a）からの差分が、上の対象に挙げた file だけである。.github/ 配下・kit/・package.json・lockfile・.shirube/・既存の試験 file の期待値・hygiene profile に触れていない。新しい実行時 npm 依存・secret・権限・外部 action が無い。PR 本文の json sds-pr が risk_class R3、changed_paths が実差分と一致し、audit の欄が設計監査の返却を指していることが誤認されない。audit/ と .aidlc-engine/ が PR に無い。",
+      "basis": "D1/D5、source-manifest.json、team の PR 規則"
+    },
+    {
+      "id": "U1IM-02",
+      "criterion": "純粋核と明示入力（S4/S3）: ci-record-admission・policy・projection・envelope・design-audit が Date.now・new Date() の引数なし・Math.random・randomUUID・環境変数・fs/ネットワークを自分で取得しない。now・assessmentId・観測は呼出側が渡す。閾値・理由コード・肯定値・stage 出力定義・固定 profile が ci-record-policy の 1 箇所にあり、他 module が literal で再定義していない。",
+      "basis": "D2/D3、S3/S4、FD BR 純粋核"
+    },
+    {
+      "id": "U1IM-03",
+      "criterion": "四条件の判定と三値（S5/S8）: 必要記録/承認・適用 READY・実内容 digest・同 PR 先行設計監査の四条件だけを集約し、FAIL が UNKNOWN より優先し、必須の UNKNOWN を PASS に読み替えない。観測できず・部分入力・未知の critical/major・予算超過・空の必須集合が PASS にならない。READY は段完了承認日で 2026-11-06 Asia/Tokyo を含む境界を使い、閾値後の不足・再開/再承認を免除しない。負例が試験にある。 受け入れる計画の表は段の定義から決まる下限（construction は見直しの実施、reverse-engineering・code-generation 以外は要約の確認、construction 以外は完了）を下回れず、下回れば INPUT_UNOBSERVABLE の UNKNOWN になる。Accept as-is は projection が正式に提示された選択にだけ残す印（acceptAsIsOffered）がある時だけ承認として数え、印の無い Accept as-is は REQUIRED_RECORD_MISSING になる。両方の正例と負例が試験にある。 受け入れる計画の表は、設計監査で PASS した設計 head の code-generation-plan.md の表と、code-generation 以外の全段で 5 つの欄が一致する時だけ受け入れる（独立の公開の参照）。参照が読めない・表が無い・空・段の欠け・重複・designHead が object id でない時は PASS でなく INPUT_UNOBSERVABLE の UNKNOWN になる。表と記録を一緒に変えた反例と、参照が無い反例が試験にあり、結び付けを外すと失敗する。",
+      "basis": "D3/D4/D5/D11、S5/S8"
+    },
+    {
+      "id": "U1IM-04",
+      "criterion": "証拠の取得と予算: ci-record-evidence の取得が read-only GET、注入可能な transport/clock、20,000ms/request・120,000ms 総期限・100 request・8,000,000 byte/response・retry 0 を超えたら観測できずになる。bytes は raw で Git object id と size を照合し、取得前後の head/base を再確認する。過去の cache を観測に昇格しない。宣言された値（PR 本文・request の自己申告）を観測側へ写して一致にしていない。 設計 head の参照の読み（commit 1 回 + tree 1 回 + 未取得の plan の blob 最大 1 回 = 最大 3 request。同じ評価で blob を再利用した時は 2）が同じ予算の中で数えられ、予算の式が実の transport の呼び出しの記録と一致している。",
+      "basis": "D6/D12、S5"
+    },
+    {
+      "id": "U1IM-05",
+      "criterion": "設計監査の束縛: ci-record-design-audit が同 PR・設計だけ祖先 head・設計 digest・変更履歴・対象範囲・期限・必須全 item の PASS を検査し、設計変更後の監査を失効させる。4 分類の非該当根拠が欠ければ NA にならない。現 head 受付の targetCheck へ偽の現在 PR 観測を渡していない。audit-admission.mjs の共有 export への整理が、既存の純粋検査・JSON・exit を変えていない（既存 217 試験が期待値の変更なしで PASS）。",
+      "basis": "D7/D8/D9"
+    },
+    {
+      "id": "U1IM-06",
+      "criterion": "完全結果と入口の互換: ci-record-envelope が完全 inline の assessment と元評価の厳密一致、同梱 observation、target/head/base/scope/非保証/残件を検査し、参照だけ・部分結果・残件の空化を拒否する。gate.mjs の既定の呼び出し・引数・JSON・exit が保たれ（legacy callback の引数を全部通す）、U1 用途だけが新経路に入り、旧 4/5 を呼ばない。U1 の FAIL/UNKNOWN は exit 1、早期失敗は診断だけで偽の digest や空の残件を作らない。",
+      "basis": "D10/D11、既存互換の試験 ENT05〜07"
+    },
+    {
+      "id": "U1IM-07",
+      "criterion": "入力と公開の安全: 未知の purpose/checkpoint/profile・重複 argv・危険な path・symlink/submodule・JSON の重複 key・過大入力が検査前に拒否される。候補 test の process に資格情報を渡さず、診断に秘密や入力本文を出さない。公開に載る投影が allowlist で、audit/ と .aidlc-engine/ の本文を含まない。試験 U1-SEC の 8 件が実在し PASS で、採択済み SEC-T の版/項目 ID への照合が未成立であることが記録で正直に書かれている（U1-SEC を社内 SEC-T の代用にしていない）。",
+      "basis": "D13/D14/D16"
+    },
+    {
+      "id": "U1IM-08",
+      "criterion": "TDD と行網羅率: 試験が node:test と assert だけで書かれ、正例と負例（対象違い・古い記録・欠落・改変・実行不能・再実行）が各 module にある。skip・todo・空登録・assert の無い試験が無い。新 7 module と変更 2 file の行網羅率が実測で 100%（code-summary の表と実測が一致）で、除外 pragma・閾値の低下が無い。entry 試験が壁時計に依存しない（expires_at を固定）。 分母は code-summary の exact command が列挙する 14 file で、既存の design-gate の単位の試験 3 file と graphql の試験を command に含む。",
+      "basis": "D15、team の Testing Posture、S4/S8"
+    },
+    {
+      "id": "U1IM-09",
+      "criterion": "記録の正直さ: code-summary が「実装途中・単位未完了」とし、残件（実 PR/CI 2 件、公開 pr-records.json、別 workflow の Owner 条件、READY 不足の 6 段、SEC-T 照合、実取得予算 100 対 133、新 head の CI/独立監査/受領/exact-head/統合）を完了扱いにしていない。byte 表の SHA-256 が PR の実 file と一致する。traceability.json の OK/N-A/GAP が実在 path を指し、GAP を OK に数えていない。local 実行（Node v24）と CI の結果を区別している。",
+      "basis": "D17/D18、S5"
+    },
+    {
+      "id": "U1IM-10",
+      "criterion": "権限と保護対象: workflow・必須検査・branch protection・資格情報・契約 .v2・DB 構造に触れていない（触れる必要が残件として Owner 判断待ちに残る）。この PR が段の承認・統合の許可・Owner の exact-head・作者以外の統合を代替すると主張していない。deviation_ledger が必要な所に採った判断と採らなかった代替を 1 行ずつ書いている（無ければ、外れが無いことが明記）。",
+      "basis": "D17、protected-surface、S 標準の deviation_ledger"
+    }
+  ]
+}
