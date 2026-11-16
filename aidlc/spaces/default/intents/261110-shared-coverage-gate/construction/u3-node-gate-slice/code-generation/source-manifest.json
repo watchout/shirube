@@ -1,0 +1,24 @@
+{
+  "stage": "code-generation",
+  "unit": "u3-node-gate-slice",
+  "version": 1,
+  "writes": [
+    { "path": "scripts/coverage-gate/" },
+    { "path": "tests/coverage-gate-fixtures.mjs" },
+    { "path": "tests/coverage-gate-cli.test.mjs" },
+    { "path": "tests/coverage-gate-emit.test.mjs" },
+    { "path": "tests/coverage-gate-events-reporter.test.mjs" },
+    { "path": "tests/coverage-gate-events.test.mjs" },
+    { "path": "tests/coverage-gate-input.test.mjs" },
+    { "path": "tests/coverage-gate-judge.test.mjs" },
+    { "path": "tests/coverage-gate-lcov.test.mjs" },
+    { "path": "tests/coverage-gate-measure-node.test.mjs" },
+    { "path": "tests/coverage-gate-order.test.mjs" },
+    { "path": "tests/coverage-gate-report.test.mjs" },
+    { "path": "tests/coverage-gate-resolve.test.mjs" },
+    { "path": "tests/coverage-gate-runner.test.mjs" },
+    { "path": "tests/coverage-gate-sanitize.test.mjs" },
+    { "path": "tests/coverage-gate-structure.test.mjs" },
+    { "path": "knip.jsonc" }
+  ]
+}
