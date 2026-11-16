@@ -24,7 +24,7 @@ const measurement = (over = {}) => ({
 });
 const make = (m = measurement(), over = {}) => {
   const denominatorPaths = over.denominatorPaths ?? ["src/a.mjs", "src/b.mjs"];
-  const verdict = judge({ denominatorPaths, requiredTestPaths: over.requiredTestPaths ?? ["t/a.test.mjs"], measurement: m });
+  const verdict = judge({ denominatorPaths, requiredTestPaths: over.requiredTestPaths ?? ["t/a.test.mjs"], measurement: m, mode: over.mode, threshold: over.threshold });
   return buildDocument({ runId: "run-1", declaredTargets: ["src"], denominatorPaths, measurement: m, verdict });
 };
 const full = measurement({ records: [rec("src/a.mjs", 1, 1), rec("src/b.mjs", 1, 1)] });
@@ -173,4 +173,103 @@ test("building and rendering leave their inputs alone and give the same text twi
   assert.equal(JSON.stringify(m), before);
   assert.equal(renderSummary(a), renderSummary(b));
   assert.equal(renderJson(a), renderJson(b));
+});
+
+// U4: the exception and the mode in the document and the four surfaces (BR8.1 to BR8.6). Every value here is fictional.
+const URL_OK = "https://github.com/example-org/example-repo/issues/12#issuecomment-345";
+const EXCEPTION = { percentHundredths: 6000, decisionUrl: URL_OK, rationale: "Example rationale for a lowered line." };
+const unread = measurement({ kind: "unobservable", cause: "failed", records: undefined, measuredPaths: undefined });
+const CASES = { match: full, mismatch: measurement(), unobservable: unread };
+
+test("the document carries the mode, the compared threshold and the exception as decision, claimed value and rationale, with no new field", () => {
+  const d = make(measurement(), { mode: "record-only", threshold: EXCEPTION });
+  assert.deepEqual(Object.keys(d), DOCUMENT_KEYS);
+  assert.deepEqual([d.mode, d.shouldFail, d.outcome, d.effectiveThresholdPercent], ["record-only", false, "match", "60.00"]);
+  assert.deepEqual(d.thresholdException, { decisionUrl: URL_OK, claimedPercent: "60.00", rationale: EXCEPTION.rationale });
+  assert.deepEqual(Object.keys(d.thresholdException), ["decisionUrl", "claimedPercent", "rationale"]);
+  assert.equal(make(measurement()).thresholdException, null);
+});
+
+test("an unobservable document keeps the exception and the compared threshold, and the mode", () => {
+  const d = make(unread, { mode: "record-only", threshold: EXCEPTION });
+  assert.deepEqual([d.outcome, d.shouldFail, d.mode, d.effectiveThresholdPercent, d.thresholdException.claimedPercent], ["unobservable", false, "record-only", "60.00", "60.00"]);
+});
+
+test("an exception is announced on the first line, before the heading, for every outcome, and is shown in the table and in its own section", () => {
+  for (const [name, m] of Object.entries(CASES)) {
+    const lines = renderSummary(make(m, { threshold: EXCEPTION })).split("\n");
+    assert.equal(lines[0], "Threshold lowered to 60.00% (default 100.00%) by decision exception.", name);
+    assert.match(lines[2], /^## Coverage gate: /u, name);
+    const text = lines.join("\n");
+    assert.ok(text.includes("| Threshold | 60.00% (lowered from 100.00%) |"), name);
+    assert.ok(text.includes(`- Decision: \`${URL_OK}\``) && text.includes("- Claimed value: 60.00%") && text.includes("- Rationale: `Example rationale for a lowered line.`"), name);
+  }
+});
+
+test("without an exception the summary has no flag line, no lowered note and no exception section", () => {
+  for (const mode of ["enforce", "record-only"]) {
+    const text = renderSummary(make(measurement(), { mode }));
+    assert.ok(!/lowered|Threshold exception|Decision:/u.test(text), mode);
+    assert.ok(text.startsWith("## Coverage gate: "), mode);
+  }
+});
+
+test("record-only says in the summary that the result is recorded and does not fail the job, and never writes a success heading", () => {
+  const expected = { match: "Match", mismatch: "Mismatch", unobservable: "Not observable (計測不能)" };
+  for (const [name, m] of Object.entries(CASES)) {
+    const text = renderSummary(make(m, { mode: "record-only" }));
+    assert.ok(text.includes(`## Coverage gate: ${expected[name]}\n`), name);
+    assert.ok(text.includes("| Mode | record-only |\n| Exclusions | 0 |\n\nRecord-only mode: this result is recorded and does not fail the job.\n"), name);
+    assert.doesNotMatch(text, SUCCESS_WORDS, name);
+  }
+  assert.ok(renderSummary(make(measurement(), { mode: "record-only" })).includes("BELOW_THRESHOLD: Line coverage is below the required threshold."));
+  assert.ok(!renderSummary(make(measurement(), { mode: "enforce" })).includes("Record-only"));
+});
+
+test("the notice kind and text follow the table, always from the document, always one line", () => {
+  const warning = (text) => assert.match(text, /^::warning::[^\r\n]+$/u);
+  const lowered = renderNotice(make(full, { threshold: EXCEPTION }));
+  warning(lowered);
+  assert.ok(lowered.includes("100.00%25 of 60.00%25 required") && lowered.includes(`threshold lowered by exception: ${URL_OK}`));
+  assert.match(renderNotice(make(measurement(), { threshold: EXCEPTION })), /^::error::Coverage gate: mismatch \(BELOW_THRESHOLD\)\. Line coverage 66\.66%25 of 60\.00%25 required\./u);
+  const recorded = renderNotice(make(measurement(), { mode: "record-only" }));
+  warning(recorded);
+  assert.ok(recorded.includes("Recorded only, the job is not failed.") && recorded.includes("66.66%25 of 100.00%25 required"));
+  const unobserved = renderNotice(make(unread, { mode: "record-only", threshold: EXCEPTION }));
+  warning(unobserved);
+  assert.ok(unobserved.includes("not observable (計測不能)") && unobserved.includes("Threshold 60.00%25.") && unobserved.includes("MEASUREMENT_FAILED"));
+  for (const text of [lowered, recorded, unobserved]) assert.ok(!text.includes(EXCEPTION.rationale) && !SUCCESS_WORDS.test(text.replace(/^::\w+::/u, "")));
+});
+
+test("a run with no exception and enforce keeps the U3 notice words for every outcome", () => {
+  assert.equal(renderNotice(make(full)), "::notice::Coverage gate: match, 100.00%25 of 100.00%25 required.");
+  assert.equal(renderNotice(make(unread)), "::error::Coverage gate: unobservable (MEASUREMENT_FAILED).");
+  assert.equal(renderNotice(make(measurement({ cleanupFailed: true }), { mode: "enforce", threshold: null })), "::error::Coverage gate: unobservable (TEMP_CLEANUP_FAILED).");
+});
+
+test("an exception or a mode changes the output values and adds no name", () => {
+  const names = (text) => text.trim().split("\n").map((line) => line.split("=")[0]);
+  const plain = names(renderOutputs(make(full)));
+  assert.equal(renderOutputs(make(measurement(), { mode: "record-only", threshold: EXCEPTION })), "outcome=match\nshould-fail=false\nmode=record-only\nline-ratio-percent=66.66\neffective-threshold-percent=60.00\nexclusion-count=0\nschema-version=1\n");
+  for (const d of [make(full, { threshold: EXCEPTION }), make(unread, { mode: "record-only" })]) assert.deepEqual(names(renderOutputs(d)), plain);
+});
+
+test("an exception text that got past the input check is still made harmless in the summary and the notice", () => {
+  const d = make(full, { threshold: { ...EXCEPTION, rationale: "ok\n::error::fake`x`|%0A" } });
+  const summary = renderSummary(d);
+  assert.ok(!summary.split("\n").some((line) => line.startsWith("::")));
+  assert.ok(summary.includes("- Rationale: `ok?::error::fakex|%0A`"));
+  const hostile = { ...d, thresholdException: { ...d.thresholdException, decisionUrl: "https://github.com/a/b/issues/1#issuecomment-2%0A::error::x\n" } };
+  const notice = renderNotice(hostile);
+  assert.doesNotMatch(notice, /[\r\n]/u);
+  assert.ok(notice.includes("%250A::error::x%0A"));
+});
+
+test("all four surfaces and the JSON agree on the exception and the mode, from the one document", () => {
+  const d = make(measurement(), { mode: "record-only", threshold: EXCEPTION });
+  const json = JSON.parse(renderJson(d));
+  assert.deepEqual([json.mode, json.effectiveThresholdPercent, json.thresholdException.decisionUrl], ["record-only", "60.00", URL_OK]);
+  assert.ok(renderSummary(d).includes(json.thresholdException.decisionUrl) && renderNotice(d).includes(json.thresholdException.decisionUrl));
+  assert.ok(renderOutputs(d).includes("mode=record-only\n") && renderOutputs(d).includes("effective-threshold-percent=60.00\n"));
+  assert.equal(renderSummary(d), renderSummary(make(measurement(), { mode: "record-only", threshold: EXCEPTION })));
 });
