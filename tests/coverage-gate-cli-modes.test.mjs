@@ -20,7 +20,7 @@ const dark = () => goldenMeasurement({ kind: "unobservable", cause: "failed", re
 const MEASUREMENTS = {
   match: () => goldenMeasurement(),
   belowThreshold: () => goldenMeasurement({ records: [{ path: "src/a.mjs", lineNumber: 1, hitCount: 0 }] }),
-  unmeasured: () => goldenMeasurement({ measuredPaths: [], records: [{ path: "src/other.mjs", lineNumber: 1, hitCount: 1 }] }),
+  noRecords: () => goldenMeasurement({ measuredPaths: [], records: [{ path: "src/other.mjs", lineNumber: 1, hitCount: 1 }] }),
   notRun: () => goldenMeasurement({ testFilesRun: [] }),
   unobservable: dark,
   half,
@@ -37,7 +37,7 @@ async function go(extra, measurement = "match", { env = {}, io } = {}) {
 }
 
 test("record-only exits 0 for every result that enforce would fail on, and the result file keeps the mode and the true outcome", async () => {
-  const expected = { belowThreshold: ["mismatch", "BELOW_THRESHOLD"], unmeasured: ["mismatch", "UNMEASURED_FILES"], notRun: ["mismatch", "TESTS_NOT_RUN"], unobservable: ["unobservable", "MEASUREMENT_FAILED"] };
+  const expected = { belowThreshold: ["mismatch", "BELOW_THRESHOLD"], noRecords: ["unobservable", "NO_RECORDS"], notRun: ["mismatch", "TESTS_NOT_RUN"], unobservable: ["unobservable", "MEASUREMENT_FAILED"] };
   for (const [name, [outcome, reason]] of Object.entries(expected)) {
     const strict = await go({ mode: "enforce" }, name);
     const recorded = await go({ mode: "record-only" }, name);
