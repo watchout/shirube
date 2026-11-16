@@ -1,13 +1,15 @@
 // Checks the input JSON and returns a normalized input or the first failure. Pure: it gets the file's text, not a path.
 // The checks run in a fixed order; the first failure is the one reported.
+import { DEFAULT_MODE, MODES } from "./judge.mjs";
 import { compareCodePoint } from "./order.mjs";
+import { checkThreshold } from "./threshold.mjs";
 
 /** @public */
 export const DEFAULT_DEADLINE_SECONDS = 600;
 /** @public */
 export const DEFAULT_TOTAL_BUDGET_SECONDS = 900;
 const TEST_FILE_PATTERN = /\.test\.(?:js|mjs|cjs)$/u;
-const KNOWN_TOP = new Set(["schemaVersion", "shape", "denominator", "testTargets", "deadlineSeconds", "totalBudgetSeconds"]);
+const KNOWN_TOP = new Set(["schemaVersion", "shape", "denominator", "testTargets", "deadlineSeconds", "totalBudgetSeconds", "threshold", "mode"]);
 const KNOWN_DENOMINATOR = new Set(["targets"]);
 const SHAPE = "node-builtin";
 
@@ -68,6 +70,30 @@ function checkLimit(doc, name, fallback) {
   return { value: doc[name] };
 }
 
+// The mode must be exactly one of the known modes; leaving it out means the default. Nothing else is read as a mode.
+function checkMode(doc) {
+  if (doc.mode === undefined) return { value: DEFAULT_MODE };
+  if (typeof doc.mode !== "string" || !MODES.includes(doc.mode)) return { problem: failure("INPUT_FIELD_INVALID", "mode", "mode must be one of the known modes.") };
+  return { value: doc.mode };
+}
+
+// No threshold means no exception. One that is given must pass whole; a failed exception is never dropped or replaced.
+function checkException(doc) {
+  if (doc.threshold === undefined) return { value: null };
+  const checked = checkThreshold(doc.threshold);
+  return checked.ok ? { value: checked.threshold } : { problem: checked };
+}
+
+// The time limits, then the mode, then the exception, in that order. The first problem is the one returned.
+function checkSettings(doc) {
+  const deadline = checkLimit(doc, "deadlineSeconds", DEFAULT_DEADLINE_SECONDS);
+  const total = deadline.problem ? deadline : checkLimit(doc, "totalBudgetSeconds", DEFAULT_TOTAL_BUDGET_SECONDS);
+  const mode = total.problem ? total : checkMode(doc);
+  const exception = mode.problem ? mode : checkException(doc);
+  if (exception.problem) return exception;
+  return { deadlineSeconds: deadline.value, totalBudgetSeconds: total.value, mode: mode.value, threshold: exception.value };
+}
+
 export function checkInput(text) {
   const doc = parseObject(text);
   if (doc === null) return failure("INPUT_UNREADABLE", "$", "The input could not be read as a JSON object.");
@@ -76,10 +102,8 @@ export function checkInput(text) {
   if (unknown !== null) return failure("INPUT_FIELD_UNKNOWN", unknown, `The input has a field this version does not accept: ${unknown}.`);
   const early = checkShape(doc) ?? checkTargets(doc);
   if (early !== null) return early;
-  const deadline = checkLimit(doc, "deadlineSeconds", DEFAULT_DEADLINE_SECONDS);
-  if (deadline.problem) return deadline.problem;
-  const total = checkLimit(doc, "totalBudgetSeconds", DEFAULT_TOTAL_BUDGET_SECONDS);
-  if (total.problem) return total.problem;
+  const settings = checkSettings(doc);
+  if (settings.problem) return settings.problem;
   return {
     ok: true,
     input: {
@@ -87,8 +111,7 @@ export function checkInput(text) {
       shape: SHAPE,
       declaredTargets: [...doc.denominator.targets],
       testTargets: [...doc.testTargets],
-      deadlineSeconds: deadline.value,
-      totalBudgetSeconds: total.value,
+      ...settings,
     },
   };
 }
