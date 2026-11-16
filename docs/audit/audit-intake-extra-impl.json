@@ -1,0 +1,47 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "261113-audit-intake-extra の実装監査。設計は統合済みの #107(設計監査 PASS、merge commit 43819a56)に従う。対象: 監査の受付の checker `scripts/hygiene/audit-admission.mjs`(183行から238行)への、依頼の対象ごとの任意の欄 `extra_checkouts`(宣言した追加の固定 checkout)の追加、`docs/sds/audit-method.md` と `kit/skills/sds-audit/SKILL.md` の記述、新しい試験 5 file と補助 1 file(`tests/audit-intake-extra*`)、code-generation の記録、本項目集合のfile `docs/audit/audit-intake-extra-impl.json`。以下の AIEI-xx は本項目集合の識別子であり、新しい社内規格・工程・権限ではない。全8項目必須。リスクの区分はR3で、監査のPASSはOwnerの許可や統合の認可の代わりにならず、統合の前に対象headへのOwnerのexact-headを別に取る。この checker は独立監査の入口なので、中継が固定している checker の入れ替え(別の判断)・非公開 repo の宣言を通す変更(Owner の決定の次の単位)・CI の記録の経路での宣言の受け付けは、この単位の範囲の外で、その完了として扱わない。実機の GitHub での確かめ、CI 上の実行、Node 22 以外の CI の結果は、この監査の外で観測できなかったものとして、成功と読まない。旧SDS工程・旧道筋・判定4/5・退役PR/own-code予算を復活させない。",
+  "items": [
+    {
+      "id": "AIEI-01",
+      "criterion": "範囲と差分の形: base(`43819a56…`)からの差分が、`scripts/hygiene/audit-admission.mjs`、`docs/sds/audit-method.md`、`kit/skills/sds-audit/SKILL.md`、`tests/audit-intake-extra*`(試験5 file と補助1 file)、code-generation の記録、本項目集合のfile、PR本文だけである。`package.json`・lockfile・`.github/**`・`.shirube/**`・`configs/**`・`scripts/sds/**`・`scripts/hygiene/lib.mjs`・既存の試験 `tests/audit-admission.test.mjs`・`tests/audit-counterexamples.test.mjs` に差分が無い(git の差分と SHA-256 の突き合わせ)。`audit-admission.mjs` の import が Node 組込みと `./lib.mjs` だけで、新しい npm 依存・secret・権限・外部 action・サービスが無い。判定の全部がこの1 file(依頼の `verifier_sha256` が結ばれる唯一の file)に収まり、判定の一部を別の file に出していない。PR本文の `json sds-pr` が risk_class R3、`changed_paths` が差分と一致し、`audit` の欄がこの実装監査の依頼・返却を指す(設計監査のものを流用していない)。",
+      "basis": "FR4.4、NFR4・NFR9.1・NFR9.2、D2、code-generation-plan Step 13、code-summary.md の Files"
+    },
+    {
+      "id": "AIEI-02",
+      "criterion": "後方互換と古い checker: 宣言の欄が無い、または空の依頼は、判定(統合の版がちょうど1つ・両親が base と head)、拒否の理由の文、受付の出力の形・キー、GitHub への問い合わせの数と並びのすべてが、基準の版と同じである(試験の literal で固定されている)。`verifyAudit` の入口の形を変えず、`scripts/sds/gate.mjs` と `design-gate.mjs` と CI の記録の経路の呼び出しが変更なしで動く。既存の試験2本が変更なしで通る。`workflowCheck` に足した任意の第4引数 `seen` を渡さない呼び出し側(CI の記録の経路)では、2つ目の checkout を持つ対象が従来の理由(`Missing or ambiguous checkout commit`)で拒否される = 宣言があれば拒否側に倒れ、成功に倒れない。中継が固定している古い checker は新しい欄を無視して今と同じ拒否のままである(拒否側に倒れる)ことが、設計と記録に書かれている。",
+      "basis": "FR1.3、FR4.4、NFR2、NFR5.4、BR2.1、BR3.3、D6・D7、deviation_ledger 6、security-requirements の脅威 T6"
+    },
+    {
+      "id": "AIEI-03",
+      "criterion": "判定の核が、照らされていない code を通さない: 宣言を持つ対象で、統合の版の候補(job の記録の commit から宣言の commit を除いたもの)が job ごとにちょうど1つで、その両親が依頼の base と head(並びを問わない)であり、全桁一致(40桁・小文字16進)だけで比べ、job の名前・step の名前・順序を読まない。宣言の commit が統合の版と同じなら候補が0件で拒否、宣言に無い追加の checkout は候補が2件以上で拒否、宣言にあって対象のどの job の記録にも出ない組は拒否。BR3.7: 宣言の commit が対象の base・head そのもの、または両親のどれかが base か head なら拒否し(同じ応答を読むだけで問い合わせを足さない)、同じ両親で木の違う統合の版を別 repo の宣言に入れて候補の数え方から外す形を塞ぐ。両親が読めない・40桁の小文字16進の配列でない応答は「実在」と数えない。0件・2件以上・宣言の不在・両親の不一致・由来が、別の固定の理由で区別される。実装の `every`・両親の比較・`seen` の共有・読み取りの形・宣言の commit の問い合わせ先・commit そのものの判定を1か所ずつ壊した変異(記録に12件、生き残り0)が、試験で落ちることを、変異の試験の実行で再確認できる。",
+      "basis": "FR2.1〜FR2.4・FR2.7〜FR2.9・FR2.11、BR2.2〜BR2.6、BR3.1・BR3.2・BR3.7、D8、security-requirements の T1・T2・T8、code-summary.md の BR3.7 の追加と変異による確認"
+    },
+    {
+      "id": "AIEI-04",
+      "criterion": "宣言の読み取りと入力の安全: 宣言は repo と commit の2つのキーだけを持つ組の配列で、commit は40桁の小文字16進、repo は owner/name の形(`..`・`.`・区切りの余り・空・余分な `/`・`?`・`#` を拒否)であり、重複(commit だけで判定。repo が違っても)・5件目(上限 `EXTRA_MAX` = 4)・PR 自身の repo(大文字小文字を区別せず)・必須の検査が空の対象での宣言を、GitHub への問い合わせを1回もする前に、依頼全体の拒否にする。宣言は対象ごとに独立で、ある対象の宣言が同じ依頼の他の対象に効かない(対象をまたいだ汚染の試験)。対象の repo が文字列でないなど、宣言の読み取りに入る前の入力の崩れでも、成功に倒れず、宣言の値を載せない拒否になる。宣言の repo の綴りで別の API の path を読ませる経路が無い。欄の名前の literal(`extra_checkouts`)が `audit-admission.mjs` の1か所の定数だけである。",
+      "basis": "FR1.1〜FR1.6、BR1.1〜BR1.8、NFR1.3、NFR5.5、NFR7.1、security-requirements の T3・T4・T5、entities.md"
+    },
+    {
+      "id": "AIEI-05",
+      "criterion": "観測と fail closed(S5・S8): 受け入れの根拠は、job の記録から観測した commit と、宣言の repo への問い合わせ(宣言1件につき1回、再試行なし)で観測した実在だけで、返った sha が宣言の commit と全桁一致し、両親が配列として読めた時だけ「実在」と数える。応答の失敗・404・期限切れ・読めない形・別の sha・null・受付の資格で読めない repo は、すべて観測できず = 依頼全体の拒否で、成功に読み替えられない。依頼の宣言の値を観測した証拠として受付の出力に写さず、出力のキーは宣言なしの依頼と同じ。拒否の理由は固定の文だけで、宣言の repo・commit・応答の本文・job の記録の中身・token を載せず、新しい理由は9つに尽きる(試験が9つをそれぞれの場面から出す)。`existsIn` の `try/catch` は、例外を観測できず = 拒否に倒す経路で、続行する分岐でないことが、deviation_ledger に「採った判断・採らなかった代替」つきで書かれ、実装の誤りで出た例外も「見つからない」に丸める点が隠されていない(試験: 11通り)。返却の確認(`--review`)で再観測が変わる負例(宣言した commit が2回目に job の記録から消える等)が拒否になる。",
+      "basis": "FR2.5・FR2.6・FR2.10・FR2.11、BR3.2〜BR3.4・BR3.6・BR3.7、NFR1.1〜NFR1.8、NFR8.1・NFR8.4、security-requirements の T1・T7・T8、deviation_ledger 5、S5・S8"
+    },
+    {
+      "id": "AIEI-06",
+      "criterion": "問い合わせの総予算・資格・決定性: 足す問い合わせは、受付で宣言の件数の合計(1つの対象で4件まで)、返却の確認で最初の観測と再観測の2回分で、対象の数 T に線形(受付 4×T 以下、返却の確認 8×T 以下)であり、試験が問い合わせの数を数えて固定している。1回の問い合わせの限り(20秒・8 MB)を変えず、宣言を持たない依頼で足す問い合わせは0回。新しい資格・権限を足さない(S9)。宣言した repo が非公開で受付の資格で読めない時は、実在を観測できず拒否になる(Owner の決定の A は、この単位でなく後の単位として積まれ、この単位は「読めない repo の宣言は拒否」のままであることが記録にある)。判定の核が、時刻・乱数・識別子・環境変数・書き込みを持たず(足した行に `Date.now`・`new Date`・`Math.random`・`randomUUID`・`process.env` が無い)、依頼・job の記録・GitHub の応答と呼び出し側が渡す `now`・`api` だけで決まり、同じ入力で同じ出力になる(S4)。",
+      "basis": "FR2.5、NFR5.1〜NFR5.8、NFR6.2・NFR6.3、performance-requirements.md、functional-spec.md §3 W5・§7、security-requirements の T4・T7、S4・S9"
+    },
+    {
+      "id": "AIEI-07",
+      "criterion": "文書と実装の揃い・保証しないこと: `docs/sds/audit-method.md` §2 と `kit/skills/sds-audit/SKILL.md` §2 が、実装の定数(欄の名前 `extra_checkouts`・上限4)と同じ名前・同じ上限・規則の要点(統合の版がちょうど1つ・宣言した commit の実在・base/head に由来する宣言の拒否)・schema の版が `sds-audit-request/1` のままであることを書き、食い違えた文書を置くと落ちる試験がある(3か所の揃い、S3)。文書が、受付が保証するのは全桁一致と実在だけで、宣言した repo の妥当性・宣言した commit の中身(branch の先頭か無関係の commit か)・非公開 repo は照らさず、受けるか差し戻すかは独立の監査の席が依頼の宣言を見て決める、と書いている。受付の保証の外に残る事柄(宣言の repo が PR 自身の fork でも実在と数えうる点、CI の記録の経路は宣言を受けない点、非公開 repo は拒否される点)が隠されず記録されている。KY の先読み(宣言の妥当性・CI の記録の経路・commit の由来)に対して、保証の範囲を超えた安全を主張していない。",
+      "basis": "FR3.1〜FR3.3、BR4.1・BR4.2、S3、security-requirements の脅威の見取り図、社内の決まり版11のKY表と読み方の足し0・1・2"
+    },
+    {
+      "id": "AIEI-08",
+      "criterion": "TDD・網羅率・観測の正直さ・復旧・守る物・記録の公開差分: Red の出力(失敗の中身が実装の無さによること)が Green より先に記録にあり、新しい試験は node:test と assert/strict、skip と todo が無い。順の逸脱(文書の段落を試験より先に直した点、網羅率の判定の関数を負例と一緒に書いた点、返却の確認の再観測の負例が最初から緑だった点)が記録に書かれている。この head で `npm test` 全体が1091件合格・失敗0・skip0である観測と、CI の `test`・hygiene の結果が、手元の観測と混ぜず記録されている。`audit-admission.mjs` の行の網羅率が、既にある通らない2つの範囲(R1 = `function github(path) {` から閉じる `}` までの4行、R2 = 命令行の入口の3行。内容の SHA-256 でだけ名指し、範囲の内容が変われば失敗)を除いて、足す・変える行の全部で100%で、記録が手書きでなく子の process の lcov から作られ、未計測・行0・LF/LH の不一致・子の失敗・形が取れない版が失敗である。技術検査(lint:structural・lint:guard・hygiene:lines・ratchet・jscpd・budget・coverage、依存の向き)が通り、audit-admission.mjs が300行以下、関数50行以下・複雑さ10以下。変更が追加と置き換えだけで、取り消すと基準に戻る。この単位が `.github/workflows`・必須の検査・branch protection・契約 `.v2`・hygiene profile・DB の構造・資格情報・本番・料金を変更せず、R3 として統合の前に Owner の対象 head の承認(arc 経由)と作者以外の suite-lead の統合が要る形になっている。記録(code-summary・traceability.json 79行・unit-test-instructions・plan)が差分と食い違わず、`audit/`・`.aidlc-engine/`・作業の日記・state・cursor・絶対 path・model 名・IP・鍵・秘密を含まない。見直し役とサブエージェントの実施は、実施したものだけが書かれ、未実施を実施済みと書いていない。",
+      "basis": "NFR3.1〜NFR3.8、NFR9.1〜NFR9.3、D2/D5、S5/S8、team実践(TDD、行の網羅率100%、観測値の機械可読な記録)、protected-surface-owner-gate R1、aidlc-only §2、code-summary.md の Deviations・Coverage・技術検査"
+    }
+  ]
+}
