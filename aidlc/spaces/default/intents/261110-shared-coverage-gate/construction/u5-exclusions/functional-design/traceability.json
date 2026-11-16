@@ -1,0 +1,41 @@
+{
+  "stage": "functional-design",
+  "unit": "u5-exclusions",
+  "upstream_ids": [
+    "AC3.1.1", "AC3.1.2", "AC3.1.3",
+    "AC3.2.1", "AC3.2.2", "AC3.2.3", "AC3.2.4",
+    "AC3.3.1", "AC3.3.2",
+    "AC6.3.1", "AC6.3.2", "AC6.3.3"
+  ],
+  "coverage": [
+    { "id": "AC3.1.1", "status": "OK", "target": "BR10.5, BR10.3（門の側: 除外に書かない file は分母に残り、DB の job で流れた試験の行の記録は子の process の分も数える。DB の job の起動そのものは u7-gate-workflow-entry）" },
+    { "id": "AC3.1.2", "status": "Deferred", "target": "版も指紋も固定されていない DB の job を不合格にする確かめは、DB の job と手引きの試験を作る u7-gate-workflow-entry と u8-guidance-and-verification が受ける。U5 は DB の job を作らず、門に DB のための分岐を持たせない（BR10.5）" },
+    { "id": "AC3.1.3", "status": "OK", "target": "BR10.3" },
+    { "id": "AC3.2.1", "status": "OK", "target": "BR10.2, BR11.1, BR11.2, BR11.3" },
+    { "id": "AC3.2.2", "status": "OK", "target": "BR10.1, BR9.1" },
+    { "id": "AC3.2.3", "status": "OK", "target": "BR9.2, BR9.3" },
+    { "id": "AC3.2.4", "status": "OK", "target": "BR10.4, BR9.4, BR11.1, BR11.4" },
+    { "id": "AC3.3.1", "status": "OK", "target": "BR10.4, BR9.1" },
+    { "id": "AC3.3.2", "status": "OK", "target": "BR10.5, BR9.1, BR11.4" },
+    { "id": "AC6.3.1", "status": "OK", "target": "BR11.1, BR11.2" },
+    { "id": "AC6.3.2", "status": "OK", "target": "BR11.5, BR10.6" },
+    { "id": "AC6.3.3", "status": "OK", "target": "BR11.5" }
+  ],
+  "reverse": [
+    { "id": "BR1.3", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR1.6", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR1.7", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR2.6", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR3.3", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR3.4", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR3.8", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR4.2", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR4.3", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR4.7", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR5.1", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR5.4", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR6.5", "status": "N/A", "target": "rule of u4-thresholds-and-modes, cited as the base this unit adds to" },
+    { "id": "BR8.2", "status": "N/A", "target": "rule of u4-thresholds-and-modes, cited as the base this unit adds to" },
+    { "id": "BR8.6", "status": "N/A", "target": "rule of u4-thresholds-and-modes, cited as the base this unit adds to" }
+  ]
+}
