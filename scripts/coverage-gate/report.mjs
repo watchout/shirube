@@ -69,7 +69,7 @@ function denominatorField(declaredTargets, denominatorPaths, verdict) {
 // The exclusions are the ones the resolution decided, with their kind, copied and put in code-point order of the path.
 const exclusionsField = (excluded) => excluded.map(({ path, reason, kind }) => ({ path, reason, kind })).sort((a, b) => compareCodePoint(a.path, b.path));
 
-export function buildDocument({ runId, declaredTargets, denominatorPaths, measurement, verdict, excluded = [] }) {
+export function buildDocument({ runId, declaredTargets, denominatorPaths, measurement, verdict, excluded }) {
   const exclusions = exclusionsField(excluded);
   return {
     schemaVersion: SCHEMA_VERSION,

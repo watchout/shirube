@@ -21,7 +21,7 @@ function documentFor(name) {
   const measurement = GOLDEN_MEASUREMENTS[name]();
   const denominatorPaths = ["src/a.mjs"];
   const verdict = judge({ denominatorPaths, requiredTestPaths: ["tests/a.test.mjs"], measurement });
-  return buildDocument({ runId: "local", declaredTargets: ["src"], denominatorPaths, measurement, verdict });
+  return buildDocument({ runId: "local", declaredTargets: ["src"], denominatorPaths, measurement, verdict, excluded: [] });
 }
 
 test("the golden covers the four paths and each has the four surfaces", () => {

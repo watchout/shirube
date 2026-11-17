@@ -52,7 +52,7 @@ test("all four surfaces show the exclusions: the summary head and list, the noti
   const r = await go({ ...BASE, exclusions: [ex("tests/b.test.mjs"), ex("src/b.mjs")] });
   assert.equal(r.summary.split("\n")[0], "Excluded from the gate: 2 (source 1, test 1, both 0)");
   assert.ok(r.summary.includes("| Exclusions | 2 |") && r.summary.includes("Excluded files (2):") && r.summary.includes(`- \`src/b.mjs\` (source): \`${REASON}\``));
-  assert.equal(r.stdout, "::notice::Coverage gate: match, 100.00%25 of 100.00%25 required. Exclusions: 2.");
+  assert.equal(r.stdout, "::notice::Coverage gate: match, 100.00%25 of 100.00%25 required. Exclusions: 2.\n");
   assert.ok(r.outputs.includes("exclusion-count=2\n"));
   assert.ok(!r.stdout.includes("src/b.mjs") && !r.stdout.includes("github.com"));
 });

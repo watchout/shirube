@@ -68,11 +68,11 @@ async function produceDocument({ cwd, runId, inputPath, measure }) {
   if (!checked.ok) return buildInputFailureDocument({ runId, failure: checked.failure });
   const resolved = resolveInput(cwd, checked.input);
   if (!resolved.ok) return buildInputFailureDocument({ runId, failure: resolved.failure });
-  const { denominatorPaths, requiredTestPaths } = resolved;
+  const { denominatorPaths, requiredTestPaths, excluded } = resolved;
   const measurement = await measure({ cwd, runId, input: checked.input, requiredTestPaths });
   const { mode, threshold } = checked.input;
   const verdict = judge({ denominatorPaths, requiredTestPaths, measurement, mode, threshold });
-  return buildDocument({ runId, declaredTargets: checked.input.declaredTargets, denominatorPaths, measurement, verdict });
+  return buildDocument({ runId, declaredTargets: checked.input.declaredTargets, denominatorPaths, measurement, verdict, excluded });
 }
 
 function entryFailure(stderr, error) {
