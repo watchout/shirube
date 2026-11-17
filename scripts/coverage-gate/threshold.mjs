@@ -49,8 +49,12 @@ function checkPercent(percent) {
 }
 
 // The length is judged first, so the shape pattern never runs over a long value.
+function isDecisionUrl(text) {
+  return typeof text === "string" && text.length <= DECISION_URL_MAX_LENGTH && DECISION_URL_SHAPE.test(text);
+}
+
 function checkDecisionUrl(decisionUrl) {
-  if (typeof decisionUrl === "string" && decisionUrl.length <= DECISION_URL_MAX_LENGTH && DECISION_URL_SHAPE.test(decisionUrl)) return null;
+  if (isDecisionUrl(decisionUrl)) return null;
   return invalid("decisionUrl", "threshold.decisionUrl must be the exact address of a GitHub issue or pull request comment.");
 }
 
@@ -69,16 +73,29 @@ function hasControlCharacter(text) {
   return false;
 }
 
-function checkRationale(rationale) {
-  const problem = invalid("rationale", "threshold.rationale must be one line of text that is not blank, within the length limit, without control characters or command and table sequences.");
-  if (typeof rationale !== "string" || rationale.length > RATIONALE_MAX_LENGTH * 2 || exceeds(rationale, RATIONALE_MAX_LENGTH)) return problem;
-  if (rationale.trim() === "" || hasControlCharacter(rationale)) return problem;
-  const lower = rationale.toLowerCase();
+function failureOf(field, detail) {
+  return { ok: false, failure: { reasonCode: "INPUT_FIELD_INVALID", field, detail } };
+}
+
+// The sentence rule, shared by the threshold rationale and the exclusion reason: the caller names the field in a failure.
+/** @public */
+export function checkOneLineSentence(text, field) {
+  const problem = failureOf(field, `${field} must be one line of text that is not blank, within the length limit, without control characters or command and table sequences.`);
+  if (typeof text !== "string" || text.length > RATIONALE_MAX_LENGTH * 2 || exceeds(text, RATIONALE_MAX_LENGTH)) return problem;
+  if (text.trim() === "" || hasControlCharacter(text)) return problem;
+  const lower = text.toLowerCase();
   return RATIONALE_FORBIDDEN.some((sequence) => lower.includes(sequence.toLowerCase())) ? problem : null;
 }
 
+// Whether a sentence has at least one decision URL as a piece between ASCII spaces. Run it after the sentence rule, so the text is short.
+/** @public */
+export function checkDecisionUrlFragment(text, field) {
+  if (typeof text === "string" && text.split(" ").some(isDecisionUrl)) return null;
+  return failureOf(field, `${field} must contain the exact address of a GitHub issue or pull request comment, with a space on each side of it.`);
+}
+
 export function checkThreshold(value) {
-  const problem = checkObject(value) ?? checkKeys(value) ?? checkPercent(value.percent) ?? checkDecisionUrl(value.decisionUrl) ?? checkRationale(value.rationale);
+  const problem = checkObject(value) ?? checkKeys(value) ?? checkPercent(value.percent) ?? checkDecisionUrl(value.decisionUrl) ?? checkOneLineSentence(value.rationale, "threshold.rationale");
   if (problem !== null) return problem;
   return { ok: true, threshold: { percentHundredths: toHundredths(value.percent), decisionUrl: value.decisionUrl, rationale: value.rationale } };
 }
