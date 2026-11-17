@@ -100,6 +100,25 @@ test("an exclusion that matches no file of either list, or leaves nothing, is an
   assert.deepEqual([allTests.code, allTests.measured, allTests.doc.inputFailure.reasonCode, allTests.doc.inputFailure.field], [2, null, "TARGET_EMPTY", "exclusions"]);
 });
 
+// BR10.4 and SC2: the input file is the only way to add an exclusion. An environment variable that looks like one changes no byte
+// of the result, the summary, the notice, the output values or the exit code, for a mismatch, a match and an input failure.
+const EXCLUSION_LIKE_NAMES = ["COVERAGE_EXCLUSIONS", "COVERAGE_GATE_EXCLUSIONS", "COVERAGE_GATE_EXCLUDE", "EXCLUSIONS", "EXCLUDE", "INPUT_EXCLUSIONS"];
+const EXCLUSION_LIKE_VALUES = ["src/b.mjs", "tests/b.test.mjs", "src/b.mjs,tests/b.test.mjs", JSON.stringify([ex("src/b.mjs")]), "audit-fixture", "1", "true"];
+const bytesOf = (r) => ({ result: r.doc === null ? null : readText(r.names.result), summary: r.summary, stdout: r.stdout, stderr: r.stderr, outputs: r.outputs, code: r.code });
+
+test("an environment variable that looks like an exclusion changes nothing: the same bytes and exit code as the run without it", async () => {
+  const bodies = [{ ...BASE }, { ...BASE, exclusions: [ex("tests/b.test.mjs"), ex("src/b.mjs")] }, { ...BASE, exclusions: [ex("src/missing-marker.mjs")] }];
+  const together = Object.fromEntries(EXCLUSION_LIKE_NAMES.map((name) => [name, EXCLUSION_LIKE_VALUES[0]]));
+  const envs = [together, ...EXCLUSION_LIKE_NAMES.flatMap((name) => EXCLUSION_LIKE_VALUES.map((value) => ({ [name]: value })))];
+  const codes = [];
+  for (const body of bodies) {
+    const expected = bytesOf(await go(body));
+    codes.push(expected.code);
+    for (const env of envs) assert.deepEqual(bytesOf(await go(body, { env })), expected, JSON.stringify(env));
+  }
+  assert.deepEqual(codes, [1, 0, 2]);
+});
+
 // The measurement runs only the test files it is handed (measure-node.mjs buildNodeArgs), so a test file that is excluded
 // but still inside testTargets is never run: its failure cannot turn the run into TEST_FAILED. Checked with the real command.
 const BAD_TEST = 'throw new Error("fixture load failure");\n';
