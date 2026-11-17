@@ -9,7 +9,7 @@
 - [desc] Initial description: 共有の網羅率の門を新しい AI-DLC の取り組みとして始める（Owner の指示 https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6759071065、本文 SHA-256 `c5d9ccc3510ff46e5d6661bc8c528cafb7e08d4ce2c86f39f049782eaf7e524b`）。
 - [scope] Workflow-selected scope: feature
 - 計画: [code-generation-plan.md](./code-generation-plan.md)（Testing Contract、手順 Step 1〜12）。
-- 設計: rules.md（BR9.1〜BR11.5）、nfr-design の各設計（PF、SC、SL、RL、OB、LC）、functional-design の追跡表。土台: U4 の [unit-test-instructions.md](../../u4-thresholds-and-modes/code-generation/unit-test-instructions.md)。
+- 設計: rules.md（BR9.1〜BR11.6）、nfr-design の各設計（PF、SC、SL、RL、OB、LC）、functional-design の追跡表。土台: U4 の [unit-test-instructions.md](../../u4-thresholds-and-modes/code-generation/unit-test-instructions.md)。
 
 ## 試験の枠組み
 
@@ -43,13 +43,13 @@
 
 | 試験 file | 主な正例 | 主な負例・境界 | 結ぶ規則・要件 |
 |---|---|---|---|
-| exclusions | 1 件・複数件の宣言が検査を通り path の符号点順に並ぶ。分母から外れ、残りと除外の一覧が返る。0 件は分母そのまま | 配列でない（null・文字列・object）、要素が object でない、未知のキー（符号点順で最初の 1 件）、path 無し・理由無し・両方無し（path が先）、path が数・空文字、理由の 301 文字・改行・`::`・`%0A`・`\|`・バッククォート・空白だけ、同じ path の重複、大文字小文字違い・`./`・`..`・directory 名・wildcard・絶対 path・追跡されていない file は TARGET_UNRESOLVED、全部除外は TARGET_EMPTY、入力の並びを入れ替えても同じ結果、失敗の文に path の文字列が無い、長い・繰り返しの入力が線形の時間 | BR9.1〜BR9.4、BR10.1、BR10.2、NFR1.2、NFR1.3、NFR2.3、NFR4.1、NFR4.2、NFR5.4、NFR5.6、NFR5.7 |
-| threshold | 理由の規則を field の名前を変えて呼んでも U4 と同じ判定 | 300 / 301 文字・改行・`%0a`・`::`・`\|`・バッククォート・空白だけ。`threshold.rationale` の失敗の理由コード・field・順が U4 のまま | BR9.3、NFR3.1、RL9 |
+| exclusions | 1 件・複数件の宣言が検査を通り path の符号点順に並ぶ。分母から外れ、残りと除外の一覧が返る。0 件は分母そのまま | 配列でない（null・文字列・object）、要素が object でない、未知のキー（符号点順で最初の 1 件）、path 無し・理由無し・両方無し（path が先）、path が数・空文字、理由の 301 文字・改行・`::`・`%0A`・`\|`・バッククォート・空白だけ、決定の URL が無い理由、同じ path の重複、大文字小文字違い・`./`・`..`・directory 名・wildcard・絶対 path・追跡されていない file は TARGET_UNRESOLVED、全部除外は TARGET_EMPTY、入力の並びを入れ替えても同じ結果、失敗の文に path の文字列が無い、長い・繰り返しの入力が線形の時間 | BR9.1〜BR9.4、BR10.1、BR10.2、NFR1.2、NFR1.3、NFR2.3、NFR4.1、NFR4.2、NFR5.4、NFR5.6、NFR5.7 |
+| threshold | 理由の規則と決定の URL の形の規則を field の名前を変えて呼んでも U4 と同じ判定 | 300 / 301 文字・改行・`%0a`・`::`・`\|`・バッククォート・空白だけ、URL 無し・形違い。`threshold.rationale` の失敗の理由コード・field・順が U4 のまま | BR9.3、BR9.5、NFR3.1、RL9 |
 | input | 除外の省略・空の配列が通り `exclusions: []` が載る。1 件・複数件が通り並べ替えて載る | 各失敗の理由コード・field・順、`denominator.exclusions`・`exclusion`・`excludes`・`exclusions[i].extra` は INPUT_FIELD_UNKNOWN、`measurement` は引き続き未知、置き換えた 1 件 | BR9.1、BR10.4(3)、NFR4.1、NFR5.2、NFR5.7、NFR8.4 |
-| resolve | 除外が分母から外れて件数が減る。除外 0 件は U4 と同じ戻り値 | 必須の試験は減らない（試験 file の名前の型の除外でも）、分母に無い path で TARGET_UNRESOLVED、全部除外で TARGET_EMPTY | BR10.1〜BR10.3、BR10.6、NFR4.2、NFR4.3 |
-| report-exclusions | 節・notice の文型（「Excluded files (N):」、「Exclusions: N.」）、20 件までと残りの 1 行 | 0 件では何も出ない、21 件の境界、path・理由の無害化（`%`・CR・LF・バッククォート・`\|`）、path・理由を notice に載せない | BR11.2、BR11.3、NFR4.7、NFR4.8、NFR5.5 |
-| report | 除外あり・なしの結果の JSON（`exclusions`・`exclusionCount`・`resolvedFileCount`）、4 面が同じ文書から | 除外なしの 4 経路が golden とバイトまで一致、入力の失敗の文書は exclusions が空、出力値は 7 名のまま、除外した path が unmeasuredPaths・notRunPaths・perFile に現れない、入力の並びを入れ替えても同じ出力 | BR11.1、BR11.4、BR11.5、NFR2.2、NFR4.6、NFR4.9〜NFR4.11、NFR8.1、NFR8.2 |
-| cli（結合） | 除外なし 4 経路が golden と一致、除外ありで割合が上がって一致（0） | 除外ありで必須の試験が流れず NOT_RUN（1）、分母に残る file が未計測（1）、分母に無い path と全部除外（2）、除外らしい環境変数を置いても出力がバイトまで一致、別の引数は ENTRY_ARGUMENTS_INVALID（2）、書き込みの失敗は 2 | BR10.4、BR11.3、BR11.4、NFR4.3〜NFR4.5、NFR5.2、NFR8.5、NFR8.6 |
+| resolve | source・test・both の除外が種別に応じて分母・必須の試験から外れる。除外 0 件は U4 と同じ戻り値 | 名指さない必須の試験は減らない、source の除外だけでは同名の型の試験が必須のまま（重なりの反例）、testTargets を狭めただけは除外にならない、どちらの集合にも無い path で TARGET_UNRESOLVED、分母または必須の試験の全部除外で TARGET_EMPTY | BR10.1〜BR10.3、BR10.6、NFR4.2、NFR4.3 |
+| report-exclusions | 頭の 1 行（「Excluded from the gate: N (…)」）、節・notice の文型（「Excluded files (N):」、「Exclusions: N.」）、引数で受けた上限までと残りの 1 行 | 0 件では何も出ない（頭の 1 行も）、区分・動作・閾値の例外の組み合わせで頭の 1 行が毎回出て位置が正しい、21 件の境界、path・理由の無害化（`%`・CR・LF・バッククォート・`\|`）、path・理由を notice に載せない | BR11.2、BR11.3、BR11.6、NFR4.7、NFR4.8、NFR4.12、NFR5.5 |
+| report | 除外あり・なしの結果の JSON（`exclusions`・`exclusionCount`・`resolvedFileCount`）、4 面が同じ文書から | 除外なしの 4 経路が golden とバイトまで一致、入力の失敗の文書は exclusions が空、出力値は 7 名のまま、kind に応じて除外した path が unmeasuredPaths・perFile（source・both）と notRunPaths（test・both）に現れず exclusions に kind つきで残る、入力の並びを入れ替えても同じ出力 | BR11.1、BR11.4、BR11.5、BR11.6、NFR2.2、NFR4.6、NFR4.9〜NFR4.11、NFR8.1、NFR8.2 |
+| cli（結合） | 除外なし 4 経路が golden と一致、除外ありで割合が上がって一致（0） | 除外ありで名指さない必須の試験が流れず NOT_RUN（1）、試験 file の除外が理由・種別つきで残り notRunPaths に出ない（0）、分母に残る file が未計測（1）、分母に無い path と全部除外（2）、除外らしい環境変数を置いても出力がバイトまで一致、別の引数は ENTRY_ARGUMENTS_INVALID（2）、書き込みの失敗は 2 | BR10.4、BR11.3、BR11.4、NFR4.3〜NFR4.5、NFR5.2、NFR8.5、NFR8.6 |
 | structure | 新しい値の literal が持ち主の file だけ、分母から引く code が 1 か所、判定の核に除外の語が無い、除外を決める code に環境変数の読みが 0 件、純粋な核に禁止の API・ネットワーク・資格情報が無い、300 行以内、import が組込みと既存の `lib.mjs` だけ | 禁止の API の混入、import の逸脱 | NFR2.1、NFR3.1〜NFR3.3、NFR5.1、NFR5.2、NFR7.3、NFR9.1 |
 
 ## 試験データと mock の指針

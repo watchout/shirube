@@ -28,6 +28,7 @@
     "NFR4.9",
     "NFR4.10",
     "NFR4.11",
+    "NFR4.12",
     "NFR5.1",
     "NFR5.2",
     "NFR5.3",
@@ -187,6 +188,11 @@
       "id": "NFR4.11",
       "status": "OK",
       "target": "monitoring-design の Metrics（試験の結果）。満たすのは OB5"
+    },
+    {
+      "id": "NFR4.12",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（除外が毎回見えること）。満たすのは OB2"
     },
     {
       "id": "NFR5.1",

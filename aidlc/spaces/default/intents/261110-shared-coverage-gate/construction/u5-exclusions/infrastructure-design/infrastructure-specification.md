@@ -16,12 +16,12 @@
 | 計算の形 | U3・U4 のまま。CI の runner の上で動く 1 回きりの Node の command。常駐しない | 門は判定を出して終わる（NFR1、NFR11） |
 | 動作を保証する環境 | U3・U4 のまま。GitHub Actions の Linux の runner、Node 22 | NFR1.1。足す code は新しい module を import しない（PF1） |
 | ネットワーク | 外への通信を持たない。除外の理由が正しいかは確かめず、読みに行かない | NFR5.1。GitHub を読む資格情報を持たない |
-| 保管 | 持たない。書く物は U3・U4 のまま（`--result` の file、一時 directory、job summary、出力値の file）。除外は結果の文書の既存の項目（`exclusions`・`exclusionCount`）に入る | NFR8.2。書く場所を増やさない |
+| 保管 | 持たない。書く物は U3・U4 のまま（`--result` の file、一時 directory、job summary、出力値の file）。除外は結果の文書の既存の項目（`exclusions`・`exclusionCount`）に入る（要素に kind が付く） | NFR8.2。書く場所を増やさない |
 | 環境 | 本番・staging の区別なし。この単位は配布も展開もしない（配布は U7・U8） | NFR8.6 |
 | 構成の管理（IaC） | 足す物はコード（`scripts/coverage-gate/` の 2 file と既存 4 file への追加、その試験）だけ。クラウドの構成の定義は無い | NFR6.2、NFR11.1 |
 | 資源の大きさ | 変わらない。足す処理は分母と除外の件数に対する n log n で、追加の process を起こさない | NFR1.2、NFR1.6 |
-| 実行の上限 | 変わらない（期限と総予算）。除外しても測定の量は同じ | NFR11.2 |
-| DB | 持たない。PostgreSQL の起動も DB の file の一覧も門は持たない。DB を要する file は、呼び出し側が「DB の job で測る」か「理由つきで除外」かを宣言で表す | NFR1.9、NFR11.3 |
+| 実行の上限 | 変わらない（期限と総予算）。除外しても測定の量は同じ（名指した試験 file は必須の集合から外れる） | NFR11.2 |
+| DB | 持たない。PostgreSQL の起動も DB の file の一覧も門は持たない。DB を要する file は、呼び出し側が「DB の job で測る」か「決定の URL を含む理由つきで、ソースと試験の file を 1 本ずつ除外」かを宣言で表す | NFR1.9、NFR11.3 |
 
 ## Infrastructure Services
 
@@ -29,7 +29,7 @@
 |---|---|---|---|
 | （足さない） | — | — | データベース・cache・queue・search・CDN・DNS・load balancer のどれも持たない（NFR11.1） |
 | GitHub Actions の runner | 実行の場所（既存） | 変更しない | 門を呼ぶ workflow と DB の job は U7。保護対象で、Owner の決定が要る |
-| 既存の `scripts/hygiene/lib.mjs` | 分母の解決（既存の部品） | 変更しない。`resolve.mjs` が呼ぶ戻り値から除外を引く | NFR6.1 |
+| 既存の `scripts/hygiene/lib.mjs` | 分母の解決（既存の部品） | 変更しない。`resolve.mjs` が呼ぶ戻り値（分母のソースと必須の試験）から除外を種別に応じて引く | NFR6.1 |
 | 既存の CI の検査（`test` job、構造の検査、own-code budget OWN-01） | 新しい・変更した file に自動で当たる既存の検査 | 変更しない | 新しい file の行数で OWN-01 に当たる場合は、設定を変えず PR に「AI-DLC の単位の作る段の出力」と書く（NFR9.2） |
 
 ## Shared Infrastructure
@@ -37,16 +37,16 @@
 | Shared Resource | Owner Unit | Consumer Units | Access Boundary |
 |---|---|---|---|
 | `scripts/coverage-gate/`（入口、核、測定の部品） | U3 | U5（この単位: 除外）、U6（TypeScript と vitest）、U7（配線） | 入力・結果の JSON の版 1 の契約。この単位は `exclusions` を受け付ける項目として足し、既存の意味と型を変えない。名前を増やさない（NFR8.2） |
-| 理由の 1 行の文の規則（`threshold.mjs`） | U4 | U5（除外の理由が同じ規則を呼ぶ）、U6 以降 | 値を写さず、同じ関数を呼ぶ（NFR3.1）。この単位は関数を export する形に触るが、U4 の結果は変えない |
-| 除外の検査と集合の差（`exclusions.mjs`）、除外の表示の文型（`report-exclusions.mjs`） | U5 | U6 以降（同じ持ち主を参照し、値を写さない） | 規則の値の持ち主を 1 か所に（NFR3.1） |
-| 結果の JSON（版 1） | U3 | U7（成果物として残す）、U8（集計の手引き） | `exclusions`・`exclusionCount` に値が入り、`denominator.resolvedFileCount` は除外を引いた後の件数になる。観測できない値は null（NFR10.2） |
+| 理由の 1 行の文の規則（`threshold.mjs`） | U4 | U5（除外の理由が同じ規則を呼ぶ）、U6 以降 | 値を写さず、同じ関数を呼ぶ（NFR3.1）。決定の URL の形の規則も同じ持ち主から共有の関数で呼ぶ（BR9.5）。この単位は関数を export する形に触るが、U4 の結果は変えない |
+| 除外の検査と集合の差（`exclusions.mjs`）、除外の表示の文型（`report-exclusions.mjs`） | U5 | U6 以降（同じ持ち主を参照し、値を写さない） | 規則の値の持ち主を 1 か所に（NFR3.1）。一覧の上限は `report.mjs` が持ち、引数で渡す |
+| 結果の JSON（版 1） | U3 | U7（成果物として残す）、U8（集計の手引き） | `exclusions`・`exclusionCount` に値が入り、`denominator.resolvedFileCount` は除外を引いた後の分母の件数になり、`exclusions` の要素に kind（source・test・both）が付く（契約の版は .v1 のまま。要約も同じ版で直す）。観測できない値は null（NFR10.2） |
 
 ## 費用
 
 | 項目 | 内容 |
 |---|---|
 | 追加の費用 | なし。新しい有料サービスも常設の資源も足さない（NFR11.1） |
-| 実行の費用 | U3・U4 のまま。除外しても必須の試験は同じだけ流れる（NFR11.2）。除外の検査は線形の小さな処理 |
+| 実行の費用 | U3・U4 のまま。除外しても名指さない必須の試験は同じだけ流れる（NFR11.2）。除外の検査は線形の小さな処理 |
 | DB の job の費用 | この単位の範囲外（U7）（NFR11.3） |
 
 ## 変更の中身

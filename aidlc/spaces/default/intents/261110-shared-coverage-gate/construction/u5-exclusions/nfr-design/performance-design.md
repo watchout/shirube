@@ -39,7 +39,7 @@
 
 ## PF5 出力の大きさを件数に比例させない（NFR1.5）
 
-- summary の一覧は SUMMARY_LIST_LIMIT（20。U3 の定数）で切り、残りは件数の 1 行にする。結果の file には全件が残る。notice は固定の 1 文で、件数に依らない。
+- summary の一覧は SUMMARY_LIST_LIMIT（20。`report.mjs` が持ち、引数として渡す）で切り、残りは件数の 1 行にする。結果の file には全件が残る。notice は固定の 1 文で、件数に依らない。
 
 ## 気づいたこと
 

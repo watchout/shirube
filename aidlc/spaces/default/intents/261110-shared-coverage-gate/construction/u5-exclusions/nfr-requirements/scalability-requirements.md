@@ -7,7 +7,7 @@
 - [desc] Initial description: 共有の網羅率の門を新しい AI-DLC の取り組みとして始める（Owner の指示 https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6759071065、本文 SHA-256 `c5d9ccc3510ff46e5d6661bc8c528cafb7e08d4ce2c86f39f049782eaf7e524b`）。
 - [scope] Workflow-selected scope: feature
 - 要件: [requirements.md](../../../inception/requirements-analysis/requirements.md) の NFR1・NFR11。土台: U3 の [scalability-requirements.md](../../u3-node-gate-slice/nfr-requirements/scalability-requirements.md)、U4 の [scalability-requirements.md](../../u4-thresholds-and-modes/nfr-requirements/scalability-requirements.md)、この単位の [performance-requirements.md](./performance-requirements.md)（NFR1.1〜NFR1.5）。
-- 機能の設計: [rules.md](../functional-design/rules.md)（BR10.4 = 除外の道、BR10.5 = 宣言なしは 0 件、BR11.2 = 一覧の上限）。
+- 機能の設計: [rules.md](../functional-design/rules.md)（BR10.4 = 除外の道、BR10.5 = 宣言なしは 0 件、BR11.2 = 一覧の上限、BR11.6 = 頭の 1 行）。
 
 ## 要件
 
@@ -21,7 +21,7 @@
 ### NFR11 費用
 
 - **NFR11.1** 新しい有料サービスや常設のクラウド資源を足さない。この単位は CI の費用を増やさない（足すのは入力の検査と分母の引き算と出力の行だけで、試験の実行時間は変わらない）。[NFR11]
-- **NFR11.2** 除外は分母から外す file の宣言であって、試験の実行回数や時間の上限を変えない。除外しても測定は省略されず、必須の試験は同じだけ流れる。[NFR11、BR10.3]
+- **NFR11.2** 除外は分母から外す file の宣言であって、試験の実行回数や時間の上限を変えない。除外しても測定は省略されず、名指さない必須の試験は同じだけ流れる（名指した試験 file は必須の集合から外れる）。[NFR11、BR10.3]
 - **NFR11.3** DB の job を足す費用（PostgreSQL の起動など）は、この単位の範囲外で、U7 の配線で扱う。この単位は DB の job を作らない。[NFR11、BR10.5]
 
 ## Assumptions & Open Questions

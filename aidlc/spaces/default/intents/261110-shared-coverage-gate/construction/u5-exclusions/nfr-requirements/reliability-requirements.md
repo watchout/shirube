@@ -7,7 +7,7 @@
 - [desc] Initial description: 共有の網羅率の門を新しい AI-DLC の取り組みとして始める（Owner の指示 https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6759071065、本文 SHA-256 `c5d9ccc3510ff46e5d6661bc8c528cafb7e08d4ce2c86f39f049782eaf7e524b`）。
 - [scope] Workflow-selected scope: feature
 - 要件: [requirements.md](../../../inception/requirements-analysis/requirements.md) の NFR2・NFR4・NFR8、FR5.1〜FR5.4、FR8.4。社内の標準 S4・S5・S6・S8。
-- 機能の設計: [rules.md](../functional-design/rules.md)（BR9 = 除外の宣言の検査、BR10.1〜BR10.6 = 分母への適用と判定への影響、BR11.1〜BR11.5 = 出力）。土台: U3 の [reliability-requirements.md](../../u3-node-gate-slice/nfr-requirements/reliability-requirements.md)（NFR2・NFR4・NFR8）と U4 の [reliability-requirements.md](../../u4-thresholds-and-modes/nfr-requirements/reliability-requirements.md)。
+- 機能の設計: [rules.md](../functional-design/rules.md)（BR9 = 除外の宣言の検査、BR10.1〜BR10.6 = 分母への適用と判定への影響、BR11.1〜BR11.6 = 出力）。土台: U3 の [reliability-requirements.md](../../u3-node-gate-slice/nfr-requirements/reliability-requirements.md)（NFR2・NFR4・NFR8）と U4 の [reliability-requirements.md](../../u4-thresholds-and-modes/nfr-requirements/reliability-requirements.md)。
 - 決定済みの前提: 入力の失敗と入口の失敗は、除外があっても終了コード 2（契約の Q2 の答え。arc の答え。Owner の委任 iyasaka-arc#49 6762288830。Owner の言葉ではない）。
 
 ## 要件
@@ -20,9 +20,9 @@
 
 ### NFR4 失敗を隠さない
 
-- **NFR4.1** 除外の宣言の検査に失敗する入力（配列でない、要素が object でない、path か reason が無い、キーが未知、path が空、理由が不正、同じ path の重複）は、除外なしに黙って戻して続行しない。最初の失敗で測定に進まず終了コード 2。判定: 各負例で終了コード 2、結果の文書に inputFailure があり exclusions は空の配列、exclusionCount は 0。[NFR4、BR9.1〜BR9.4]
-- **NFR4.2** 分母の file と一致しない除外の path（directory 名、wildcard、綴りの違い、追跡されていない file、分母に無い file）は、無視せず TARGET_UNRESOLVED（終了コード 2）。除外を全部引いて分母が空になる入力は TARGET_EMPTY（終了コード 2）。成功と読まない。判定: 各負例で終了コード 2。[NFR4、BR10.1、BR10.2]
-- **NFR4.3** 除外は分母のソースだけを外し、必須の試験を減らさない。必須の試験が流れなかった時は、除外があっても NOT_RUN で不合格。除外した file の行の記録は数えず、未計測にも数えない。分母に残る file の未計測は、除外があっても未計測で不合格。判定: 除外ありで、(a) 必須の試験が流れない、(b) 分母に残る file が計測されない、(c) 試験の失敗がある、それぞれの負例が不一致または観測できずになり、一致にならない。[NFR4、BR10.3]
+- **NFR4.1** 除外の宣言の検査に失敗する入力（配列でない、要素が object でない、path か reason が無い、キーが未知、path が空、理由が不正、理由に決定の URL が無い、同じ path の重複）は、除外なしに黙って戻して続行しない。最初の失敗で測定に進まず終了コード 2。判定: 各負例で終了コード 2、結果の文書に inputFailure があり exclusions は空の配列、exclusionCount は 0。[NFR4、BR9.1〜BR9.5]
+- **NFR4.2** 分母のソースにも必須の試験にも一致しない除外の path（directory 名、wildcard、綴りの違い、追跡されていない file、どちらの集合にも無い file）は、無視せず TARGET_UNRESOLVED（終了コード 2）。除外を引いて分母のソースが空になる入力と、必須の試験が空になる入力は TARGET_EMPTY（終了コード 2）。成功と読まない。判定: 各負例で終了コード 2。[NFR4、BR10.1、BR10.2]
+- **NFR4.3** 除外は理由つきで名指した file だけを種別に応じて外し、名指さない必須の試験を減らさない。名指さない必須の試験が流れなかった時は、除外があっても NOT_RUN で不合格。名指した試験 file は必須の集合から外れて notRunPaths に出ず、path・理由・種別が exclusions に残る。除外した source の行の記録は数えず、未計測にも数えない。分母に残る file の未計測は、除外があっても未計測で不合格。判定: 除外ありで、(a) 名指さない必須の試験が流れない、(b) 分母に残る file が計測されない、(c) 試験の失敗がある、それぞれの負例が不一致または観測できずになり、一致にならない。[NFR4、BR10.3、AC-U5-TESTEX-1]
 - **NFR4.4** 除外が割合を上げたかどうかは、門が結論を書かず、読む側が分母の件数（resolvedFileCount）と exclusions から読める形で出す。除外は結果の区分（一致・不一致・観測できず）を書き換えず、理由コードを消さない。終了コードは 0・1・2 の 3 つのまま、増やさない。判定: 同じ入力から除外だけを足した 2 回の実行で、区分と理由コードの決め方が変わらず、変わるのは分母の file の集合と、それに依る割合だけ。[NFR4、BR10.6、BR11.5]
 - **NFR4.5** 入力の失敗と入口の失敗は、除外があっても終了コード 2 のまま。結果の file・summary・出力値の書き込みの失敗も、除外があっても 2 で、先に書けた結果の文書は書き直さない（U3 の NFR4.5、U4 の NFR4.3 のまま）。判定: 除外ありの入力で、入力の失敗・書き込みの失敗・予期しない例外が 2 になる。[NFR4]
 
@@ -42,7 +42,7 @@
 
 ## 気づいたこと
 
-- 除外は、失敗を許す動作ではなく、測れない file を理由つきで名指しで外す宣言。NFR4.3 の「必須の試験は減らさない」「分母に残る file の未計測は不合格」が、この違いを機械で守る。
+- 除外は、失敗を許す動作ではなく、測れない file を理由つきで名指しで外す宣言。NFR4.3 の「名指さない必須の試験は減らさない」「分母に残る file の未計測は不合格」が、この違いを機械で守る。
 - NFR8.4 のとおり、U3・U4 の試験を置き換える必要がある。弱めずに置き換えることを、この単位の PR の監査の項目に入れる。
 
 ## Assumptions & Open Questions

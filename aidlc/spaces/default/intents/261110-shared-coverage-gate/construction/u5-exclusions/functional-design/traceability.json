@@ -10,16 +10,21 @@
   "coverage": [
     { "id": "AC3.1.1", "status": "OK", "target": "BR10.5, BR10.3（門の側: 除外に書かない file は分母に残り、DB の job で流れた試験の行の記録は子の process の分も数える。DB の job の起動そのものは u7-gate-workflow-entry）" },
     { "id": "AC3.1.2", "status": "Deferred", "target": "版も指紋も固定されていない DB の job を不合格にする確かめは、DB の job と手引きの試験を作る u7-gate-workflow-entry と u8-guidance-and-verification が受ける。U5 は DB の job を作らず、門に DB のための分岐を持たせない（BR10.5）" },
-    { "id": "AC3.1.3", "status": "OK", "target": "BR10.3" },
-    { "id": "AC3.2.1", "status": "OK", "target": "BR10.2, BR11.1, BR11.2, BR11.3" },
-    { "id": "AC3.2.2", "status": "OK", "target": "BR10.1, BR9.1" },
-    { "id": "AC3.2.3", "status": "OK", "target": "BR9.2, BR9.3" },
+    { "id": "AC3.1.3", "status": "OK", "target": "BR10.3（名指さない必須の試験の未実行は NOT_RUN のまま。理由つきで名指した試験は必須の集合から外れ、exclusions に path・理由・種別が残る）, BR10.1, BR10.2" },
+    { "id": "AC3.2.1", "status": "OK", "target": "BR10.2, BR11.1, BR11.2, BR11.3, BR11.6" },
+    { "id": "AC3.2.2", "status": "OK", "target": "BR10.1, BR9.1（directory 名・wildcard・分母のソースにも必須の試験にも無い file は受け付けない）" },
+    { "id": "AC3.2.3", "status": "OK", "target": "BR9.2, BR9.3, BR9.5（理由に決定の URL を含まない除外も受け付けない）" },
     { "id": "AC3.2.4", "status": "OK", "target": "BR10.4, BR9.4, BR11.1, BR11.4" },
     { "id": "AC3.3.1", "status": "OK", "target": "BR10.4, BR9.1" },
     { "id": "AC3.3.2", "status": "OK", "target": "BR10.5, BR9.1, BR11.4" },
-    { "id": "AC6.3.1", "status": "OK", "target": "BR11.1, BR11.2" },
+    { "id": "AC6.3.1", "status": "OK", "target": "BR11.1, BR11.2, BR11.6" },
     { "id": "AC6.3.2", "status": "OK", "target": "BR11.5, BR10.6" },
     { "id": "AC6.3.3", "status": "OK", "target": "BR11.5" }
+  ],
+  "design_added_acceptance": [
+    { "id": "AC-U5-VIS-1", "status": "OK", "statement": "Given 除外が 1 件以上ある入力, When 判定して出力する, Then 結果の区分（match・mismatch・unobservable）と動作（enforce・record-only）と閾値の例外の有無に関わらず、job summary の最初の行（閾値の例外の行があればその次）に、除外の件数と種別ごとの件数（source・test・both）が毎回出る。除外が 0 件のとき出ず、出力は U4 とバイトまで一致する", "target": "BR11.6, BR11.1, BR11.4", "origin": "arc の答え（Owner の決定 95 iyasaka-arc#49 6934340758 の範囲。Owner の言葉ではない）。Owner の関心は「網羅率の基準を都合で変えないか」" },
+    { "id": "AC-U5-TESTEX-1", "status": "OK", "statement": "Given 流さない追跡試験 file を理由つきで名指した除外, When 判定する, Then その試験 file は必須の試験の集合から外れて notRunPaths に出ず、path・理由・種別・件数が結果に残る。名指さない試験の未実行は NOT_RUN のまま。testTargets を狭めただけの呼び出しは除外とみなされず記録が残らない", "target": "BR10.1, BR10.2, BR10.3, BR11.1", "origin": "設計監査 1 回目 F01（上流 FR4.3・FR5.1・U3 BR1.7 の引継ぎ）。arc の答え A" },
+    { "id": "AC-U5-URL-1", "status": "OK", "statement": "Given reason に決定の URL（U4 と同じ形）が 1 つも含まれない除外, When 門を呼ぶ, Then INPUT_FIELD_INVALID（exclusions[i].reason）で失敗する。URL の実在は確かめず監査が照らす", "target": "BR9.5", "origin": "arc の答え Q1=A（決定 95 の範囲。Owner の言葉ではない）" }
   ],
   "reverse": [
     { "id": "BR1.3", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
@@ -34,6 +39,7 @@
     { "id": "BR4.7", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
     { "id": "BR5.1", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
     { "id": "BR5.4", "status": "N/A", "target": "rule of u3-node-gate-slice, cited as the base this unit adds to" },
+    { "id": "BR6.4", "status": "N/A", "target": "rule of u4-thresholds-and-modes, cited as the base this unit adds to" },
     { "id": "BR6.5", "status": "N/A", "target": "rule of u4-thresholds-and-modes, cited as the base this unit adds to" },
     { "id": "BR8.2", "status": "N/A", "target": "rule of u4-thresholds-and-modes, cited as the base this unit adds to" },
     { "id": "BR8.6", "status": "N/A", "target": "rule of u4-thresholds-and-modes, cited as the base this unit adds to" }

@@ -28,6 +28,7 @@
     "NFR4.9",
     "NFR4.10",
     "NFR4.11",
+    "NFR4.12",
     "NFR5.1",
     "NFR5.2",
     "NFR5.3",
@@ -187,6 +188,11 @@
       "id": "NFR4.11",
       "status": "OK",
       "target": "observability-design OB5（除外した path は判定の一覧に現れない）"
+    },
+    {
+      "id": "NFR4.12",
+      "status": "OK",
+      "target": "observability-design OB2（頭の 1 行を毎回出す。区分・動作・例外・除外の有無の組み合わせの表）"
     },
     {
       "id": "NFR5.1",
