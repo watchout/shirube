@@ -1,0 +1,223 @@
+{
+  "stage": "nfr-design",
+  "note": "開き直し後の要約確認（Looks correct）のもとで保存。",
+  "unit": "u2-working-state-dialogue",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.1a",
+    "NFR1.1b",
+    "NFR1.2",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR2.5",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR5.1",
+    "NFR5.1a",
+    "NFR5.2",
+    "NFR6.1",
+    "NFR6.1a",
+    "NFR6.1b",
+    "NFR6.1c",
+    "NFR6.2",
+    "NFR7",
+    "NFR8.1",
+    "NFR8.1a",
+    "NFR8.2",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR10.1",
+    "NFR10.2"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "observability-design OB5（網羅率の記録は LC7 が試験の中で作る。分母は Infrastructure Design で確定、未確定の間は成功に数えない）、logical-components LC7"
+    },
+    {
+      "id": "NFR1.1a",
+      "status": "OK",
+      "target": "performance-design PF3（未計測の値を適合と示さない）"
+    },
+    {
+      "id": "NFR1.1b",
+      "status": "OK",
+      "target": "observability-design OB5（機械可読な記録。申告値は証拠にしない）、logical-components LC7"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "observability-design OB5（42 規則の正例・負例と AC 由来の入力）"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "security-design SC1・SC1a（読取り専用。書ける資格情報を渡さない。権限拒否は観測不能。子 process は固定の名前・shell なし・環境変数は許可名だけ。cwd の選択は Owner の判断を置き場の設計で伺う）"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "security-design SC2（秘密らしい入力は値も digest も持たず写さない。valueType ごとの許される形式・rejectionReason の固定分類・keep-absent は機能設計で確定済み、aidlc_settings の要素の形は A-08）"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "security-design SC3（許可を作らない・命令にしない）"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "OK",
+      "target": "security-design SC6（公開の範囲。架空 fixture）"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "security-design SC6（新しい依存を足さない。脆弱性確認と Owner の判断）"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "security-design SC4（入力の検証と escape。LC5・LC6）"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "security-design SC1a・SC5（path は根の内側だけ。解決 → LC2 が判定 → 許した実体だけ読む。子 process は group ごと止める）、logical-components LC1・LC2"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "reliability-design RL1（変化した入力を完全な観測にしない。前後の digest の比較は LC2。二重送信は 1 件、keep-absent は (itemKey, selectedCandidateRef) で 1 件）"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "reliability-design RL2（古い観測・回答を使わない。観測が変われば無効化）"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "scalability-design SC-B（対話どうしで可変の状態を共有しない）"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "reliability-design RL3（核は時刻・乱数・UUID を取らない。同じ入力で同じ結果）"
+    },
+    {
+      "id": "NFR5.1a",
+      "status": "OK",
+      "target": "reliability-design RL3（時計を読むのは LC1 だけ。構造の試験で検出）"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "observability-design OB3（理由コードは U1 を読むだけ。観測の参照と時刻を添える）"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "performance-design PF1（予算は共通の profile を読むだけ。U2 は数値を持たない。LC1 は枠で止めて測った値を返し、超過の分類は LC2）"
+    },
+    {
+      "id": "NFR6.1a",
+      "status": "OK",
+      "target": "performance-design PF2（超過は超えた単位だけ観測不能。読めた出典は保つ。子を止められない・確かめられない時は観測不能）、scalability-design SC-A"
+    },
+    {
+      "id": "NFR6.1b",
+      "status": "OK",
+      "target": "scalability-design SC-A（入力の大きさに有限の上限。出力は読みながら打ち切り、超えた分を保持しない。無言で切り捨てない）"
+    },
+    {
+      "id": "NFR6.1c",
+      "status": "OK",
+      "target": "scalability-design SC-C（項目が増えても同じ規則）"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "reliability-design RL4（人待ちは 1 回で止まる。自動再試行 0）"
+    },
+    {
+      "id": "NFR7",
+      "status": "N/A",
+      "target": "reliability-design RL5（非適用。外部への効果が 0 であることを構造の試験で確かめる）"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "observability-design OB4（版の識別。読めない時は確認できず）"
+    },
+    {
+      "id": "NFR8.1a",
+      "status": "OK",
+      "target": "reliability-design RL6（確認した版を具体的に書く。manifest だけで全環境を保証しない）"
+    },
+    {
+      "id": "NFR8.2",
+      "status": "OK",
+      "target": "reliability-design RL6（契約の形を変えない。未知の major は拒否）"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "observability-design OB1（案内の形。平文・順序・同じ意味）"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "observability-design OB2（A 不足・B 観測不能の区別。回答済み・未適用。答えられない項目は fix-source・install-or-upgrade-tool、必須の出典の不足は confirmed にしない）"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "OK",
+      "target": "observability-design OB6（ESM・Node 22・実行時 npm 依存なし・構造の検査）"
+    },
+    {
+      "id": "NFR10.2",
+      "status": "OK",
+      "target": "observability-design OB5（失敗・skip・未実行を成功にしない）"
+    }
+  ],
+  "functional_design_fixes_reflected": [
+    {
+      "id": "FD-GAP-1",
+      "statement": "答えられない項目の不足・食い違いは fix-source・install-or-upgrade-tool（機能設計 BR3.2・BR4.1。見直し済み）",
+      "reflected_in": "observability-design OB2"
+    },
+    {
+      "id": "FD-GAP-2",
+      "statement": "valueType ごとの許される形式と rejectionReason の固定分類（機能設計 BR5.1。aidlc_settings の要素の形は A-08）",
+      "reflected_in": "security-design SC2"
+    },
+    {
+      "id": "FD-GAP-3",
+      "statement": "選択は GuidanceSelection と Answer の両方に保ち、keep-absent は selectedCandidateRef だけを持つ（機能設計 BR3.2・BR5.4）",
+      "reflected_in": "security-design SC2, reliability-design RL1"
+    }
+  ],
+  "reopen_changes": [
+    {
+      "id": "LC-GAP-1",
+      "statement": "BR1.1・BR1.4・BR1.5・BR1.6 の判定は LC2。LC1 は生の事実だけを返す",
+      "reflected_in": "logical-components LC1・LC2、performance-design PF1、reliability-design RL1、security-design SC5"
+    },
+    {
+      "id": "LC-GAP-2",
+      "statement": "BR3.4 は file の破損（malformed）が LC2、値の不正（invalid）が LC3",
+      "reflected_in": "logical-components LC2・LC3、performance-design PF2"
+    },
+    {
+      "id": "SC-GAP-1",
+      "statement": "子 process は自分の process group で起動し、枠を超えたら group ごと止める。出力は読みながら打ち切る。止められない・確かめられない時は観測不能",
+      "reflected_in": "security-design SC1a、scalability-design SC-A、reliability-design RL1、logical-components LC1"
+    }
+  ]
+}
