@@ -10,11 +10,11 @@ import { GATE_DIR } from "./coverage-gate-fixtures.mjs";
 const FILES = readdirSync(GATE_DIR).filter((name) => name.endsWith(".mjs")).sort();
 const source = (name) => readFileSync(join(GATE_DIR, name), "utf8");
 // The files that decide or format: they may not read a clock, a random source, the environment or a file.
-const CORE = ["judge.mjs", "report.mjs", "report-exception.mjs", "threshold.mjs", "input.mjs", "order.mjs", "sanitize.mjs", "lcov.mjs", "events.mjs", "exclusions.mjs"];
+const CORE = ["judge.mjs", "report.mjs", "report-exception.mjs", "threshold.mjs", "input.mjs", "order.mjs", "sanitize.mjs", "lcov.mjs", "events.mjs", "exclusions.mjs", "report-exclusions.mjs"];
 const importsOf = (text) => [...text.matchAll(/^(?:import|export)\s[^;]*?from\s+"([^"]+)"/gmu)].map((m) => m[1]);
 
 test("the gate is made of the expected files", () => {
-  assert.deepEqual(FILES, ["cli.mjs", "emit.mjs", "events-reporter.mjs", "events.mjs", "exclusions.mjs", "input.mjs", "judge.mjs", "lcov.mjs", "measure-node.mjs", "order.mjs", "report-exception.mjs", "report.mjs", "resolve.mjs", "runner.mjs", "sanitize.mjs", "threshold.mjs"]);
+  assert.deepEqual(FILES, ["cli.mjs", "emit.mjs", "events-reporter.mjs", "events.mjs", "exclusions.mjs", "input.mjs", "judge.mjs", "lcov.mjs", "measure-node.mjs", "order.mjs", "report-exception.mjs", "report-exclusions.mjs", "report.mjs", "resolve.mjs", "runner.mjs", "sanitize.mjs", "threshold.mjs"]);
 });
 
 test("the core files take no clock, no random source, no environment and no file", () => {

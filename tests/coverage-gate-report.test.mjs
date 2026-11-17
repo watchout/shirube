@@ -339,9 +339,9 @@ test("the list is cut at the summary limit, and the full list stays in the JSON"
 });
 
 test("the notice gets one fixed sentence with the count at its end, the kind of annotation is unchanged, and no path or reason is in it", () => {
-  assert.equal(renderNotice(withEx(full)), "::notice::Coverage gate: match, 100.00% of 100.00% required. Exclusions: 3.");
+  assert.equal(renderNotice(withEx(full)), "::notice::Coverage gate: match, 100.00%25 of 100.00%25 required. Exclusions: 3.");
   assert.equal(renderNotice(withEx(unread)), "::error::Coverage gate: unobservable (MEASUREMENT_FAILED). Exclusions: 3.");
-  assert.equal(renderNotice(withEx(measurement(), { mode: "record-only" })), "::warning::Coverage gate: mismatch (BELOW_THRESHOLD). Line coverage 66.66% of 100.00% required. Recorded only, the job is not failed. Exclusions: 3.");
+  assert.equal(renderNotice(withEx(measurement(), { mode: "record-only" })), "::warning::Coverage gate: mismatch (BELOW_THRESHOLD). Line coverage 66.66%25 of 100.00%25 required. Recorded only, the job is not failed. Exclusions: 3.");
   for (const [name, m] of Object.entries(CASES)) {
     assert.equal(renderNotice(withEx(m)).split("::")[1], renderNotice(make(m)).split("::")[1], name);
     assert.ok(!renderNotice(withEx(m)).includes("src/") && !renderNotice(withEx(m)).includes("github.com"), name);
