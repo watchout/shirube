@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { checkExclusions } from "../scripts/coverage-gate/exclusions.mjs";
 import { DEFAULT_DEADLINE_SECONDS, DEFAULT_TOTAL_BUDGET_SECONDS, checkInput, isTestFile } from "../scripts/coverage-gate/input.mjs";
 
 const good = { schemaVersion: 1, shape: "node-builtin", denominator: { targets: ["src"] }, testTargets: ["tests"] };
@@ -14,7 +15,7 @@ const code = (t) => fails(t).reasonCode;
 test("a complete input is accepted and gets the default time limits", () => {
   const r = checkInput(text());
   assert.equal(r.ok, true);
-  assert.deepEqual(r.input, { schemaVersion: 1, shape: "node-builtin", declaredTargets: ["src"], testTargets: ["tests"], deadlineSeconds: 600, totalBudgetSeconds: 900, mode: "enforce", threshold: null });
+  assert.deepEqual(r.input, { schemaVersion: 1, shape: "node-builtin", declaredTargets: ["src"], testTargets: ["tests"], deadlineSeconds: 600, totalBudgetSeconds: 900, mode: "enforce", threshold: null, exclusions: [] });
   assert.deepEqual([DEFAULT_DEADLINE_SECONDS, DEFAULT_TOTAL_BUDGET_SECONDS], [600, 900]);
 });
 
@@ -43,7 +44,7 @@ test("schemaVersion must be the integer 1", () => {
 });
 
 test("keys this version does not know are refused at every level, including the later-unit fields", () => {
-  for (const key of ["exclusions", "measurement", "extra", "Threshold", "Mode", "thresholds", "modes"]) {
+  for (const key of ["exclusion", "excludes", "Exclusions", "measurement", "extra", "Threshold", "Mode", "thresholds", "modes"]) {
     const f = fails(text({ [key]: 1 }));
     assert.deepEqual([f.reasonCode, f.field], ["INPUT_FIELD_UNKNOWN", key]);
     assert.ok(f.detail.includes(key));
@@ -136,17 +137,17 @@ const URL_OK = "https://github.com/example-org/example-repo/issues/12#issuecomme
 const EXCEPTION = { percent: 95, decisionUrl: URL_OK, rationale: "Example rationale for a lowered line." };
 const where = (t) => [fails(t).reasonCode, fails(t).field];
 
-test("threshold and mode are known keys now; exclusions and measurement are still unknown", () => {
+test("threshold, mode and exclusions are known keys now; measurement and the other spellings are still unknown", () => {
   assert.equal(checkInput(text({ mode: "enforce", threshold: EXCEPTION })).ok, true);
-  for (const key of ["exclusions", "measurement"]) assert.deepEqual(where(text({ mode: "enforce", [key]: 1 })), ["INPUT_FIELD_UNKNOWN", key]);
+  for (const key of ["exclusion", "excludes", "measurement"]) assert.deepEqual(where(text({ mode: "enforce", [key]: 1 })), ["INPUT_FIELD_UNKNOWN", key]);
   assert.deepEqual(where(text({ threshold: { ...EXCEPTION, extra: 1 } })), ["INPUT_FIELD_UNKNOWN", "threshold.extra"]);
   assert.deepEqual(where(text({ threshold: { ...EXCEPTION, exclusions: [] } })), ["INPUT_FIELD_UNKNOWN", "threshold.exclusions"]);
 });
 
-test("an input with no threshold and no mode is the old input plus mode enforce and threshold null, nothing else", () => {
+test("an input with no threshold, no mode and no exclusions is the old input plus mode enforce, threshold null and an empty exclusions list, nothing else", () => {
   const r = checkInput(text());
-  assert.deepEqual(Object.keys(r.input), ["schemaVersion", "shape", "declaredTargets", "testTargets", "deadlineSeconds", "totalBudgetSeconds", "mode", "threshold"]);
-  assert.deepEqual([r.input.mode, r.input.threshold], ["enforce", null]);
+  assert.deepEqual(Object.keys(r.input), ["schemaVersion", "shape", "declaredTargets", "testTargets", "deadlineSeconds", "totalBudgetSeconds", "mode", "threshold", "exclusions"]);
+  assert.deepEqual([r.input.mode, r.input.threshold, r.input.exclusions], ["enforce", null, []]);
 });
 
 test("mode: enforce and record-only are accepted exactly; an omitted mode is enforce", () => {
@@ -205,4 +206,70 @@ test("the input text with prototype-looking names inside threshold is refused wi
   const body = `{"schemaVersion":1,"shape":"node-builtin","denominator":{"targets":["src"]},"testTargets":["tests"],"threshold":{"percent":95,"decisionUrl":"${URL_OK}","rationale":"r","__proto__":{"polluted":true}}}`;
   assert.deepEqual(where(body), ["INPUT_FIELD_UNKNOWN", "threshold.__proto__"]);
   assert.equal({}.polluted, undefined);
+});
+
+// U5: the exclusions list (BR9.1, BR10.4 (3)). Every value here is fictional.
+const REASON = `Generated file, see ${URL_OK} for the decision.`;
+const entry = (path, reason = REASON) => ({ path, reason });
+
+test("exclusions: an omitted value and an empty array are both an empty list in the checked input", () => {
+  assert.deepEqual(checkInput(text()).input.exclusions, []);
+  assert.deepEqual(checkInput(text({ exclusions: [] })).input.exclusions, []);
+  assert.deepEqual(checkInput(text({ exclusions: [] })).input, checkInput(text()).input);
+});
+
+test("exclusions: one or more are carried into the checked input in code-point order, whatever the order written", () => {
+  const written = [entry("src/b.mjs"), entry("src/a.mjs"), entry("src/ｚ.mjs"), entry("src/😀.mjs")];
+  const r = checkInput(text({ exclusions: written }));
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.input.exclusions.map((e) => e.path), ["src/a.mjs", "src/b.mjs", "src/ｚ.mjs", "src/😀.mjs"]);
+  assert.deepEqual(checkInput(text({ exclusions: [...written].reverse() })), r);
+  assert.deepEqual(r.input.exclusions[0], entry("src/a.mjs"));
+});
+
+test("exclusions: each failure is the one the exclusions check gives, with its own reason code and field", () => {
+  const cases = [
+    [null, ["INPUT_FIELD_INVALID", "exclusions"]], ["src/a.mjs", ["INPUT_FIELD_INVALID", "exclusions"]], [{}, ["INPUT_FIELD_INVALID", "exclusions"]], [50, ["INPUT_FIELD_INVALID", "exclusions"]],
+    [[null], ["INPUT_FIELD_INVALID", "exclusions[0]"]], [[entry("a"), "b"], ["INPUT_FIELD_INVALID", "exclusions[1]"]],
+    [[{ ...entry("a"), extra: 1 }], ["INPUT_FIELD_UNKNOWN", "exclusions[0].extra"]], [[{ ...entry("a"), kind: "source" }], ["INPUT_FIELD_UNKNOWN", "exclusions[0].kind"]],
+    [[{}], ["INPUT_FIELD_MISSING", "exclusions[0].path"]], [[{ path: "a" }], ["INPUT_FIELD_MISSING", "exclusions[0].reason"]],
+    [[{ path: "", reason: REASON }], ["INPUT_FIELD_INVALID", "exclusions[0].path"]], [[{ path: 5, reason: REASON }], ["INPUT_FIELD_INVALID", "exclusions[0].path"]],
+    [[{ path: "a", reason: "no decision address" }], ["INPUT_FIELD_INVALID", "exclusions[0].reason"]], [[{ path: "a", reason: `${URL_OK}\nmore` }], ["INPUT_FIELD_INVALID", "exclusions[0].reason"]],
+    [[entry("a"), entry("a")], ["INPUT_FIELD_INVALID", "exclusions[1].path"]],
+  ];
+  for (const [value, expected] of cases) {
+    assert.deepEqual(where(text({ exclusions: value })), expected, JSON.stringify(value));
+    assert.deepEqual(fails(text({ exclusions: value })), checkExclusions(value).failure, JSON.stringify(value));
+  }
+});
+
+test("exclusions: another way to name them is an unknown key, never read as an exclusion", () => {
+  for (const key of ["exclusion", "excludes", "exclude", "Exclusions"]) assert.deepEqual(where(text({ [key]: [entry("src/a.mjs")] })), ["INPUT_FIELD_UNKNOWN", key], key);
+  assert.deepEqual(where(JSON.stringify({ ...good, denominator: { targets: ["src"], exclusions: [entry("src/a.mjs")] } })), ["INPUT_FIELD_UNKNOWN", "denominator.exclusions"]);
+  assert.deepEqual(where(text({ testTargets: ["tests"], measurement: 1, exclusions: [] })), ["INPUT_FIELD_UNKNOWN", "measurement"]);
+});
+
+test("exclusions: they are checked after the time limits, the mode and the threshold, and after the earlier checks", () => {
+  const badExclusions = [{ path: "" }];
+  assert.deepEqual(where(text({ deadlineSeconds: 0, exclusions: badExclusions })), ["INPUT_FIELD_INVALID", "deadlineSeconds"]);
+  assert.deepEqual(where(text({ totalBudgetSeconds: 0, exclusions: badExclusions })), ["INPUT_FIELD_INVALID", "totalBudgetSeconds"]);
+  assert.deepEqual(where(text({ mode: "fail", exclusions: badExclusions })), ["INPUT_FIELD_INVALID", "mode"]);
+  assert.deepEqual(where(text({ threshold: { ...EXCEPTION, percent: 100 }, exclusions: badExclusions })), ["INPUT_FIELD_INVALID", "threshold.percent"]);
+  assert.deepEqual(where(text({ shape: "q", exclusions: badExclusions })), ["INPUT_SHAPE_UNSUPPORTED", "shape"]);
+  assert.deepEqual(where(text({ testTargets: [], exclusions: badExclusions })), ["INPUT_FIELD_INVALID", "testTargets"]);
+  assert.deepEqual(where(text({ extra: 1, exclusions: badExclusions })), ["INPUT_FIELD_UNKNOWN", "extra"]);
+  assert.deepEqual(where(text({ exclusions: badExclusions })), ["INPUT_FIELD_MISSING", "exclusions[0].reason"]);
+});
+
+test("exclusions: a failed check gives no input, and the checked exclusions are new objects", () => {
+  assert.equal(checkInput(text({ exclusions: [null] })).input, undefined);
+  const written = [entry("src/a.mjs")];
+  const r = checkInput(JSON.stringify({ ...good, exclusions: written }));
+  r.input.exclusions[0].reason = "changed afterwards";
+  assert.equal(written[0].reason, REASON);
+});
+
+test("exclusions: a failure never carries the path or the reason that was written", () => {
+  const f = fails(text({ exclusions: [{ path: "leak-marker-path", reason: "leak-marker-reason no address" }] }));
+  assert.ok(!f.detail.includes("leak-marker") && !f.field.includes("leak-marker"));
 });

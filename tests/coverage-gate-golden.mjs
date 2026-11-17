@@ -6,7 +6,7 @@ export const GOLDEN_PATHS = Object.freeze(["match", "mismatch", "unobservable", 
 
 export const GOLDEN_INPUT = JSON.stringify({ schemaVersion: 1, shape: "node-builtin", denominator: { targets: ["src"] }, testTargets: ["tests"] });
 // A key a later unit adds: the input fails on it in U3 and in U4 alike.
-export const GOLDEN_FAILING_INPUT = JSON.stringify({ schemaVersion: 1, exclusions: ["src/a.mjs"] });
+export const GOLDEN_FAILING_INPUT = JSON.stringify({ schemaVersion: 1, excludes: ["src/a.mjs"] });
 
 const DEFINITION = { name: "node-builtin", measuredTarget: "declared tracked sources", toolName: "node --test coverage", toolVersion: "22.0.0" };
 const ATTEMPT = { toolName: "node", deadlineSeconds: 600, totalBudgetSeconds: 900, spentSeconds: 1, endState: "completed" };
