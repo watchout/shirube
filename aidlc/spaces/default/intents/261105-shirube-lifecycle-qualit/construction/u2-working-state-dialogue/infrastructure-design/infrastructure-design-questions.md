@@ -8,7 +8,7 @@ U2 は常駐の service ではなく、対象を 1 回ずつ読んで案内を�
 
 ## 実物の観測（origin/main、`~/Developer/shirube` の clone）
 
-作業場の木は古いことがあるので、clone の `origin/main`（head `7fa98d1`）の実物を読んだ。下は観測した事実で、設計の決定ではない。
+作業場の木は古いことがあるので、clone の `origin/main` の実物を読んだ。最初の観測は head `7fa98d1`、この直しの時に読み直した head は `f2d509b`（#111 の統合。差分は U5 の file だけで、`knip.jsonc` の entry・`package.json` の `test` の glob・CI の `test`・`hygiene` の job・`.shirube/sds-pin.json` は `7fa98d1` の時から変わらず、`scripts/working-state/` と `tests/working-state-*` はまだ無い）。下は観測した事実で、設計の決定ではない。
 
 | 観測 | 実物 | 置き場の設計への意味 |
 |---|---|---|
@@ -155,6 +155,15 @@ FD-GAP-1〜3・FD-GAP-4（Q5 = A）・LC-GAP-1・LC-GAP-2・SC-GAP-1 は、段�
 - 既存の CI の関門として、`test` job の `scripts/**` の行の網羅率 80% の床・OWN-01・新しい file 300 行（`tests/**` も対象。規則 42 件の試験は複数 file に分ける）を表に足した。
 - 作る物: 基盤の仕様、監視の設計、CI の設計、追跡表。クラウドの資源・網・DB・queue・secret の保管場所は作らない。
 
+設計監査 1 回目（PR #112）の直しと、Owner の決定 116・120 に合わせた追加の取り決め（新しい問いは立てない。どれも置き場・試験・検査の取り決めで、Owner の答えが要る選択ではない）:
+
+- 観測値の判定の関数（Owner の決定 116・120）: 判定の関数は `scripts/working-state/` の中の 1 file に置く（file 名は Code Generation で決める仮の名前。NFR 設計の `value-exposure.mjs` は仮の名前として扱う）。他の部品を import しない末端の純粋な関数で、LC2（観測値を外へ出す前）と LC5（回答の検査）が呼ぶ。BR5.2 の判定の持ち主はこの関数だけ（LC3 が持つ）で、LC5 は呼んで結果を適用するだけ。置き場の設計の依存の向きの図に「LC2 と LC5 が末端の関数を呼ぶ」を 1 行足す（NFR 設計の持ち越しの Minor への扱い）。
+- 開いた形（string・list）の観測値（決定 120）: 生の値が存在するのは、LC1 から LC2 へ渡す 1 か所の受け渡しだけ。保持・digest・表示をせず、診断・記録・試験の出力に出さない。構造の試験を足す: LC1 の返り値が診断・記録へ流れる経路が無い。
+- 対象の結び（targetBinding）: 項目一覧の出典ごとの targetBinding が書かれていなければ named（失敗側）。対象を名指さない出典は観測不能（malformed）で、確認済みにならない。試験に T1.1u を足す。
+- 試験の追加: T1.1u・T3.2o・T3.4o・T5.2o・T6.4o・T8.3o と、観測値に秘密らしい架空の値・形式に合わない架空の値を入れた負例（値も digest も現れない）を、CI の関門の表と監視の設計に足す。1 file 300 行のため複数の `tests/working-state-*.test.mjs` に分ける。
+- U2 が保証しないこと（決定 120）: 開いた形の中身だけの変化は検出しない。回答は「回答済み」のままで、実物との一致は確認済みと示さず「比べられず観測できず」。実物の読み直しは実適用側（U3・U5）の持ち物。この基盤の設計も、この限りを埋める仕組み（開いた形の値の保管場所）を作らない。
+- 実物の観測の head を `f2d509b` に更新した（上の観測の表。差し替えた物は無い）。
+
 Does this all look correct before I generate the artifact?
 
 - Looks correct
@@ -162,4 +171,4 @@ Does this all look correct before I generate the artifact?
 
 [Answer]: Looks correct
 
-（Looks correct は arc が Owner の決定 95（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758）により入力した。Owner の言葉ではない。Q1〜Q6 の記録済みの答えと、Owner の決定 106・111（cwd = OS の根）に合っている、との arc の確認。）
+（Looks correct は arc が Owner の決定 95（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758）により入力した。Owner の言葉ではない。Q1〜Q7 の答えは変えず、cwd = OS の根は決定 111 のまま、観測の head を f2d509b に読み直し、判定の関数を末端の 1 file に置き開いた形の生の値は LC1→LC2 の受け渡しだけ（決定 116・120）、負例を含む試験の足し、保証しないことの保持、が arc の答えと決定に合っている、との arc の確認。）

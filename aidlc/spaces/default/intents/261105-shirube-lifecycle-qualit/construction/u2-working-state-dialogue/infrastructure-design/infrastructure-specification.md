@@ -5,7 +5,8 @@
 - 対象: `261105-shirube-lifecycle-qualit / u2-working-state-dialogue / infrastructure-design`。
 - 質問と答え: [infrastructure-design-questions](infrastructure-design-questions.md)（Q1〜Q5、要約確認 Looks correct）。Q1・Q2・Q3・Q5 は arc が Owner の決定 95（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758）により入力した答えで、Owner 自身の言葉ではない。Q4 は Owner の原文（決定 106、https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6941079231 、本文 SHA-256 `a66c97dcee48505de936dbce9c7fc511f2354cd53ff553ad6e98fe0af32542ad`）。
 - 入力: NFR 設計 7 文書（[logical-components](../nfr-design/logical-components.md)・[security-design](../nfr-design/security-design.md)・[performance-design](../nfr-design/performance-design.md)・[scalability-design](../nfr-design/scalability-design.md)・[reliability-design](../nfr-design/reliability-design.md)・[observability-design](../nfr-design/observability-design.md)・[traceability](../nfr-design/traceability.json)）、機能設計の [functional-spec](../functional-design/functional-spec.md)・[entities](../functional-design/entities.md)・[rules](../functional-design/rules.md)。
-- 実物の観測は、`~/Developer/shirube` の clone の `origin/main`（head `7fa98d1`）。作業場の木と共有の CodeKB は現状の根拠にしていない。観測した事実は questions の「実物の観測」の表にある。本書は設計であり、実装・測定・試験の結果ではない。
+- 実物の観測は、`~/Developer/shirube` の clone の `origin/main`。最初の観測は head `7fa98d1`、この直しで読み直した head は `f2d509b`（差分は U5 の file だけ。`knip.jsonc` の entry・`package.json` の `test` の glob・CI の `test`・`hygiene` の job・`.shirube/sds-pin.json` は変わらず、`scripts/working-state/`・`tests/working-state-*` はまだ無い）。作業場の木と共有の CodeKB は現状の根拠にしていない。観測した事実は questions の「実物の観測」の表にある。本書は設計であり、実装・測定・試験の結果ではない。
+- 追加の入力: Owner の決定 116（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6962989955 、本文 SHA-256 `3986367dcee537139c1065e71d9db339cd085e10f8fbf4f5cf1d7c771e5f3a6a`）・120（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137 、本文 SHA-256 `c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4`）と対象の結び（targetBinding）を反映した NFR 設計の直し。
 
 U2 は常駐の service ではなく、対象を 1 回ずつ読んで案内を返す Node の module 群である。クラウドの資源・網・DB・queue・secret の保管場所は作らない。この段で決めるのは、置き場・試験の分母・子 process の起動の条件・A-07 の突き合わせの結果だけである。
 
@@ -29,10 +30,15 @@ U2 は常駐の service ではなく、対象を 1 回ずつ読んで案内を�
 
 | 論理部品 | 置き場の案 | 備考 |
 |---|---|---|
-| LC1 観測の読取り | `scripts/working-state/` の読取り用の module（file 読み・子 process の起動・時計） | 時計と I/O を持つのはここだけ。分類・比較・判定を持たない |
+| LC1 観測の読取り | `scripts/working-state/` の読取り用の module（file 読み・子 process の起動・時計） | 時計と I/O を持つのはここだけ。分類・比較・判定を持たない。生の値（開いた形を含む）は返り値として LC2 へ渡すだけで、診断・記録へ流さない |
 | LC2〜LC5 核 | `scripts/working-state/` の核の module 群 | 純粋。LC1・LC6・LC7 を import しない |
+| 観測値・回答の判定の関数（LC3 が持つ末端の関数） | `scripts/working-state/` の中の 1 file（名前は Code Generation で決める仮の名前。NFR 設計の `value-exposure.mjs` は仮） | 他の部品を import しない。BR5.2 の判定の持ち主はこの関数だけで、LC2（観測値を外へ出す前）と LC5（回答の検査）が呼び、LC5 は結果を適用するだけ。定義は 1 か所（S3）。LC3 の項目状態の module とは別 file に置き、LC2 が LC3 の項目状態を import しない形を保つ（向きの逆転も循環も無い） |
 | LC6 表示の escape | `scripts/working-state/` の表示用の module | 形式だけ。核は import しない |
 | LC7 網羅率の記録 | `tests/working-state-*.test.mjs` の中（子 process に Node の lcov を流して解析） | 試験時だけ。U2 の実行時には存在しない |
+
+依存の向きの図（NFR 設計の logical-components）に足す 1 行の読み: 「LC2 と LC5 は、LC3 が持つ末端の判定の関数を呼ぶ（その関数は何も import しない）」。NFR 設計の記録は承認済みなので書き換えず、この読みを置き場の設計の正本とする。
+
+**開いた形の生の値の置き場（Owner の決定 120）。** 生の値が存在するのは、LC1 から LC2 へ渡す返り値の 1 か所だけ。LC2 の関数の中でメモリ上の比較（matchGroup）をして捨てる。保持・digest・表示をせず、診断・記録・試験の出力・案内のどこにも出さない。置き場として file・cache・module の変数・log を設けない。構造の試験で確かめる: LC1 の返り値が診断・記録・案内の組み立てへ渡る経路が無い（呼び出しの形を静的に読む試験と、架空の開いた形の値を入れた入力の出力全体を走査して値が現れない試験の両方）。
 
 file 名と module の分け方は Code Generation で決め、1 file 300 行・関数 50 行・複雑さ 10 の既存の検査を通す。LC1〜LC5 の判定の持ち主は NFR 設計の [logical-components](../nfr-design/logical-components.md) で確定した（LC-GAP-1・LC-GAP-2 の直しは反映済み、見直し済み）。部品と file の対応を変える時は、この表を先に直す。
 
@@ -73,7 +79,7 @@ Owner の決定 106（Q4 = A）で確定した条件。起動の経路は、対�
 
 ## A-07 の突き合わせの結果（initialCatalog の出典の割当と実物）
 
-対象は Shirube 自身の repo の clone の実物（`origin/main`、head `7fa98d1`）であって、U2 が実際に読む利用先の観測ではない。
+対象は Shirube 自身の repo の clone の実物（`origin/main`、突き合わせた head `7fa98d1`。`f2d509b` で pin・workflow の関連 file に差が無いことを読み直した）であって、U2 が実際に読む利用先の観測ではない。
 
 | itemKey | 割当の出典 | 実物での確認 | 結果 |
 |---|---|---|---|
@@ -93,7 +99,7 @@ Owner の決定 106（Q4 = A）で確定した条件。起動の経路は、対�
 
 ## knip の production の entry（R-01、Q6 = A）
 
-実物の観測（`origin/main`、head `7fa98d1`）: `knip.jsonc` の `entry` は production の entry を `scripts/hygiene/*.mjs!`・`scripts/sds/*.mjs!`・`scripts/unit-done/*.mjs!`・`scripts/coverage-gate/cli.mjs!` などの明示列挙にしており、`scripts/working-state/` は含まない。`hygiene` job の knip の step は `knip --production --config knip.jsonc` で、production の entry は `!` 付きだけである。入口を作らない（Q2 = A）と、`scripts/working-state/` の全 file が「未使用 file」と判定され、`hygiene` が落ちる見込みである。これは設定と knip の production の規則からの読みで、knip を実行して確かめたものではない。Code Generation の最初に実行して確かめる。
+実物の観測（`origin/main`、head `7fa98d1`。`f2d509b` で `knip.jsonc` が同じことを読み直した）: `knip.jsonc` の `entry` は production の entry を `scripts/hygiene/*.mjs!`・`scripts/sds/*.mjs!`・`scripts/unit-done/*.mjs!`・`scripts/coverage-gate/cli.mjs!` などの明示列挙にしており、`scripts/working-state/` は含まない。`hygiene` job の knip の step は `knip --production --config knip.jsonc` で、production の entry は `!` 付きだけである。入口を作らない（Q2 = A）と、`scripts/working-state/` の全 file が「未使用 file」と判定され、`hygiene` が落ちる見込みである。これは設定と knip の production の規則からの読みで、knip を実行して確かめたものではない。Code Generation の最初に実行して確かめる。
 
 - `knip.jsonc` は `.shirube/sds-pin.json` の `protected_paths`（`.github/workflows/**`・`.shirube/**`・CODEOWNERS・`.claude/settings.json`・`.aidlc-version`・`aidlc.settings.json`）に入らない（実物で確認）。
 - Q6 = A（arc が Owner の決定 95 により入力。Owner の言葉ではない）: `knip.jsonc` の `entry` に、module の export を集約する 1 file（名前は Code Generation で決める）を `!` 付きで 1 件足す。閾値を緩める変更ではなく production の entry の追加で、同じ PR に含める。`ignore` に足す案（Q6 の B）は未使用の検出を外し検査を弱めるので採らない。
@@ -109,6 +115,8 @@ Owner の決定 106（Q4 = A）で確定した条件。起動の経路は、対�
 | FD-GAP-4 | required_checks の出典の割当 | Q5 = A。機能設計の notHandledByU2 |
 | LC-GAP-1・LC-GAP-2 | BR1.x の判定は LC2、BR3.4 の malformed は LC2・invalid は LC3 | NFR 設計の logical-components |
 | SC-GAP-1 | process group での停止と出力の打ち切り | NFR 設計の security-design SC1a・scalability-design。本書の子の止め方 |
+| 決定 116・120、対象の結び | 閉じた形の観測値は形式に合い秘密らしくない時だけ示す。開いた形は保持・digest・表示をしない。出典が対象を名指さない単位は観測不能（malformed） | NFR 設計の security-design SC2・SC5、reliability-design RL2、observability-design OB2、performance-design PF4。本書の「判定の関数」の置き場と「開いた形の生の値の置き場」、cicd-pipeline の試験の追加 |
+| U2 が保証しないこと | 開いた形の中身だけの変化は検出しない。回答は「回答済み」のまま、実物との一致は「比べられず観測できず」。実物の読み直しは U3・U5 | reliability-design RL2。本書は開いた形の値の保管場所を作らず、この限りを埋める仕組みを持たない |
 
 ## Assumptions & Open Questions
 
@@ -118,11 +126,14 @@ Owner の決定 106（Q4 = A）で確定した条件。起動の経路は、対�
 - A-INF-2: 子の cwd は OS の根（Q7 = A、Owner の決定 111（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6942847653 、OD-SHIRUBE-U2-CHILD-PROCESS-CWD-OS-ROOT-20261117-001、本文 SHA-256 `3ecb0ea0934655ad1e904914a6ee379d18edcfef5785f6200567f7518a6891e1`））。起動する実行ファイルの dir を cwd にする案は採らない（`aidlc` は PATH 上の dir から選ばれ、利用者が書ける場所も絶対 path なら許されるので、隣の file・設定を子が拾いうる。見直し R-02）。一時 dir を作る案も採らない（何も書かない前提を保つ）。OS の根の具体の取り方（POSIX の `/`、Windows のドライブの根）は Code Generation で決め、試験で cwd が根であることを確かめる。
 - A-INF-3: 行の網羅率の分母 `scripts/working-state/**/*.mjs` は、置き場が作られるまで 0 件である。0 件を成功と読まない形（分母 0 は失敗）を、試験の最初に置く。
 - A-INF-4: 確認した実行環境の版（Node の具体の版・OS）は、この段の時点で未確認である。Build and Test の記録で確認した版だけを具体的に書く。
-- A-INF-5: 部品どうしの file の分け方は Code Generation で決める。LC の判定の持ち主は NFR 設計で確定済み。
+- A-INF-4a: LC7 は CI の `test` job（Node 26）で動かす前提で、`hygiene`（Node 22）では動かさない（上の「分母」の説明のとおり、分母の決め方は Node の挙動に依存しない形）。Node 22 での LC7 の動作は未確認。LC7 の子が流す試験 file の集合と再帰を断つ方法は、環境変数でなく子へ渡す引数で決める（決定 106 と整合。Code Generation の確認項目で、再帰しないことを試験で確かめる）。
+- A-INF-5a: knip の集約 entry（Q6 = A）は、U3 が実際に import して配線した時点で、集約 file を entry から外せるかを見直す（それまで U2 の file の未使用の検出は実質効かない。この持ち越しは U3 の設計の入力）。Code Generation の knip の実測を PR 本文に書く条件は変えない。
+- A-INF-5: 部品どうしの file の分け方は Code Generation で決める。LC の判定の持ち主は NFR 設計で確定済み。判定の関数の file 名は仮で、置き場（`scripts/working-state/` の中の末端の 1 file）と import しない・複製しない条件だけを確定とする。
+- A-INF-6: 開いた形の値を含む回答は、C02 の wire（answers）にだけ現れる（BR5.2 の選別と fail closed を通ったものに限る）。wire の受け手側での扱いは U2 が保証せず、U3 以降の設計で扱う。専用の観測不能の原因（target_unspecified）は契約の変更が要るので作らず、既存の malformed を使う（A-08 の aidlc_settings の要素の形は Code Generation で確定し、同じ PR で機能設計にも足す）。
 
 ### Open Questions
 
 - Q6（knip の production の entry）: 答え済み（A）。
 - Q1〜Q7 は答え済み（Q7 は Owner の決定 111）。未決の問いは無い。
 
-（要約確認 Looks correct の後に保存し直した。Q6・Q7 の答えを反映済み。未決の問いは無い。）
+（要約確認 Looks correct（2 回目。arc が決定 95 により入力）の後に保存し直した。Q6・Q7 の答えと決定 116・120・対象の結びを反映済み。未決の問いは無い。）

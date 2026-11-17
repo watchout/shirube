@@ -11,6 +11,8 @@
     "NFR2.3",
     "NFR2.4",
     "NFR2.5",
+    "NFR2.6",
+    "NFR2.6a",
     "NFR3.1",
     "NFR3.2",
     "NFR4.1",
@@ -77,7 +79,17 @@
     {
       "id": "NFR2.5",
       "status": "OK",
-      "target": "infrastructure-specification の費用（新しい外部の依存を足さない）、cicd-pipeline の関門（package.json・lockfile の差分 0）"
+      "target": "infrastructure-specification の費用（新しい外部の依存を足さない）、cicd-pipeline の関門（機械の部分: import が node: の組込みと相対 path だけの構造の試験。人の部分: package.json・lockfile・契約 .v2 の差分 0 は作者と独立監査の確認で、機械の関門ではない）"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "infrastructure-specification の論理部品と置き場（判定の関数を scripts/working-state/ の末端の 1 file に置く。開いた形の生の値の置き場、LC1→LC2 の受け渡しだけで保持・digest・表示をしない。U2 が保証しないこと）、monitoring-design の Metrics（観測値の取り扱いの負例・生の値の経路の構造の試験）、cicd-pipeline の stage と関門の対応（T1.1u・T3.2o・T3.4o・T5.2o・T6.4o・T8.3o）"
+    },
+    {
+      "id": "NFR2.6a",
+      "status": "OK",
+      "target": "infrastructure-specification の論理部品と置き場（判定の関数の置き場。BR5.2 の持ち主は 1 つ）、cicd-pipeline の stage と関門の対応（判定の関数が LC2・LC5 で同じ 1 つ、何も import しない）、monitoring-design の Metrics"
     },
     {
       "id": "NFR3.1",
@@ -122,7 +134,7 @@
     {
       "id": "NFR6.1",
       "status": "OK",
-      "target": "infrastructure-specification の Deployment（資源の大きさ: 予算は profile）、Shared Infrastructure（予算の profile は U1 が持つ）"
+      "target": "infrastructure-specification の Deployment（資源の大きさ: 予算は profile）、Shared Infrastructure（予算の profile は U1 が持つ）。PF4（開いた形の比較は追加の読取り・子の起動を作らない）は、論理部品と置き場の「開いた形の生の値の置き場」と cicd-pipeline の構造の試験（比較のための追加の読取り・子の起動が無い）"
     },
     {
       "id": "NFR6.1a",
@@ -182,8 +194,33 @@
     {
       "id": "NFR10.2",
       "status": "OK",
-      "target": "monitoring-design の Metrics と Alerts（失敗・skip・未実行を成功に数えない）、cicd-pipeline の stage と関門の対応（失敗隠しの検査）"
+      "target": "monitoring-design の Metrics と Alerts（失敗・skip・未実行を成功に数えない）、cicd-pipeline の stage と関門の対応（機械の部分: LC7 の記録の試験が skip・todo・cancelled・timeout を数えて 0 を確かめる。人の部分: 独立監査の項目。check:no-failure-hiding は Shirube の実物に無く担保にしない）"
     }
+  ],
+  "review_findings_addressed_iteration_1": [
+    "Major: NFR10.2 の担保から存在しない check:no-failure-hiding を外し、LC7 の試験で skip・todo を数える形にした",
+    "Major: NFR2.5 を機械の部分（import の構造の試験）と人の部分（差分 0 の確認。機械の関門ではない）に分けた",
+    "Minor: LC7 の動く job と Node の版、再帰を断つ方法（A-INF-4a）",
+    "Minor: knip の集約 entry の見直しの持ち越し（A-INF-5a）",
+    "Minor: 動的な走査を主、静的な試験を補助とした",
+    "Minor: npm test と CI の test job の書き分け"
+  ],
+  "decisions_reflected": [
+    {
+      "id": "OD-116",
+      "ref": "https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6962989955",
+      "sha256": "3986367dcee537139c1065e71d9db339cd085e10f8fbf4f5cf1d7c771e5f3a6a"
+    },
+    {
+      "id": "OD-120",
+      "ref": "https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137",
+      "sha256": "c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4"
+    }
+  ],
+  "carried_minors_from_nfr_design_review_1": [
+    "判定の関数の名前は仮で、置き場と依存の向きの 1 行を infrastructure-specification に置いた",
+    "BR5.2 の持ち主は判定の関数（LC3）だけで、LC5 は呼んで適用するだけと書いた",
+    "開いた形の生の値は LC1→LC2 の受け渡しだけに存在し、構造の試験の項目を足した"
   ],
   "answers_recorded": [
     {
@@ -195,5 +232,5 @@
       "by": "Owner の原文（決定 111、https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6942847653）"
     }
   ],
-  "saved_after_summary_confirmation": "Q6・Q7 の答えを反映し、要約確認 Looks correct の後に保存し直した（未決の問いは無い）"
+  "saved_after_summary_confirmation": "決定 116・120・対象の結びを反映し、要約確認 Looks correct（2 回目。arc が決定 95 により入力）の後に保存し直した（未決の問いは無い）"
 }

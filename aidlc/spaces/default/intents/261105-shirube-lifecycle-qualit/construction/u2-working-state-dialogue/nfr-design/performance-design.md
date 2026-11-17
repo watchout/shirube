@@ -2,7 +2,7 @@
 
 ## Sources and Scope
 
-U2 の性能の設計。入力: [performance-requirements](../nfr-requirements/performance-requirements.md)（NFR6.1・NFR6.1a・NFR1.1a）、[rules](../functional-design/rules.md)（BR1.4・BR1.6）、[logical-components](logical-components.md)。要約確認は [questions](nfr-design-questions.md) の Looks correct（開き直し後に取り直し済み）。本書は設計であり、処理時間・CPU・memory の測定結果ではない。
+U2 の性能の設計。入力: [performance-requirements](../nfr-requirements/performance-requirements.md)（NFR6.1・NFR6.1a・NFR1.1a）、[rules](../functional-design/rules.md)（BR1.4・BR1.6）、[logical-components](logical-components.md)。要約確認は [questions](nfr-design-questions.md) の Looks correct（決定 116・120 と対象の結びを足した後に取り直し済み）。本書は設計であり、処理時間・CPU・memory の測定結果ではない。
 
 U2 は常駐せず、対話の中で実対象を 1 回ずつ読む。根拠のある p95・RPS・同時利用数・稼働率が要件に無いので、設計も数値を作らない。ここで決めるのは「止まる条件」であり、速さの保証ではない。
 
@@ -29,6 +29,11 @@ U2 は常駐せず、対話の中で実対象を 1 回ずつ読む。根拠の�
 
 - 処理時間・CPU・memory・要求数は計測するまで「未計測」と書く。計測する場合は対象版と測定方法を添える。
 - 予算が実対象に足りるかは Build and Test で確かめる。それまでは「足りる」と示さない。
+
+## PF4 開いた形の一致比較は追加の読取りを作らない（NFR6.1。Owner の決定 120）
+
+- 開いた形（string・list）の項目の出典間の一致比較（matchGroup）は、LC2 が 1 回の観測の中で、すでに読んだ値をメモリ上で normalization の規則に従って比べるだけで行う。比較のための追加の取得・再読取り・子 process の起動を作らず、予算（PF1）に新しい消費を足さない。比べ終えた値は捨てる（security-design SC2）。
+- 合否: 開いた形の一致比較で、取得の回数・読んだ大きさ・子 process の起動が増えない（比較の有無で同じ入力の測った値が変わらない）。負例: 比較のために再読取りする実装は不合格。これは NFR6.1 の「新しい消費を足さない」の設計の合否で、新しい NFR の ID は作らない（要件側の記録は Minor として持ち越し、見直し NFR Requirements 回 1）。
 
 ## Not Set (No Evidence)
 

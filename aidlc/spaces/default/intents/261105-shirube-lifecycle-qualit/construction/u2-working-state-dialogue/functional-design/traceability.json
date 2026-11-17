@@ -58,7 +58,7 @@
     {
       "id": "AC1.3.2",
       "status": "OK",
-      "target": "U2 の寄与: BR3.2 BR3.3 BR3.4 BR4.1 BR5.3 BR6.2。Q1 = A の読み: 契約で優先関係は定めず、順位なしで全出典と値を示す。利用者が答えられる項目は利用者が選び、答えられない項目は出典の持ち主が採る（Q3 = A）"
+      "target": "U2 の寄与: BR3.2 BR3.3 BR3.4 BR4.1 BR5.3 BR6.2。Q1 = A の読み: 契約で優先関係は定めず、順位なしで全出典と値を示す。利用者が答えられる項目は利用者が選び、答えられない項目は出典の持ち主が採る（Q3 = A）。Owner の決定 120（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137 、本文 SHA-256 `c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4`）による読み: 閉じた形の項目は値と出典を示し、開いた形（string・list）の項目は値を示さず出典・presence・一致不一致を示す（食い違いは fix-source）。対象の結びは BR1.1（targetBinding）。決定 116 の閉じた形の読みも同じ（形式に合い秘密らしくない値だけ示す）。"
     },
     {
       "id": "AC1.3.3",
@@ -68,7 +68,7 @@
     {
       "id": "AC1.3.4",
       "status": "OK",
-      "target": "BR1.6 BR5.4 BR6.1 BR6.2 BR6.3 BR6.4 BR8.3"
+      "target": "BR1.6 BR5.4 BR6.1 BR6.2 BR6.3 BR6.4 BR8.3。Owner の決定 120（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137 、本文 SHA-256 `c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4`）による読み: 無効化・一致の確認は閉じた形の項目に限る。開いた形（string・list）の中身だけの変化は U2 が検出せず、開いた形の回答は BR6.4 で「比べられず観測できず」と示す（T6.4o）。実物の確かめは U3・U5 が行う前提。承認済みの要件の段は開き直さず、読みとして記録する（arc が Owner の決定 95 により入力。Owner の言葉ではない）"
     },
     {
       "id": "AC1.3.5",
@@ -93,7 +93,7 @@
     {
       "id": "AC2.2.4",
       "status": "OK",
-      "target": "BR1.2 BR7.3 BR9.1"
+      "target": "BR1.2 BR7.3 BR9.1。Owner の決定 120 による読み: 「実物だけを変えた入力が不一致になる」は閉じた形の項目（T8.3）に限り、開いた形の項目は値も digest も持たないので検出せず、「比べられず観測できず」と示す（T8.3o・T6.4o。BR8.3 の末尾）"
     },
     {
       "id": "AC2.2.5",
@@ -151,6 +151,11 @@
       "id": "BR8.4",
       "status": "N/A",
       "target": "社内標準 S7（外部効果は冪等）と契約 C02 由来。U2 は効果を出さない。U2 の割当 AC に直接対応しない"
+    },
+    {
+      "id": "BR8.5",
+      "status": "N/A",
+      "target": "契約 C02（既存の受渡し形 answers:object・guidance:string）に合わせる変換。設計監査 1 回目の F04 の是正。U2 の割当 AC に直接対応しない"
     }
   ]
 }

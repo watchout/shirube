@@ -63,7 +63,8 @@ None。仮定: 予算の数値は共通の profile の現在値を使う（U2 �
 - 観測の予算（時間・回数・応答の大きさ・自動再試行 0）は共通の profile を参照し、U2 は別の数値を作らない。予算が足りるかは実測まで未確認と明記する。
 - 行の網羅率 100%・node:test の失敗確認→実装→合格・実行時 npm 依存なしを維持する。対象 file の集合と分母は置き場の設計で確定するまで未確定と明記し、成功とは数えない。
 - U2 は何も永続化しないので、保存の整合・再開・バックアップは持ち越し先（U3・U5）に残し、冪等キーは U2 に適用しない（読取りと案内だけ）。履歴の継続利用（AC3.1.3、AC3.2.5 の履歴の部分）の持ち越しは NFR の追跡にも残す。
-- 機能設計の見直しで残った穴（答えられない項目の conflict・missing の次の操作、valueType、選択の二重表現）は、この単位の確認の段で機能設計に戻して直す。NFR 文書はそれに左右されない形で書き、「機能設計の直し待ち」と明記する。
+- 機能設計は設計監査の 1 回目（PR #112）の差し戻しの直しを終えて、見直しで READY になった（設計の穴 3 つは前の回で直し済み）。この回の NFR は、その直しの結果を反映する: 観測値の扱いは Owner の決定 116（閉じた形の値は形式に合い秘密らしくない時だけ示す）と決定 120（開いた形の string・list の観測値は保持・digest・表示をしない。示すのは出典・presence・長さの区分・一致の番号まで）、対象の結び（targetBinding・namedTarget・unspecified は観測不能 malformed）。
+- 開いた形の項目の中身だけの変化は U2 が検出せず、開いた形の回答は「比べられず観測できず」と示すことを、U2 が保証しないこととして NFR にも書く（根拠 = 決定 120。arc が Owner の決定 95 により入力した答え）。実物の確かめは U3・U5 が行う前提で、NFR の合否はこれを成功に数えない。
 - 生成するのは NFR の 6 文書（performance・security・scalability・reliability・observability・tech-stack-decisions）と traceability だけ。コード・試験・fixture・CI・外部投稿・他単位には着手しない。
 
 Does this all look correct before I generate the artifact?
@@ -73,4 +74,4 @@ Does this all look correct before I generate the artifact?
 
 [Answer]: Looks correct
 
-Owner の決定 95 により arc が入力（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758）。条件: 要約の 5「機能設計の穴を、この単位の確認の段で機能設計に戻して直す」は、穴の 3 つを traceability と NFR の文書に「機能設計の直し待ち」として名指して残し、確認の段の前に必ず機能設計へ戻ること。
+Owner の決定 95 により arc が入力（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758 。Owner の言葉ではない）。

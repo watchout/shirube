@@ -23,10 +23,10 @@ rules:
     applies_to: [ConfigurationDraft, ObservedItem]
     trigger: dialogue-started
     logic: >
-      IF targetRef が渡されない THEN 観測せず、対象が要ると示して止まる。観測した出典が別の対象を名指す THEN その出典の値を使わず wrong_target とする。対象を repo の探索や直前の記憶から補わない。
-    violation: wrong_target / 対象の指定を求めて停止
+      IF targetRef が渡されない THEN 観測せず、対象が要ると示して止まる。観測した出典が別の対象を名指す（ObservedItem.namedTarget が渡された対象と違う = targetMatch が differs）THEN その出典の値を使わず wrong_target とする。出典が対象を名指さない時は、項目一覧がその出典に書いた targetBinding で決める: by-location（対象の根の下の位置で読む出典）は読む位置で対象に結ばれているので matches、named（出典が対象を名指す必要がある出典）は unspecified とし、確認済みの根拠にせず、その単位を unavailable（原因 malformed。新しい原因は足さない）として扱う。unspecified の出典は値・digest・presence を持たず、他の出典に有効な値があっても、必須の出典が unspecified なら項目を confirmed にしない（BR3.1 の unobservable）。targetBinding が書かれていない出典は named として扱う（失敗側）。対象を repo の探索や直前の記憶から補わない。出典が名指した対象は実際の読取りの結果だけから作り、項目一覧の宣言や呼出側の対象を写さない。
+    violation: wrong_target / unobservable（malformed）/ 対象の指定を求めて停止
     source: [FR1.1, FR2.2, AC1.1.1]
-    tests: [T1.1+, T1.1-]
+    tests: [T1.1+, T1.1-, T1.1u]
   - id: BR1.2
     statement: 観測は実際の読取りの結果だけ。宣言・cache・既定値・期待値を観測へ写さない。
     category: constraint
@@ -113,7 +113,7 @@ rules:
     applies_to: [DraftItem]
     trigger: item-evaluated
     logic: >
-      出典ごとの読取り結果は 5 つのどれか 1 つ: value（有効な値）、absent（出典は読めたが項目が無い）、unavailable（読めない）、wrong_target（別の対象を名指す）、invalid（値はあるが形式・範囲が不正）。requiredForConfirmed は項目一覧の各出典に必ず書かれ、書かれていない出典は必須（true）として扱う（失敗側）。requiredForConfirmed が false と書かれた出典の absent だけを無視する。決める順は次のとおりで、どの組み合わせでもちょうど 1 状態に決まる。
+      出典ごとの読取り結果は 5 つのどれか 1 つ: value（有効な値）、absent（出典は読めたが項目が無い）、unavailable（読めない）、wrong_target（別の対象を名指す）、invalid（値はあるが形式・範囲が不正、または秘密らしい。BR3.4・BR5.2）。requiredForConfirmed は項目一覧の各出典に必ず書かれ、書かれていない出典は必須（true）として扱う（失敗側）。requiredForConfirmed が false と書かれた出典の absent だけを無視する。出典の対象の結びが unspecified（BR1.1。targetBinding = named なのに出典が対象を名指さない）の単位は unavailable（原因 malformed）として数える。開いた形（valueForm = open）の項目は観測値を持たないので、「有効な値」は presence = value（値の保持はしない）で表し、値が「異なる」かは出典どうしの matchGroup（BR8.3）が違うことで決める。決める順は次のとおりで、どの組み合わせでもちょうど 1 状態に決まる。
       (1) いずれかの出典が wrong_target THEN wrong_target。
       (2) (1) でなく、いずれかの出典が invalid THEN invalid。
       (3) (1)(2) でなく、有効な値を持つ出典が 1 つ以上ある場合: 有効な値が 2 つ以上で異なる、または必須の出典が absent（読めて項目が無い）THEN conflict（candidates に値と「この出典には無い」を載せる）。それ以外で必須の出典が 1 つでも unavailable THEN unobservable。それ以外（必須の出典が全部 value で一致）THEN confirmed。
@@ -128,17 +128,17 @@ rules:
     applies_to: [DraftItem, GuidanceMessage]
     trigger: conflict-detected
     logic: >
-      IF state = conflict THEN candidates に読めた全出典を載せる（値のある出典は presence = value と値・digest、項目が無い出典は presence = absent で「この出典には無い」。値は持たない）。userAnswerable な項目なら nextAction = choose-source とし、選べるのは candidates の 1 つ（value の値、または absent = 「無いまま」）に限る。userAnswerable でない項目なら nextAction = fix-source とし、全出典を並べて示すだけで、採る出典は出典の持ち主が決める（BR4.2。利用者に選ばせない）。順位・優先関係を作らず、契約にも足さない（Q1 = A、Q3 = A）。選ばれた候補は GuidanceSelection とし、あわせて Answer としても保持する（値のある候補 = kind value、absent の候補 = kind keep-absent で value・valueDigest は持たず selectedCandidateRef を持つ）。再質問の判定（BR4.3）は Answer で行う。出典のファイルは書き換えない（適用は U5）。判断が要る項目だけ保留し、他の回答は保持する。値の比較は項目の normalization の 1 つの規則で行う。
+      IF state = conflict THEN candidates に読めた全出典を載せる（値のある出典は presence = value と値・digest、項目が無い出典は presence = absent で「この出典には無い」。値は持たない）。userAnswerable な項目なら nextAction = choose-source とし、選べるのは candidates の 1 つ（value の値、または absent = 「無いまま」）に限る。userAnswerable でない項目なら nextAction = fix-source とし、全出典を並べて示すだけで、採る出典は出典の持ち主が決める（BR4.2。利用者に選ばせない）。開いた形（valueForm = open）の項目の食い違いは、値を持たないので候補に値・digest・表示値を載せず、出典・presence・lengthBucket・matchGroup だけを並べ、userAnswerable に関わらず nextAction = fix-source とする（利用者に選ばせる値を示せないため。Owner の決定 120（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137 、本文 SHA-256 `c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4`、arc が中継）。AC1.3.2 は、閉じた形では値と出典、開いた形では出典・presence・一致不一致を示すこととして読む）。順位・優先関係を作らず、契約にも足さない（Q1 = A、Q3 = A）。選ばれた候補は GuidanceSelection とし、あわせて Answer としても保持する（値のある候補 = kind value、absent の候補 = kind keep-absent で value・valueDigest は持たず selectedCandidateRef を持つ）。再質問の判定（BR4.3）は Answer で行う。出典のファイルは書き換えない（適用は U5）。判断が要る項目だけ保留し、他の回答は保持する。値の比較は項目の normalization の 1 つの規則で行う。
     violation: conflict のまま保留（上書き・自動採用をしない）
     source: [FR2.2, AC1.3.2, Q1]
-    tests: [T3.2+, T3.2-, T3.2k]
+    tests: [T3.2+, T3.2-, T3.2k, T3.2o]
   - id: BR3.3
     statement: 対象違いの出典は使わず、出典と食い違いを示す。
     category: validation
     applies_to: [DraftItem]
     trigger: wrong-target-detected
     logic: >
-      IF 出典が別の repo・別の対象を名指す THEN wrong_target とし、その値を candidates にも confirmedValue にも入れない。どの出典がどの対象を名指しているかを示す。同じ項目の別の出典に有効な値があっても項目は wrong_target のままで、その値は「参考（採用していない）」として別に示し、採らない。次の操作は対象の指定の見直し（nextAction = review-target、BR4.2）。
+      IF 出典が別の repo・別の対象を名指す THEN wrong_target とし、その値を candidates にも confirmedValue にも入れない。どの出典がどの対象を名指しているか（ObservedItem.namedTarget）を示す。同じ項目の別の出典に有効な値があっても項目は wrong_target のままで、その値は「参考（採用していない）」として別に示し、採らない。次の操作は対象の指定の見直し（nextAction = review-target、BR4.2）。
     violation: wrong_target
     source: [FR2.2, AC1.3.2]
     tests: [T3.3+, T3.3-]
@@ -148,10 +148,10 @@ rules:
     applies_to: [DraftItem, ObservedItem]
     trigger: value-validated
     logic: >
-      IF 値の型・形式・範囲が不正 THEN invalid（値は示すが confirmed にしない）。IF 出典の file が破損 THEN その出典に依存する項目を malformed の unobservable とし、他の項目は使い続ける。破損した 1 件を理由に全体を捨てない。未知の項目は無視せず「未知の項目あり」と示す。
-    violation: 'invalid / unobservable: malformed'
+      IF 値の型・形式・範囲が不正、または観測した値が秘密らしい（BR5.2 の集合）THEN invalid とし、**値は保持も表示もしない**（Owner の決定 116（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6962989955 、本文 SHA-256 `3986367dcee537139c1065e71d9db339cd085e10f8fbf4f5cf1d7c771e5f3a6a`、arc が中継））。invalid の出典について作る物は、項目・出典・固定の分類（invalid_format = 形式・範囲が不正、secret_like = 秘密らしい）だけで、値・valueDigest・候補・案内文の中の値の一部は作らない。分類は入力から作らない固定の値で、判定は BR5.2 の集合と ItemCatalogEntry の許される形式の 1 か所の関数が持つ（回答と観測で同じ関数。S3）。次の操作は出典の持ち主への直しの依頼（fix-source、BR4.2）。形式に合う値だけを保持・表示・digest の対象にし、さらに閉じた形（valueForm = closed）の項目に限る。開いた形（valueForm = open。string・list）の観測値は、形式に合っても保持・digest・表示をしない（Owner の決定 120（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137 、本文 SHA-256 `c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4`、arc が中継））。示すのは presence・lengthBucket・出典どうしの一致不一致（matchGroup）・出典だけで、値の比較は核がメモリ上で normalization の規則で行い、結果の番号だけを残す。秘密らしい・形式の不正の判定（上）は開いた形にも当て、当たれば invalid（secret_like / invalid_format）とする。IF 出典の file が破損 THEN その出典に依存する項目を malformed の unobservable とし、他の項目は使い続ける。破損した 1 件を理由に全体を捨てない。未知の項目は無視せず「未知の項目あり」と示す。
+    violation: 'invalid / unobservable: malformed。不正・秘密らしい観測値、および開いた形の観測値の、値・digest・候補・案内文・ログへの写しは 0'
     source: [FR2.2, AC1.3.2, AC1.3.5, AC2.2.3]
-    tests: [T3.4+, T3.4-]
+    tests: [T3.4+, T3.4-, T3.4o]
   - id: BR3.5
     statement: 「適用中の規格」として示すのは、対象から実際に観測できた物と、その版の識別だけ。
     category: constraint
@@ -168,7 +168,7 @@ rules:
     applies_to: [ConfigurationDraft]
     trigger: questions-built
     logic: >
-      IF state ∈ {missing, conflict} かつ userAnswerable THEN 質問にする。invalid は利用者が直せる時だけ質問にする。confirmed・unobservable・wrong_target は質問にしない。state ∈ {missing, conflict} でも userAnswerable でない項目は質問にせず、次の操作を BR4.2 のとおり示す（Q3 = A。利用者が自分では答えられない値を質問にすると推測の値が入るため）。
+      IF state ∈ {missing, conflict} かつ userAnswerable THEN 質問にする。ただし開いた形（valueForm = open）の項目の conflict は、値を並べて選ばせられないので質問にせず、BR3.2 のとおり fix-source を示す（T4.1 の負例）。invalid は利用者が直せる時だけ質問にする。confirmed・unobservable・wrong_target は質問にしない。state ∈ {missing, conflict} でも userAnswerable でない項目は質問にせず、次の操作を BR4.2 のとおり示す（Q3 = A。利用者が自分では答えられない値を質問にすると推測の値が入るため）。
     violation: 質問を作らない
     source: [FR2.1, AC1.3.1]
     tests: [T4.1+, T4.1-]
@@ -188,7 +188,7 @@ rules:
     applies_to: [ConfigurationDraft]
     trigger: questions-built
     logic: >
-      IF state = confirmed OR 有効な回答（AnswerState = answered かつ boundObservationDigests が現在と一致） THEN その項目を質問に含めない。同じ問いを 2 回示さない。
+      IF state = confirmed OR 有効な回答（AnswerState = answered かつ boundObservationDigest が現在と一致） THEN その項目を質問に含めない。同じ問いを 2 回示さない。
     violation: 再質問しない
     source: [FR2.1, AC1.3.1]
     tests: [T4.3+, T4.3-]
@@ -213,17 +213,17 @@ rules:
     source: [NFR3, AC1.3.5]
     tests: [T5.1+, T5.1-]
   - id: BR5.2
-    statement: 秘密らしい入力は保持せず、写さず、有無と参照名だけで案内する。
+    statement: 秘密らしい入力は保持せず、写さず、有無と参照名だけで案内する。回答だけでなく、観測した値（file の内容・道具の出力）にも同じ判定を当てる。
     category: constraint
-    applies_to: [Answer, GuidanceMessage]
-    trigger: answer-received
+    applies_to: [Answer, GuidanceMessage, ObservedItem, DraftItem]
+    trigger: answer-received | value-observed
     logic: >
       秘密らしさの判定の最小の集合（どれか 1 つに当たれば秘密らしい）: (a) 秘密鍵・証明書の見出し行（`-----BEGIN ... PRIVATE KEY-----` の形）、(b) 既知の token の接頭辞（`ghp_`・`gho_`・`ghu_`・`ghs_`・`ghr_`・`github_pat_`・`AKIA`・`sk-`・`xoxb-`・`xoxp-`）で始まる語、(c) `Bearer ` に続く長い語、(d) 3 つの部分を `.` でつないだ JWT の形、(e) 空白を含まない 20 文字以上の英数字・記号（`+/_-=`）の連なりで、その項目の許される形式（valueType・normalization）に当たらないもの。
       判定が確実でない時の既定は fail closed: 項目の許される形式に当たらない文字列の回答は保持せず rejected とする（秘密を見逃して保持するより、拒否して参照名を求める方を選ぶ）。
-      IF 秘密らしい THEN rejected とし、値を保持・表示・記録しない。rejected の回答は value も valueDigest も持たない（digest は推測の足場になる）。rejectionReason・案内・ログ・試験の出力に入力の値の一部も写さない（理由は入力から作らない固定の分類 secret_like だけ）。案内は「その設定が有るか」と「参照名」だけを求める。公開される成果物・出力・ログへの転記は 0。fixture・例は架空の値だけ。
+      IF 秘密らしい THEN rejected とし、値を保持・表示・記録しない。rejected の回答は value も valueDigest も持たない（digest は推測の足場になる）。rejectionReason・案内・ログ・試験の出力に入力の値の一部も写さない（理由は入力から作らない固定の分類 secret_like だけ）。案内は「その設定が有るか」と「参照名」だけを求める。公開される成果物・出力・ログへの転記は 0。fixture・例は架空の値だけ。観測した値（file の内容・道具の出力）にも同じ集合と fail closed を当てる（Owner の決定 116（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6962989955 、本文 SHA-256 `3986367dcee537139c1065e71d9db339cd085e10f8fbf4f5cf1d7c771e5f3a6a`、arc が中継））: 秘密らしい、または許される形式に当たらない観測値は、値・valueDigest・候補・案内文を作らず、項目・出典・固定の分類（secret_like / invalid_format）と「出典を直す」次の操作だけを示す。未加工の道具の出力は保持せず、形式に合う版の識別だけを取り出す。取り出せなければ観測値なしの invalid_format とする。観測の事実（BR8.3）には、値を保持しない出典の分類だけが入り、値の digest は入らない。開いた形（string・list）の観測値は、秘密らしさを形式では判定できないので、秘密らしくなくても保持・digest・表示をしない（Owner の決定 120）。回答のうち開いた形の項目の値は、この節の (a)〜(e) の選別と fail closed を通った時だけ受け、案内・ログ・試験の出力へは写さない（presence と長さの区分だけ）。
     violation: rejected（値も digest も理由への写しも残さない）
     source: [FR2.3, NFR2, AC1.3.3]
-    tests: [T5.2+, T5.2-]
+    tests: [T5.2+, T5.2-, T5.2o]
   - id: BR5.3
     statement: 回答ごとに独立に扱う。1 件の不正が他の回答を失わせない。
     category: policy
@@ -260,7 +260,7 @@ rules:
     applies_to: [Answer, DraftItem]
     trigger: reobserved
     logic: >
-      IF 再観測で項目の観測 digest が boundObservationDigests と異なる THEN state = invalidated とし、項目を BR3.1 で再評価して missing / conflict 等に戻し、利用者に示す。他の回答は保持する。
+      項目の観測 digest は、その項目の全出典の観測の事実（BR8.3 で定める。参照名からは作らない）を単位の辞書順に並べた正規の JSON の SHA-256。回答は、回答した時点の項目の観測 digest を boundObservationDigest（1 件）に持つ。IF 再観測で項目の観測 digest が boundObservationDigest と異なる THEN state = invalidated とし、項目を BR3.1 で再評価して missing / conflict 等に戻し、利用者に示す。他の回答は保持する。この無効化が検出する「中身の変化」は、閉じた形の項目では値の digest の変化、開いた形（valueForm = open）の項目では presence・lengthBucket・matchGroup・出典・対象の結び・原因の変化までで、開いた形の中身だけの変化（長さの区分も一致の番号も同じ）は検出しない（観測値を保持も digest もしないため。Owner の決定 120（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137 、本文 SHA-256 `c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4`）から必ず出る範囲。U2 が保証しないこと）。開いた形の回答は「回答済み」のままで、実物との一致は確認済みと示さない（BR6.3・BR6.4）。
     violation: invalidated
     source: [FR2.4, NFR4, AC1.3.2, AC1.3.4]
     tests: [T6.2+, T6.2-]
@@ -270,7 +270,7 @@ rules:
     applies_to: [Answer, GuidanceMessage]
     trigger: status-shown
     logic: >
-      IF 回答があるだけ THEN 「回答済み・未適用」と示す。IF 再観測で実際の設定が回答と一致 THEN 「一致を確認」と示す。適用の実行と結果は U5 の持ち物で、U2 は適用済みを主張しない。保持に失敗した・確認後に設定が変わった場合は完了としない。
+      IF 回答があるだけ THEN 「回答済み・未適用」と示す。IF 再観測で実際の設定が回答と一致 THEN 「一致を確認」と示す（閉じた形の項目だけ。開いた形は BR6.4 のとおり比べられず、「一致を確認」と示さない）。適用の実行と結果は U5 の持ち物で、U2 は適用済みを主張しない。保持に失敗した・確認後に設定が変わった場合は完了としない。
     violation: 未完了として示す
     source: [FR2.4, AC1.3.4]
     tests: [T6.3+, T6.3-]
@@ -280,10 +280,10 @@ rules:
     applies_to: [Answer, DraftItem]
     trigger: reobserved
     logic: >
-      IF 回答が採用され、その後の再観測で実際の設定が読めた THEN 一致・不一致を示す。読めない THEN 観測できず。保存した回答の照合はしない（Q2 = A）。
-    violation: unobservable
+      IF 回答が採用され、その後の再観測で実際の設定が読めた THEN 一致・不一致を示す（閉じた形の項目）。読めない THEN 観測できず。保存した回答の照合はしない（Q2 = A）。開いた形（valueForm = open。string・list）の項目は、観測値を保持しない（Owner の決定 120）ので回答と比べられない。比べられない THEN 「比べられず観測できず」と示し、「一致を確認」「確認済み」とは示さない（中身だけを変えた再観測でも同じ。S5）。実物との一致の確かめは、実適用側（U3・U5）が実物を読み直して行う前提で、U2 は保証しない。
+    violation: unobservable（開いた形は「比べられず観測できず」）
     source: [FR2.4, AC3.2.5]
-    tests: [T6.4+, T6.4-]
+    tests: [T6.4+, T6.4-, T6.4o]
   - id: BR6.5
     statement: 対話をまたぐ保存と中断後の再開は U2 に含めず、後の単位へ持ち越す。落とさず記録する。
     category: constraint
@@ -374,6 +374,16 @@ rules:
     violation: 許可を作らない
     source: [C02, AC1.3.2, AC3.3.5]
     tests: [T8.1+, T8.1-]
+  - id: BR8.5
+    statement: U2 の内部の構造体は、C02 の既存の受渡し形（contract-summary の「既存entityの受渡し形と所有」）へ決まった変換で渡し、契約は変えない。
+    category: constraint
+    applies_to: [ConfigurationDraft, GuidanceSelection]
+    trigger: wire-handoff
+    logic: >
+      内部（Answer の列・GuidanceMessage の構造体）は保ち、C02 へ渡す時は LC5 の変換（toC02Wire、純粋な関数）だけを通す。ConfigurationDraft: draftId・targetRef・missingItems（string[]）・conflicts（string[]）・observationRefs（Ref[]）はそのまま。answers（C02 は object）は、state = answered の回答だけを itemKey をキーに {answerId, kind, value（kind = value の時）、selectedCandidateRef（choose-source の時）} を値とする object にする（rejected・invalidated は渡さない。同じ itemKey の有効な回答は 1 件）。GuidanceSelection: selectionId・draftRef・candidateRef・targetRef・observationRef はそのまま。guidance（C02 は string）は GuidanceMessage の text（色・配置に頼らない平文。結論・次の操作・原因・未確認を含む）とする。構造体の全体は E05 の GuidanceMessage として別に渡す。items は wire に渡らないため、unobservable・invalid・wrong_target の項目は wire の missingItems・conflicts・answers に現れない（missingItems は state = missing、conflicts は state = conflict の項目の itemKey だけ）。未確認の項目は E05 の GuidanceMessage（unconfirmed・causes）と observationRefs で U3 が確かめる前提で、wire の draft だけで「全部確認済み」と読める形にしない（missingItems・conflicts・answers が全部空でも確認済みの意味は持たない。U3 の判定は E05 の unconfirmed を見る）。変換は欄を足さず落とさず、内部のどの意味（回答の値と種別、選んだ候補、案内の結論と次の操作）も取り違えない。answers の value には開いた形の項目の回答の値が含まれて U3 へ渡る。U2 が保証するのは、渡す回答が BR5.2 の (a)〜(e) の選別と fail closed を通ったものだけであることと、wire 以外（案内・ログ・試験の出力・画面）へその値を写さないことまで。受け手側（U3 以降）での扱いは U2 が保証しない（functional-spec の保証しないこと）。C02 の型自体を変える必要が出たら、Code Generation で黙って変えず、契約の正規の改訂（Owner の判断）へ戻す。
+    violation: 契約の型に合わない値を渡さない（変換できなければ渡さない）
+    source: [C02, AC1.3.2, AC3.3.5]
+    tests: [T8.5+, T8.5-]
   - id: BR8.2
     statement: LLM の文・外から来た文字列を、命令・権限として評価しない。
     category: constraint
@@ -390,10 +400,10 @@ rules:
     applies_to: [ConfigurationDraft, GuidanceSelection]
     trigger: reobserved
     logic: >
-      無効にする契機は観測の変化だけ: draft の observationDigest（observationRefs の digest から導く）が再観測で変わった時。回答を足す・直すだけでは古い draft・selection を無効にしない（回答の有効・無効は BR6.2 が決める）。IF observationDigest が変わる THEN 古い draft・selection を無効とし、新しい draft を作って示す。古い draft を開始の入力に使えない。再観測は呼出側の要求で起こし、U2 が自分で契機を作らない。
+      無効にする契機は観測の変化だけ: draft の observationDigest が再観測で変わった時。observationDigest は、参照名（ObservationRef・sourceRef の locator）からは作らない（参照は同じまま中身が変わりうる。宣言は証拠でない = S5）。観測の単位 (targetRef, itemKey, sourceRef) ごとに、実際に読んだ結果から「観測の事実」{availability（observed | unavailable）、targetMatch（matches | differs | unspecified。BR1.1）、presence（value | absent。observed の時で、targetMatch = matches の時だけ）、valueDigest（閉じた形で値を保持できる時だけ。開いた形・値を保持しない分類の時は null）、lengthBucket と matchGroup（開いた形で presence = value の時だけ。値・digest ではない）、withheld（値を保持しない時の固定の分類。無ければ null）、unobservableCause（unavailable の時）} を再計算し、全単位の事実を単位の辞書順に並べた正規の JSON の SHA-256 を observationDigest とする。単位の識別（targetRef・itemKey・sourceRef）は事実に含める（参照名そのものでなく、観測の単位の識別として）。同じ参照で中身が変わる、observed → unavailable、項目が現れる・消える、は digest が変わる。回答を足す・直すだけでは古い draft・selection を無効にしない（回答の有効・無効は BR6.2 が決める。answers は observationDigest の入力に入れない）。IF observationDigest が変わる THEN 古い draft・selection を無効とし、新しい draft を作って示す。古い draft を開始の入力に使えない。再観測は呼出側の要求で起こし、U2 が自分で契機を作らない。「中身が変わる、は digest が変わる」「実物だけを変えた入力が不一致になる」（AC2.2.4）は閉じた形の項目に限る。開いた形（valueForm = open）の項目は値も digest も持たない（Owner の決定 120）ので、中身だけの変化（長さの区分・一致の番号が同じ）は observationDigest に現れず、U2 は検出しない。これは U2 が保証しないこととして記録し（functional-spec の保証しないこと）、実適用側（U3・U5）が実物を読み直して確かめる前提にする。承認済みの要件の段は開き直さず、AC1.3.4・AC2.2.4 の読みとして traceability.json に記録した。
     violation: 古い draft を拒否
     source: [C02, NFR4, AC1.3.4]
-    tests: [T8.3+, T8.3-]
+    tests: [T8.3+, T8.3-, T8.3o]
   - id: BR8.4
     statement: U2 は外部への効果を出さない。効果の入力の形（requestId・idempotencyKey ほか）は U3・U5 の持ち物。
     category: constraint
@@ -410,7 +420,7 @@ rules:
     applies_to: [ConfigurationDraft, Answer, GuidanceMessage]
     trigger: core-invoked
     logic: >
-      IF 時刻・ID が要る THEN 引数で受ける。時計を読むのは adapter。観測の時刻は添えて示し、古い観測を新しいものとして示さない。同じ項目の観測が複数届いた時は observedAt が最も新しい結果だけを使い、遅れて届いた古い観測は捨てる（最後の観測だけを使う）。
+      IF 時刻・ID が要る THEN 引数で受ける。時計を読むのは adapter。観測の時刻は添えて示し、古い観測を新しいものとして示さない。「最新」を決める単位は観測の単位 (targetRef, itemKey, sourceRef) で、項目だけでは決めない。同じ単位の観測が複数届いた時は observedAt が最も新しい 1 件だけを使い、同じ単位の古い観測（遅れて届いたものを含む）は捨てる。開いた形の matchGroup（BR8.3）は、この「最新 1 件」を決めた後の全出典を対象に振る。単位が違う観測（同じ項目の別の出典）は互いに捨てず、すべて LC3 へ渡す（時刻の違う 2 出典、片方だけの更新、古い応答の遅着でも、全出典が残る。BR3.1 の必須 2 出典と食い違いの全出典表示を成り立たせるため）。observedAt が同じで内容が違う同じ単位の 2 件は、どちらも採らず、その単位を unobservable（changed_during_read）とする。
     violation: 引数で受ける
     source: [S4, NFR5, AC2.2.4]
     tests: [T9.1+, T9.1-]
@@ -449,8 +459,9 @@ rules:
 
 ## Derived Notes
 
-- 規則は全 42 件・9 グループ: 観測（BR1）、不在と道具（BR2）、項目状態（BR3）、質問（BR4）、回答の受付（BR5）、保持（BR6）、案内（BR7）、選択と引渡し（BR8）、境界（BR9）。
+- 規則は全 43 件・9 グループ: 観測（BR1）、不在と道具（BR2）、項目状態（BR3）、質問（BR4）、回答の受付（BR5）、保持（BR6）、案内（BR7）、選択と引渡し（BR8）、境界（BR9）。
 - Q1 = A は BR3.2、Q2 = A は BR6.1・BR6.5 に反映した。Owner の条件（持ち越しを落とさない）は BR6.5 と traceability.json の AC3.1.3 の行。
+- Owner の決定 116・120 は BR3.2・BR3.4・BR5.2・BR8.3 に反映した（閉じた形の観測値だけを保持・表示し、開いた形の観測値は presence・lengthBucket・matchGroup だけ）。対象の結び（targetBinding・namedTarget・targetMatch）は BR1.1。
 
 ## Assumptions & Open Questions
 

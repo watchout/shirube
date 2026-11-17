@@ -37,6 +37,9 @@ None。仮定: 予算の数値は共通の profile の現在値を使う（U2 �
 - 行の網羅率 100% の分母と部品の置き場は Infrastructure Design で確定するまで未確定と明記し、成功とは数えない。機能設計の直し待ち（FD-GAP-1〜3）は名指しで残し、確認の段の前に機能設計へ戻す。
 - 開き直しの変更（判定の持ち主、LC-GAP-1・LC-GAP-2）: 読取りの規則の判定を LC2 に置く。BR1.1（対象の指定の有無・出典が名指す対象との比較）、BR1.4（予算の超過の分類。LC1 は枠で止めて測った値だけを返し、予算の値は呼出側が明示入力で渡す）、BR1.5（根の内外・同じ実体・付随ファイルの判定。LC1 は解決後の実体の事実だけを返す）、BR1.6（読取りの前後の digest の比較）。BR3.4 は、file の破損（malformed）を LC2、値の型・形式・範囲の不正（invalid）を LC3 が持つ。LC1 は分類・比較・判定を持たず、生の事実だけを返す。
 - 開き直しの変更（子 process の止め方、SC-GAP-1）: 子は自分の process group で起動し、枠（時間・出力の大きさ）を超えたら group ごと止める。出力は読みながら上限で打ち切り、上限を超えた分を保持しない。止められなかった・止めたか確かめられなかった場合は成功にせず、観測不能にする。この設計の条件を security-design と scalability-design に置く。
+- 開き直しの変更（Owner の決定 116・120 と対象の結び、2 回目の設計監査の前の直し）: 観測した値も回答と同じ判定の対象にし、秘密らしい・形式に合わない値は値も digest も作らず項目・出典・固定の分類と「出典を直す」次の操作だけを示す（決定 116）。開いた形（string・list）の観測値は形式に合っても保持・digest・表示をせず、示すのは presence・長さの区分・出典どうしの一致の番号・出典だけにする（決定 120）。値の比較は LC2 の関数の中だけで行い、比べ終えたら捨てる。判定の関数は他を import しない末端の 1 か所（LC3 が持つ）で、LC2 と LC5 が呼ぶ。出典が対象を名指さない（named なのに名指しが無い）単位は観測不能（原因 malformed。新しい原因は作らない）にする。
+- U2 が保証しないこと（決定 120）: 開いた形の項目の中身だけの変化（長さの区分も一致の番号も同じ）は検出しない。開いた形の回答は「回答済み」のままで、実物との一致を確認済みと示さず「比べられず観測できず」と示す。実物の読み直しは U3・U5 が行う。
+- NFR 要件の見直し（回 1）の Minor 2 件（NFR2.2 の古い括弧書き、matchGroup の一文に ID が無い）は、設計側では SC2 と PF4 で直し、要件側の記録の直しは持ち越す（traceability.json に記録）。
 - 生成するのは NFR 設計の 6 文書（performance・security・scalability・reliability・observability・logical-components）と traceability だけ。コード・試験・fixture・CI・外部投稿・他単位には着手しない。
 
 Does this all look correct before I generate the artifact?
@@ -46,4 +49,4 @@ Does this all look correct before I generate the artifact?
 
 [Answer]: Looks correct
 
-（開き直し前の確認 Looks correct は、Owner の決定 95 により arc が入力した記録。上の「開き直しの変更」を足したので、確認を取り直し、同じく Owner の決定 95 により arc が Looks correct を入力した（Owner の言葉ではない）。子 process の cwd はセキュリティの設計なので、置き場の設計で選択肢を整理して Owner に伺う。）
+（前の確認 Looks correct は、Owner の決定 95 により arc が入力した記録で、決定 116・120 と対象の結びを足す前の要約に対するもの。上の「開き直しの変更（Owner の決定 116・120 と対象の結び…）」「U2 が保証しないこと」「NFR 要件の見直しの Minor」の 3 項目を足したので、確認を取り直す。入力は arc が Owner の決定 95 により行い、Owner の言葉ではない。子 process の cwd はセキュリティの設計なので、置き場の設計で選択肢を整理して Owner に伺う。）

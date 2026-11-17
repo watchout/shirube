@@ -2,7 +2,7 @@
 
 ## Sources and Scope
 
-U2 の信頼性の設計。入力: [reliability-requirements](../nfr-requirements/reliability-requirements.md)（NFR4.1・NFR4.2・NFR5.1・NFR6.1a・NFR6.2・NFR7・NFR8.2）、[tech-stack-decisions](../nfr-requirements/tech-stack-decisions.md)（NFR5.1a・NFR8.1a）、[rules](../functional-design/rules.md)（BR1.2・BR1.6・BR5.4・BR6.2・BR7.4・BR8.3・BR8.4・BR9.1）、[logical-components](logical-components.md)。要約確認は [questions](nfr-design-questions.md) の Looks correct（開き直し後に取り直し済み）。本書は設計であり、試験の結果ではない。
+U2 の信頼性の設計（Owner の決定 120 の開いた形の限りを含む）。入力: [reliability-requirements](../nfr-requirements/reliability-requirements.md)（NFR4.1・NFR4.2・NFR5.1・NFR6.1a・NFR6.2・NFR7・NFR8.2）、[tech-stack-decisions](../nfr-requirements/tech-stack-decisions.md)（NFR5.1a・NFR8.1a）、[rules](../functional-design/rules.md)（BR1.2・BR1.6・BR5.4・BR6.2・BR7.4・BR8.3・BR8.4・BR9.1）、[logical-components](logical-components.md)。要約確認は [questions](nfr-design-questions.md) の Looks correct（決定 116・120 と対象の結びを足した後に取り直し済み）。本書は設計であり、試験の結果ではない。
 
 稼働率の目標は要件に根拠が無いので置かない。U2 は何も永続化しない（Q2 = A）ため、バックアップ・災害復旧・保存の整合は持たず、持ち越し先（U3・U5）に残す。
 
@@ -15,9 +15,11 @@ U2 の信頼性の設計。入力: [reliability-requirements](../nfr-requirement
 
 ## RL2 古い物を新しい物として使わない（NFR4.2）
 
-- 回答は回答時点の項目の観測 digest と結ぶ。再観測で digest が変われば invalidated にし、BR3.1 で項目を再評価して不足・食い違いへ戻す（BR6.2）。他の回答は保持する。
-- 同じ項目の観測が複数届いたら、observedAt が最も新しい結果だけを使う。遅れて届いた古い観測・古い回答は使わず、黙って上書きしない（BR9.1・BR5.4）。
-- draft の observationDigest が変わったら、古い draft・selection を使った開始の入力は無効。回答を足しただけでは無効にしない（BR8.3）。
+- 回答は回答時点の項目の観測 digest と結ぶ（boundObservationDigest、1 件）。再観測で digest が変われば invalidated にし、BR3.1 で項目を再評価して不足・食い違いへ戻す（BR6.2）。他の回答は保持する。
+- **検出できる範囲と U2 が保証しないこと（NFR4.2、Owner の決定 120）。** 観測の事実は {availability・targetMatch・presence・valueDigest（閉じた形だけ）・lengthBucket と matchGroup（開いた形だけ）・withheld・unobservableCause} で、単位 (targetRef, itemKey, sourceRef) の辞書順の正規の JSON の SHA-256 が項目と draft の観測 digest になる。閉じた形（version・commit-oid・boolean）は値の digest の変化まで検出する。開いた形（string・list）は値も digest も持たないので、presence・lengthBucket・matchGroup・出典・対象の結び・原因の変化までを検出し、**中身だけの変化（長さの区分も一致の番号も同じ）は検出しない**。開いた形の回答は「回答済み」のままで、実物との一致を確認済みと示さず「比べられず観測できず」と示す（BR6.3・BR6.4）。実物の読み直しは実適用側（U3・U5）の持ち物。この限りを成功に読み替えない（S5・S8）。
+- 対象の結び: targetMatch = unspecified（named なのに出典が対象を名指さない）の単位は観測不能（malformed）で、回答の結び先にも確認済みにもしない。differs は wrong_target。
+- 同じ観測の単位 (targetRef, itemKey, sourceRef) の観測が複数届いたら、observedAt が最も新しい結果だけを使う。同じ項目の別の出典は捨てない。遅れて届いた古い観測・古い回答は使わず、黙って上書きしない（BR9.1・BR5.4）。
+- draft の observationDigest（上の観測の事実から再計算。参照名からは作らない）が変わったら、古い draft・selection を使った開始の入力は無効。回答を足しただけでは無効にしない（BR8.3）。同じ参照で閉じた形の中身が変わる・observed → unavailable・項目が現れる／消える、は digest が変わる。開いた形の中身だけの変化は上の限りで検出しない。
 - 開始の入力の受け取りと拒否は U3 の持ち物。U2 は無効かどうかを判断できる値を渡すだけ。
 
 ## RL3 決定性（NFR5.1、NFR5.1a）

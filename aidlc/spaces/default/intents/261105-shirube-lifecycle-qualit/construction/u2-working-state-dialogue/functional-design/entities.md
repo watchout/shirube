@@ -36,7 +36,7 @@ enums:
     - budget_exceeded
     - changed_during_read      # 読取り中に変わった・書込み途中
     - out_of_boundary          # 許可範囲の外（symlink・..・循環）
-    - malformed                # 破損・形式不備
+    - malformed                # 破損・形式不備。出典が対象を名指す必要がある（targetBinding = named）のに名指さない（unspecified）時もこの原因で表す（新しい原因を足さない。足すなら契約の改訂で、作る段で止めて伺う、R-11）
   AnswerState: [answered, invalidated, rejected]
   ToolProbeResult: [present, missing, unsupported_version, cannot_start, timed_out]
 entities:
@@ -55,26 +55,47 @@ entities:
     fields:
       sourceKind: {enum: [sds_pin, aidlc_version, aidlc_settings, claude_settings, workflow_caller, tool_probe, remote_metadata]}
       locator: {type: Ref, note: 対象の根からの相対参照。根の外は表せない}
-      targetRef: TargetRef
+      targetRef: {type: TargetRef, note: 呼出側が渡した対象（観測を結ぶ対象）。出典自身が名指した対象はここに入れず ObservedItem.namedTarget に持つ}
   ObservedItem:
     owner: EvidenceCollection   # ObservedSnapshot の所有は変えない。U2 は読んで項目に束ねる
     fields:
       itemKey: {type: Ref, note: itemCatalog の key}
       sourceRef: SourceRef
       observation: {type: shirube-contracts/1.Observation, note: availability = observed | unavailable}
-      value: {type: any, presence: only-when-observed}
-      valueDigest: {type: Sha256, presence: only-when-observed}
+      namedTarget: {type: TargetRef, presence: only-when-source-names-a-target, note: 出典自身が名指した対象。名指さない出典には持たない。呼出側が渡した対象（SourceRef.targetRef）との一致を ObservationFact.targetMatch に写す（BR1.1）}
+      value: {type: any, presence: only-when-closed-form-and-observed-and-value-retained, note: 閉じた形（valueForm = closed）で、形式に合い秘密らしくない値だけ保持する（BR3.4・BR5.2、Owner の決定 116）。開いた形（valueForm = open。string・list）の観測値は持たない（Owner の決定 120）}
+      valueDigest: {type: Sha256, presence: only-when-closed-form-and-observed-and-value-retained}
+      lengthBucket: {enum: [empty, short, medium, long], presence: only-when-open-form-and-presence-value, note: 値の長さの区分（値そのものでも digest でもない）。測る量は valueType ごとに 1 つ: string = normalization 後の文字数（code point）、list = 要素の数。空の値（空の文字列・空の list）は presence = value・lengthBucket = empty とし、項目の許される形式が空を許す時だけ有効な値（BR3.1 の value）、許さない項目では invalid_format（BR3.4）。区分の境界の数値だけを NFR で決める。開いた形の観測値を示す代わりに持つ（Owner の決定 120）}
+      matchGroup: {type: int, presence: only-when-open-form-and-presence-value, note: 同じ項目の出典どうしで値が一致するかを、値を持たずに表す番号。比較は核がメモリ上で normalization の規則で行い、同じ値の出典に同じ番号、違う値に違う番号を、出典の辞書順の最初に現れた順で 1 から振る。値・digest は残さない}
+      withheld: {type: string, presence: only-when-closed-form-and-observed-and-value-not-retained, enum: [invalid_format, secret_like], constraints: [fixed-classification-not-derived-from-input, no-input-copy]}
       unobservableCause: {type: UnobservableCause, presence: only-when-unavailable}
       observedAt: Instant
       budgetUsed: {requests: int, bytes: int, elapsedMs: int}
     invariants:
       - 値は実際の読取りの結果だけ。宣言・cache・既定値を写さない（BR1.2）
+      - 観測の単位は (targetRef, itemKey, sourceRef)。「最新」の選択はこの単位ごとで、項目だけでは行わない。同じ項目の別の出典の観測は互いに捨てない（BR9.1）
+      - 開いた形（string・list）の項目の観測値は、値・digest・表示・案内文のどれにも持たない。持つのは presence・lengthBucket・matchGroup だけ（Owner の決定 120、BR3.4）
+      - namedTarget は出典の実際の読取りの結果だけから作る。項目一覧の宣言や呼出側の対象を写さない（S5）
+  ObservationFact:
+    owner: DialogueExperience
+    note: 古さの判定（BR8.3）と回答の結び（BR6.2）に使う、観測の単位ごとの実際に読んだ結果の再計算。参照名（ObservationRef・locator）の代わりにしない
+    fields:
+      unit: {targetRef: TargetRef, itemKey: Ref, sourceRef: SourceRef, note: 単位の識別として含める}
+      targetMatch: {enum: [matches, differs, unspecified], presence: only-when-observed, note: "出典が名指した対象（ObservedItem.namedTarget）と draft の対象（SourceRef.targetRef = 呼出側が渡した対象）の一致。namedTarget あり・同じ = matches、あり・違う = differs（wrong_target、BR1.1）、なし = 項目一覧がその出典に書いた targetBinding で決める（by-location = 対象の根の下の位置で対象に結ばれているので matches、named = 出典が対象を名指す必要があるので unspecified）。unspecified は確認済みの根拠にならず、その単位は unavailable（原因 malformed）の事実にする（BR1.1・BR3.1）。differs・unspecified の出典は値・digest・分類・presence を持たない"}
+      availability: {enum: [observed, unavailable]}
+      presence: {enum: [value, absent], presence: only-when-observed-and-targetMatch-is-matches}
+      valueDigest: {type: Sha256, presence: only-when-closed-form-and-value-retained, note: 閉じた形で値を保持した時だけ。値を保持しない分類の時と、開いた形の項目では持たない（Owner の決定 120）}
+      lengthBucket: {enum: [empty, short, medium, long], presence: only-when-open-form-and-presence-value}
+      matchGroup: {type: int, presence: only-when-open-form-and-presence-value, note: 出典どうしの一致を値なしで表す番号（ObservedItem.matchGroup と同じ）。単一の出典の項目は常に 1}
+      withheld: {enum: [invalid_format, secret_like], presence: only-when-closed-form-and-value-not-retained, note: 値を保持しない時の固定の分類（Owner の決定 116）。入力から作らない。同じ分類の別の値の違いは事実に入らない（値を使わない項目なので draft の意味は変わらない）}
+      unobservableCause: {type: UnobservableCause, presence: only-when-unavailable}
   ItemCatalogEntry:
     owner: DialogueExperience
     fields:
       itemKey: Ref
       label: string
-      sources: {list: {kind: SourceKind, requiredForConfirmed: boolean}, note: 各出典に requiredForConfirmed を必ず書く。書かれていない出典は必須（true）として扱う（失敗側。必須の出典が absent の項目は confirmed にしない、BR3.1）}
+      sources: {list: {kind: SourceKind, requiredForConfirmed: boolean, targetBinding: {enum: [by-location, named]}}, note: 各出典に requiredForConfirmed と targetBinding を必ず書く。書かれていない requiredForConfirmed は必須（true）、書かれていない targetBinding は named（出典が対象を名指す必要がある）として扱う（どちらも失敗側。必須の出典が absent の項目は confirmed にしない、BR3.1。名指さない named の出典は unspecified、BR1.1）。by-location = 対象の根の下の位置で読む出典（対象は読む位置で結ばれる。出典が別の対象を名指せば differs）、named = 出典自身が対象を名指す物（remote_metadata など）}
+      valueForm: {enum: [closed, open], derived-from: valueType, note: "closed = version・commit-oid・boolean（形式が閉じていて、秘密らしい値と区別できる）、open = string・list（許される形式が広く、秘密らしさを形式では判定できない）。決定 120 により、open の観測値は保持・digest・表示をしない（BR3.4）。判定は valueType から導く 1 か所の関数が持つ"}
       valueType: {enum: [string, version, commit-oid, list, boolean]}
       normalization: {enum: [exact, lowercase-hex, version-compare], default: exact}
       userAnswerable: boolean
@@ -84,15 +105,19 @@ entities:
     fields:
       itemKey: Ref
       state: ItemState
-      confirmedValue: {type: any, presence: only-when-state-confirmed}
+      confirmedValue: {type: any, presence: only-when-state-confirmed-and-closed-form, note: 開いた形（string・list）の項目は confirmed でも値を持たない（Owner の決定 120）。confirmed の事実は state と出典・有無だけ}
       candidates:
         list:
           candidateRef: {type: Ref, note: "itemKey と sourceRef から決まる識別。GuidanceSelection.candidateRef はこの値を指す。順位は持たない"}
           sourceRef: SourceRef
           presence: {enum: [value, absent], note: "absent = この出典は読めて、項目が無い（「この出典には無い」）。unavailable の出典は候補に入れず causes に載せる"}
-          valueDigest: {type: Sha256, presence: only-when-presence-value}
-          displayValue: {type: string, presence: only-when-presence-value}
+          valueDigest: {type: Sha256, presence: only-when-presence-value-and-closed-form}
+          displayValue: {type: string, presence: only-when-presence-value-and-closed-form}
+          lengthBucket: {enum: [empty, short, medium, long], presence: only-when-presence-value-and-open-form}
+          matchGroup: {type: int, presence: only-when-presence-value-and-open-form, note: 「どの出典と同じか・違うか」を値なしで示す}
         presence: only-when-state-conflict
+        note: 開いた形の項目の conflict は値を並べず、出典・有無・matchGroup・lengthBucket だけを並べる。nextAction は fix-source（出典の持ち主へ直しを頼む。BR3.2）
+      invalidSources: {list: {sourceRef: SourceRef, withheld: "invalid_format | secret_like"}, presence: only-when-state-invalid, note: 値・digest・候補を持たない。項目・出典・固定の分類だけ（BR3.4、Owner の決定 116）}
       unobservableCauses: {list: UnobservableCause, presence: when-any-source-unavailable}
       observationRefs: {list: ObservationRef}
       answerRef: {type: Ref, presence: only-when-valid-answer-bound}
@@ -107,7 +132,8 @@ entities:
       missingItems: {list: Ref, derived: items.state == missing}
       conflicts: {list: Ref, derived: items.state == conflict}
       observationRefs: {list: ObservationRef}
-      observationDigest: {type: Sha256, derived-from: [observationRefs], note: 古さの判定に使うのはこれだけ（BR8.3）}
+      observationFacts: {list: ObservationFact, note: 実際に読んだ結果から再計算した事実。参照名から作らない}
+      observationDigest: {type: Sha256, derived-from: [observationFacts], note: 全事実を観測の単位の辞書順に並べた正規の JSON の SHA-256。古さの判定に使うのはこれだけ（BR8.3）。answers・参照名は入力に入れない}
       draftDigest: {type: Sha256, derived-from: [items, answers, observationRefs], note: draft の同一性の識別。古さの判定には使わない}
     invariants:
       - 再観測で observationDigest が変わったら、この draft は古いとして新しい draft を作る（BR8.3）。回答を足すだけでは古くならない
@@ -120,7 +146,7 @@ entities:
       selectedCandidateRef: {type: Ref, presence: only-when-from-choose-source, note: DraftItem.candidates の 1 つを指す}
       value: {type: any, presence: only-when-kind-value-and-not-rejected, constraints: [validated-type, bounded-length, no-secret-value]}
       valueDigest: {type: Sha256, presence: only-when-kind-value-and-not-rejected}
-      boundObservationDigests: {list: Sha256, note: 回答した時点の項目の観測と結ぶ（BR6.2）}
+      boundObservationDigest: {type: Sha256, note: 回答は 1 つの項目に結ぶので 1 件。回答した時点の項目の観測 digest（その項目の全出典の ObservationFact の正規の JSON の SHA-256。参照名からは作らない）と結ぶ（BR6.2）}
       state: AnswerState
       rejectionReason: {type: string, presence: only-when-rejected, constraints: [fixed-classification-not-derived-from-input, no-input-copy], enum: [secret_like, invalid_type, too_long, invalid_character, invalid_format, out_of_boundary, stale_answer, duplicate_conflict]}
       answeredAt: {type: Instant, note: 呼出側が渡す。「最新」の判定に使う（BR5.4）}
@@ -165,15 +191,31 @@ entities:
     invariants:
       - 判断に使うのは機械可読な出力と終了コードだけ。manifest の宣言だけで対応済みとしない（BR2.2）
 initialCatalog:   # 初期の項目一覧では、利用者が答えられる項目（aidlc_settings）の出典は 1 つで conflict にならず、conflict になりうる sds_commit は答えられない項目なので、choose-source は起きない。規則と型は将来の項目のために残し、試験は架空の試験用の項目一覧で確かめる。A-01: 対象から実際に読める物だけ。出典の割当は設計時点の想定（A-07）で、実物の位置との突き合わせは NFR 要件・置き場の設計で行い確定する。各項目は valueType を持つ（ItemCatalogEntry の必須の欄）
-  - {itemKey: sds_commit, valueType: commit-oid, sources: [{kind: sds_pin, requiredForConfirmed: true}, {kind: workflow_caller, requiredForConfirmed: true}], normalization: lowercase-hex, userAnswerable: false}
-  - {itemKey: kit_version, valueType: version, sources: [{kind: sds_pin, requiredForConfirmed: true}], normalization: version-compare, userAnswerable: false}
-  - {itemKey: aidlc_version, valueType: version, sources: [{kind: aidlc_version, requiredForConfirmed: true}], normalization: version-compare, userAnswerable: false}
-  - {itemKey: aidlc_settings, valueType: list, sources: [{kind: aidlc_settings, requiredForConfirmed: true}], userAnswerable: true}
-  - {itemKey: protected_paths, valueType: list, sources: [{kind: sds_pin, requiredForConfirmed: true}], userAnswerable: false}
-  - {itemKey: tool_node, valueType: version, sources: [{kind: tool_probe, requiredForConfirmed: true}], normalization: version-compare, userAnswerable: false}
-  - {itemKey: tool_aidlc, valueType: version, sources: [{kind: tool_probe, requiredForConfirmed: true}], normalization: version-compare, userAnswerable: false}
+  - {itemKey: sds_commit, valueType: commit-oid, sources: [{kind: sds_pin, requiredForConfirmed: true, targetBinding: by-location}, {kind: workflow_caller, requiredForConfirmed: true, targetBinding: by-location}], normalization: lowercase-hex, userAnswerable: false}
+  - {itemKey: kit_version, valueType: version, sources: [{kind: sds_pin, requiredForConfirmed: true, targetBinding: by-location}], normalization: version-compare, userAnswerable: false}
+  - {itemKey: aidlc_version, valueType: version, sources: [{kind: aidlc_version, requiredForConfirmed: true, targetBinding: by-location}], normalization: version-compare, userAnswerable: false}
+  - {itemKey: aidlc_settings, valueType: list, sources: [{kind: aidlc_settings, requiredForConfirmed: true, targetBinding: by-location}], userAnswerable: true}
+  - {itemKey: protected_paths, valueType: list, sources: [{kind: sds_pin, requiredForConfirmed: true, targetBinding: by-location}], userAnswerable: false}
+  - {itemKey: tool_node, valueType: version, sources: [{kind: tool_probe, requiredForConfirmed: true, targetBinding: by-location}], normalization: version-compare, userAnswerable: false}
+  - {itemKey: tool_aidlc, valueType: version, sources: [{kind: tool_probe, requiredForConfirmed: true, targetBinding: by-location}], normalization: version-compare, userAnswerable: false}
 notHandledByU2:   # 置き場の設計の Q5 = A（arc が Owner の決定 95 により入力）。項目一覧に入れず、確認済みとも示さない
   - {itemKey: required_checks, reason: 出典の割当（workflow_caller と sds_pin）が実物の位置・形式と突き合わせられていない。扱う単位と出典は、別に決める}
+wireMapping:   # F04: 内部の構造体は保ち、C02 の既存の受渡し形（contract-summary「既存entityの受渡し形と所有」）へ LC5 の toC02Wire（純粋な関数）だけで渡す。契約の型は変えない（BR8.5）
+  ConfigurationDraft:
+    c02_fields: {draftId: string, targetRef: Ref, answers: object, missingItems: "string[]", conflicts: "string[]", observationRefs: "Ref[]"}
+    mapping:
+      - {wire: draftId, from: ConfigurationDraft.draftId}
+      - {wire: targetRef, from: ConfigurationDraft.targetRef}
+      - {wire: answers, from: "Answer のうち state = answered だけを itemKey をキーにした object。値 = {answerId, kind, value（kind = value）, selectedCandidateRef（choose-source）}。rejected・invalidated は渡さない"}
+      - {wire: missingItems, from: ConfigurationDraft.missingItems}
+      - {wire: conflicts, from: ConfigurationDraft.conflicts}
+      - {wire: observationRefs, from: ConfigurationDraft.observationRefs}
+    not_on_wire: [items, draftDigest, observationFacts, observationDigest]   # 内部の持ち物。古さの判定は U2 の内側（BR8.3）。必要なら契約の改訂を Owner へ戻す
+  GuidanceSelection:
+    c02_fields: {selectionId: string, draftRef: Ref, candidateRef: Ref, targetRef: Ref, guidance: string, observationRef: Ref}
+    mapping:
+      - {wire: guidance, from: GuidanceMessage.text, note: 色・配置に頼らない平文（結論・次の操作・原因・未確認を含む）。構造体の全体は E05 の GuidanceMessage として別に渡す}
+      - {wire: "selectionId, draftRef, candidateRef, targetRef, observationRef", from: GuidanceSelection の同名の欄}
 relationships:
   - DialogueSession 1..1 ConfigurationDraft（その対話の間）
   - ConfigurationDraft 1..* DraftItem; 0..* Answer
