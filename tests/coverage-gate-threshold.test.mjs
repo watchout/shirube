@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { DEFAULT_THRESHOLD_HUNDREDTHS } from "../scripts/coverage-gate/judge.mjs";
-import { DECISION_URL_MAX_LENGTH, DECISION_URL_SHAPE, RATIONALE_FORBIDDEN, RATIONALE_MAX_LENGTH, THRESHOLD_KEYS, checkThreshold } from "../scripts/coverage-gate/threshold.mjs";
+import { DECISION_URL_MAX_LENGTH, DECISION_URL_SHAPE, RATIONALE_FORBIDDEN, RATIONALE_MAX_LENGTH, THRESHOLD_KEYS, checkDecisionUrlFragment, checkOneLineSentence, checkThreshold } from "../scripts/coverage-gate/threshold.mjs";
 
 const URL_OK = "https://github.com/example-org/example-repo/issues/12#issuecomment-345";
 const GOOD = { percent: 95, decisionUrl: URL_OK, rationale: "Example rationale for a lowered line." };
@@ -181,4 +181,81 @@ test("the check is pure: same input, same output; the input is not changed; the 
   assert.equal(JSON.stringify(input), before);
   first.threshold.rationale = "changed afterwards";
   assert.equal(input.rationale, GOOD.rationale);
+});
+
+// U5: the sentence rule and the decision-URL shape rule are exported with the field name as a parameter (BR9.3, BR9.5).
+const FIELD = "exclusions[3].reason";
+const sentenceFails = (value, field = FIELD) => {
+  const r = checkOneLineSentence(value, field);
+  assert.equal(r.ok, false, JSON.stringify(value));
+  return r.failure;
+};
+
+test("the sentence rule returns null for an acceptable value and does not read the field name", () => {
+  for (const value of ["x", "あ".repeat(300), "😀".repeat(300), "100% of the rest; see issue #12", "colon : single is fine"]) {
+    assert.equal(checkOneLineSentence(value, FIELD), null, value.slice(0, 20));
+  }
+});
+
+test("the sentence rule refuses the same values as the threshold rationale, and names the field it was given", () => {
+  const bad = ["a".repeat(301), "あ".repeat(301), "😀".repeat(301), "", " ", "　", "a\nb", "a\rb", "a\u0000b", "a\u007fb", "x::y", "a%0Ab", "a%0ab", "a%0Db", "a`b", "a | b", 1, null, undefined, ["x"], {}];
+  for (const value of bad) {
+    assert.deepEqual([sentenceFails(value).reasonCode, sentenceFails(value).field], ["INPUT_FIELD_INVALID", FIELD], JSON.stringify(value));
+    assert.equal(checkThreshold(withField("rationale", value)).ok, false, JSON.stringify(value));
+  }
+});
+
+test("for the threshold field the sentence rule gives the failure checkThreshold gives, byte for byte (U4 is unchanged)", () => {
+  for (const value of ["", "a".repeat(301), "x::y", "a\nb", 5]) {
+    assert.deepEqual(sentenceFails(value, "threshold.rationale"), fails(withField("rationale", value)), JSON.stringify(value));
+  }
+});
+
+test("the sentence rule failure is one plain line that names the field and never echoes the value", () => {
+  const f = sentenceFails("leak::marker::abc");
+  assert.ok(f.detail.startsWith(`${FIELD} `) && !/[\r\n]/.test(f.detail));
+  assert.ok(!f.detail.includes("leak") && !f.detail.includes("marker"));
+});
+
+test("the sentence rule stops reading a huge value after the limit", () => {
+  const started = Date.now();
+  for (const value of ["a".repeat(5_000_000), "😀".repeat(2_000_000), " ".repeat(5_000_000)]) assert.equal(checkOneLineSentence(value, FIELD).ok, false);
+  assert.ok(Date.now() - started < 3000);
+});
+
+const fragmentFails = (value, field = FIELD) => {
+  const r = checkDecisionUrlFragment(value, field);
+  assert.equal(r.ok, false, JSON.stringify(value));
+  return r.failure;
+};
+
+test("the decision-URL fragment rule accepts a reason that has the exact address as one space-separated piece", () => {
+  const good = [URL_OK, `see ${URL_OK}`, `${URL_OK} is the decision`, `before ${URL_OK} after`, `a  ${URL_OK}`, `not-a-url ${URL_OK} another https://example.invalid/x`, `Decision: ${URL_OK}`];
+  for (const value of good) assert.equal(checkDecisionUrlFragment(value, FIELD), null, value);
+});
+
+test("the decision-URL fragment rule refuses a reason with no exact address, with the same shape rule as decisionUrl", () => {
+  const base = "https://github.com/example-org/example-repo";
+  const bad = ["", "no address here", `${base}/issues/1`, `${base}/issues/1#issuecomment-2?tab=1`, `see:${URL_OK}`, `説明${URL_OK}`, `${URL_OK}。`, `(${URL_OK})`, `see\t${URL_OK}`, `see\u3000${URL_OK}`, `http://github.com/a/b/issues/1#issuecomment-2`, 12, null, undefined, ["x"]];
+  for (const value of bad) assert.deepEqual([fragmentFails(value).reasonCode, fragmentFails(value).field], ["INPUT_FIELD_INVALID", FIELD], JSON.stringify(value));
+});
+
+test("the decision-URL fragment rule refuses a piece past the 300-character limit and the failure never echoes the reason", () => {
+  const tooLong = `${URL_OK}${"0".repeat(DECISION_URL_MAX_LENGTH)}`;
+  assert.equal(fragmentFails(tooLong).field, FIELD);
+  const f = fragmentFails("leak-marker without an address");
+  assert.ok(f.detail.startsWith(`${FIELD} `) && !/[\r\n]/.test(f.detail) && !f.detail.includes("leak"));
+});
+
+test("the decision-URL fragment rule reads a long value in linear time", () => {
+  const started = Date.now();
+  for (const value of ["a ".repeat(2_000_000), "a".repeat(5_000_000), `https://github.com/${"a/".repeat(1_000_000)}`]) assert.equal(checkDecisionUrlFragment(value, FIELD).ok, false);
+  assert.ok(Date.now() - started < 3000);
+});
+
+test("both shared rules are pure: same input, same output, no change to the input", () => {
+  const value = `see ${URL_OK}`;
+  assert.deepEqual([checkOneLineSentence(value, FIELD), checkDecisionUrlFragment(value, FIELD)], [null, null]);
+  assert.deepEqual(checkOneLineSentence("", FIELD), checkOneLineSentence("", FIELD));
+  assert.notEqual(checkOneLineSentence("", FIELD), checkOneLineSentence("", FIELD));
 });
