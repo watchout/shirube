@@ -1,0 +1,33 @@
+{
+  "stage": "code-generation",
+  "unit": "u5-exclusions",
+  "version": 1,
+  "writes": [
+    { "path": "scripts/coverage-gate/exclusions.mjs" },
+    { "path": "scripts/coverage-gate/report-exclusions.mjs" },
+    { "path": "scripts/coverage-gate/threshold.mjs" },
+    { "path": "scripts/coverage-gate/input.mjs" },
+    { "path": "scripts/coverage-gate/resolve.mjs" },
+    { "path": "scripts/coverage-gate/report.mjs" },
+    { "path": "scripts/coverage-gate/cli.mjs" },
+    { "path": "tests/coverage-gate-exclusions.test.mjs" },
+    { "path": "tests/coverage-gate-report-exclusions.test.mjs" },
+    { "path": "tests/coverage-gate-report-document-exclusions.test.mjs" },
+    { "path": "tests/coverage-gate-cli-exclusions.test.mjs" },
+    { "path": "tests/coverage-gate-threshold.test.mjs" },
+    { "path": "tests/coverage-gate-input.test.mjs" },
+    { "path": "tests/coverage-gate-resolve.test.mjs" },
+    { "path": "tests/coverage-gate-structure.test.mjs" },
+    { "path": "tests/coverage-gate-report.test.mjs" },
+    { "path": "tests/coverage-gate-golden.test.mjs" },
+    { "path": "tests/coverage-gate-golden.mjs" },
+    { "path": "tests/coverage-gate-golden-text.mjs" },
+    { "path": "tests/coverage-gate-cli.test.mjs" },
+    { "path": "tests/coverage-gate-cli-modes.test.mjs" },
+    { "path": "aidlc/spaces/default/intents/261110-shared-coverage-gate/construction/u5-exclusions/code-generation/code-summary.md" },
+    { "path": "aidlc/spaces/default/intents/261110-shared-coverage-gate/construction/u5-exclusions/code-generation/traceability.json" },
+    { "path": "aidlc/spaces/default/intents/261110-shared-coverage-gate/construction/u5-exclusions/code-generation/source-manifest.json" },
+    { "path": "aidlc/spaces/default/intents/261110-shared-coverage-gate/construction/u5-exclusions/code-generation/self-coverage-input.json" },
+    { "path": "aidlc/spaces/default/intents/261110-shared-coverage-gate/construction/u5-exclusions/code-generation/self-coverage-result.json" }
+  ]
+}

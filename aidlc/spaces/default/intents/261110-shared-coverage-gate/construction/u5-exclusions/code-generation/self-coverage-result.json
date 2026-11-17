@@ -1,0 +1,127 @@
+{
+  "schemaVersion": 1,
+  "runId": "local",
+  "outcome": "match",
+  "shouldFail": false,
+  "mode": "enforce",
+  "reasonCodes": [],
+  "coveredLines": 1436,
+  "totalLines": 1436,
+  "lineRatioPercent": "100.00",
+  "effectiveThresholdPercent": "100.00",
+  "thresholdException": null,
+  "measurementDefinition": {
+    "name": "node-builtin",
+    "measuredTarget": "declared tracked sources",
+    "toolName": "node --test coverage",
+    "toolVersion": "22.23.5"
+  },
+  "denominator": {
+    "declaredTargets": [
+      "scripts/coverage-gate/"
+    ],
+    "resolvedFileCount": 17,
+    "measuredFileCount": 17
+  },
+  "exclusions": [],
+  "exclusionCount": 0,
+  "unmeasuredPaths": [],
+  "notRunPaths": [],
+  "testFailurePaths": [],
+  "perFile": [
+    {
+      "path": "scripts/coverage-gate/cli.mjs",
+      "coveredLines": 114,
+      "totalLines": 114
+    },
+    {
+      "path": "scripts/coverage-gate/emit.mjs",
+      "coveredLines": 104,
+      "totalLines": 104
+    },
+    {
+      "path": "scripts/coverage-gate/events-reporter.mjs",
+      "coveredLines": 27,
+      "totalLines": 27
+    },
+    {
+      "path": "scripts/coverage-gate/events.mjs",
+      "coveredLines": 53,
+      "totalLines": 53
+    },
+    {
+      "path": "scripts/coverage-gate/exclusions.mjs",
+      "coveredLines": 89,
+      "totalLines": 89
+    },
+    {
+      "path": "scripts/coverage-gate/input.mjs",
+      "coveredLines": 125,
+      "totalLines": 125
+    },
+    {
+      "path": "scripts/coverage-gate/judge.mjs",
+      "coveredLines": 158,
+      "totalLines": 158
+    },
+    {
+      "path": "scripts/coverage-gate/lcov.mjs",
+      "coveredLines": 101,
+      "totalLines": 101
+    },
+    {
+      "path": "scripts/coverage-gate/measure-node.mjs",
+      "coveredLines": 116,
+      "totalLines": 116
+    },
+    {
+      "path": "scripts/coverage-gate/order.mjs",
+      "coveredLines": 14,
+      "totalLines": 14
+    },
+    {
+      "path": "scripts/coverage-gate/report-exception.mjs",
+      "coveredLines": 64,
+      "totalLines": 64
+    },
+    {
+      "path": "scripts/coverage-gate/report-exclusions.mjs",
+      "coveredLines": 29,
+      "totalLines": 29
+    },
+    {
+      "path": "scripts/coverage-gate/report.mjs",
+      "coveredLines": 184,
+      "totalLines": 184
+    },
+    {
+      "path": "scripts/coverage-gate/resolve.mjs",
+      "coveredLines": 44,
+      "totalLines": 44
+    },
+    {
+      "path": "scripts/coverage-gate/runner.mjs",
+      "coveredLines": 98,
+      "totalLines": 98
+    },
+    {
+      "path": "scripts/coverage-gate/sanitize.mjs",
+      "coveredLines": 17,
+      "totalLines": 17
+    },
+    {
+      "path": "scripts/coverage-gate/threshold.mjs",
+      "coveredLines": 99,
+      "totalLines": 99
+    }
+  ],
+  "recordsSha256": "eb4305391038e293ae735f4090fcb7a4246bd2cbb974497a9416bd39195b9551",
+  "measurementAttempt": {
+    "toolName": "node",
+    "deadlineSeconds": 600,
+    "totalBudgetSeconds": 900,
+    "spentSeconds": 7,
+    "endState": "completed"
+  },
+  "inputFailure": null
+}
