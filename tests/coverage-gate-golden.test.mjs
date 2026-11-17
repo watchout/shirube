@@ -14,14 +14,14 @@ import { GOLDEN } from "./coverage-gate-golden-text.mjs";
 const repo = makeRepo({ "src/a.mjs": SOURCE_A, "tests/a.test.mjs": PASS_TEST, "input.json": GOLDEN_INPUT, "bad.json": GOLDEN_FAILING_INPUT });
 test.after(() => removeDir(repo));
 
-const FAILURE = { reasonCode: "INPUT_FIELD_UNKNOWN", field: "exclusions", detail: "The input has a field this version does not accept: exclusions." };
+const FAILURE = { reasonCode: "INPUT_FIELD_UNKNOWN", field: "excludes", detail: "The input has a field this version does not accept: excludes." };
 
 function documentFor(name) {
   if (name === "inputFailure") return buildInputFailureDocument({ runId: "local", failure: FAILURE });
   const measurement = GOLDEN_MEASUREMENTS[name]();
   const denominatorPaths = ["src/a.mjs"];
   const verdict = judge({ denominatorPaths, requiredTestPaths: ["tests/a.test.mjs"], measurement });
-  return buildDocument({ runId: "local", declaredTargets: ["src"], denominatorPaths, measurement, verdict });
+  return buildDocument({ runId: "local", declaredTargets: ["src"], denominatorPaths, measurement, verdict, excluded: [] });
 }
 
 test("the golden covers the four paths and each has the four surfaces", () => {

@@ -1,7 +1,9 @@
 // Builds the one result document and renders every output from it: the JSON file, the job summary, the notice line and
 // the output values. Pure: no clock, environment or file. The set of codes comes from the judge; this file only words them.
 import { DEFAULT_THRESHOLD_HUNDREDTHS, SCHEMA_VERSION } from "./judge.mjs";
+import { compareCodePoint } from "./order.mjs";
 import { exceptionSection, headLines, modeLines, noticeExtras, noticeLevel, outcomeLabel, refineHeading, thresholdCell } from "./report-exception.mjs";
+import { exclusionNotice, exclusionSection, headWithExclusions } from "./report-exclusions.mjs";
 import { sanitizeNotice, sanitizeSummaryText, summaryPath } from "./sanitize.mjs";
 
 export const SUMMARY_LIST_LIMIT = 20;
@@ -64,15 +66,19 @@ function denominatorField(declaredTargets, denominatorPaths, verdict) {
   return { declaredTargets: [...declaredTargets], resolvedFileCount, measuredFileCount: unmeasured === null ? null : resolvedFileCount - unmeasured.length };
 }
 
-export function buildDocument({ runId, declaredTargets, denominatorPaths, measurement, verdict }) {
+// The exclusions are the ones the resolution decided, with their kind, copied and put in code-point order of the path.
+const exclusionsField = (excluded) => excluded.map(({ path, reason, kind }) => ({ path, reason, kind })).sort((a, b) => compareCodePoint(a.path, b.path));
+
+export function buildDocument({ runId, declaredTargets, denominatorPaths, measurement, verdict, excluded }) {
+  const exclusions = exclusionsField(excluded);
   return {
     schemaVersion: SCHEMA_VERSION,
     runId,
     ...judgmentFields(verdict),
     measurementDefinition: { ...measurement.measurementDefinition },
     denominator: denominatorField(declaredTargets, denominatorPaths, verdict),
-    exclusions: [],
-    exclusionCount: 0,
+    exclusions,
+    exclusionCount: exclusions.length,
     unmeasuredPaths: verdict.unmeasuredPaths && [...verdict.unmeasuredPaths],
     notRunPaths: verdict.notRunPaths && [...verdict.notRunPaths],
     testFailurePaths: [...measurement.testFailurePaths],
@@ -129,7 +135,7 @@ function inputFailureLines(failure) {
 export function renderSummary(document) {
   const ratio = document.lineRatioPercent === null ? "not measured" : `${document.lineRatioPercent}%`;
   return [
-    ...headLines(document, DEFAULT_PERCENT),
+    ...headWithExclusions(headLines(document, DEFAULT_PERCENT), document),
     `## Coverage gate: ${refineHeading(document, HEADINGS[document.outcome])}`,
     "",
     "| Item | Value |",
@@ -140,6 +146,7 @@ export function renderSummary(document) {
     `| Exclusions | ${document.exclusionCount} |`,
     ...modeLines(document),
     ...exceptionSection(document),
+    ...exclusionSection(document, SUMMARY_LIST_LIMIT),
     "",
     "Reasons:",
     ...document.reasonCodes.map((code) => `- ${code}: ${MESSAGES[code]}`),
@@ -158,7 +165,7 @@ function noticeText(document) {
 }
 
 export function renderNotice(document) {
-  return `::${noticeLevel(document)}::${sanitizeNotice(`${noticeText(document)}${noticeExtras(document)}`)}`;
+  return `::${noticeLevel(document)}::${sanitizeNotice(`${noticeText(document)}${noticeExtras(document)}${exclusionNotice(document)}`)}`;
 }
 
 export function renderOutputs(document) {

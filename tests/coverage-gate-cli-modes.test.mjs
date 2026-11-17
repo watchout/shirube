@@ -50,7 +50,7 @@ test("record-only exits 0 for every result that enforce would fail on, and the r
 });
 
 test("an input that cannot be read is exit 2 in record-only too, and the result has no mode", async () => {
-  for (const extra of [{ mode: "record-only", exclusions: [] }, { mode: "record-only", testTargets: [] }, { mode: "record-only", threshold: { percent: 50 } }, { mode: "recordonly" }]) {
+  for (const extra of [{ mode: "record-only", excludes: [] }, { mode: "record-only", testTargets: [] }, { mode: "record-only", threshold: { percent: 50 } }, { mode: "recordonly" }]) {
     const r = await go(extra);
     assert.equal(r.code, 2, JSON.stringify(extra));
     const doc = readJson(r.result);

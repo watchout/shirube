@@ -10,11 +10,11 @@ import { GATE_DIR } from "./coverage-gate-fixtures.mjs";
 const FILES = readdirSync(GATE_DIR).filter((name) => name.endsWith(".mjs")).sort();
 const source = (name) => readFileSync(join(GATE_DIR, name), "utf8");
 // The files that decide or format: they may not read a clock, a random source, the environment or a file.
-const CORE = ["judge.mjs", "report.mjs", "report-exception.mjs", "threshold.mjs", "input.mjs", "order.mjs", "sanitize.mjs", "lcov.mjs", "events.mjs"];
+const CORE = ["judge.mjs", "report.mjs", "report-exception.mjs", "threshold.mjs", "input.mjs", "order.mjs", "sanitize.mjs", "lcov.mjs", "events.mjs", "exclusions.mjs", "report-exclusions.mjs"];
 const importsOf = (text) => [...text.matchAll(/^(?:import|export)\s[^;]*?from\s+"([^"]+)"/gmu)].map((m) => m[1]);
 
 test("the gate is made of the expected files", () => {
-  assert.deepEqual(FILES, ["cli.mjs", "emit.mjs", "events-reporter.mjs", "events.mjs", "input.mjs", "judge.mjs", "lcov.mjs", "measure-node.mjs", "order.mjs", "report-exception.mjs", "report.mjs", "resolve.mjs", "runner.mjs", "sanitize.mjs", "threshold.mjs"]);
+  assert.deepEqual(FILES, ["cli.mjs", "emit.mjs", "events-reporter.mjs", "events.mjs", "exclusions.mjs", "input.mjs", "judge.mjs", "lcov.mjs", "measure-node.mjs", "order.mjs", "report-exception.mjs", "report-exclusions.mjs", "report.mjs", "resolve.mjs", "runner.mjs", "sanitize.mjs", "threshold.mjs"]);
 });
 
 test("the core files take no clock, no random source, no environment and no file", () => {
@@ -101,4 +101,55 @@ test("tests of the gate contain no skipped or placeholder test", () => {
     assert.doesNotMatch(text, /\b(?:test|it|describe|suite)\.(?:skip|todo)\s*\(|assert\.ok\(true\)|assert\.equal\(true, true\)/u, name);
     assert.match(text, /assert\./u, `${name} asserts nothing`);
   }
+});
+
+// U5: the exclusions. Each value and each rule has one owner, and only one place takes files out of the denominator.
+const NEW_FILES = ["exclusions.mjs", "report-exclusions.mjs"];
+const EXCLUSION_CORE = [...NEW_FILES, "input.mjs", "resolve.mjs", "report.mjs"];
+const code = (name) => source(name).split("\n").filter((line) => !line.trimStart().startsWith("//")).join("\n");
+
+test("the exclusion words and keys live in their owner file only", () => {
+  assert.deepEqual(holdersOf(/Excluded from the gate/u), ["report-exclusions.mjs"]);
+  assert.deepEqual(holdersOf(/Excluded files \(/u), ["report-exclusions.mjs"]);
+  assert.deepEqual(holdersOf(/`\s*Exclusions: \$\{/u), ["report-exclusions.mjs"]);
+  assert.deepEqual(holdersOf(/\bEXCLUSION_KEYS\s*=/u), ["exclusions.mjs"]);
+  assert.deepEqual(holdersOf(/\bEXCLUSION_KINDS\s*=/u), ["exclusions.mjs"]);
+  assert.deepEqual(holdersOf(/"both"/u), ["exclusions.mjs"]);
+  assert.deepEqual(holdersOf(/The exclusions leave no/u), ["exclusions.mjs"]);
+});
+
+test("only the resolution takes files out of the denominator: one call, and the judge knows no exclusion", () => {
+  assert.deepEqual(holdersOf(/\bsubtractExclusions\b/u), ["exclusions.mjs", "resolve.mjs"]);
+  assert.equal((code("resolve.mjs").match(/\bsubtractExclusions\(/gu) ?? []).length, 1);
+  assert.deepEqual(FILES.filter((name) => importsOf(source(name)).includes("./exclusions.mjs")), ["input.mjs", "report-exclusions.mjs", "resolve.mjs"]);
+  assert.doesNotMatch(source("judge.mjs"), /exclu/iu);
+  assert.doesNotMatch(source("emit.mjs"), /exclu/iu);
+});
+
+test("the shared text rules of the exception are used by the exclusions, not written again", () => {
+  assert.deepEqual(holdersOf(/\bRATIONALE_MAX_LENGTH\s*=|\bDECISION_URL_SHAPE\s*=|\bRATIONALE_FORBIDDEN\s*=/u), ["threshold.mjs"]);
+  assert.match(source("exclusions.mjs"), /checkOneLineSentence\(/u);
+  assert.match(source("exclusions.mjs"), /checkDecisionUrlFragment\(/u);
+  assert.deepEqual(importsOf(source("exclusions.mjs")).sort(), ["./order.mjs", "./threshold.mjs"]);
+});
+
+test("the files that decide or word the exclusions read no environment, no secret, no clock, no random source, no file, no process and no network", () => {
+  const forbidden = [/process\./u, /\bDate\b/u, /Math\.random/u, /randomUUID/u, /node:fs/u, /node:child_process/u, /node:(?:net|http|https|http2|dns|tls|dgram)/u, /\bfetch\s*\(/u, /\b(?:GITHUB_TOKEN|secrets?|password|credential)/iu];
+  for (const name of NEW_FILES) for (const pattern of forbidden) assert.doesNotMatch(code(name), pattern, `${name} ${pattern}`);
+  for (const name of EXCLUSION_CORE) assert.doesNotMatch(code(name), /process\.env/u, name);
+});
+
+test("the two new files are short, and their imports are only this gate's own files", () => {
+  for (const name of NEW_FILES) {
+    assert.ok(source(name).split("\n").length <= 301, name);
+    for (const target of importsOf(source(name))) assert.ok(target.startsWith("./"), `${name} imports ${target}`);
+  }
+});
+
+test("the list limit has one owner: the wording file takes it as an argument and neither imports the report nor holds a number", () => {
+  assert.deepEqual(holdersOf(/\bSUMMARY_LIST_LIMIT\s*=/u), ["report.mjs"]);
+  assert.deepEqual(importsOf(source("report-exclusions.mjs")).sort(), ["./exclusions.mjs", "./sanitize.mjs"]);
+  assert.doesNotMatch(code("report-exclusions.mjs"), /\b\d{2,}\b|SUMMARY_LIST_LIMIT/u);
+  assert.match(code("report.mjs"), /exclusionSection\(document, SUMMARY_LIST_LIMIT\)/u);
+  assert.deepEqual(holdersOf(/\b20\b/u), ["report.mjs"]);
 });

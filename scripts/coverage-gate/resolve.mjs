@@ -1,7 +1,9 @@
 // Turns the declared targets into tracked files, using the repository's existing resolution (scripts/hygiene/lib.mjs).
 // The gate has no resolution rules of its own. A git failure is thrown, never read as an empty result.
+// This is the one place the denominator and the required tests are decided: the exclusions are taken out here, once.
 import { isAbsolute, normalize, sep } from "node:path";
 import { resolveTargets, trackedFiles } from "../hygiene/lib.mjs";
+import { subtractExclusions } from "./exclusions.mjs";
 import { isTestFile } from "./input.mjs";
 import { sortPaths } from "./order.mjs";
 import { SUMMARY_LIST_LIMIT } from "./report.mjs";
@@ -38,5 +40,5 @@ export function resolveInput(cwd, input) {
   if (tests.problem) return tests.problem;
   const requiredTestPaths = tests.files.filter(isTestFile);
   if (requiredTestPaths.length === 0) return fail("TARGET_EMPTY", "testTargets", "The test targets hold no tracked test file.");
-  return { ok: true, denominatorPaths: denominator.files, requiredTestPaths };
+  return subtractExclusions(denominator.files, requiredTestPaths, input.exclusions);
 }

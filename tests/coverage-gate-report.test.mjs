@@ -25,7 +25,7 @@ const measurement = (over = {}) => ({
 const make = (m = measurement(), over = {}) => {
   const denominatorPaths = over.denominatorPaths ?? ["src/a.mjs", "src/b.mjs"];
   const verdict = judge({ denominatorPaths, requiredTestPaths: over.requiredTestPaths ?? ["t/a.test.mjs"], measurement: m, mode: over.mode, threshold: over.threshold });
-  return buildDocument({ runId: "run-1", declaredTargets: ["src"], denominatorPaths, measurement: m, verdict });
+  return buildDocument({ runId: "run-1", declaredTargets: ["src"], denominatorPaths, measurement: m, verdict, excluded: over.excluded ?? [] });
 };
 const full = measurement({ records: [rec("src/a.mjs", 1, 1), rec("src/b.mjs", 1, 1)] });
 const failedTests = measurement({ kind: "unobservable", cause: "test_failed", testFailurePaths: ["t/broken.test.mjs"], records: undefined, measuredPaths: undefined });

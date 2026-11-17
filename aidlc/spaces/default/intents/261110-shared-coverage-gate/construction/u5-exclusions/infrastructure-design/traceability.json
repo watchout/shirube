@@ -1,0 +1,338 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u5-exclusions",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR4.4",
+    "NFR4.5",
+    "NFR4.6",
+    "NFR4.7",
+    "NFR4.8",
+    "NFR4.9",
+    "NFR4.10",
+    "NFR4.11",
+    "NFR4.12",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR5.3",
+    "NFR5.4",
+    "NFR5.5",
+    "NFR5.6",
+    "NFR5.7",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR7.1",
+    "NFR7.2",
+    "NFR7.3",
+    "NFR7.4",
+    "NFR7.5",
+    "NFR8.1",
+    "NFR8.2",
+    "NFR8.3",
+    "NFR8.4",
+    "NFR8.5",
+    "NFR8.6",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR9.3",
+    "NFR10.1",
+    "NFR10.2",
+    "NFR11.1",
+    "NFR11.2",
+    "NFR11.3"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "infrastructure-specification の Deployment（動作を保証する環境。新しい module を import しない。満たすのは PF1）"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "infrastructure-specification の Deployment の資源の大きさ、monitoring-design の Metrics（分母 5,000 件・除外 1,000 件の時間）。満たすのは PF2"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（上限ちょうどの繰り返しと長い path の失敗までの時間）。満たすのは PF3"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（後ろ向きの互換）、cicd-pipeline の流れ 6。満たすのは PF4"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（summary の件数の境界）。満たすのは PF5"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "infrastructure-specification の Deployment の資源の大きさ（追加の process を起こさない）。満たすのは SL1"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "infrastructure-specification の Shared Infrastructure（件数に上限を置かない。結果の JSON の exclusionCount）。満たすのは SL2"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "infrastructure-specification の Deployment の保管（共有の状態を持たない）。満たすのは SL3"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "infrastructure-specification の Deployment の DB の行（DB のための分岐を持たない）。満たすのは SL4"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（構造の試験）、cicd-pipeline の流れ 3。満たすのは RL1"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（試験の結果。2 回の実行でバイト一致）。満たすのは RL2"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（試験の結果。入れ替えた入力でバイト一致）。満たすのは RL3"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "infrastructure-specification の Shared Infrastructure（規則の持ち主を 1 か所に）。満たすのは logical-components の LC4"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "cicd-pipeline の流れ 3（構造の検査と試験）。満たすのは LC4"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "infrastructure-specification の変更の中身（judge.mjs を変更しない）。満たすのは LC1・LC4"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（分母に無い path・全部除外の失敗）。満たすのは RL4"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（分母に無い path・全部除外の失敗）。満たすのは RL5"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（除外が必須の試験・未計測を隠さないこと）。満たすのは RL6"
+    },
+    {
+      "id": "NFR4.4",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（試験の結果）。満たすのは RL7"
+    },
+    {
+      "id": "NFR4.5",
+      "status": "OK",
+      "target": "monitoring-design の Alerts（終了コード 2 の経路）。満たすのは RL8"
+    },
+    {
+      "id": "NFR4.6",
+      "status": "OK",
+      "target": "monitoring-design の Dashboards / Logs（結果の JSON が入口）。満たすのは OB1"
+    },
+    {
+      "id": "NFR4.7",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（summary の節の境界）、Alerts。満たすのは OB2"
+    },
+    {
+      "id": "NFR4.8",
+      "status": "OK",
+      "target": "monitoring-design の Alerts（注釈の種類を変えず固定の 1 文）、Metrics の配線後の表示。満たすのは OB3"
+    },
+    {
+      "id": "NFR4.9",
+      "status": "OK",
+      "target": "monitoring-design の Dashboards / Logs（1 つの文書から 4 つの面）。満たすのは OB1"
+    },
+    {
+      "id": "NFR4.10",
+      "status": "OK",
+      "target": "infrastructure-specification の Shared Infrastructure（名前を増やさない）。満たすのは OB4"
+    },
+    {
+      "id": "NFR4.11",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（試験の結果）。満たすのは OB5"
+    },
+    {
+      "id": "NFR4.12",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（除外が毎回見えること）。満たすのは OB2"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "infrastructure-specification の Deployment のネットワーク、monitoring-design の Metrics（ネットワーク・資格情報を持たないこと）。満たすのは SC1"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（除外の道が入力の file だけであること）、cicd-pipeline の流れ 7。満たすのは SC2"
+    },
+    {
+      "id": "NFR5.3",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（除外が必須の試験・未計測を隠さないこと）。満たすのは SC3"
+    },
+    {
+      "id": "NFR5.4",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（分母に無い path・全部除外の失敗の負例）。満たすのは SC4"
+    },
+    {
+      "id": "NFR5.5",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（試験の結果。無害化の負例）。満たすのは SC5"
+    },
+    {
+      "id": "NFR5.6",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（失敗の文に path の文字列が無い）、Dashboards / Logs。満たすのは SC6"
+    },
+    {
+      "id": "NFR5.7",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（分母に無い path・全部除外の失敗）。満たすのは SC7"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "infrastructure-specification の Infrastructure Services（hygiene の共通 lib と Node の組込みだけ）。満たすのは LC1"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "infrastructure-specification の Deployment の構成の管理、cicd-pipeline の権限と秘密（新しい action・service を足さない）。満たすのは LC1"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "cicd-pipeline の流れ 2（TDD の Red と Green）、monitoring-design の Metrics（Red の失敗の記録）。満たすのは LC5"
+    },
+    {
+      "id": "NFR7.2",
+      "status": "OK",
+      "target": "cicd-pipeline の流れ 4、monitoring-design の Metrics（行の網羅率）。満たすのは LC5"
+    },
+    {
+      "id": "NFR7.3",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（構造の試験）。満たすのは LC5"
+    },
+    {
+      "id": "NFR7.4",
+      "status": "OK",
+      "target": "infrastructure-specification の変更の中身の試験の置き換え、cicd-pipeline の流れ 7。満たすのは RL12・LC5"
+    },
+    {
+      "id": "NFR7.5",
+      "status": "OK",
+      "target": "cicd-pipeline の流れ 2（架空のデータだけ）。満たすのは LC5"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（後ろ向きの互換）、cicd-pipeline の流れ 6。満たすのは RL9"
+    },
+    {
+      "id": "NFR8.2",
+      "status": "OK",
+      "target": "infrastructure-specification の Deployment の保管・Shared Infrastructure（書く場所と名前を増やさない）。満たすのは RL10"
+    },
+    {
+      "id": "NFR8.3",
+      "status": "OK",
+      "target": "cicd-pipeline の戻し方と段階、流れ 5、monitoring-design の Metrics（追加と置き換えだけであること）。満たすのは RL11"
+    },
+    {
+      "id": "NFR8.4",
+      "status": "OK",
+      "target": "infrastructure-specification の変更の中身の試験の置き換え。満たすのは RL12"
+    },
+    {
+      "id": "NFR8.5",
+      "status": "OK",
+      "target": "cicd-pipeline の戻し方と段階の新旧の同居（exclusions: [] は新しく受け付ける向き）。満たすのは RL9"
+    },
+    {
+      "id": "NFR8.6",
+      "status": "OK",
+      "target": "infrastructure-specification の Deployment の環境、cicd-pipeline の戻し方と段階の新旧の同居（配線しない）。満たすのは RL13"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "infrastructure-specification の Infrastructure Services（OWN-01 などの既存の検査）、monitoring-design の Metrics。満たすのは LC1"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "infrastructure-specification の Infrastructure Services、monitoring-design の Metrics（既存の構造の検査）。満たすのは LC1"
+    },
+    {
+      "id": "NFR9.3",
+      "status": "OK",
+      "target": "monitoring-design の Metrics（既存の構造の検査）。満たすのは LC1"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "OK",
+      "target": "infrastructure-specification の Shared Infrastructure（結果の JSON）、monitoring-design の Metrics の除外の利用の数（配線後。「観測できなかった」と書く）。満たすのは OB6"
+    },
+    {
+      "id": "NFR10.2",
+      "status": "OK",
+      "target": "infrastructure-specification の Shared Infrastructure（観測できない値は null）、monitoring-design の Metrics。満たすのは OB7"
+    },
+    {
+      "id": "NFR11.1",
+      "status": "OK",
+      "target": "infrastructure-specification の費用・Infrastructure Services（有料サービスも常設の資源も足さない）"
+    },
+    {
+      "id": "NFR11.2",
+      "status": "OK",
+      "target": "infrastructure-specification の費用・Deployment の実行の上限（必須の試験は同じだけ流れる）"
+    },
+    {
+      "id": "NFR11.3",
+      "status": "OK",
+      "target": "infrastructure-specification の費用の DB の job の行（範囲外。U7）"
+    }
+  ]
+}

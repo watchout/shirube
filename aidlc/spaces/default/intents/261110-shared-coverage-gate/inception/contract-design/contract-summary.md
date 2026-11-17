@@ -90,8 +90,8 @@ denominator:                          # 測る対象のソースの集合を呼�
   targets: [src/]                     # 追跡されている file、または追跡された file を含む directory。解決は契約 8
 testTargets: [tests/]                 # 「必須の試験」を決める宣言（FR4.3）。名前と形は U3 の機能の設計で確定（末尾の表）
 exclusions:                           # 省略可。省略は 0 件（FR3.3 ではなく FR5.2〜FR5.4）
-  - path: src/example/db-only.mjs     # 追跡されている file を 1 本ずつ。directory 名と wildcard は入力不正
-    reason: DB の job でだけ流れる。理由が無い・空の除外は入力不正
+  - path: src/example/db-only.mjs     # 分母のソースまたは必須の試験の追跡されている file を 1 本ずつ。directory 名と wildcard は入力不正
+    reason: DB の job でだけ流れる https://github.com/example-org/example-repo/issues/1#issuecomment-1   # 決定の URL を空白で区切って 1 つ以上含む（形だけ検査。実在は監査）。理由が無い・空・URL が無い除外は入力不正
 threshold:                            # 省略可。省略は行 100%（FR3.1）
   percent: 95                         # 0 以上 100 未満。100 以上は例外ではないので入力不正
   decisionUrl: https://github.com/example-org/example-repo/issues/1#issuecomment-1   # 形だけ検査。実在は監査が確かめる（FR3.3）
@@ -139,8 +139,8 @@ measurementDefinition:                 # 何を測ったか（FR1.5、FR8.4）
 denominator:
   declaredTargets: [src/]
   resolvedFileCount: 3
-exclusions:                            # 0 件以上。名前と理由（FR5.3）
-  - { path: src/example/db-only.mjs, reason: DB の job でだけ流れる }
+exclusions:                            # 0 件以上。名前・理由・種別（FR5.3。kind は U5 の設計で足した。.v1 の内側の追加）
+  - { path: src/example/db-only.mjs, reason: DB の job でだけ流れる https://github.com/example-org/example-repo/issues/1#issuecomment-1, kind: source }   # kind = source | test | both（解決が決める。入力には書けない）
 exclusionCount: 1
 unmeasuredPaths: []                    # 測定の記録が無い宣言された file（FR2.2）
 notRunPaths: []                        # 流れていない必須の試験 file（FR4.1）

@@ -1,0 +1,338 @@
+{
+  "stage": "nfr-design",
+  "unit": "u5-exclusions",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.2",
+    "NFR1.3",
+    "NFR1.4",
+    "NFR1.5",
+    "NFR1.6",
+    "NFR1.7",
+    "NFR1.8",
+    "NFR1.9",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR3.3",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR4.4",
+    "NFR4.5",
+    "NFR4.6",
+    "NFR4.7",
+    "NFR4.8",
+    "NFR4.9",
+    "NFR4.10",
+    "NFR4.11",
+    "NFR4.12",
+    "NFR5.1",
+    "NFR5.2",
+    "NFR5.3",
+    "NFR5.4",
+    "NFR5.5",
+    "NFR5.6",
+    "NFR5.7",
+    "NFR6.1",
+    "NFR6.2",
+    "NFR7.1",
+    "NFR7.2",
+    "NFR7.3",
+    "NFR7.4",
+    "NFR7.5",
+    "NFR8.1",
+    "NFR8.2",
+    "NFR8.3",
+    "NFR8.4",
+    "NFR8.5",
+    "NFR8.6",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR9.3",
+    "NFR10.1",
+    "NFR10.2",
+    "NFR11.1",
+    "NFR11.2",
+    "NFR11.3"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "performance-design PF1（Node 22 の組込みだけ。新しい module を import しない）"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "performance-design PF2（分母の Set に対する所属の確かめと集合の差。n log n を超えない）"
+    },
+    {
+      "id": "NFR1.3",
+      "status": "OK",
+      "target": "performance-design PF3（長さを先に確かめ上限 + 1 で止める。path は形の検査を持たず完全一致だけ）"
+    },
+    {
+      "id": "NFR1.4",
+      "status": "OK",
+      "target": "performance-design PF4（除外なしは走査 0 回で U4 と同じ）"
+    },
+    {
+      "id": "NFR1.5",
+      "status": "OK",
+      "target": "performance-design PF5（summary は 20 件まで。notice は固定の 1 文）"
+    },
+    {
+      "id": "NFR1.6",
+      "status": "OK",
+      "target": "scalability-design SL1（足す項目は exclusions と件数だけ）"
+    },
+    {
+      "id": "NFR1.7",
+      "status": "OK",
+      "target": "scalability-design SL2（件数に上限を置かない。採らなかった代替を記録）"
+    },
+    {
+      "id": "NFR1.8",
+      "status": "OK",
+      "target": "scalability-design SL3（共有の状態を持たない）"
+    },
+    {
+      "id": "NFR1.9",
+      "status": "OK",
+      "target": "scalability-design SL4（DB のための分岐を持たない）"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "reliability-design RL1（純粋な関数。構造の試験）"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "reliability-design RL2（2 回の実行でバイト一致）"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "reliability-design RL3（path の符号点順。入力の並びに依存しない）"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "logical-components LC4（理由の規則は threshold.mjs の 1 か所。除外の側に写さない）"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "logical-components LC4（持ち主以外の file に literal が現れない試験）"
+    },
+    {
+      "id": "NFR3.3",
+      "status": "OK",
+      "target": "logical-components LC1・LC4（分母から引く code は 1 か所。判定の核に除外の語が無い）"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "reliability-design RL4（検査の失敗は黙って戻さない。終了コード 2）"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "reliability-design RL5（分母に無い path は TARGET_UNRESOLVED、全部除外は TARGET_EMPTY）"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "reliability-design RL6・security-design SC3（必須の試験の未実行と未計測を隠さない）"
+    },
+    {
+      "id": "NFR4.4",
+      "status": "OK",
+      "target": "reliability-design RL7（区分・理由コード・終了コードを変えない）"
+    },
+    {
+      "id": "NFR4.5",
+      "status": "OK",
+      "target": "reliability-design RL8（書き込みの失敗は 2 のまま）"
+    },
+    {
+      "id": "NFR4.6",
+      "status": "OK",
+      "target": "observability-design OB1（結果の JSON に全件。件数）"
+    },
+    {
+      "id": "NFR4.7",
+      "status": "OK",
+      "target": "observability-design OB2（summary の節。0・1・20・21 件の境界）"
+    },
+    {
+      "id": "NFR4.8",
+      "status": "OK",
+      "target": "observability-design OB3（notice の固定の 1 文。注釈の種類は変えない）"
+    },
+    {
+      "id": "NFR4.9",
+      "status": "OK",
+      "target": "observability-design OB1（1 つの文書から 4 つの面）"
+    },
+    {
+      "id": "NFR4.10",
+      "status": "OK",
+      "target": "observability-design OB4（出力値の名前は 7 つのまま）"
+    },
+    {
+      "id": "NFR4.11",
+      "status": "OK",
+      "target": "observability-design OB5（除外した path は判定の一覧に現れない）"
+    },
+    {
+      "id": "NFR4.12",
+      "status": "OK",
+      "target": "observability-design OB2（頭の 1 行を毎回出す。区分・動作・例外・除外の有無の組み合わせの表）"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "security-design SC1（ネットワークと資格情報を持たない。構造の試験）"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "security-design SC2（除外の道は入力の file だけ。環境変数は読まない。構造の試験と負例）"
+    },
+    {
+      "id": "NFR5.3",
+      "status": "OK",
+      "target": "security-design SC3（分母のソースだけを外す。必須の試験は減らさない）"
+    },
+    {
+      "id": "NFR5.4",
+      "status": "OK",
+      "target": "security-design SC4（完全一致だけ。展開・正規化をしない）"
+    },
+    {
+      "id": "NFR5.5",
+      "status": "OK",
+      "target": "security-design SC5（自由な文字列の無害化。notice と出力値に載せない）"
+    },
+    {
+      "id": "NFR5.6",
+      "status": "OK",
+      "target": "security-design SC6（失敗の文に path を写さない）"
+    },
+    {
+      "id": "NFR5.7",
+      "status": "OK",
+      "target": "security-design SC7（検査を通った時だけ反映する）"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "logical-components LC1（Node の組込みと既存の共通 lib だけ。package.json を変えない）"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "logical-components LC1（新しい action・service を足さず workflow を変えない）"
+    },
+    {
+      "id": "NFR7.1",
+      "status": "OK",
+      "target": "logical-components LC5（TDD。正例と負例。Red と Green を別の commit）"
+    },
+    {
+      "id": "NFR7.2",
+      "status": "OK",
+      "target": "logical-components LC5（行の網羅率 100%。観測した値を機械が読める形で記録）"
+    },
+    {
+      "id": "NFR7.3",
+      "status": "OK",
+      "target": "logical-components LC5（構造の試験: 環境変数の読み 0 件・ネットワークと file の読み書きなし・判定の核に除外の語なし）"
+    },
+    {
+      "id": "NFR7.4",
+      "status": "OK",
+      "target": "reliability-design RL12・logical-components LC5（置き換える既存の試験 4 件を弱めない）"
+    },
+    {
+      "id": "NFR7.5",
+      "status": "OK",
+      "target": "logical-components LC5（架空のデータだけ。gitleaks に拾われる形を書かない）"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "reliability-design RL9（除外なしは U4 の出力とバイト一致。golden）"
+    },
+    {
+      "id": "NFR8.2",
+      "status": "OK",
+      "target": "reliability-design RL10（名前・版・理由コードを増やさない）"
+    },
+    {
+      "id": "NFR8.3",
+      "status": "OK",
+      "target": "reliability-design RL11（逆向き。戻した状態で U3・U4 の試験が通る）"
+    },
+    {
+      "id": "NFR8.4",
+      "status": "OK",
+      "target": "reliability-design RL12（置き換える既存の試験 4 件）"
+    },
+    {
+      "id": "NFR8.5",
+      "status": "OK",
+      "target": "reliability-design RL9（exclusions: [] は新しく受け付ける向き）"
+    },
+    {
+      "id": "NFR8.6",
+      "status": "OK",
+      "target": "reliability-design RL13（配線しない。CI の挙動は変わらない）"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "logical-components LC1（新しい file は 300 行以内。足す先の現状の行数）"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "logical-components LC1（構造の検査を弱めない。試験専用の export の印）"
+    },
+    {
+      "id": "NFR9.3",
+      "status": "OK",
+      "target": "logical-components LC1（項目ごとの検査を小さな関数に分け、早期に返す）"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "OK",
+      "target": "observability-design OB6（結果の JSON から集計）"
+    },
+    {
+      "id": "NFR10.2",
+      "status": "OK",
+      "target": "observability-design OB7（観測した値と宣言を分ける。null）"
+    },
+    {
+      "id": "NFR11.1",
+      "status": "OK",
+      "target": "scalability-design SL5（新しい有料サービス・常設の資源を足さない）"
+    },
+    {
+      "id": "NFR11.2",
+      "status": "OK",
+      "target": "scalability-design SL5（必須の試験は同じだけ流れる）"
+    },
+    {
+      "id": "NFR11.3",
+      "status": "OK",
+      "target": "scalability-design SL5（DB の job を足す費用は範囲外）"
+    }
+  ]
+}
