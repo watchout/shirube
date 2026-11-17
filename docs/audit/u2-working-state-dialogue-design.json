@@ -1,0 +1,47 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "261105-shirube-lifecycle-qualit / U2 u2-working-state-dialogue の設計記録だけのhead(設計記録だけのPR)を対象とする独立設計監査。AI-DLCのInception(同取り組みの inception と U1 は統合済み)を前提に、U2 の Functional Design・NFR Requirements・NFR Design・Infrastructure Designと、Code Generationの計画・試験の手順(code は未着手)を一度の監査で照合する。以下のU2WS-xxは本項目集合の識別子であり新しい社内規格・工程・権限ではない。全8項目必須。U2は、導入状態・設定・規格の対話(実物から観測した状態の解釈・項目ごとの状態・質問と案内・回答と draft と選択)を、`scripts/working-state/` の module と試験だけで作る単位で、入口(CLI・bin)・workflow への配線・利用先への配布は持たない。製品のcode(scripts/・tests/・knip.jsonc)の変更はまだ無い。実装・試験の実行・統合の合格を要求も主張もせず、その設計・検証計画と未達の扱いを監査する。旧SDS工程・旧道筋・判定4/5・退役PR/own-code予算を復活させない。設計監査のPASSの後に同じ単位の実装を同じPRに足して実装監査を受ける扱いは、実装の際に作者が改めて示す。",
+  "items": [
+    {
+      "id": "U2WS-01",
+      "criterion": "目的・範囲・受入の整合: 単位の対象が、`scripts/working-state/` の新しい module(観測の解釈・項目状態・質問と案内・回答と draft と選択・観測の読取り・表示の escape・項目一覧・module の export を集約する 1 file)と `tests/working-state-*.test.mjs` と `knip.jsonc` の production の entry 1 件(Q6 = A)だけで、requirements の U2 に割り当てられた FR・NFR・US/AC と、機能設計(BR1.1〜BR9.4 の 42 規則)・entities・計画の手順へ欠落なく対応している。入口(CLI・bin)を作らない(Q2 = A)ことと、`required_checks` を U2 では扱わない項目として案内だけにする(Q5 = A)ことが、設計と計画に一貫して書かれている。U1(CI の記録の受付)、U3 以降の配線・利用先への配布・workflow の変更を混ぜず、U2 の完成をそれらの完了として扱わない。U2 が不可逆な効果(書込み・push・投稿・network・適用の許可)を持たないことが範囲に書かれている。",
+      "basis": "requirements、unit-of-work U2、contract-summary、各段の traceability.json、functional-spec、rules BR1〜BR9、entities、計画の Summary と手順"
+    },
+    {
+      "id": "U2WS-02",
+      "criterion": "観測と 3 値の判定(BR1・BR2・BR3.4・BR9.1): 観測の値は実物から再計算し、宣言・cache・既定値を観測側へ写さない(S5)。結果は「一致/不一致/観測できず」の 3 値で、観測できずを成功・未導入に読み替えない。未導入と確定するのは、親が読めて「無い」と分かる時だけで、404 だけ・権限拒否・取得失敗・読取り中の変化・予算超過・根の外・同一実体の疑いは観測不能になる。観測の予算は信頼版の profile から呼出側が渡し、U2 が数値を複製しない。同じ項目の観測が複数あれば observedAt が最新の 1 つを使い、observedAt は呼出側の入力である。壊れた file(malformed)は値の不正として扱い、成功にしない。試験で、観測の値だけを変えた入力で結果が変わること(宣言の写しでないこと)と、2 回実行してバイト一致することが確かめられる計画になっている。",
+      "basis": "FR・NFR(観測に関する項目)、BR1.1〜BR1.6、BR2.1〜BR2.3、BR3.4、BR9.1、reliability-design RL1〜RL3、engineering-standards S4・S5・S8"
+    },
+    {
+      "id": "U2WS-03",
+      "criterion": "項目の状態と対象違い(BR3): 項目ごとに、決める順(wrong_target → invalid → conflict → unobservable → missing → confirmed)でちょうど 1 つの状態が決まり、出典の組み合わせの全部(`sds_commit` の 2 出典、`requiredForConfirmed` が無い出典を含む)が漏れなく 1 状態に落ちる。食い違い(conflict)では全出典の値を示し順位をつけず、候補を選ばない。別の対象(wrong_target)の観測は確認済みに使わず、参考として分けて示す。項目の一覧(initialCatalog の 7 項目と `required_checks` の「扱わない」)と形式の持ち主は 1 か所で(S3)、項目状態は回答を入力に取らない(型として import しない)。「適用中の規格」は観測できた物だけを示す。",
+      "basis": "BR3.1〜BR3.5、entities(ItemState・initialCatalog・notHandledByU2)、logical-components LC3、engineering-standards S3"
+    },
+    {
+      "id": "U2WS-04",
+      "criterion": "質問・回答・draft・案内(BR4〜BR8・BR9.2・BR9.4): 質問は missing・conflict と直せる invalid だけに限り、観測不能・wrong_target・直せない invalid は行き止まりを作らない案内にし、推測の値を答えさせない。回答は型・長さ・文字・path の境界を検査し、秘密らしい入力(集合 a〜e、判定できなければ秘密らしいとして拒否する fail closed)は value も valueDigest も保持せず、拒否の出力・理由に入力の一部を写さない。回答は観測 digest に結ばれ、観測が変われば無効になり、二重送信は 1 件、最新は呼出側の answeredAt で決まる。回答・draft・選択が許可を作らず(適用・開始・統合の権限を U2 が出さない)、draft の古さは観測 digest だけが契機で、外部への効果は 0 である。案内の並び(結論と対象 → 次の操作 → 原因・未確認 → 証拠の参照)、A 不足と B 観測不能の区別、未確認を確認済みと示さないこと、理由コードを U1 の結果から読むだけで新設しないことが、試験で確かめられる計画になっている。",
+      "basis": "BR4.1〜BR4.4、BR5.1〜BR5.4、BR6.1〜BR6.5、BR7.1〜BR7.7、BR8.1〜BR8.4、BR9.2、BR9.4、security-design SC2・SC4、reliability-design RL1・RL2"
+    },
+    {
+      "id": "U2WS-05",
+      "criterion": "子 process の起動(セキュリティの設計。Owner の決定 106・111): 起動する道具は固定の集合だけで、`node` は `process.execPath` だけ、`aidlc` は PATH のうち空でなく絶対 path で対象の根の外の dir(symlink を解決した後の実体で判定)だけから探し、見つけた実行ファイルの実体も根の外であることを確かめ、確かめた絶対 path で起動し、起動の直前に同一性を再確認する。見つからない時は、未導入・PATH の dir を捨てた上で見つからない(観測不能で件数と種別を示し「未導入」と断定しない)・権限や起動の失敗(観測不能)に分かれる。環境変数は PATH(絞り込み後)・LANG・LC_ALL・HOME だけで、shell を通さず標準入力を閉じ、子は自分の process group で起動して枠(時間・出力の大きさ)を超えたら group ごと止め、出力は読みながら数えて上限で打ち切り、止められない・確かめられない時は観測不能にする。子の cwd は OS の根で、U2 は何も作らず何も書かない(使えない時は起動せず観測不能)。対象の根・`node_modules/.bin`・PATH の相対要素と空要素・symlink 経由の同名の実行ファイルが起動されない負例、環境の架空の token が子へ渡らない負例、枠を超えた子・孫を作る子が group ごと止まる負例、止めたか確かめられない子が成功にならない負例、shell の特殊文字を含む架空の対象名で追加の命令が走らない負例が、計画と試験の手順に置かれている。",
+      "basis": "Owner の決定 106(https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6941079231)・111(https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6942847653)、security-design SC1・SC1a、reliability-design、infrastructure-specification の子 process の起動の条件 1〜6、NFR2.1・NFR3.2・NFR6.1a・NFR6.1b"
+    },
+    {
+      "id": "U2WS-06",
+      "criterion": "部品の分離・依存の向き・決定性(S2・S3・S4): 判定・分類・比較・規則の値を持つ核(観測の解釈・項目状態・回答と draft と選択・質問と案内)と、輸送だけを担う adapter(観測の読取り = file の読取りと子 process の起動、表示の escape)が分かれ、依存の向き(読取り → 解釈 → 項目状態 → 回答 → 質問と案内、表示 ← 質問と案内・回答)が一方向で循環せず、核が adapter を import しない。核が現在時刻・乱数・UUID・環境変数・file・子 process・network を自分で取得せず、呼出側が明示入力として渡す。adapter は分類・比較・判定・理由コードの再定義をしない。同じ判断規則・値(閾値・コード集合・分母)が 2 か所以上に literal で現れない。理由コードの持ち主は U1 のままで U2 は新設しない。これらが構造の試験(import の検査・禁止語の検査・規則の値の重複の検査)で機械的に確かめられる計画になっている。",
+      "basis": "NFR5.1・NFR5.1a・NFR5.2、logical-components LC1〜LC7 と依存の表、engineering-standards S2・S3・S4、functional-spec"
+    },
+    {
+      "id": "U2WS-07",
+      "criterion": "置き場・既存の検査との適合・網羅率の証拠(NFR1・NFR10): 新しい code の置き場が `scripts/working-state/`(1 file 300 行以内、実行時の npm 依存なし、`.mjs`、Node 22 以上)、試験が `tests/working-state-*.test.mjs` で、既存の検査(`lint:structural`・`lint:guard`・`hygiene:jscpd`・`hygiene:coverage`・`hygiene:lines`・dependency-cruiser・knip・OWN-01・`test` job の 80% の床・gitleaks の `secrets`)の実際の job・step の名前と対応が実物と一致して書かれている。knip は production の entry を 1 件足す(`ignore` に足さない、検査を緩める変更を混ぜない)ことと、足す前は未使用と出て足した後に消えることを実際に流して PR 本文に書く計画がある。行の網羅率は 100% で、分母は `scripts/working-state/**/*.mjs` をディスクから列挙して決め、0 件・lcov に現れない file・報告の形が取れない版・100% 未満は失敗(成功に数えない)で、記録は試験の中で子 process に Node の lcov を流して機械が読める形で作り、手で書き写さず申告値を証拠にしない。`.github/workflows`・`.shirube/**`・`package.json`・lockfile・契約 `.v2` の差分が無いことが範囲に書かれている。",
+      "basis": "NFR1.1・NFR1.1a・NFR1.1b・NFR1.2・NFR2.5・NFR10.1・NFR10.2、infrastructure-specification、cicd-pipeline、monitoring-design、infrastructure-design review-02(Minor R-08〜R-12)、team.md の Testing Posture、engineering-standards S5・S8"
+    },
+    {
+      "id": "U2WS-08",
+      "criterion": "計画の正直さと順序(AI-DLC の計画・TDD・決定 61): 計画が TDD(部品ごとに Red → Green → Refactor、Red と Green は別の commit、失敗しなかった Red は Red と数えない)で、試験の道具が Node 組込みの `node:test`、正例・負例を適用される要件に対応付ける表(unit-test-instructions)を持ち、DB・Repository・API・画面の層は永続化も入口も無いため対象外と理由つきで書かれている。順序が「設計の記録だけの PR と設計監査 → PASS と作者の受領の後に code、実装は同じ PR に足して実装監査、統合の前に Owner の対象 head の承認(R3 を想定)」で、守る物(workflow・必須検査・DB・資格情報・本番・料金・契約 `.v2`・新しい外部の依存)に触れない。infrastructure-design の見直しで残った Minor 5 件(R-08 の検査名の誤記・R-09 の knip の集約の再 export 範囲・R-10 の保護対象の行の分け方・R-11 の観測不能の原因と件数の運び先・R-12 の Sources の問いの範囲)と A-08(aidlc_settings の要素の形を作る段で決めて設計にも足す)の扱いが、どの手順で決め・直すかとともに書かれ、契約に合わない時は止めて伺う(コードで黙って埋めない)ことが書かれている。実装・試験の実行・Node 22 と Linux の runner での実行・gitleaks の手元実行・配線した workflow での実行・利用先での観測が「未実施・観測できなかった」と書かれ、成功とは書かれていない。",
+      "basis": "code-generation-plan、unit-test-instructions、Testing Contract、team.md、authority-and-waiting R3、Owner の決定 61(https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6940671975)、aidlc-only §2"
+    }
+  ]
+}
