@@ -1,5 +1,6 @@
 // Checks the input JSON and returns a normalized input or the first failure. Pure: it gets the file's text, not a path.
 // The checks run in a fixed order; the first failure is the one reported.
+import { checkExclusions } from "./exclusions.mjs";
 import { DEFAULT_MODE, MODES } from "./judge.mjs";
 import { compareCodePoint } from "./order.mjs";
 import { checkThreshold } from "./threshold.mjs";
@@ -9,7 +10,7 @@ export const DEFAULT_DEADLINE_SECONDS = 600;
 /** @public */
 export const DEFAULT_TOTAL_BUDGET_SECONDS = 900;
 const TEST_FILE_PATTERN = /\.test\.(?:js|mjs|cjs)$/u;
-const KNOWN_TOP = new Set(["schemaVersion", "shape", "denominator", "testTargets", "deadlineSeconds", "totalBudgetSeconds", "threshold", "mode"]);
+const KNOWN_TOP = new Set(["schemaVersion", "shape", "denominator", "testTargets", "deadlineSeconds", "totalBudgetSeconds", "threshold", "mode", "exclusions"]);
 const KNOWN_DENOMINATOR = new Set(["targets"]);
 const SHAPE = "node-builtin";
 
@@ -84,14 +85,21 @@ function checkException(doc) {
   return checked.ok ? { value: checked.threshold } : { problem: checked };
 }
 
-// The time limits, then the mode, then the exception, in that order. The first problem is the one returned.
+// The exclusions list: omitted is none. A failed list is never dropped or replaced by none.
+function checkExcluded(doc) {
+  const checked = checkExclusions(doc.exclusions);
+  return checked.ok ? { value: checked.exclusions } : { problem: checked };
+}
+
+// The time limits, then the mode, then the exception, then the exclusions, in that order. The first problem is the one returned.
 function checkSettings(doc) {
   const deadline = checkLimit(doc, "deadlineSeconds", DEFAULT_DEADLINE_SECONDS);
   const total = deadline.problem ? deadline : checkLimit(doc, "totalBudgetSeconds", DEFAULT_TOTAL_BUDGET_SECONDS);
   const mode = total.problem ? total : checkMode(doc);
   const exception = mode.problem ? mode : checkException(doc);
-  if (exception.problem) return exception;
-  return { deadlineSeconds: deadline.value, totalBudgetSeconds: total.value, mode: mode.value, threshold: exception.value };
+  const excluded = exception.problem ? exception : checkExcluded(doc);
+  if (excluded.problem) return excluded;
+  return { deadlineSeconds: deadline.value, totalBudgetSeconds: total.value, mode: mode.value, threshold: exception.value, exclusions: excluded.value };
 }
 
 export function checkInput(text) {

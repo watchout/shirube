@@ -78,7 +78,6 @@ function failureOf(field, detail) {
 }
 
 // The sentence rule, shared by the threshold rationale and the exclusion reason: the caller names the field in a failure.
-/** @public */
 export function checkOneLineSentence(text, field) {
   const problem = failureOf(field, `${field} must be one line of text that is not blank, within the length limit, without control characters or command and table sequences.`);
   if (typeof text !== "string" || text.length > RATIONALE_MAX_LENGTH * 2 || exceeds(text, RATIONALE_MAX_LENGTH)) return problem;
@@ -88,7 +87,6 @@ export function checkOneLineSentence(text, field) {
 }
 
 // Whether a sentence has at least one decision URL as a piece between ASCII spaces. Run it after the sentence rule, so the text is short.
-/** @public */
 export function checkDecisionUrlFragment(text, field) {
   if (typeof text === "string" && text.split(" ").some(isDecisionUrl)) return null;
   return failureOf(field, `${field} must contain the exact address of a GitHub issue or pull request comment, with a space on each side of it.`);

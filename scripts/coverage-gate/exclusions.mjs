@@ -77,6 +77,7 @@ const without = (paths, kinds, excluded) => {
 };
 
 // Every path must match a file by exact string. With no exclusions the lists come back as they are.
+/** @public until resolve.mjs calls it (Step 7) */
 export function subtractExclusions(denominatorPaths, requiredTestPaths, exclusions) {
   if (exclusions.length === 0) return { ok: true, denominatorPaths, requiredTestPaths, excluded: [] };
   const decided = decideKinds(exclusions, new Set(denominatorPaths), new Set(requiredTestPaths));
