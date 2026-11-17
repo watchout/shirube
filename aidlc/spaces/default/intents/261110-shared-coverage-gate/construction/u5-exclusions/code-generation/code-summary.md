@@ -16,7 +16,7 @@
   - 新規: `exclusions.mjs`（89 行。除外の項目のキー・種別の持ち主、項目の検査 `checkExclusions`、分母と必須の試験から引く `subtractExclusions`）、`report-exclusions.mjs`（29 行。summary の最初の行・節と notice の文の持ち主。純粋）。
   - 変更: `threshold.mjs`（理由の 1 行の文の規則と決定 URL の規則を field 名つきの関数にし、この file が持ち主のまま `exclusions.mjs` が使う）、`input.mjs`（`exclusions` を既知のキーに。検査は `checkExclusions` に任せる）、`resolve.mjs`（42 → 44。除外を引く呼び出しを 1 か所だけ）、`report.mjs`（177 → 184。文書の `exclusions`・`exclusionCount` と、4 つの面へのつなぎ）、`cli.mjs`（114 のまま。解決の除外を文書へ渡す）。
   - 変えていない: `judge.mjs`、`emit.mjs`、`order.mjs`、`sanitize.mjs`、`events.mjs`、`events-reporter.mjs`、`lcov.mjs`、`runner.mjs`、`measure-node.mjs`。
-- 試験（新規 4 file、変更 9 file）。
+- 試験（新規 4 file、変更 10 file。変更の件数は列挙と `git diff --name-status` から数え直した。開発役の報告の 9 は数え間違い）。
   - 新規: `coverage-gate-exclusions.test.mjs`（28 件）、`coverage-gate-report-exclusions.test.mjs`（10 件）、`coverage-gate-report-document-exclusions.test.mjs`（12 件）、`coverage-gate-cli-exclusions.test.mjs`（9 件。実物の command を子の process で走らせる 2 件を含む）。
   - 変更: `coverage-gate-threshold.test.mjs`・`-input.test.mjs`・`-resolve.test.mjs`・`-structure.test.mjs`（構造の試験を 6 件足した）・`-report.test.mjs`（1 行）・`-golden.test.mjs`・`-golden.mjs`・`-golden-text.mjs`・`-cli.test.mjs`・`-cli-modes.test.mjs`（いずれも少数の行）。
 - 変えていない物: `scripts/hygiene`、`scripts/sds`、`.github/`（workflow）、`kit`、`.shirube`、`package.json`、lockfile、各種の設定。基準との差分を取り、これらに差分が 0 件であることを確かめた。
