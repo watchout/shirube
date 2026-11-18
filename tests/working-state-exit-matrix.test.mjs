@@ -29,13 +29,19 @@ test("M1+ 位置（locator）: (a)〜(e) の全部。使えない観測（malfor
   });
 });
 
-test("M2+ 対象違いの名前（namedTarget）: (a)〜(e) の全部。対象違いの項目になるが、名前は案内・wire のどこにも写らない", () => {
+test("M2+ 対象違いの名前（namedTarget）: (a)〜(e) の全部。対象違いの項目になるが、名前は観測・draft・案内・wire のどこにも写らない", () => {
   eachColumn((column, secret, form) => {
-    const draft = builtDraft({ observedItems: observeWith(CATALOG, pinAt({ namedTarget: form })).items });
+    const observed = observeWith(CATALOG, pinAt({ namedTarget: form }));
+    const draft = builtDraft({ observedItems: observed.items });
     const result = guide(draft);
     assert.equal(draft.items.find((item) => item.itemKey === "sds_commit").state, "wrong_target", `${column} ${form}`);
     assert.equal(result.guidance.text.includes("対象の名前は表示しません"), true, `${column} ${form}`);
-    assert.equal(absent(secret, result, ws.draftToC02Wire(draft)), true, `${column} ${form}`);
+    assert.equal(absent(secret, observed, draft, result, ws.draftToC02Wire(draft)), true, `${column} ${form}`);
+    // 観測の入口を通らない、手で作った draft の対象違いの名前。案内の入口が示さない。
+    const hand = guide(handDraft([{ itemKey: "aidlc_version", state: "wrong_target", wrongTargets: [{ sourceRef: { sourceKind: "sds_pin", locator: "p" }, namedTarget: form }], observationRefs: [] }]));
+    assert.equal(hand.status, "built", `${column} ${form}`);
+    assert.equal(hand.guidance.text.includes("対象の名前は表示しません"), true, `${column} ${form}`);
+    assert.equal(absent(secret, hand), true, `${column} ${form}`);
   });
 });
 
@@ -236,7 +242,8 @@ test("M16+ 案内の固定の語彙の欄（状態・観測できない原因・
   eachColumn((column, secret, form) => {
     const items = [
       { itemKey: "aidlc_version", state: "unobservable", unobservableCauses: [form], observationRefs: [] },
-      { itemKey: "sds_commit", state: "conflict", candidates: [candidate({ lengthBucket: form, matchGroup: form }), candidate({ presence: form, matchGroup: 2 })], observationRefs: [] },
+      // 長さの区分・一致の組は開いた形の項目の候補の行にだけ出る（閉じた形の項目は表示値を出す。M18+）ので、開いた形の項目（note_text）で調べる。
+      { itemKey: "note_text", state: "conflict", candidates: [candidate({ lengthBucket: form, matchGroup: form }), candidate({ presence: form, matchGroup: 2 })], observationRefs: [] },
       { itemKey: "aidlc_settings", state: "invalid", invalidSources: [{ sourceRef: { sourceKind: "sds_pin", locator: "p" }, withheld: form }], observationRefs: [] },
     ];
     const result = guide(handDraft(items), { conformance: { outcome: form, reasons: [] } });
