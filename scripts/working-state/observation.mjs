@@ -2,6 +2,7 @@
 // 観測は実際の読取りの結果だけ。宣言・cache・既定値・期待値を写さない。核は現在時刻・乱数・識別子を自分で取得せず、呼出側が now と対象を渡す（S4）。
 // 同じ単位は observedAt が最も新しい 1 件だけ。同じ項目の別の出典は互いに捨てずに全部返す。返す値は深く凍結する。
 import { deepFreeze } from "./canonical.mjs";
+import { SOURCE_KINDS } from "./catalog.mjs";
 import { parseInstant } from "./instant.mjs";
 import { interpretItem } from "./observation-fields.mjs";
 import { interpretFile, interpretProbe, usageOf } from "./read-check.mjs";
@@ -116,12 +117,12 @@ function assemble({ context, itemKey, ref, usage, observedAt }, fields) {
 const stopped = (status) => deepFreeze({ status, items: [] });
 
 // 項目名が門を通らない項目は、観測しない・黙って外さない。観測できず（unavailable・malformed）の単位として返し、項目名は書かず項目一覧の中の位置で示す（決定 95 の追い指示 (b)）。
-// 出典の種類は、項目の出典のうち参照に入れてよい最初の種類（無ければ道具の確かめ）。値・presence は持たず、観測した物にも確認にも数えない（item-state は一覧に無い項目として扱う）。
+// 出典の種類は、項目の出典のうち閉じた一覧（SOURCE_KINDS）にある最初の種類（無ければ道具の確かめ。呼出側の文字列は参照に写さない）。値・presence は持たず、観測した物にも確認にも数えない（item-state は一覧に無い項目として扱う）。
 const positionKeyOf = (position) => `catalog_position_${position}`;
 function droppedUnits(context, given) {
   return given.flatMap((item, position) => {
     if (isItemKeyText(item?.itemKey)) return [];
-    const kind = (Array.isArray(item?.sources) ? item.sources : []).map((source) => source?.kind).find(isRefName) ?? TOOL_PROBE;
+    const kind = (Array.isArray(item?.sources) ? item.sources : []).map((source) => source?.kind).find((sourceKind) => SOURCE_KINDS.includes(sourceKind)) ?? TOOL_PROBE;
     return [{ parts: { context, itemKey: positionKeyOf(position), ref: { sourceKind: kind, locator: positionKeyOf(position) }, usage: NO_USAGE, observedAt: context.now }, fields: { unobservableCause: "malformed" }, key: null }];
   });
 }
