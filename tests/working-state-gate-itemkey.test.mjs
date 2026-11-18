@@ -97,3 +97,18 @@ test("I9+ 手で作った観測の単位の項目名: (a)〜(e) の全部が dra
   }
   assert.equal(buildDraft({ observedItems: units.map((unit, i) => (i === 0 ? { ...unit, itemKey: "legacy_item" } : unit)) }).draft.unknownItemKeys.includes("legacy_item"), true);
 });
+
+test("I10+ 空の項目名: 空の文字列は項目名にしない。wire・draft・回答・選択・観測のどこでも断られる（門の「空でない」の確かめの守り）", () => {
+  const units = observeWith().items;
+  assert.equal(ws.isItemKeyText(""), false);
+  assert.equal(wireOf({ missingItems: [""] }), "refused");
+  assert.equal(wireOf({ conflicts: [""] }), "refused");
+  assert.equal(ws.draftToC02Wire({ ...BASE, answers: [{ answerId: "ans-1", itemKey: "", kind: "value", value: ["models.preset=thorough"], state: "answered" }] }).reason, "not_convertible");
+  assert.equal(buildDraft({ catalog: [...CATALOG, { ...NOTE_ITEM, itemKey: "" }] }).reason, "invalid_input");
+  assert.equal(buildDraft({ observedItems: units.map((unit, i) => (i === 0 ? { ...unit, itemKey: "" } : unit)) }).reason, "invalid_input");
+  assert.equal(buildDraft({ answers: [{ answerId: "ans-1", itemKey: "", kind: "value", value: ["models.preset=thorough"], state: "answered" }] }).reason, "invalid_input");
+  const catalog = [...CATALOG, { ...NOTE_ITEM, itemKey: "" }];
+  assert.equal(send(answerInput({ itemKey: "" }), { catalog, observed: observeWith(catalog) }).status, "unreadable");
+  assert.equal(createSelection(keyed("")).reason, "invalid_input");
+  assert.equal(observeWith([...CATALOG, { ...NOTE_ITEM, itemKey: "" }]).items.some((unit) => unit.itemKey === ""), false);
+});
