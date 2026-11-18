@@ -76,7 +76,7 @@ test("X7+ 判定できない入力は秘密らしい（失敗側）: 文字列�
 
 test("X6+ 性能: 長い連なりの (d) の判定は文字列の長さの二乗にならない（直前の条件の守り。長さに上限の無い案内の文・識別にも当たる）", () => {
   const started = performance.now();
-  for (const text of ["a".repeat(100000), `${"a".repeat(100000)}.`, `${"a".repeat(50000)}.${"b".repeat(50000)}`]) assert.equal(ws.hasSecretShape(text), false);
+  for (const text of ["a".repeat(100000), `${"a".repeat(100000)}.`, `${"a".repeat(50000)}.${"b".repeat(50000)}`, "a_".repeat(100000), "a-".repeat(100000)]) assert.equal(ws.hasSecretShape(text), false); // _ と - も名前の文字（直前の条件が数える）
   assert.equal(ws.hasSecretShape(`${"a".repeat(30)}.${"b".repeat(30)}.c`), true);
   assert.ok(performance.now() - started < 1500, "長い連なりの判定が遅い");
 });
