@@ -54,6 +54,7 @@ test("X4+ 参照の例外は門の後: 区切り（| @ : 空白）で分けた�
     assert.equal(ws.isShowableRef(`${WORDS_BEARER}${delimiter}x`), false, delimiter);
     assert.equal(ws.isShowableRef(`${KEY_HEADING}${delimiter}x`), false, delimiter);
   }
+  for (const delimiter of ["|", "@", ":"]) assert.equal(ws.isShowableRef(`Bearer docs/readable/path.md${delimiter}x`), false, delimiter); // Bearer の後ろの語が読める path でも、門が生の全体に (c) を当てる
   assert.equal(ws.isShowableRef("item|docs/readable/path.md:12"), true);
 });
 
