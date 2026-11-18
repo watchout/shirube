@@ -1,6 +1,8 @@
 // 観測値・回答が共有する判定の関数（LC3 が持つ末端の純粋な関数）。他の部品を import しない。
 // この file が valueType ごとの許される形式の表の唯一の持ち主（S3）。項目状態（LC3）の invalid の判定と
-// 回答の検査（LC5）は、表を複製せずこの関数を通して使う。BR5.2 の秘密らしさの判定（classifyValue）も同じ file が持つ。
+// 回答の検査（LC5）は、表を複製せずこの関数を通して使う。BR5.2 の秘密らしさの判定も同じ file が持ち、外から来る文字列は全部、
+// この file の唯一の門（exposesText）を通る。門は生の文字列全体に (a)〜(d) を先に当て、(e) は門の種類が許す時だけ当て、
+// 例外（読める名前・形の説明）は門を通った後でだけ (e) を外す。例外は「正しい形か」を決めるだけで、秘密らしさの判定を飛ばさない（Owner の決定 95）。
 // 開いた形の固定の分類（withheld = invalid_format | secret_like）の持ち主もここ: Owner の決定 116・120・122
 // （決定 122: https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6964964182 、本文 SHA-256 `6662e49d5146bd9846a0bf304044293261a04faf18dfaa8f85da3052313b9304`）。
 // 時刻・乱数・環境変数・file・子 process・network を使わない（S4）。
@@ -29,19 +31,40 @@ const TOKEN_PREFIX_RE = new RegExp(`(?:(?<![A-Za-z0-9])|(?<=%[0-9A-Fa-f]{2}))(?:
 const BEARER_RE = new RegExp(`(?<![A-Za-z0-9])Bearer\\s+\\S{${BEARER_WORD_MIN},}`);
 const JWT_RE = new RegExp(`(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{${JWT_PART_MIN},}\\.[A-Za-z0-9_-]{${JWT_PART_MIN},}\\.[A-Za-z0-9_-]*(?![A-Za-z0-9_.-])`);
 const RUN_RE = new RegExp(`[A-Za-z0-9+/_=-]{${SECRET_RUN_MIN},}`);
-// (e) の例外: 読める path・名前。語の全体が [A-Za-z0-9._*/-] だけで、/ か . でつないだ部品が、- と _ で分けた語（19 文字以下の
-// 小文字・数字だけ、大文字・数字だけ、または先頭だけ大文字）の並びである時。20 文字以上の 1 語・大小文字が混ざった乱数らしい語は説明できない。
+
+// (e) の例外: 読める名前。語の全体が [A-Za-z0-9._*/-] だけで、/ . - _ で分けた部品が、19 文字以下の小文字・数字だけ、大文字・数字だけ、
+// または先頭だけ大文字の語で、さらに数字と英字が混ざった 4 文字以上の部品（16 進・乱数らしい部品）の長さの合計が DENSE_TOTAL_MAX 以下の時。
+// 20 文字以上の 1 語・大小文字が混ざった乱数らしい語・UUID のように混ざった部品を区切って並べた形は説明できない。
+// 読める path = さらに / か . を含む語（拡張子つきの名前・path。- と _ だけで続く 1 語の名前は含めない）。
 const PATH_CHARS_RE = /^[A-Za-z0-9._*/-]+$/;
 const READABLE_WORD_RE = /^(?:[a-z0-9*]{1,19}|[A-Z0-9*]{1,19}|[A-Z][a-z0-9*]{0,18})$/;
-const isReadablePath = (word) => /[/.]/.test(word) && PATH_CHARS_RE.test(word) && word.split(/[/.]/u).every((part) => part.split(/[-_]/u).filter((piece) => piece !== "").every((piece) => READABLE_WORD_RE.test(piece)));
+const DENSE_PIECE_RE = /^(?=.*[0-9])(?=.*[A-Za-z])[A-Za-z0-9*]{4,}$/;
+const DENSE_TOTAL_MAX = 16;
+function isReadableName(word) {
+  if (!PATH_CHARS_RE.test(word)) return false;
+  const pieces = word.split(/[/._-]/u).filter((piece) => piece !== "");
+  if (!pieces.every((piece) => READABLE_WORD_RE.test(piece))) return false;
+  return pieces.filter((piece) => DENSE_PIECE_RE.test(piece)).reduce((total, piece) => total + piece.length, 0) <= DENSE_TOTAL_MAX;
+}
+const isReadablePath = (word) => /[/.]/.test(word) && isReadableName(word);
 
 const isText = (value, pattern) => typeof value === "string" && pattern.test(value);
+const never = () => false;
+const isString = (value) => typeof value === "string";
 
-// 要素の形ごとの列の規則。最小の個数・最大の個数・要素の検査。
-// structural = 要素の形が構造を持ち、(e) の長い連なりがその形で説明できる（自由な文字列の形は構造を持たない）。
+// (e) に通す語の分け方（門が (a)〜(d) の後で呼ぶ。値の形ごとの例外はここにだけある）。words = 連なりを調べる語、readable = その語を連なりに数えない条件。
+const FREE_WORDS = (text) => ({ words: text.split(/\s+/u), readable: isReadablePath });
+// 設定の対は = で分けた key と value を別々の語として調べる（形が全体を説明する例外にしない）。value は - と _ でつないだ読める名前も通す。
+const PAIR_WORDS = (text) => ({ words: text.split("="), readable: isReadableName });
+// 参照（<項目>|<出典>|<位置>|<時刻>、<項目>@<出典>:<位置>）は区切りで分けた部品を別々の語として調べる。部品の分け方はここ 1 か所が持つ。
+const REF_WORDS = (text) => ({ words: text.split(/[|@:\s]+/u), readable: isReadablePath });
+// 形そのものが 40 文字の連なり（commit-oid）。形に合った全体は連なりに数えない（意図した限界: 40 桁の 16 進は何でも通る）。
+const NO_WORDS = () => ({ words: [], readable: never });
+
+// 要素の形ごとの列の規則。最小の個数・最大の個数・要素の検査・(e) に通す語の分け方。
 const LIST_RULES = new Map([
-  ["string", { min: 0, max: TEXT_MAX, structural: false, element: (e) => isText(e, STRING_RE) }],
-  ["setting-pair", { min: 1, max: 64, structural: true, element: (e) => isText(e, SETTING_PAIR_RE) }],
+  ["string", { min: 0, max: TEXT_MAX, element: (e) => isText(e, STRING_RE), words: FREE_WORDS }],
+  ["setting-pair", { min: 1, max: 64, element: (e) => isText(e, SETTING_PAIR_RE), words: (text) => (SETTING_PAIR_RE.test(text) ? PAIR_WORDS(text) : FREE_WORDS(text)) }],
 ]);
 
 // 配列そのもの（穴・余計な値のある配列は受けない）と、個数の範囲と、全要素の検査。
@@ -55,31 +78,31 @@ function isListOf(value, rule) {
   return true;
 }
 
-// 判定の対象の文字列（文字列でない値は対象にしない。写しも作らない）。
+// 判定の対象の文字列（文字列でない値は対象にしない）。配列は添字で複製してから調べる（isListOf と同じ読み方。元の配列の
+// filter・every・iterator の差し替えに左右されない）。
 const stringParts = (value) => (typeof value === "string" ? [value] : []);
-const listParts = (value) => (Array.isArray(value) ? Array.from(value).filter((e) => typeof e === "string") : []);
-const never = () => false;
-const isString = (value) => typeof value === "string";
+const listCopy = (value) => Array.from({ length: value.length }, (_, i) => value[i]);
+const listParts = (value) => (Array.isArray(value) ? listCopy(value).filter(isString) : []);
 
 // valueType ごとの形（closed = 形式が閉じていて秘密らしい値と区別できる、open = 区別できない）と検査。1 つの表。
-// parts = 秘密らしさを調べる文字列、explains = (e) の長い連なりを項目の許される形式が説明できるか（構造のある形だけ）。
+// parts = 秘密らしさを調べる文字列、words = (e) に通す語の分け方（門が (a)〜(d) の後で呼ぶ）。
 // typed = 値の型が形として合うか（回答を拒む時の理由 invalid_type の根拠。形式の検査 check とは別に、型だけを見る）。
 const FORMATS = new Map([
-  ["string", { form: "open", check: (v) => isText(v, STRING_RE), typed: isString, parts: stringParts, explains: never }],
-  ["version", { form: "closed", check: (v) => isText(v, VERSION_RE), typed: isString, parts: stringParts, explains: (t) => VERSION_RE.test(t) }],
-  ["commit-oid", { form: "closed", check: (v) => isText(v, COMMIT_OID_RE), typed: isString, parts: stringParts, explains: (t) => COMMIT_OID_RE.test(t) }],
+  ["string", { form: "open", check: (v) => isText(v, STRING_RE), typed: isString, parts: stringParts, words: FREE_WORDS }],
+  ["version", { form: "closed", check: (v) => isText(v, VERSION_RE), typed: isString, parts: stringParts, words: FREE_WORDS }],
+  ["commit-oid", { form: "closed", check: (v) => isText(v, COMMIT_OID_RE), typed: isString, parts: stringParts, words: (t) => (COMMIT_OID_RE.test(t) ? NO_WORDS() : FREE_WORDS(t)) }],
   [
     "list",
     {
       form: "open",
       check: (v, shape) => LIST_RULES.has(shape) && isListOf(v, LIST_RULES.get(shape)),
-      typed: (v) => Array.isArray(v) && Array.from(v).every(isString),
+      typed: (v) => Array.isArray(v) && listCopy(v).every(isString),
       parts: listParts,
-      explains: (t, shape) => LIST_RULES.get(shape).structural && LIST_RULES.get(shape).element(t),
+      words: (t, shape) => LIST_RULES.get(shape).words(t),
       knows: (shape) => LIST_RULES.has(shape),
     },
   ],
-  ["boolean", { form: "closed", check: (v) => v === true || v === false || v === "true" || v === "false", typed: (v) => typeof v === "boolean" || isString(v), parts: stringParts, explains: (t) => t === "true" || t === "false" }],
+  ["boolean", { form: "closed", check: (v) => v === true || v === false || v === "true" || v === "false", typed: (v) => typeof v === "boolean" || isString(v), parts: stringParts, words: FREE_WORDS }],
 ]);
 
 export const VALUE_TYPES = Object.freeze([...FORMATS.keys()]);
@@ -107,34 +130,71 @@ export function isAllowedFormat(valueType, value, elementShape = "string") {
 export const VALUE_CLASSIFICATIONS = Object.freeze(["valid", "invalid_format", "secret_like"]);
 const [VALID, INVALID_FORMAT, SECRET_LIKE] = VALUE_CLASSIFICATIONS;
 
-// 文字列のどこかに、既知の token の接頭辞（BR5.2 の (b)）が、先頭か英数字でない文字の直後にあるか。長さ・文字の範囲を見ない。
-// 項目名・原因・理由の符号のように、長い連なり (e) を持つ正当な固定の語は、接頭辞だけで判定する側がこの関数を使う。
-export const hasTokenPrefix = (text) => typeof text === "string" && TOKEN_PREFIX_RE.test(text);
+// 文字列が (a) 秘密鍵・証明書の見出し、(b) 既知の token の接頭辞（先頭か英数字でない文字の直後）、(c) Bearer + 長い語、(d) JWT の形のどれかを、
+// どこかに含むか。長い連なり (e) は見ない（識別・符号・手で作った構造体は、正当な長い名前・UUID を持つので、(e) は門の種類が許す時にだけ門の中で当てる）。
+export const hasSecretShape = (text) => typeof text === "string" && (KEY_HEADER_RE.test(text) || BEARER_RE.test(text) || TOKEN_PREFIX_RE.test(text) || JWT_RE.test(text));
 
-// 文字列が (a) 秘密鍵・証明書の見出し、(b) 接頭辞、(c) Bearer + 長い語、(d) JWT の形のどれかを、どこかに含むか。長い連なり (e) は見ない
-// （識別・対象・参照・案内の文・回答の値の写しは、正当な長い名前や項目の形式で説明される長い値を持つので、(e) は項目の形式を知る判定だけが持つ）。
-export const hasSecretShape = (text) => typeof text === "string" && (KEY_HEADER_RE.test(text) || BEARER_RE.test(text) || hasTokenPrefix(text) || JWT_RE.test(text));
-
-// 参照（<項目>|<出典>|<位置>|<時刻>、<項目>@<出典>:<位置>）を部品に分ける区切り。参照の部品の分け方はここ 1 か所が持つ。
-export const refPartsOf = (text) => text.split(/[|@:]/u);
-// 識別・対象・参照が、区切りの後ろも含めて、(a)〜(d) の形を持つ部品を持つか。
-const hasRefSecretShape = (text) => hasSecretShape(text) || refPartsOf(text).some(hasSecretShape);
-// 呼出側が渡す識別・対象・参照として受けてよい文字列か（空でなく、(a)〜(d) の形を持たない）。識別・対象の「秘密らしくない」の判定はここ 1 か所。
-export const isRefName = (value) => typeof value === "string" && value !== "" && !hasRefSecretShape(value);
-
-const DEEP_MAX = 8;
-// 手で作った構造体（回答の値・案内・回答の列）の中のどこかの文字列が、(a)〜(d) の形を含むか。確かめきれない深さは含む側（失敗側）。
-export function carriesSecretShape(value, depth = 0) {
-  if (typeof value === "string") return hasSecretShape(value);
-  if (typeof value !== "object" || value === null) return false;
-  return depth >= DEEP_MAX || Object.values(value).some((inner) => carriesSecretShape(inner, depth + 1));
+// 唯一の門。外から来る文字列は全部ここを通る。種類ごとに (e) を当てるか決める（理由は種類ごとにここ 1 か所）:
+//   answer = 回答・観測した値、name = 位置・対象の名前・表示する参照（どちらも (e) を当てる）、
+//   ref = 呼出側が渡す識別・参照・項目名・符号（正当な長い名前・UUID があるので (e) を当てない）、
+//   structure = 手で作った構造体の中の文字列と key（同じ理由で (e) を当てない）。
+// 順: (1) 未知の種類・文字列でない物は秘密らしい（失敗側）、(2) 生の文字列全体に (a)〜(d)、(3) (e) を当てる種類だけ、読める名前・形の説明（wordsOf）を
+// 通した語ごとに 20 文字以上の連なりを調べる。例外 (3) は (2) を飛ばさない。
+const GATE_RUN = new Map([["answer", true], ["name", true], ["ref", false], ["structure", false]]);
+export const GATE_CLASSES = Object.freeze([...GATE_RUN.keys()]);
+export function exposesText(gateClass, text, wordsOf = FREE_WORDS) {
+  const applyRun = GATE_RUN.get(gateClass);
+  if (applyRun === undefined || typeof text !== "string") return true;
+  if (hasSecretShape(text)) return true;
+  if (!applyRun) return false;
+  const { words, readable } = wordsOf(text);
+  return words.some((word) => RUN_RE.test(word) && !readable(word));
 }
 
-// 1 つの文字列が秘密らしいか（BR5.2 の (a)〜(e)）。explained = 項目の許される形式（構造のある形）が文字列全体を説明する時 (e) だけ外す。
-// (e) は空白で分けた語の中の連なりを見る。読める path・名前の語は連なりに数えない。
-function looksSecret(text, explained) {
-  if (hasSecretShape(text)) return true;
-  return !explained && text.split(/\s+/u).some((word) => RUN_RE.test(word) && !isReadablePath(word));
+// 表示する参照（区切りで分けた部品ごとに (e) を調べる）が秘密らしいか。
+export const isSecretLikeRefText = (text) => exposesText("name", text, REF_WORDS);
+
+// 呼出側が渡す識別・対象・参照・項目名・符号として受けてよい文字列か（空でなく、(a)〜(d) の形を持たない）。
+export const isRefName = (value) => typeof value === "string" && value !== "" && !exposesText("ref", value);
+
+const DEEP_MAX = 8;
+const KNOWN_PROTOTYPES = new Set([Object.prototype, null, Array.prototype, Map.prototype, Set.prototype]);
+// 入れ物の自分の key と値の並び。symbol の key・getter・setter があれば null（読まずに含む側）。
+function ownFieldsOf(container) {
+  const fields = [];
+  for (const key of Reflect.ownKeys(container)) {
+    const descriptor = typeof key === "symbol" ? undefined : Object.getOwnPropertyDescriptor(container, key);
+    if (descriptor === undefined || !("value" in descriptor)) return null;
+    fields.push(key, descriptor.value);
+  }
+  return fields;
+}
+// 入れ物の中身（調べる key と値の並び）。知らない入れ物・読めない欄は null。Map・Set は組み込みの読み方で key と値を出す。
+function childrenOf(container) {
+  const prototype = Object.getPrototypeOf(container);
+  const fields = KNOWN_PROTOTYPES.has(prototype) ? ownFieldsOf(container) : null;
+  if (fields === null) return null;
+  if (prototype === Map.prototype) return [...fields, ...[...Map.prototype.entries.call(container)].flat()];
+  return prototype === Set.prototype ? [...fields, ...Set.prototype.values.call(container)] : fields;
+}
+function carriesIn(value, depth, seen) {
+  if (typeof value === "string") return exposesText("structure", value);
+  if (typeof value === "function" || typeof value === "symbol") return true;
+  if (typeof value !== "object" || value === null) return false;
+  if (depth >= DEEP_MAX) return true;
+  if (seen.has(value)) return false;
+  seen.add(value);
+  const children = childrenOf(value);
+  return children === null || children.some((child) => carriesIn(child, depth + 1, seen));
+}
+// 手で作った構造体（回答の値・案内・回答の列）の中のどこかの文字列・key が、(a)〜(d) の形を含むか。
+// 知っている入れ物（配列・素の object・Map・Set）の外・読めない欄・確かめきれない深さ・例外は含む側（失敗側）。同じ入れ物は 1 回だけ調べる。
+export function carriesSecretShape(value) {
+  try {
+    return carriesIn(value, 0, new Set());
+  } catch {
+    return true;
+  }
 }
 
 // 観測値・回答が共有する判定。値の分類（valid | invalid_format | secret_like）だけを返し、入力は写さない（BR5.2・BR3.4）。
@@ -144,7 +204,7 @@ export function classifyValue(valueType, value, elementShape = "string") {
   try {
     const format = FORMATS.get(valueType);
     if (format === undefined || format.knows?.(elementShape) === false) return SECRET_LIKE;
-    if (format.parts(value).some((text) => looksSecret(text, format.explains(text, elementShape)))) return SECRET_LIKE;
+    if (format.parts(value).some((text) => exposesText("answer", text, (t) => format.words(t, elementShape)))) return SECRET_LIKE;
     return format.check(value, elementShape) === true ? VALID : INVALID_FORMAT;
   } catch {
     return SECRET_LIKE;

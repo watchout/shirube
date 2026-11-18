@@ -26,11 +26,12 @@ export const pair = (value, key = "models.preset") => [`${key}=${value}`];
 export const pairClass = (value, key) => ws.classifyValue("list", pair(value, key), "setting-pair");
 export const pairReason = (value, key) => ws.rejectionReasonOf("list", pair(value, key), "setting-pair");
 
-// 設定の対の回答を受けてから、回答・draft・案内・wire のどこにも値が写らないことを調べる（回答の入口から出口まで）。
+// 設定の対の回答を受けてから、回答・draft・案内・wire のどこにも秘密らしい部分（key を渡した時は key、無ければ value）が写らないことを調べる（回答の入口から出口まで）。
 export function reachOf(value, key) {
   const observed = observeWith();
+  const secret = key ?? value;
   const result = send(answerInput({ value: pair(value, key) }), { observed });
-  if (result.status !== "recorded") return { status: result.status, reason: result.answer?.rejectionReason, absent: absent(value, result) };
+  if (result.status !== "recorded") return { status: result.status, reason: result.answer?.rejectionReason, absent: absent(secret, result) };
   const draft = builtDraft({ observedItems: observed.items, answers: result.answers });
-  return { status: result.status, absent: absent(value, result, draft, guide(draft), ws.draftToC02Wire(draft)) };
+  return { status: result.status, absent: absent(secret, result, draft, guide(draft), ws.draftToC02Wire(draft)) };
 }

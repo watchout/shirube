@@ -51,7 +51,7 @@ export function draftToC02Wire(draft) {
 export function selectionToC02Wire(selection) {
   try {
     const { selectionId, draftRef, candidateRef, targetRef, guidance, observationRef } = selection;
-    const valid = [selectionId, draftRef, candidateRef, targetRef, observationRef].every(isRef) && isRef(guidance?.text);
+    const valid = [selectionId, draftRef, candidateRef, targetRef, observationRef].every(isRef) && isRef(guidance?.text) && !carriesSecretShape(guidance);
     return valid ? converted({ selectionId, draftRef, candidateRef, targetRef, guidance: guidance.text, observationRef }) : refused();
   } catch {
     return refused();

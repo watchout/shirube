@@ -4,7 +4,7 @@
 // 時刻・乱数・識別子・環境変数・file を使わない（S4）。
 import { deepFreeze } from "./canonical.mjs";
 import { ACTION_TEXTS, ITEM_STATES, WITHHELD_NAME, formOf, isItemName, isKnownCause, isLengthBucket, isShowableName, isShowableRef, questionsOf, shownValueOf, strongestAction } from "./guidance-actions.mjs";
-import { hasTokenPrefix, isRefName } from "./value-exposure.mjs";
+import { isRefName } from "./value-exposure.mjs";
 
 // 案内にしない理由の固定の分類（入力を写さない）。
 export const GUIDANCE_REFUSALS = Object.freeze(["invalid_input", "build_failed"]);
@@ -28,7 +28,7 @@ function conformanceOf(value) {
   try {
     if (!isObject(value) || !OUTCOMES.includes(value.outcome) || !Array.isArray(value.reasons)) return null;
     const reasons = [...value.reasons];
-    return reasons.every((reason) => typeof reason === "string" && REASON_PATTERN.test(reason) && !hasTokenPrefix(reason)) ? { outcome: value.outcome, reasons } : null;
+    return reasons.every((reason) => typeof reason === "string" && REASON_PATTERN.test(reason) && isRefName(reason)) ? { outcome: value.outcome, reasons } : null;
   } catch {
     return null;
   }
