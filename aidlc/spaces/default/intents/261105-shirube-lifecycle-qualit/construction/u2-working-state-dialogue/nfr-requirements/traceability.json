@@ -7,7 +7,7 @@
   ],
   "coverage": [
     {"id": "NFR1", "status": "OK", "target": "NFR1.1 (主の要件と合否は tech-stack-decisions。分母は置き場の設計で確定。補助: observability NFR1.1b・performance NFR1.1a), NFR1.2 (tech-stack-decisions)"},
-    {"id": "NFR2", "status": "OK", "target": "NFR2.1, NFR2.2, NFR2.3, NFR2.4, NFR2.5, NFR2.6 (security-requirements。NFR2.6 は開いた形の観測値と U2 が保証しないこと = Owner の決定 120。FD-GAP-2 は直し済み)"},
+    {"id": "NFR2", "status": "OK", "target": "NFR2.1, NFR2.2, NFR2.3, NFR2.4, NFR2.5, NFR2.6 (security-requirements。NFR2.6 は開いた形の観測値と U2 が保証しないこと = Owner の決定 120。開いた形の固定の分類を観測の事実に入れる F02 の直しは arc の読みで Owner に確認中、T8.3p・T3.4p。FD-GAP-2 は直し済み)"},
     {"id": "NFR3", "status": "OK", "target": "NFR3.1, NFR3.2 (security-requirements)"},
     {"id": "NFR4", "status": "OK", "target": "NFR4.1, NFR4.2 (reliability-requirements), NFR4.3 (scalability-requirements)。保存・再開・バックアップは U2 に無く、AC3.1.3 と AC3.2.5 の履歴の部分の持ち越し先 U3・U5 が担う"},
     {"id": "NFR5", "status": "OK", "target": "NFR5.1 (reliability-requirements), NFR5.1a (tech-stack-decisions), NFR5.2 (observability-requirements)"},

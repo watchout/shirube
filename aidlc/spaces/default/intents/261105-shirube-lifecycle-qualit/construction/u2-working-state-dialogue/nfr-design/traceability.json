@@ -1,6 +1,6 @@
 {
   "stage": "nfr-design",
-  "note": "決定 116・120 と対象の結びを足した後の要約確認（Looks correct、arc が決定 95 により入力）のもとで保存。",
+  "note": "決定 116・120 と対象の結びを足した後、さらに見直し回 1（NOT-READY）の直しの後の要約確認（Looks correct、arc が決定 95 により入力）のもとで保存。設計監査 2 回目の F02 の反映（開いた形でも固定の分類 withheld を観測の事実に入れる。arc の読みで Owner に確認中。試験 T8.3p・T3.4p。T3.4p は機能設計の試験一覧に無い新しい試験で、NFR2.6 とこの追跡表に置く。「検出しない」範囲は同じ分類・presence・lengthBucket・matchGroup・出典・対象の結び・原因のままの中身だけの変化）を含む。",
   "unit": "u2-working-state-dialogue",
   "upstream_ids": [
     "NFR1.1",
@@ -70,12 +70,12 @@
     {
       "id": "NFR2.6",
       "status": "OK",
-      "target": "security-design SC2（開いた形の観測値は保持・digest・表示をしない。presence・lengthBucket・matchGroup・出典だけ。U2 が保証しないこと = 中身だけの変化の未検出と回答の「比べられず観測できず」。Owner の決定 120）、reliability-design RL2、observability-design OB2、logical-components LC2・LC5"
+      "target": "security-design SC2（開いた形の観測値は保持・digest・表示をしない。presence・lengthBucket・matchGroup・出典だけ。U2 が保証しないこと = 中身だけの変化の未検出と回答の「比べられず観測できず」。Owner の決定 120。固定の分類 withheld は arc の読み・Owner に確認中。試験 T8.3p・T3.4p）、reliability-design RL2、observability-design OB2・OB5、logical-components LC2・LC5"
     },
     {
       "id": "NFR2.6a",
       "status": "OK",
-      "target": "security-design SC2（判定で救わず持たない設計。判定の関数は 1 か所で LC2 と LC5 が呼ぶ）、logical-components LC2・LC3・Dependency Direction・Structural Checks"
+      "target": "security-design SC2（判定で救わず持たない設計。判定の関数は 1 か所で LC2 と LC5 が呼ぶ。許される形式の表の持ち主は 1 つ。例外の文面に生の値を載せない。試験 T3.4p）、logical-components LC2・LC3・Dependency Direction・Structural Checks"
     },
     {
       "id": "NFR2.3",
@@ -110,7 +110,7 @@
     {
       "id": "NFR4.2",
       "status": "OK",
-      "target": "reliability-design RL2（古い観測・回答を使わない。観測の事実から再計算した観測 digest が変われば無効化。閉じた形は値の digest の変化まで検出し、開いた形の中身だけの変化は U2 が保証しないこと。対象の結びが unspecified の単位は観測不能）"
+      "target": "reliability-design RL2（古い観測・回答を使わない。観測の事実から再計算した観測 digest が変われば無効化。閉じた形は値の digest の変化まで検出し、開いた形の中身だけの変化は U2 が保証しないこと。固定の分類の変化は検出する = 試験 T8.3p。対象の結びが unspecified の単位は観測不能）"
     },
     {
       "id": "NFR4.3",

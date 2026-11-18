@@ -30,7 +30,7 @@ U2 は常駐の service ではなく、対象を 1 回ずつ読んで案内を�
 
 | 論理部品 | 置き場の案 | 備考 |
 |---|---|---|
-| LC1 観測の読取り | `scripts/working-state/` の読取り用の module（file 読み・子 process の起動・時計） | 時計と I/O を持つのはここだけ。分類・比較・判定を持たない。生の値（開いた形を含む）は返り値として LC2 へ渡すだけで、診断・記録へ流さない |
+| LC1 観測の読取り | `scripts/working-state/` の読取り用の module（file 読み・子 process の起動・時計） | 時計と I/O を持つのはここだけ。分類・比較・判定を持たない（例外 1 つ: 読む直前に、LC2 が許した実体と同じ同一性であることの等値の確認だけは機構として行い、結果は事実として返す。観測不能にする判定は LC2。NFR 設計の見直しの持ち越し）。生の値（開いた形を含む）は返り値として LC2 へ渡すだけで、診断・記録へ流さない |
 | LC2〜LC5 核 | `scripts/working-state/` の核の module 群 | 純粋。LC1・LC6・LC7 を import しない |
 | 観測値・回答の判定の関数（LC3 が持つ末端の関数） | `scripts/working-state/` の中の 1 file（名前は Code Generation で決める仮の名前。NFR 設計の `value-exposure.mjs` は仮） | 他の部品を import しない。BR5.2 の判定の持ち主はこの関数だけで、LC2（観測値を外へ出す前）と LC5（回答の検査）が呼び、LC5 は結果を適用するだけ。定義は 1 か所（S3）。LC3 の項目状態の module とは別 file に置き、LC2 が LC3 の項目状態を import しない形を保つ（向きの逆転も循環も無い） |
 | LC6 表示の escape | `scripts/working-state/` の表示用の module | 形式だけ。核は import しない |
@@ -38,7 +38,7 @@ U2 は常駐の service ではなく、対象を 1 回ずつ読んで案内を�
 
 依存の向きの図（NFR 設計の logical-components）に足す 1 行の読み: 「LC2 と LC5 は、LC3 が持つ末端の判定の関数を呼ぶ（その関数は何も import しない）」。NFR 設計の記録は承認済みなので書き換えず、この読みを置き場の設計の正本とする。
 
-**開いた形の生の値の置き場（Owner の決定 120）。** 生の値が存在するのは、LC1 から LC2 へ渡す返り値の 1 か所だけ。LC2 の関数の中でメモリ上の比較（matchGroup）をして捨てる。保持・digest・表示をせず、診断・記録・試験の出力・案内のどこにも出さない。置き場として file・cache・module の変数・log を設けない。構造の試験で確かめる: LC1 の返り値が診断・記録・案内の組み立てへ渡る経路が無い（呼び出しの形を静的に読む試験と、架空の開いた形の値を入れた入力の出力全体を走査して値が現れない試験の両方）。
+**開いた形の生の値の置き場（Owner の決定 120）。** 生の値が存在するのは、LC1 から LC2 へ渡す返り値の 1 か所だけ。LC2 は生の値を判定の関数へ 1 回だけ通して固定の分類（有効・invalid_format・secret_like。判定できない・例外・未知の型は secret_like）だけを観測の事実（withheld）に残し、分類が有効の出典だけをメモリ上で比べて（matchGroup）値を捨てる（F02。開いた形の固定の分類は arc の読みで Owner に確認中、arc の項目 122）。withheld があれば lengthBucket・matchGroup は持たず番号づけに入らない。保持・digest・表示をせず、診断・記録・試験の出力・案内のどこにも出さない。置き場として file・cache・module の変数・log を設けない。構造の試験で確かめる: LC1 の返り値が診断・記録・案内の組み立てへ渡る経路が無い（呼び出しの形を静的に読む試験と、架空の開いた形の値を入れた入力の出力全体を走査して値が現れない試験の両方。例外を起こす架空の入力でも例外の文面・診断・失敗出力に値が出ない = T3.4p）。予算の profile が読めない時は、読取りを始めず既存の原因 malformed の観測不能にする（既定の予算で代用せず、新しい原因は作らない。NFR5.2）。
 
 file 名と module の分け方は Code Generation で決め、1 file 300 行・関数 50 行・複雑さ 10 の既存の検査を通す。LC1〜LC5 の判定の持ち主は NFR 設計の [logical-components](../nfr-design/logical-components.md) で確定した（LC-GAP-1・LC-GAP-2 の直しは反映済み、見直し済み）。部品と file の対応を変える時は、この表を先に直す。
 
@@ -115,8 +115,8 @@ Owner の決定 106（Q4 = A）で確定した条件。起動の経路は、対�
 | FD-GAP-4 | required_checks の出典の割当 | Q5 = A。機能設計の notHandledByU2 |
 | LC-GAP-1・LC-GAP-2 | BR1.x の判定は LC2、BR3.4 の malformed は LC2・invalid は LC3 | NFR 設計の logical-components |
 | SC-GAP-1 | process group での停止と出力の打ち切り | NFR 設計の security-design SC1a・scalability-design。本書の子の止め方 |
-| 決定 116・120、対象の結び | 閉じた形の観測値は形式に合い秘密らしくない時だけ示す。開いた形は保持・digest・表示をしない。出典が対象を名指さない単位は観測不能（malformed） | NFR 設計の security-design SC2・SC5、reliability-design RL2、observability-design OB2、performance-design PF4。本書の「判定の関数」の置き場と「開いた形の生の値の置き場」、cicd-pipeline の試験の追加 |
-| U2 が保証しないこと | 開いた形の中身だけの変化は検出しない。回答は「回答済み」のまま、実物との一致は「比べられず観測できず」。実物の読み直しは U3・U5 | reliability-design RL2。本書は開いた形の値の保管場所を作らず、この限りを埋める仕組みを持たない |
+| 決定 116・120、対象の結び、F02 | 閉じた形の観測値は形式に合い秘密らしくない時だけ示す。開いた形は保持・digest・表示をしないが、固定の分類 withheld は事実に持つ（arc の読み・Owner に確認中）。出典が対象を名指さない単位は観測不能（malformed）。構造の試験の「LC1 に比較が無い」は、読む直前の同一性の等値の確認（事実を返すだけ）を除く | NFR 設計の security-design SC2・SC5、reliability-design RL2、observability-design OB2、performance-design PF4。本書の「判定の関数」の置き場と「開いた形の生の値の置き場」、cicd-pipeline の試験の追加 |
+| U2 が保証しないこと | 開いた形の中身だけの変化（同じ固定の分類・presence・lengthBucket・matchGroup・出典・対象の結び・原因のまま）は検出しない。固定の分類の変化は検出し、古い回答・draft を無効にする（T8.3p。arc の読み・Owner に確認中）。回答は「回答済み」のまま、実物との一致は「比べられず観測できず」。実物の読み直しは U3・U5 | reliability-design RL2。本書は開いた形の値の保管場所を作らず、この限りを埋める仕組みを持たない |
 
 ## Assumptions & Open Questions
 

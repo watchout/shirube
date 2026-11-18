@@ -65,6 +65,7 @@ None。仮定: 予算の数値は共通の profile の現在値を使う（U2 �
 - U2 は何も永続化しないので、保存の整合・再開・バックアップは持ち越し先（U3・U5）に残し、冪等キーは U2 に適用しない（読取りと案内だけ）。履歴の継続利用（AC3.1.3、AC3.2.5 の履歴の部分）の持ち越しは NFR の追跡にも残す。
 - 機能設計は設計監査の 1 回目（PR #112）の差し戻しの直しを終えて、見直しで READY になった（設計の穴 3 つは前の回で直し済み）。この回の NFR は、その直しの結果を反映する: 観測値の扱いは Owner の決定 116（閉じた形の値は形式に合い秘密らしくない時だけ示す）と決定 120（開いた形の string・list の観測値は保持・digest・表示をしない。示すのは出典・presence・長さの区分・一致の番号まで）、対象の結び（targetBinding・namedTarget・unspecified は観測不能 malformed）。
 - 開いた形の項目の中身だけの変化は U2 が検出せず、開いた形の回答は「比べられず観測できず」と示すことを、U2 が保証しないこととして NFR にも書く（根拠 = 決定 120。arc が Owner の決定 95 により入力した答え）。実物の確かめは U3・U5 が行う前提で、NFR の合否はこれを成功に数えない。
+- 設計監査 2 回目の F02 の直しを反映する（arc が Owner の決定 95 により指示）: 開いた形（string・list）の項目でも、決定 116 の固定の分類（invalid_format / secret_like）は観測の事実に入れ、値・digest・表示は持たない。分類（有効・invalid_format・secret_like）の変化は観測 digest を変えて古い回答・draft を無効にする。同じ分類の中で値だけが変わる変化は検出しない（決定 120 の限界のまま）。NFR2.6・NFR4.2・NFR5.1 の「閉じた形に限る」の範囲を、この分類の変化を含む形に直す。機能設計の見直し（見直し 08）が READY のまま持ち越した Minor 2 件は、NFR・作る段へ引き継ぐ: (1)「分類を開いた形の事実に入れるのは決定 120 に反しない」は arc の読みで Owner の言葉ではないと、NFR とのちの設計監査の依頼に明記する（Owner が別の読みなら withheld を開いた形から外す）。(2) withheld の不変条件（lengthBucket・matchGroup を持たない、matchGroup の採番に入らない、判定できない時は secret_like）の直接の試験 T3.4p を、NFR の合否と作る段の試験の手順に足す。見直し 07 の R-25・R-26 は機能設計で直した。
 - 生成するのは NFR の 6 文書（performance・security・scalability・reliability・observability・tech-stack-decisions）と traceability だけ。コード・試験・fixture・CI・外部投稿・他単位には着手しない。
 
 Does this all look correct before I generate the artifact?
@@ -73,5 +74,7 @@ Does this all look correct before I generate the artifact?
 - Request changes
 
 [Answer]: Looks correct
+
+（arc が Owner の決定 95 により入力: https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758 。Owner の言葉ではない。持ち越しの Minor (1) の「開いた形でも固定の分類を観測の事実に入れる」は arc の読みで、arc が Owner に確認中（arc の項目 122）。Owner の答えが来るまで「arc の読み・Owner に確認中」と記録して進める。）
 
 Owner の決定 95 により arc が入力（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758 。Owner の言葉ではない）。

@@ -164,11 +164,19 @@ FD-GAP-1〜3・FD-GAP-4（Q5 = A）・LC-GAP-1・LC-GAP-2・SC-GAP-1 は、段�
 - U2 が保証しないこと（決定 120）: 開いた形の中身だけの変化は検出しない。回答は「回答済み」のままで、実物との一致は確認済みと示さず「比べられず観測できず」。実物の読み直しは実適用側（U3・U5）の持ち物。この基盤の設計も、この限りを埋める仕組み（開いた形の値の保管場所）を作らない。
 - 実物の観測の head を `f2d509b` に更新した（上の観測の表。差し替えた物は無い）。
 
+設計監査 2 回目の F02 の反映（arc が Owner の決定 95 により指示。新しい問いは立てない。置き場・試験・検査の取り決めだけで、Owner の答えが要る選択ではない）:
+
+- 開いた形（string・list）でも固定の分類（withheld: invalid_format | secret_like）を観測の事実に持ち、値・digest・表示は持たない。分類の変化は観測 digest を変え、古い回答・draft を無効にする。同じ分類のまま中身だけが変わる変化は検出しない（決定 120 の限界）。この「開いた形の固定の分類」は arc の読みで Owner の言葉ではなく、Owner に確認中（arc の項目 122）。Owner が別の読みなら withheld を開いた形から外す。
+- 試験の足し: T8.3p（分類だけの変化で observationDigest が変わり、古い draft・選択・回答が無効になる。どの出力にも値が出ない）と T3.4p（withheld の不変条件。lengthBucket・matchGroup を持たない、番号づけに入らない、判定できない・例外・未知の型は secret_like、例外を起こす架空の入力でも出力に値が出ない）を、CI の関門の表・監視の設計・追跡表・試験の手順に足す。
+- NFR 設計の見直し（回 1、READY）で持ち越した Minor 2 件の扱い: (1) 読む直前の同一性の等値の確認だけは機構として LC1 が行い、結果は事実として返し、観測不能にする判定は LC2 が持つ（LC1 の「分類・比較・判定をしない」の例外を 1 行書き、構造の試験はこの例外を除く形にする）。(2) profile が読めない時の観測不能の原因は、既存の UnobservableCause の集合から 1 つ（malformed）を使い、新しい原因は作らない（NFR5.2）。置き場の設計の仕様に書く。
+
 Does this all look correct before I generate the artifact?
 
 - Looks correct
 - Request changes
 
 [Answer]: Looks correct
+
+（F02 の反映に対する確認。arc が Owner の決定 95（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758）により入力した。Owner の言葉ではない。「開いた形の固定の分類」は引き続き arc の読み・Owner に確認中（arc の項目 122）として記録して進める。）
 
 （Looks correct は arc が Owner の決定 95（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758）により入力した。Owner の言葉ではない。Q1〜Q7 の答えは変えず、cwd = OS の根は決定 111 のまま、観測の head を f2d509b に読み直し、判定の関数を末端の 1 file に置き開いた形の生の値は LC1→LC2 の受け渡しだけ（決定 116・120）、負例を含む試験の足し、保証しないことの保持、が arc の答えと決定に合っている、との arc の確認。）

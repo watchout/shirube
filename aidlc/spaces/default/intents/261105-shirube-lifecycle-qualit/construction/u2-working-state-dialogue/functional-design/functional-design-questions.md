@@ -157,6 +157,7 @@ Q1 = A と Q2 = A は互いに矛盾しない。記録済みの要件との関�
 - 開き直しの変更（独立設計監査 1 回目の BLOCK F01〜F04 を直す。arc が Owner の決定 95 により指示）: (1) 観測の単位は（対象・項目・出典）とし、単位ごとに最新の観測だけを使う（古い応答が後から来ても最後の結果だけ）。(2) 項目の観測 digest は、各出典の観測の事実（観測の単位・対象が一致したか・利用できたか・有るか・値の digest（保持できる時だけ）・保持しなかった理由・観測不能の原因）から作る。出典の参照名や回答からは作らない。回答は回答した時点の項目の観測 digest を 1 つ持ち、再観測で変われば無効にして不足へ戻す。(3) 利用者への出力（C02 の形）への写しは 1 つの変換で行い、回答は項目の鍵ごと・案内は本文だけを渡し、観測不能・形式違反・対象違いの項目は不足・食い違いの欄に出さず、未確認と原因と観測の参照で U3 へ運ぶ。(4) 観測した値の扱い（Owner の決定 116 = A、https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6962989955 、本文 SHA-256 `3986367dcee537139c1065e71d9db339cd085e10f8fbf4f5cf1d7c771e5f3a6a`）: 形式に合い秘密らしくない値だけを保持・digest・表示し、合わない値と秘密らしい値は項目・出典・固定の分類（invalid_format / secret_like）と「出典を直す」操作だけを示す。検出の集合は 1 つの共通の関数で、利用者の回答にも観測した値・道具の出力にも同じに当てる。
 - 開き直しの変更（見直し役 1 回目 NOT-READY の指摘を直す。arc が Owner の決定 95 により指示）: (5) 出典が対象を名指さない時（targetMatch = unspecified）は、その出典だけでは項目を確認済みにせず、観測不能（原因は「対象が名指されていない」）として未確認に残し、値は持たない。名指された対象が今の対象と違う時（differs）は wrong_target のまま。そのために観測した項目に「出典が名指した対象」の欄を足し、観測の事実の入力の出所を entities の中で閉じる。(6) 旧名 boundObservationDigests を boundObservationDigest に直し、観測の事実の列挙に targetMatch を足して entities・spec とそろえる。(7) 要約確認を、上の直しを含めて作り直す。
 - 開き直しの変更（Critical の答え。Owner の決定 120 = Y、https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137 、本文 SHA-256 `c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4`、arc が中継）: 文字列と一覧の項目は、観測した値を持たず・digest にせず・表示しない。示すのは項目・出典・有るか無いか・出典どうしで一致するか（値そのものでなく一致の組の識別で表す）・長さの区分だけ。閉じた形（版・列挙・真偽など）の項目は決定 116 のとおり形式に合う値だけを出す。設定の食い違い（aidlc_settings など）は値を並べず、出典と「どの出典が違うか」を示して出典の直しを頼む。AC1.3.2「優先関係と出典を示す」は、順位は無く（Q1 = A）、閉じた形の項目は値と出典、文字列・一覧は出典・有無・一致不一致を示すと読み、この決定を引いて traceability に書く。
+- 開き直しの変更（独立設計監査 2 回目の BLOCK F02 を直す。arc が Owner の決定 95 により指示。決定 116・120 の範囲の中で、契約・セキュリティの設計の変更はない）: 開いた形（string・list）の項目でも、決定 116 の固定の分類（invalid_format / secret_like）を観測の事実に入れる。LC2 が開いた形の生の値を共有の判定の関数に 1 回だけ通し、分類だけを残して生の値は捨てる（値も digest も持たず、表示もしない）。分類があるとき lengthBucket と matchGroup は付けない。分類（有効・invalid_format・secret_like）が変わると観測 digest が変わり、古い回答と draft は無効になって不足へ戻る。同じ分類の中で生の値だけが変わる変化は、決定 120 のとおり U2 は検出を保証せず「比べられず観測できず」と示す（この限界は変えない）。試験に、開いた形の分類だけが変わった入力（有効→invalid_format・有効→secret_like・その逆・invalid_format↔secret_like）で観測 digest が変わり古い draft と回答が無効になり、どの出力にも値が出ない負例を足す。見直し 07 の R-25・R-26（同じ穴を Minor として残していた物）はここで直す。
 - 生成するのは U2 の機能設計 4 成果物（entities / rules / functional-spec / traceability）だけ。コード・試験・fixture・CI・外部投稿・他単位には着手しない。
 
 Does this all look correct before I generate the artifact?
@@ -165,6 +166,8 @@ Does this all look correct before I generate the artifact?
 - Request changes
 
 [Answer]: Looks correct
+
+（arc が Owner の決定 95 により入力: https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758 。Owner 自身の言葉ではない。）
 
 Owner の追加の条件（Owner の決定 95 により arc が入力）: 3 の aidlc_settings の要素の細かい形を Code Generation で確定した時は、同じ PR で設計の記録（entities・rules）にも足し、設計と実装を黙って食い違わせない（A-08 に書く）。
 

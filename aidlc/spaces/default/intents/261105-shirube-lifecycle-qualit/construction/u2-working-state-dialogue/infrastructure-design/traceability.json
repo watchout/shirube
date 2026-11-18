@@ -84,7 +84,7 @@
     {
       "id": "NFR2.6",
       "status": "OK",
-      "target": "infrastructure-specification の論理部品と置き場（判定の関数を scripts/working-state/ の末端の 1 file に置く。開いた形の生の値の置き場、LC1→LC2 の受け渡しだけで保持・digest・表示をしない。U2 が保証しないこと）、monitoring-design の Metrics（観測値の取り扱いの負例・生の値の経路の構造の試験）、cicd-pipeline の stage と関門の対応（T1.1u・T3.2o・T3.4o・T5.2o・T6.4o・T8.3o）"
+      "target": "infrastructure-specification の論理部品と置き場（判定の関数を scripts/working-state/ の末端の 1 file に置く。開いた形の生の値の置き場、LC1→LC2 の受け渡しだけで保持・digest・表示をしない。U2 が保証しないこと）、monitoring-design の Metrics（観測値の取り扱いの負例・生の値の経路の構造の試験）、cicd-pipeline の stage と関門の対応（T1.1u・T3.2o・T3.4o・T5.2o・T6.4o・T8.3o・T8.3p・T3.4p。開いた形の固定の分類 withheld は arc の読み・Owner に確認中。LC1 の同一性の確認の例外と、profile 不読時は既存の原因 malformed）"
     },
     {
       "id": "NFR2.6a",

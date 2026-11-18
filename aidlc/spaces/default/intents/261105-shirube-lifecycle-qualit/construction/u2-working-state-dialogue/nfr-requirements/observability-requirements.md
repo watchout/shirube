@@ -20,6 +20,7 @@ U2 の可観測性（利用者・監査が状態を判断できること）の�
 ## 機能設計の直し（済み）
 
 - **FD-GAP-1**（Major、直し済み）: 利用者が答えられない項目の conflict・missing は質問にせず fix-source などの次の操作を示す（BR3.2・BR4.1・BR4.2）→ NFR9.1・NFR9.2 の案内の「次の操作」。
+- **F02**（設計監査 2 回目）: 開いた形の項目の invalid_format / secret_like も、項目・出典・固定の分類だけを案内・記録に示す（値・digest・その一部は出さない）。分類の変化で古い回答・draft が無効になったことは、無効になった理由（観測が変わった）として示す。arc の読みで Owner に確認中。
 - **FD-GAP-2**（Minor、直し済み）: initialCatalog が valueType を持つ → 秘密らしさの判定の根拠。[security-requirements](security-requirements.md) の NFR2.2・NFR2.6 を参照。
 - **FD-GAP-3**（Minor、直し済み）: choose-source の選択は Answer（keep-absent を含む）で保持し、「この出典には無い」は値・digest を持たない → NFR2.2・NFR4.1。
 

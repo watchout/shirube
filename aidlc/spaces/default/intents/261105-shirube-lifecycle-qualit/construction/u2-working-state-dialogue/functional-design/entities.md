@@ -65,16 +65,16 @@ entities:
       namedTarget: {type: TargetRef, presence: only-when-source-names-a-target, note: 出典自身が名指した対象。名指さない出典には持たない。呼出側が渡した対象（SourceRef.targetRef）との一致を ObservationFact.targetMatch に写す（BR1.1）}
       value: {type: any, presence: only-when-closed-form-and-observed-and-value-retained, note: 閉じた形（valueForm = closed）で、形式に合い秘密らしくない値だけ保持する（BR3.4・BR5.2、Owner の決定 116）。開いた形（valueForm = open。string・list）の観測値は持たない（Owner の決定 120）}
       valueDigest: {type: Sha256, presence: only-when-closed-form-and-observed-and-value-retained}
-      lengthBucket: {enum: [empty, short, medium, long], presence: only-when-open-form-and-presence-value, note: 値の長さの区分（値そのものでも digest でもない）。測る量は valueType ごとに 1 つ: string = normalization 後の文字数（code point）、list = 要素の数。空の値（空の文字列・空の list）は presence = value・lengthBucket = empty とし、項目の許される形式が空を許す時だけ有効な値（BR3.1 の value）、許さない項目では invalid_format（BR3.4）。区分の境界の数値だけを NFR で決める。開いた形の観測値を示す代わりに持つ（Owner の決定 120）}
-      matchGroup: {type: int, presence: only-when-open-form-and-presence-value, note: 同じ項目の出典どうしで値が一致するかを、値を持たずに表す番号。比較は核がメモリ上で normalization の規則で行い、同じ値の出典に同じ番号、違う値に違う番号を、出典の辞書順の最初に現れた順で 1 から振る。値・digest は残さない}
-      withheld: {type: string, presence: only-when-closed-form-and-observed-and-value-not-retained, enum: [invalid_format, secret_like], constraints: [fixed-classification-not-derived-from-input, no-input-copy]}
+      lengthBucket: {enum: [empty, short, medium, long], presence: only-when-open-form-and-presence-value-and-not-withheld, note: 値の長さの区分（値そのものでも digest でもない）。withheld がある時は持たない（F02）。測る量は valueType ごとに 1 つ: string = normalization 後の文字数（code point）、list = 要素の数。空の値（空の文字列・空の list）は presence = value・lengthBucket = empty とし、項目の許される形式が空を許す時だけ有効な値（BR3.1 の value）、許さない項目では invalid_format（BR3.4）。区分の境界の数値だけを NFR で決める。開いた形の観測値を示す代わりに持つ（Owner の決定 120）}
+      matchGroup: {type: int, presence: only-when-open-form-and-presence-value-and-not-withheld, note: 同じ項目の出典どうしで値が一致するかを、値を持たずに表す番号。比較は核がメモリ上で normalization の規則で行い、同じ値の出典に同じ番号、違う値に違う番号を、出典の辞書順の最初に現れた順で 1 から振る。値・digest は残さない。withheld がある出典は番号を持たず、一致の比較に入らない（F02）}
+      withheld: {type: string, presence: only-when-observed-and-value-not-retained, enum: [invalid_format, secret_like], constraints: [fixed-classification-not-derived-from-input, no-input-copy], note: "閉じた形・開いた形の両方に付く（F02）。開いた形は、LC2 が生の値を共有の判定の関数（BR5.2 の持ち主）へ 1 回だけ通し、形式に合わない・秘密らしいと判定された時だけ、固定の分類を残して生の値を捨てる。判定できない時は secret_like（失敗側）。形式に合う開いた形の値は withheld を持たず、presence・lengthBucket・matchGroup だけを持つ"}
       unobservableCause: {type: UnobservableCause, presence: only-when-unavailable}
       observedAt: Instant
       budgetUsed: {requests: int, bytes: int, elapsedMs: int}
     invariants:
       - 値は実際の読取りの結果だけ。宣言・cache・既定値を写さない（BR1.2）
       - 観測の単位は (targetRef, itemKey, sourceRef)。「最新」の選択はこの単位ごとで、項目だけでは行わない。同じ項目の別の出典の観測は互いに捨てない（BR9.1）
-      - 開いた形（string・list）の項目の観測値は、値・digest・表示・案内文のどれにも持たない。持つのは presence・lengthBucket・matchGroup だけ（Owner の決定 120、BR3.4）
+      - 開いた形（string・list）の項目の観測値は、値・digest・表示・案内文のどれにも持たない。持つのは presence・lengthBucket・matchGroup と、形式に合わない・秘密らしい時の固定の分類 withheld だけ（Owner の決定 116・120、BR3.4、F02）。withheld がある時は lengthBucket・matchGroup を持たない
       - namedTarget は出典の実際の読取りの結果だけから作る。項目一覧の宣言や呼出側の対象を写さない（S5）
   ObservationFact:
     owner: DialogueExperience
@@ -85,9 +85,9 @@ entities:
       availability: {enum: [observed, unavailable]}
       presence: {enum: [value, absent], presence: only-when-observed-and-targetMatch-is-matches}
       valueDigest: {type: Sha256, presence: only-when-closed-form-and-value-retained, note: 閉じた形で値を保持した時だけ。値を保持しない分類の時と、開いた形の項目では持たない（Owner の決定 120）}
-      lengthBucket: {enum: [empty, short, medium, long], presence: only-when-open-form-and-presence-value}
-      matchGroup: {type: int, presence: only-when-open-form-and-presence-value, note: 出典どうしの一致を値なしで表す番号（ObservedItem.matchGroup と同じ）。単一の出典の項目は常に 1}
-      withheld: {enum: [invalid_format, secret_like], presence: only-when-closed-form-and-value-not-retained, note: 値を保持しない時の固定の分類（Owner の決定 116）。入力から作らない。同じ分類の別の値の違いは事実に入らない（値を使わない項目なので draft の意味は変わらない）}
+      lengthBucket: {enum: [empty, short, medium, long], presence: only-when-open-form-and-presence-value-and-not-withheld}
+      matchGroup: {type: int, presence: only-when-open-form-and-presence-value-and-not-withheld, note: 出典どうしの一致を値なしで表す番号（ObservedItem.matchGroup と同じ）。単一の出典の項目は常に 1}
+      withheld: {enum: [invalid_format, secret_like], presence: only-when-observed-and-value-not-retained, note: 値を保持しない時の固定の分類（Owner の決定 116）。閉じた形・開いた形の両方に付く（F02）。入力から作らない。分類（有効・invalid_format・secret_like）の変化は観測の事実の変化になり、観測 digest が変わって古い回答と draft が無効になる（BR6.2・BR8.3）。同じ分類の中で値だけが変わる変化は事実に入らない（閉じた形は値を使わない項目なので draft の意味は変わらず、開いた形は決定 120 の限界。U2 は検出を保証せず「比べられず観測できず」と示す）}
       unobservableCause: {type: UnobservableCause, presence: only-when-unavailable}
   ItemCatalogEntry:
     owner: DialogueExperience
