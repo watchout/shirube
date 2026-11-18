@@ -2,13 +2,14 @@
 // 秘密らしさの判定は value-exposure の 1 か所が持ち、ここは呼ぶだけ（S3）。rejected の回答は value も valueDigest も持たず、
 // 理由は入力から作らない固定の分類だけ（入力の一部も写さない）。時刻・乱数・識別子は呼出側が渡す（S4）。回答は対話の間だけ持つ値で、何も保存しない（BR6.1）。
 import { closedMatches } from "./answer-match.mjs";
-import { deepFreeze, digestOf } from "./canonical.mjs";
+import { deepFreeze, digestOf, isDigest } from "./canonical.mjs";
 import { elementShapeOf, normalizationOf } from "./catalog.mjs";
 import { parseInstant } from "./instant.mjs";
 import { evaluateItem } from "./item-state.mjs";
 import { normalizeValue } from "./normalize.mjs";
 import { factsOf, itemObservationDigestOf } from "./observation-facts.mjs";
-import { VALUE_REJECTION_REASONS, carriesSecretShape, isItemKeyText, isRefName, isSecretLikeRefText, rejectionReasonOf } from "./value-exposure.mjs";
+import { unitsFit } from "./observed-unit.mjs";
+import { VALUE_REJECTION_REASONS, carriesSecretShape, isAnswerValue, isItemKeyText, isRefName, isSecretLikeRefText, rejectionReasonOf } from "./value-exposure.mjs";
 
 // 回答を拒む理由の固定の分類（BR5.1）。値の検査の分類に、受付の分類（古い回答・同時刻で値が違う回答）を足した全部。
 export const REJECTION_REASONS = Object.freeze([...VALUE_REJECTION_REASONS, "stale_answer", "duplicate_conflict"]);
@@ -29,7 +30,9 @@ const isStale = (answer, facts, catalog, observedItems) =>
 
 // 有効な回答のうち、結びの先の項目の観測 digest が変わったものを invalidated にする（BR6.2。順は (1) 一致を確認を先に、(2) それ以外で無効）。
 // catalog（項目の定義）が無い・項目が見つからない時は (1) を成立させず従来の (2)（一致と読み替えない側）。ほかの回答はそのまま。
+// 回答の列は呼出側が渡す（手で作れる）ので、1 件でも門を通らない（isReadableAnswer）なら、どの件も写さず空の列を返す（呼出側は自分の列を持ち続ける）。
 export function reconcileAnswers(answers, observedItems, catalog) {
+  if (!answers.every((answer) => isReadableAnswer(answer, catalog))) return deepFreeze([]);
   const facts = factsOf(observedItems);
   return deepFreeze(answers.map((answer) => (isStale(answer, facts, catalog, observedItems) ? { ...answer, state: "invalidated" } : answer)));
 }
@@ -96,16 +99,17 @@ function place(current, base, answer) {
 // 判定は value-exposure の 1 か所（carriesSecretShape・isItemKeyText・isSecretLikeRefText・rejectionReasonOf）に問い、ここは欄ごとに呼ぶだけ（S3）。
 const ANSWER_KEYS = ["answerId", "itemKey", "kind", "value", "valueDigest", "selectedCandidateRef", "boundObservationDigest", "answeredAt", "state", "rejectionReason"];
 const ANSWER_STATES = ["answered", "invalidated", "rejected"];
-const DIGEST_RE = /^[0-9a-f]{64}$/;
 const isOptional = (value, isGood) => value === undefined || isGood(value);
-const isDigest = (value) => typeof value === "string" && DIGEST_RE.test(value);
 const isRefText = (value) => typeof value === "string" && isRefName(value) && !isSecretLikeRefText(value);
 
 // 値は、値を持つ種類（value）の有効・無効の回答だけが持ち、項目一覧の項目の形式（値の検査と同じ 1 か所）に合う時だけ通す。ほかの回答は値を持たない。
 function hasReadableValue(answer, catalog) {
   if (answer.kind !== "value" || answer.state === "rejected") return answer.value === undefined;
   const entry = entryIn(catalog, answer.itemKey);
-  return entry !== undefined && answer.value !== undefined && rejectionReasonOf(entry.valueType, answer.value, elementShapeOf(entry)) === null;
+  if (answer.value === undefined) return false;
+  // 項目一覧が渡されない時（reconcileAnswers は項目一覧を省ける）は、形式の表は使えないので、値は門（isAnswerValue）だけを通す。
+  if (!Array.isArray(catalog)) return isAnswerValue(answer.value);
+  return entry !== undefined && rejectionReasonOf(entry.valueType, answer.value, elementShapeOf(entry)) === null;
 }
 
 function hasReadableFields(answer) {
@@ -117,7 +121,7 @@ function hasReadableFields(answer) {
 }
 
 // 先に構造全体を (a)〜(d) の失敗側の走査にかけ（getter・知らない入れ物・symbol の key は含む側）、読めると分かってから欄を読む。
-function isReadableAnswer(answer, catalog) {
+export function isReadableAnswer(answer, catalog) {
   if (typeof answer !== "object" || answer === null || Array.isArray(answer) || carriesSecretShape(answer)) return false;
   return Reflect.ownKeys(answer).every((key) => ANSWER_KEYS.includes(key)) && hasReadableFields(answer) && hasReadableValue(answer, catalog);
 }
@@ -126,7 +130,7 @@ function isReadableAnswer(answer, catalog) {
 // status: recorded（新しい回答・置き換え）、duplicate（同じ内容・同じ回答の識別。既存を返す）、rejected（理由つきで保持）、
 // unreadable（回答の識別・項目の名前・時刻が使えない、または今までの回答の列に門を通らない回答がある。保持せず、入力も列も写さない = answers は []）。
 export function receiveAnswer({ catalog, observedItems, answers, input }) {
-  if (![...answers].every((answer) => isReadableAnswer(answer, catalog))) return outcome("unreadable", null, []);
+  if (![...answers].every((answer) => isReadableAnswer(answer, catalog)) || !unitsFit(catalog, observedItems)) return outcome("unreadable", null, []);
   const fields = snapshot(input);
   const current = reconcileAnswers(answers, observedItems, catalog);
   const entry = fields === null ? undefined : catalog.find((candidate) => candidate.itemKey === fields.itemKey);

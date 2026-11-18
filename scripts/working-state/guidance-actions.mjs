@@ -2,8 +2,8 @@
 // 次の操作の種類・観測できない原因ごとの操作は、この表だけが持つ（S3）。値を作らず、開始・適用の操作を持たない。
 // 決める順は NEXT_ACTIONS の並び（先にあるほど先に済ませる操作）。時刻・乱数・環境変数・file を使わない（S4）。
 import { deepFreeze } from "./canonical.mjs";
-import { LENGTH_BUCKETS } from "./normalize.mjs";
-import { classifyValue, isItemKeyText, isSecretLike, isSecretLikeRefText, valueFormOf } from "./value-exposure.mjs";
+import { CAUSE_ACTIONS, LENGTH_BUCKETS } from "./normalize.mjs";
+import { ITEM_NAME_RE, classifyValue, isItemKeyText, isRefName, isSecretLike, isSecretLikeRefText, valueFormOf } from "./value-exposure.mjs";
 
 // 案内に出す語の固定の語彙（この file が持つ。案内の文面・質問・原因の欄は、入力の文字列をこの語彙と形の検査に通した物だけ写す）。
 // 項目名・状態・原因・長さの区分・参照・値は入力（呼出側の draft）から来るので、固定の集合か、秘密らしさの判定の 1 か所（value-exposure）に通す。
@@ -11,17 +11,19 @@ export const WITHHELD_NAME = "（表示しません）";
 const UNSAFE_TEXT = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}「」]/u;
 const NAME_MAX = 64;
 const REF_MAX = 200;
-const ITEM_NAME = /^[a-z][a-z0-9_]{0,63}$/;
 
 // 安全な文字の範囲の 1〜64 文字の文字列か。
 const isPlain = (value, max) => typeof value === "string" && value !== "" && value.length <= max && !UNSAFE_TEXT.test(value);
 const isSafe = (value) => isPlain(value, NAME_MAX);
 // 項目名: 項目一覧の語の形（小文字の英数字と _）で、門（name の種類。(e) も当てる）を通る。
-export const isItemName = (value) => typeof value === "string" && ITEM_NAME.test(value) && isItemKeyText(value);
+export const isItemName = (value) => typeof value === "string" && ITEM_NAME_RE.test(value) && isItemKeyText(value);
 // 対象の名前・出典の種類と位置: 安全な文字の範囲で、秘密らしい・判定できない文字列は示さない。
 export const isShowableName = (value) => isSafe(value) && !isSecretLike("string", value);
 // 参照（観測の参照・候補の参照）: 安全な文字の範囲の 1〜200 文字で、門が全体に (a)〜(d) を先に当て、区切りで分けた部品ごとに (e) を調べて秘密らしくない。
 export const isShowableRef = (value) => isPlain(value, REF_MAX) && !isSecretLikeRefText(value);
+// 門の結果の理由の符号（U1 の形。大文字の英数字と _）。案内の理由の欄も同じ判定（案内を作る側・選択に写す側が 1 か所を共有する）。
+const REASON_PATTERN = /^[A-Z][A-Z0-9_]{0,63}$/;
+export const isReasonCode = (value) => typeof value === "string" && REASON_PATTERN.test(value) && isRefName(value);
 // 長さの区分は固定の集合の値だけ。
 export const isLengthBucket = (value) => LENGTH_BUCKETS.includes(value);
 
@@ -40,19 +42,10 @@ export const ACTION_TEXTS = Object.freeze({
   none: "追加の操作はありません。開始・適用はこの案内の範囲外です。",
 });
 
-// 観測できない原因ごとの確認操作。表にない原因は、止まらずに人へ戻す（wait-for-person）。
-const CAUSE_ACTIONS = new Map([
-  ["permission_denied", "confirm-permission"], ["not_found_unconfirmed", "confirm-permission"],
-  ["tool_missing", "install-or-upgrade-tool"], ["tool_unsupported_version", "install-or-upgrade-tool"], ["tool_cannot_start", "install-or-upgrade-tool"],
-  ["out_of_boundary", "review-target"], ["malformed", "fix-source"],
-  ["fetch_failed", "wait-for-person"], ["timed_out", "wait-for-person"], ["budget_exceeded", "wait-for-person"], ["changed_during_read", "wait-for-person"],
-]);
 const FALLBACK_ACTION = "wait-for-person";
 const rankOf = (kind) => NEXT_ACTIONS.indexOf(kind);
 const strongest = (kinds) => kinds.reduce((best, kind) => (rankOf(kind) < rankOf(best) ? kind : best), "none");
 
-// 観測できない原因は、上の表にある固定の原因だけ（案内に出す原因も同じ集合）。
-export const isKnownCause = (cause) => CAUSE_ACTIONS.has(cause);
 const causesOf = (item) => (Array.isArray(item.unobservableCauses) ? item.unobservableCauses : []);
 const unobservableAction = (item) => {
   const kinds = causesOf(item).map((cause) => CAUSE_ACTIONS.get(cause) ?? FALLBACK_ACTION);
@@ -104,7 +97,8 @@ export function actionOf(item, catalog) {
 
 // 未確認の項目のうち、いちばん先に済ませる操作とその項目。全部が none なら none（項目は無い）。
 export function strongestAction(items, catalog) {
-  const found = items.map((item) => ({ item, kind: actionOf(item, catalog) })).filter((entry) => entry.kind !== "none");
+  // 項目名が門を通らない項目は、名前を写さないので次の操作の候補にしない（questionsOf と同じ）。
+  const found = items.filter((item) => isItemName(item.itemKey)).map((item) => ({ item, kind: actionOf(item, catalog) })).filter((entry) => entry.kind !== "none");
   const best = found.reduce((top, entry) => (top === null || rankOf(entry.kind) < rankOf(top.kind) ? entry : top), null);
   return best === null ? { kind: "none", itemKey: null } : { kind: best.kind, itemKey: best.item.itemKey };
 }
@@ -113,6 +107,6 @@ const refsOf = (item) => (Array.isArray(item.candidates) ? item.candidates.map((
 
 // 利用者に聞く質問（BR4.1）。答えられる項目の不足・閉じた形の食い違い・直せる不正だけ。値・回答を作らない。
 export function questionsOf(items, catalog) {
-  const asked = items.filter((item) => item.state !== "confirmed").map((item) => ({ item, kind: actionOf(item, catalog) })).filter((entry) => QUESTION_KINDS.has(entry.kind));
+  const asked = items.filter((item) => item.state !== "confirmed" && isItemName(item.itemKey)).map((item) => ({ item, kind: actionOf(item, catalog) })).filter((entry) => QUESTION_KINDS.has(entry.kind));
   return deepFreeze(asked.map(({ item, kind }) => ({ itemKey: item.itemKey, state: item.state, kind, ...(kind === "choose-source" ? { candidateRefs: refsOf(item) } : {}) })));
 }

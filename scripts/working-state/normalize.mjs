@@ -66,3 +66,13 @@ export function normalizeValue(valueType, normalization, value) {
   const normalizer = NORMALIZERS.get(normalization);
   return normalizer === undefined ? value : normalizer(value);
 }
+
+// 観測できない原因ごとの確認操作。表にない原因は、止まらずに人へ戻す（wait-for-person）。
+export const CAUSE_ACTIONS = new Map([
+  ["permission_denied", "confirm-permission"], ["not_found_unconfirmed", "confirm-permission"],
+  ["tool_missing", "install-or-upgrade-tool"], ["tool_unsupported_version", "install-or-upgrade-tool"], ["tool_cannot_start", "install-or-upgrade-tool"],
+  ["out_of_boundary", "review-target"], ["malformed", "fix-source"],
+  ["fetch_failed", "wait-for-person"], ["timed_out", "wait-for-person"], ["budget_exceeded", "wait-for-person"], ["changed_during_read", "wait-for-person"],
+]);
+// 観測できない原因は、上の表にある固定の原因だけ（案内に出す原因・観測の単位の原因も同じ集合）。
+export const isKnownCause = (cause) => CAUSE_ACTIONS.has(cause);

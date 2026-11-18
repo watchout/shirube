@@ -41,7 +41,11 @@ export const findNotHandled = (itemKey) => NOT_HANDLED.get(itemKey);
 
 // 外した項目の単位の印（項目名の位置）。項目名の形（小文字で始まる英数字と _）に当たらない形で、この形の項目名は予約（項目として読まない）。
 const POSITION_MARKER = /^catalog-position-\d+$/;
-export const positionKeyOf = (position) => `catalog-position-${position}`;
+// 位置は 0 以上の整数だけ（それ以外は入力を写さない固定の文面で例外にする）。
+export const positionKeyOf = (position) => {
+  if (!Number.isSafeInteger(position) || position < 0) throw new TypeError("position must be a non-negative integer");
+  return `catalog-position-${position}`;
+};
 
 // 項目一覧の 1 項目を読んでよいか（閉じた一覧 A・固定の形 B・門 C の入口の 1 か所）。項目名は門（(e) も当てる）を通り、印の形でなく、出典の一覧は配列で、
 // 全部の出典の種類が閉じた一覧（SOURCE_KINDS）にある。呼出側の文字列（種類）が観測の参照・単位に写る道は、この判定に通った項目だけ。

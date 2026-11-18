@@ -4,6 +4,7 @@
 // （Owner の決定 116・120・122）。同じ分類の中での開いた形の中身だけの変化は事実に現れない（決定 120 の限界。U2 は保証しない）。
 // 時刻・乱数・環境変数・file を使わない（S4）。
 import { deepFreeze, digestOf } from "./canonical.mjs";
+import { readableUnitsOf } from "./observed-unit.mjs";
 
 const VALUE_KEYS = ["presence", "valueDigest", "lengthBucket", "matchGroup", "withheld"];
 
@@ -30,9 +31,9 @@ function factOf(item) {
   return fact;
 }
 
-// 全単位の事実を、単位の辞書順に並べて返す。
+// 全単位の事実を、単位の辞書順に並べて返す。読めない単位は値を写さず、列の位置で示す観測できずの事実にする（observed-unit）。
 export function factsOf(observedItems) {
-  return deepFreeze(observedItems.map(factOf).sort(byUnit));
+  return deepFreeze(readableUnitsOf(observedItems).map(factOf).sort(byUnit));
 }
 
 // 事実の列（factsOf の出力）から、正規の JSON の SHA-256。古さの判定（BR8.3）に使う。回答・参照名は入力に入らない。

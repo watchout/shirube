@@ -3,28 +3,20 @@
 // 食い違いの候補（値のある出典・無い出典）に限る。案内（GuidanceMessage）の文・外から来た文字列は、データとして保つだけで命令として評価しない。
 // 時刻・乱数・識別子は呼出側が渡す（S4）。
 import { isRefId } from "./answers.mjs";
-import { deepFreeze } from "./canonical.mjs";
+import { deepFreeze, isDigest } from "./canonical.mjs";
+import { guidanceCopyOf } from "./guidance-copy.mjs";
 import { isObservationStale } from "./observation-facts.mjs";
-import { carriesSecretShape, isItemKeyText, isRefName, valueFormOf } from "./value-exposure.mjs";
+import { isItemKeyText, isRefName, valueFormOf } from "./value-exposure.mjs";
 
 // 選択にしない理由の固定の分類（入力を写さない）。
 export const SELECTION_REFUSALS = Object.freeze(["invalid_input", "unknown_candidate", "not_selectable", "unknown_observation", "invalid_guidance"]);
 
-// 案内の構造体（E05 の GuidanceMessage）の欄。ここに無い欄は持たない（案内の中の別の欄を権限・指示として運ばない）。
-const GUIDANCE_KEYS = ["targetRef", "conclusion", "nextAction", "causes", "unconfirmed", "reasons", "observationRefs", "blocking", "text"];
-
 const refuse = (reason) => deepFreeze({ status: "refused", selection: null, reason });
 const isObject = (value) => typeof value === "object" && value !== null;
 
-// 案内の構造体は呼出側が渡す（手で作れる）ので、写す欄のどこにも BR5.2 の (a)〜(d) の形を含まないこと。
-function guidanceCopy(guidance) {
-  if (!isObject(guidance) || typeof guidance.text !== "string" || guidance.text === "") return null;
-  const copy = Object.fromEntries(GUIDANCE_KEYS.filter((key) => guidance[key] !== undefined).map((key) => [key, structuredClone(guidance[key])]));
-  return carriesSecretShape(copy) ? null : copy;
-}
-
 const wellFormed = ({ selectionId, draft, catalog }) =>
-  isRefId(selectionId) && isObject(draft) && Array.isArray(draft.items) && Array.isArray(draft.observationRefs) && Array.isArray(catalog) && isRefId(draft.draftId) && isRefName(draft.targetRef);
+  isRefId(selectionId) && isObject(draft) && Array.isArray(draft.items) && Array.isArray(draft.observationRefs) && Array.isArray(catalog) && isRefId(draft.draftId) && isRefName(draft.targetRef)
+  && (draft.observationDigest === undefined || isDigest(draft.observationDigest)); // 結びの観測 digest は結果の欄に写るので、digest の形だけ（未指定は可）。
 
 // 候補を持つ項目（食い違いの項目）。見つからなければ null。
 const itemOf = (draft, candidateRef) => draft.items.find((item) => item.candidates?.some((candidate) => candidate.candidateRef === candidateRef)) ?? null;
@@ -42,7 +34,7 @@ function check(input) {
   if (!input.draft.observationRefs.includes(input.observationRef)) return "unknown_observation";
   // 選んだ候補・観測の参照は選択の構造体にそのまま入るので、手で作った draft の参照でも (a)〜(d) の形を持たないこと。
   if (!isRefName(input.candidateRef) || !isRefName(input.observationRef)) return "invalid_input";
-  return guidanceCopy(input.guidance) === null ? "invalid_guidance" : null;
+  return guidanceCopyOf(input.guidance) === null ? "invalid_guidance" : null;
 }
 
 // 選択を作る。入力: { selectionId（呼出側が渡す）, draft（buildDraft の draft）, catalog, candidateRef, observationRef, guidance }。
@@ -52,7 +44,7 @@ export function createSelection(input) {
     const reason = check(input);
     if (reason !== null) return refuse(reason);
     const { selectionId, draft, candidateRef, observationRef, guidance } = input;
-    const selection = { selectionId, draftRef: draft.draftId, candidateRef, targetRef: draft.targetRef, guidance: guidanceCopy(guidance), observationRef, draftObservationDigest: draft.observationDigest };
+    const selection = { selectionId, draftRef: draft.draftId, candidateRef, targetRef: draft.targetRef, guidance: guidanceCopyOf(guidance), observationRef, draftObservationDigest: draft.observationDigest };
     return deepFreeze({ status: "created", selection });
   } catch {
     return refuse("invalid_input");

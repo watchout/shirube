@@ -2,12 +2,13 @@
 // C02 へは c02-wire.mjs の変換だけを通して渡す。古さの契機は観測 digest だけ（参照名・回答からは作らない。S5）。
 // 途中で失敗したら draft を返さない。許可・効果の入力（explicitStart・requestId ほか）は作らない（BR8.1・BR8.4）。
 // 時刻・乱数・識別子は呼出側が渡す（S4）。draft は対話の間だけ持つ値で、何も保存しない（BR6.1）。
-import { isRefId, reconcileAnswers } from "./answers.mjs";
+import { isReadableAnswer, isRefId, reconcileAnswers } from "./answers.mjs";
 import { deepFreeze, digestOf } from "./canonical.mjs";
 import { isReadableCatalogItem } from "./catalog.mjs";
 import { evaluateItems } from "./item-state.mjs";
 import { factsOf, isObservationStale, observationDigestOf } from "./observation-facts.mjs";
-import { carriesSecretShape, isItemKeyText, isRefName } from "./value-exposure.mjs";
+import { unitsFit } from "./observed-unit.mjs";
+import { isRefName } from "./value-exposure.mjs";
 
 // draft を返さない理由の固定の分類（入力を写さない）。
 export const DRAFT_REFUSALS = Object.freeze(["invalid_input", "build_failed"]);
@@ -15,12 +16,12 @@ export const DRAFT_REFUSALS = Object.freeze(["invalid_input", "build_failed"]);
 const refuse = (reason) => deepFreeze({ status: "refused", draft: null, reason });
 
 // 作れる入力か。観測の対象が draft の対象と違う観測は混ぜない（別の対象の事実で draft を作らない）。
-// 回答の列は呼出側が渡す（手で作れる）ので、どの欄にも BR5.2 の (a)〜(d) の形を含まないこと（draft は回答の値をそのまま持つため）。
-// 項目名（観測の単位・回答）は draft の items・missingItems・conflicts・answers・unknownItemKeys に写るので、(e) も当てる門（isItemKeyText）を通す。項目一覧の項目は、項目名の門に加えて出典の種類も閉じた一覧の中であること（isReadableCatalogItem）。
-const hasItemKeys = (lists) => lists.every((list) => list.every((entry) => isItemKeyText(entry?.itemKey)));
+// 回答の列・観測の単位は呼出側が渡す（手で作れる）ので、1 件ずつ門（isReadableAnswer・unitsFit。項目名の (e) もそこ）を通す。1 件でも外れたら draft を作らない。
+// 項目一覧の項目は、項目名の門に加えて出典の種類も閉じた一覧の中であること（isReadableCatalogItem）。
 function usable({ draftId, targetRef, catalog, observedItems, answers }) {
   const shapes = [catalog, observedItems, answers].every(Array.isArray);
-  return isRefId(draftId) && isRefName(targetRef) && shapes && !carriesSecretShape(answers) && catalog.every(isReadableCatalogItem) && hasItemKeys([observedItems, answers]) && observedItems.every((unit) => unit.sourceRef.targetRef === targetRef);
+  return isRefId(draftId) && isRefName(targetRef) && shapes && catalog.every(isReadableCatalogItem) && answers.every((answer) => isReadableAnswer(answer, catalog))
+    && unitsFit(catalog, observedItems) && observedItems.every((unit) => unit.sourceRef.targetRef === targetRef);
 }
 
 const itemKeysIn = (items, state) => items.filter((item) => item.state === state).map((item) => item.itemKey);

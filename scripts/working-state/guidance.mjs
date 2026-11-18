@@ -3,14 +3,14 @@
 // 開いた形の値は示さない（長さの区分と一致の組だけ）。外から来た文字列は固定の文字の範囲だけ写す。同じ入力は同じ案内（BR7.3）。
 // 時刻・乱数・識別子・環境変数・file を使わない（S4）。
 import { deepFreeze } from "./canonical.mjs";
-import { ACTION_TEXTS, ITEM_STATES, WITHHELD_NAME, formOf, isItemName, isKnownCause, isLengthBucket, isShowableName, isShowableRef, questionsOf, shownValueOf, strongestAction } from "./guidance-actions.mjs";
+import { ACTION_TEXTS, ITEM_STATES, WITHHELD_NAME, formOf, isItemName, isLengthBucket, isReasonCode, isShowableName, isShowableRef, questionsOf, shownValueOf, strongestAction } from "./guidance-actions.mjs";
+import { isKnownCause } from "./normalize.mjs";
 import { isRefName } from "./value-exposure.mjs";
 
 // 案内にしない理由の固定の分類（入力を写さない）。
 export const GUIDANCE_REFUSALS = Object.freeze(["invalid_input", "build_failed"]);
 
 const OUTCOMES = ["PASS", "FAIL", "UNKNOWN"];
-const REASON_PATTERN = /^[A-Z][A-Z0-9_]{0,63}$/;
 const UNREAD_RESULT = "結果を確認できず";
 const ANSWERED = "回答済み・未適用（実際の設定はまだ確認できていません）";
 const NOT_STARTABLE = "開始できない理由: 未確認の項目が残っているため、開始できません。";
@@ -28,7 +28,7 @@ function conformanceOf(value) {
   try {
     if (!isObject(value) || !OUTCOMES.includes(value.outcome) || !Array.isArray(value.reasons)) return null;
     const reasons = [...value.reasons];
-    return reasons.every((reason) => typeof reason === "string" && REASON_PATTERN.test(reason) && isRefName(reason)) ? { outcome: value.outcome, reasons } : null;
+    return reasons.every(isReasonCode) ? { outcome: value.outcome, reasons } : null;
   } catch {
     return null;
   }

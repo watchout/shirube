@@ -3,7 +3,7 @@
 // answers は state = answered の回答だけを itemKey をキーにした object にし、開いた形の項目の回答の値はここ（wire）にだけ現れる。
 // items・draftDigest・observationFacts・observationDigest は wire に渡らない。全部が空でも「確認済み」の意味は持たない（BR8.5）。
 import { deepFreeze } from "./canonical.mjs";
-import { carriesSecretShape, isItemKeyText, isRefName } from "./value-exposure.mjs";
+import { carriesSecretShape, isAnswerValue, isGuidanceText, isItemKeyText, isRefName } from "./value-exposure.mjs";
 
 // 変換できない時の固定の分類（入力を写さない）。
 export const WIRE_REFUSALS = Object.freeze(["not_convertible"]);
@@ -20,7 +20,7 @@ const isItemList = (value) => Array.isArray(value) && value.every(isItemKeyText)
 function convertible({ answerId, kind, value, selectedCandidateRef }) {
   if (!isRef(answerId)) return false;
   if (kind === "keep-absent") return isRef(selectedCandidateRef);
-  return kind === "value" && value !== undefined && !carriesSecretShape(value) && (selectedCandidateRef === undefined || isRef(selectedCandidateRef));
+  return kind === "value" && value !== undefined && isAnswerValue(value) && (selectedCandidateRef === undefined || isRef(selectedCandidateRef));
 }
 
 function entryOf(answer) {
@@ -53,7 +53,7 @@ export function draftToC02Wire(draft) {
 export function selectionToC02Wire(selection) {
   try {
     const { selectionId, draftRef, candidateRef, targetRef, guidance, observationRef } = selection;
-    const valid = [selectionId, draftRef, candidateRef, targetRef, observationRef].every(isRef) && isRef(guidance?.text) && !carriesSecretShape(guidance);
+    const valid = [selectionId, draftRef, candidateRef, targetRef, observationRef].every(isRef) && isGuidanceText(guidance?.text) && !carriesSecretShape(guidance);
     return valid ? converted({ selectionId, draftRef, candidateRef, targetRef, guidance: guidance.text, observationRef }) : refused();
   } catch {
     return refused();

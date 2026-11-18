@@ -3,7 +3,8 @@
 // 値は閉じた形の有効な値だけ示す。開いた形は presence・lengthBucket・matchGroup だけで、値・digest・表示値を作らない（Owner の決定 116・120・122）。
 // 不正・秘密らしい観測値の出典は、項目・出典・固定の分類だけ。時刻・乱数・環境変数・file を使わない（S4）。
 import { deepFreeze } from "./canonical.mjs";
-import { isRequiredSource } from "./catalog.mjs";
+import { isReadableCatalogItem, isRequiredSource, positionKeyOf } from "./catalog.mjs";
+import { readableUnitsOf, unitFits } from "./observed-unit.mjs";
 import { valueFormOf } from "./value-exposure.mjs";
 
 const unitKey = (unit) => `${unit.sourceRef.sourceKind}\u0000${unit.sourceRef.locator}`;
@@ -20,10 +21,11 @@ function kindOf(unit) {
 }
 
 // 項目の観測を結果にする。出典の一覧にない出典の観測は使わず、観測が 1 つも渡されない出典は読めなかった出典（fetch_failed）として数える。
-function resultsOf(entry, observedItems) {
-  const units = observedItems.filter((unit) => unit.itemKey === entry.itemKey).sort(byUnit);
-  const known = units.filter((unit) => entry.sources.some((source) => source.kind === unit.sourceRef.sourceKind));
-  const results = known.map((unit) => ({ unit, kind: kindOf(unit), required: isRequiredSource(entry.sources.find((source) => source.kind === unit.sourceRef.sourceKind)) }));
+// 値が項目の定義に合わない単位（unitFits）は有効な値にせず、観測できず（malformed）として数える。
+function resultsOf(entry, units) {
+  const own = units.filter((unit) => unit.itemKey === entry.itemKey).sort(byUnit);
+  const known = own.filter((unit) => entry.sources.some((source) => source.kind === unit.sourceRef.sourceKind));
+  const results = known.map((unit) => ({ unit, kind: unitFits(entry, unit) ? kindOf(unit) : "unavailable", required: isRequiredSource(entry.sources.find((source) => source.kind === unit.sourceRef.sourceKind)) }));
   const unread = entry.sources.filter((source) => !known.some((unit) => unit.sourceRef.sourceKind === source.kind));
   return { known, results: [...results, ...unread.map((source) => ({ unit: null, kind: "unavailable", required: isRequiredSource(source) }))] };
 }
@@ -42,7 +44,8 @@ function stateOf(groups, valueKeyOf) {
   return hasValue ? "confirmed" : "missing";
 }
 
-const copyRef = (unit) => ({ ...unit.sourceRef });
+// 出典の参照は写す欄を名指しで取る（知らない欄を持ち込まない）。
+const copyRef = (unit) => ({ sourceKind: unit.sourceRef.sourceKind, locator: unit.sourceRef.locator, targetRef: unit.sourceRef.targetRef });
 
 // 示す値。閉じた形は digest と表示値、開いた形は長さの区分と一致の番号だけ。
 function viewOf(result, form) {
@@ -70,9 +73,12 @@ function detailsOf(state, groups, form) {
 
 const causeOf = (result) => result.unit?.unobservableCause ?? (result.unit === null ? "fetch_failed" : "malformed");
 
-// 項目 1 つの状態（DraftItem の欄）。entry は項目一覧の 1 項目、observedItems は LC2 の出力の項目（ほかの項目が混ざっていてよい）。
-export function evaluateItem(entry, observedItems) {
-  const { known, results } = resultsOf(entry, observedItems);
+// 読めない項目の代わり（観測できず・malformed）。項目名は項目一覧の中の位置の印（項目名の形に当たらない catalog-position-N）で、入力を写さない。
+const unreadableItem = (position) => ({ itemKey: positionKeyOf(position), state: "unobservable", unobservableCauses: ["malformed"], observationRefs: [] });
+
+function stateOfItem(entry, units, position) {
+  if (!isReadableCatalogItem(entry)) return deepFreeze(unreadableItem(position));
+  const { known, results } = resultsOf(entry, units);
   const form = valueFormOf(entry.valueType);
   const groups = groupsOf(results);
   const state = stateOf(groups, form === "closed" ? (unit) => unit.valueDigest : (unit) => unit.matchGroup);
@@ -86,9 +92,14 @@ export function evaluateItem(entry, observedItems) {
   });
 }
 
-// 項目一覧の全項目の状態（一覧の順）と、一覧にない項目の名前（無視せず示す。BR3.4）。
+// 項目 1 つの状態（DraftItem の欄）。entry は項目一覧の 1 項目、observedItems は LC2 の出力の項目（ほかの項目が混ざっていてよい）。
+// 読めない項目・単位は値を写さず、観測できずで示す。position は項目一覧の中の位置（読めない項目の印に使う。既定 0）。
+export const evaluateItem = (entry, observedItems, position = 0) => stateOfItem(entry, readableUnitsOf(observedItems), position);
+
+// 項目一覧の全項目の状態（一覧の順）と、一覧にない項目の名前（無視せず示す。BR3.4。読めない単位の印 observed-position-N もここに出る）。
 export function evaluateItems(catalog, observedItems) {
-  const listed = new Set(catalog.map((entry) => entry.itemKey));
-  const unknownItemKeys = [...new Set(observedItems.map((unit) => unit.itemKey).filter((itemKey) => !listed.has(itemKey)))].sort();
-  return deepFreeze({ items: catalog.map((entry) => evaluateItem(entry, observedItems)), unknownItemKeys });
+  const units = readableUnitsOf(observedItems);
+  const listed = new Set(catalog.map((entry) => entry?.itemKey));
+  const unknownItemKeys = [...new Set(units.map((unit) => unit.itemKey).filter((itemKey) => !listed.has(itemKey)))].sort();
+  return deepFreeze({ items: catalog.map((entry, position) => stateOfItem(entry, units, position)), unknownItemKeys });
 }

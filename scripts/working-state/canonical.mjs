@@ -46,3 +46,7 @@ export function deepFreeze(value) {
 export function digestOf(value) {
   return sha256Hex(canonicalJson(value));
 }
+
+// digest の形（小文字の 16 進 64 桁）。形だけの検査で、本物の digest と 64 桁の 16 進の連なりは区別できない（意図した限界）。
+const DIGEST_RE = /^[0-9a-f]{64}$/;
+export const isDigest = (value) => typeof value === "string" && DIGEST_RE.test(value);

@@ -55,7 +55,10 @@ const FREE_WORDS = (text) => text.split(/\s/u).filter((word) => !isReadablePath(
 // 設定の対は = で分けた key と value を別々の語として調べる（形が全体を説明する例外にしない）。value は - と _ でつないだ読める名前も通す。
 const PAIR_WORDS = (text) => text.split("=").filter((word) => !isReadableName(word));
 // 参照（<項目>|<出典>|<位置>|<時刻>、<項目>@<出典>:<位置>）は区切りで分けた部品を別々の語として調べる。部品の分け方はここ 1 か所が持つ。
-const REF_WORDS = (text) => text.split(/[|@:\s]/u).filter((word) => !isReadablePath(word));
+// 参照・案内の文に出る項目名（項目名の形で、読める名前）は連なりに数えない（項目名の門 ITEM_WORDS と同じ判定。長い正当な項目名が参照・案内に出るため）。
+export const ITEM_NAME_RE = /^[a-z][a-z0-9_]{0,63}$/;
+const isItemShaped = (word) => ITEM_NAME_RE.test(word) && isReadableName(word);
+const REF_WORDS = (text) => text.split(/[|@:\s]/u).filter((word) => !isReadablePath(word) && !isItemShaped(word));
 // 形そのものが 40 文字の連なり（commit-oid）。形に合った全体は連なりに数えない（意図した限界: 40 桁の 16 進は何でも通る）。
 const OID_WORDS = (text) => (COMMIT_OID_RE.test(text) ? [] : FREE_WORDS(text));
 // 項目名は 1 語。読める名前（`_` で分けた部品が 19 文字以下で、数字混じりの部品の合計が 16 以下）なら連なりに数えず、そうでなければ語全体を調べる。
@@ -151,8 +154,20 @@ export function exposesText(gateClass, text, wordsOf = FREE_WORDS) {
 // 表示する参照（区切りで分けた部品ごとに (e) を調べる）が秘密らしいか。
 export const isSecretLikeRefText = (text) => exposesText("name", text, REF_WORDS);
 
-// 呼出側が渡す識別・対象・参照・符号として受けてよい文字列か（空でなく、(a)〜(d) の形を持たない。(e) は当てない）。
-export const isRefName = (value) => value !== "" && !exposesText("ref", value);
+// 呼出側が渡す識別・対象・参照・符号として受けてよい文字列か（空でなく、(a)〜(d) の形を持たず、区切りで分けた部品が読める名前でない 20 文字以上の連なりを持たない）。
+// 呼出側の値は写る道が多いので、(e) も当てる（決定 95 の 2 回目の追い指示）。UUID・長い混ざった 16 進の識別は、読める部品でないので断る（意図した限界）。
+export const isRefName = (value) => value !== "" && !isSecretLikeRefText(value);
+
+// 案内の文（結論・次の操作・全文）として受けてよい文字列か。案内の文は表示する値・参照を含むので、区切り・空白で分けた語ごとに (e) を調べ、
+// 形が 40 桁の 16 進そのもの（commit の表示値）の語は連なりに数えない（OID_WORDS と同じ意図した限界）。
+const GUIDANCE_WORDS = (text) => text.split(/[|@:\s]/u).filter((word) => !isReadablePath(word) && !isItemShaped(word) && !COMMIT_OID_RE.test(word));
+export const isGuidanceText = (value) => typeof value === "string" && value !== "" && !exposesText("name", value, GUIDANCE_WORDS);
+
+// 回答の値（wire に渡る値）として受けてよいか。真偽・文字列・文字列の列だけで、文字列ごとに (e) まで門を通す（40 桁の 16 進そのものと設定の対は、値の形の表と同じ分け方）。
+// 形式の検査（項目一覧の項目の形式）は回答の受付が済ませている。ここは手で作った draft の値を写す前の、門の 1 か所。
+const ANSWER_WORDS = (text) => (SETTING_PAIR_RE.test(text) ? PAIR_WORDS(text) : OID_WORDS(text));
+const isAnswerText = (text) => typeof text === "string" && !exposesText("answer", text, ANSWER_WORDS);
+export const isAnswerValue = (value) => typeof value === "boolean" || isAnswerText(value) || (Array.isArray(value) && listCopy(value).every(isAnswerText) && Object.keys(value).length === value.length);
 
 // 項目名として受けてよい文字列か（空でなく、(a)〜(d) の形を持たず、読める名前でない 20 文字以上の連なりを持たない）。項目名は name の種類で (e) を当てる（決定 95）。
 export const isItemKeyText = (value) => value !== "" && !exposesText("name", value, ITEM_WORDS);
