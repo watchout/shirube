@@ -1,10 +1,10 @@
-// U2 出口の項目 × BR5.2 の (a)〜(e) の全部の組（code-summary「出口の項目 × BR5.2 の表」の 1 行 = 1 つの試験 M1〜M18）。
+// U2 出口の項目 × BR5.2 の (a)〜(e) の全部の組（code-summary「出口の項目 × BR5.2 の表」の 1 行 = 1 つの試験 M1〜M19）。
 // 各試験は 5 つの列（a 秘密鍵の見出し・b 接頭辞・c Bearer・d JWT・e 20 文字以上の連なり）に同じ入力の作り方を当て、
 // 当てる列は拒まれるか写らないこと、当てない列（意図した限界）はその場面の通常の入力として通ることを、その場で示す。
 import assert from "node:assert/strict";
 import test from "node:test";
 import * as ws from "../scripts/working-state/index.mjs";
-import { OID_B, callerText, goodReads } from "./working-state-fixtures.mjs";
+import { OID_B, callerText, goodReads, pinText, probeRead, settingsText } from "./working-state-fixtures.mjs";
 import { CATALOG, NOTE_ITEM, answerInput, observeWith, send, withContent } from "./working-state-answer-fixtures.mjs";
 import { buildDraft, builtDraft, conflictObserved, createSelection, createdSelection, guidanceOf } from "./working-state-draft-fixtures.mjs";
 import { guide, handDraft } from "./working-state-guidance-fixtures.mjs";
@@ -268,5 +268,21 @@ test("M18+ 候補の表示値（displayValue。閉じた形の項目の食い違
     assert.equal(absent(secret, result), true, `${column} ${form}`);
     assert.equal(result.guidance.text.includes("（表示しません）"), true, `${column} ${form}`);
     assert.equal(result.guidance.text.includes(oid), true, `${column} ${form}`);
+  });
+});
+
+test("M19+ 観測した値（file の中の値・道具の出力。閉じた形・開いた形）: (a)〜(e) の全部が、観測の項目・draft・案内・wire のどこにも写らない", () => {
+  eachColumn((column, secret, form) => {
+    const replaced = [
+      withContent(goodReads(), "sds_pin", pinText({ sds_commit: form })),
+      withContent(goodReads(), "aidlc_version", `${form}\n`),
+      goodReads().map((read) => (read.locator === "node" ? probeRead("node", `${form}\n`) : read)),
+      withContent(goodReads(), "aidlc_settings", settingsText({ models: { schemaVersion: 1, preset: form } })),
+    ];
+    for (const reads of replaced) {
+      const observed = observeWith(CATALOG, reads);
+      const draft = builtDraft({ observedItems: observed.items });
+      assert.equal(absent(secret, observed, draft, guide(draft), ws.draftToC02Wire(draft)), true, `${column} ${form}`);
+    }
   });
 });
