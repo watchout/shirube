@@ -14,7 +14,11 @@ const TARGET_MATCHES = ["matches", "differs"];
 const PRESENCES = ["value", "absent"];
 const WITHHELD = ["invalid_format", "secret_like"];
 
-export const observedPositionKeyOf = (position) => `observed-position-${position}`;
+// 位置は 0 以上の安全な整数だけ（それ以外は入力を写さない固定の文面で例外にする。項目の位置の鍵 positionKeyOf と同じ固定の形 B）。
+export const observedPositionKeyOf = (position) => {
+  if (!Number.isSafeInteger(position) || position < 0) throw new TypeError("position must be a non-negative integer");
+  return `observed-position-${position}`;
+};
 
 const isObject = (value) => typeof value === "object" && value !== null;
 const optional = (value, isGood) => value === undefined || isGood(value);
