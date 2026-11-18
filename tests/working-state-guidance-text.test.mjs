@@ -3,9 +3,10 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
+import * as ws from "../scripts/working-state/index.mjs";
 import { OID_A, OID_B, TARGET } from "./working-state-fixtures.mjs";
 import { CATALOG, observeWith } from "./working-state-answer-fixtures.mjs";
-import { EFFECT_KEYS, allAbsentObserved, conflictObserved, keysDeep } from "./working-state-draft-fixtures.mjs";
+import { EFFECT_KEYS, PIN_CANDIDATE, allAbsentObserved, builtDraft, conflictObserved, keysDeep } from "./working-state-draft-fixtures.mjs";
 import { GATE_FAIL, INITIAL, draftOf, guided, handDraft, initialAbObserved, unobservableItem } from "./working-state-guidance-fixtures.mjs";
 
 const marker = "gh" + "p_" + "u".repeat(12);
@@ -166,6 +167,24 @@ test("T7.7- 不正・対象違いの項目: 秘密らしい値の項目は「存
     const text = textOf(wrong(namedTarget));
     assert.equal(text.includes(namedTarget), false);
     assert.equal(text.includes("対象の名前は表示しません"), true);
+  }
+});
+
+test("T7.7- 対象違いの名前が秘密らしい形（接頭辞・長い連なり）なら、案内の文にも C02 の受渡し形の案内にも写らず「対象の名前は表示しません」と示す。普通の名前は示す", () => {
+  const secretNames = [marker, "s" + "k" + "-" + "v".repeat(24), "AK" + "IA" + "W".repeat(16), "q".repeat(24)];
+  const wrong = (...names) => handDraft([{ itemKey: "aidlc_version", state: "wrong_target", wrongTargets: names.map((namedTarget) => ({ sourceRef: { sourceKind: "aidlc_version", locator: ".aidlc-version" }, namedTarget })), referenceValues: [], observationRefs: [] }]);
+  const draft = builtDraft({ observedItems: conflictObserved().items });
+  for (const namedTarget of secretNames) {
+    const { guidance } = guided(wrong("other-work", namedTarget));
+    assert.equal(guidance.text.includes(namedTarget), false);
+    assert.equal(guidance.text.includes("other-work"), true);
+    assert.equal(guidance.text.includes("対象の名前は表示しません"), true);
+    assert.equal(JSON.stringify(guidance).includes(namedTarget), false);
+    const created = ws.createSelection({ selectionId: "selection-1", draft, catalog: CATALOG, candidateRef: PIN_CANDIDATE, observationRef: draft.observationRefs[0], guidance });
+    assert.equal(created.status, "created");
+    const wire = ws.selectionToC02Wire(created.selection);
+    assert.equal(wire.status, "converted");
+    assert.equal(JSON.stringify(wire).includes(namedTarget), false);
   }
 });
 
