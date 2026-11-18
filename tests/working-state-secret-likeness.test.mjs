@@ -156,7 +156,8 @@ test("T3.4p 判定できない時は secret_like（未知の型・未知の要�
   for (const t of VALUE_TYPES) {
     assert.doesNotThrow(() => cls(t, throwing));
     assert.doesNotThrow(() => cls(t, hostile));
-    assert.equal(cls(t, hostile), "secret_like", t);
+    // 列として中を読めない入力（読むと例外）は secret_like。列でない型にとっては型違いの値なので invalid_format。
+    assert.equal(cls(t, hostile), t === "list" ? "secret_like" : "invalid_format", t);
   }
   assert.doesNotThrow(() => cls("list", hostileElement));
   assert.equal(cls("list", hostileElement), "invalid_format");
