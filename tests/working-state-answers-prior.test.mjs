@@ -83,6 +83,25 @@ test("J6+ 読めない列: object でない要素、項目一覧に無い項目�
   assert.equal(next([marked({ itemKey: "legacy_item" })]).status, "recorded");
 });
 
+test("J8+ 欄の形: digest は小文字 16 進の 64 文字だけ、識別は決まった文字・長さだけ、種類は 2 つだけ、参照は空でなく、値を持たない回答は値を持たない（守りを外す実測で足した）", () => {
+  const hex = "a".repeat(64);
+  for (const digest of [`z${hex}`, `${hex}z`, "a".repeat(63), [hex], `${hex}\n`, 7]) assert.equal(next([recorded({ boundObservationDigest: digest })]).status, "unreadable", String(digest).slice(0, 12));
+  for (const answerId of ["a b", "a".repeat(65), ""]) assert.equal(next([marked({ answerId })]).status, "unreadable", answerId);
+  assert.equal(next([marked({ kind: "other" })]).status, "unreadable");
+  assert.equal(next([marked({ selectedCandidateRef: "" })]).status, "unreadable");
+  assert.equal(next([marked({ value: ["models.preset=thorough"] })]).status, "unreadable");
+  assert.equal(next([recorded({ state: "rejected", rejectionReason: "stale_answer" })]).status, "unreadable");
+  assert.equal(next([marked({ state: "rejected", rejectionReason: "stale_answer" })]).status, "recorded");
+});
+
+test("J9+ 読めない作り: 穴のある列・getter を持つ回答・知らない prototype の回答は、欄の値が正当でも読まず（unreadable）、例外にしない", () => {
+  assert.deepEqual(refused(next(new Array(1))), ["unreadable", null, []]);
+  const getter = Object.defineProperty({ ...marked() }, "itemKey", { get: () => "aidlc_settings", enumerable: true });
+  assert.deepEqual(refused(next([getter])), ["unreadable", null, []]);
+  assert.deepEqual(refused(next([Object.assign(Object.create({}), marked())])), ["unreadable", null, []]);
+  assert.equal(next([Object.assign(Object.create(null), marked())]).status, "recorded");
+});
+
 test("J7+ 正当な列は今までどおり通る: 受け付けた回答・拒んだ回答・置き換えた回答が並ぶ列で、次の回答を受け付け、列を返す", () => {
   const first = send(answerInput({ answerId: "ans-0" }));
   assert.equal(first.status, "recorded");

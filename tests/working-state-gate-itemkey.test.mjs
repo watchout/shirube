@@ -147,3 +147,13 @@ test("I12+ 外した項目は観測した物にも成功にも数えない: 外�
   assert.equal(draft.items.some((item) => item.state === "confirmed" && POSITION.test(item.itemKey)), false);
   assert.equal(absent(LEAK, [observed, draft]), true);
 });
+
+test("I13+ 外した項目の単位の形: 出典の種類は参照に入れてよい最初の種類（無い・読めない時は tool_probe）、使用量・一致の番号を持たず、null・出典の無い項目でも例外にしない（守りを外す実測で足した）", () => {
+  const source = (kind) => ({ kind, requiredForConfirmed: true, targetBinding: "by-location" });
+  const catalog = [...CATALOG, leakItem({ sources: [source(LEAK), source("sds_pin")] }), leakItem({ sources: [source(LEAK)] }), { itemKey: LEAK }, leakItem({ sources: "x" }), null];
+  const observed = observeWith(catalog);
+  const dropped = droppedIn(observed).sort((a, b) => a.itemKey.localeCompare(b.itemKey, "en", { numeric: true }));
+  assert.deepEqual(dropped.map((unit) => unit.sourceRef.sourceKind), ["sds_pin", "tool_probe", "tool_probe", "tool_probe", "tool_probe"]);
+  for (const unit of dropped) assert.deepEqual([unit.budgetUsed, unit.matchGroup], [{ requests: 0, bytes: 0, elapsedMs: 0 }, undefined]);
+  assert.equal(absent(LEAK, observed), true);
+});
