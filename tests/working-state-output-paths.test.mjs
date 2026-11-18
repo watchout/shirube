@@ -155,8 +155,9 @@ test("O12+ C02 の wire（呼出側が手で作った draft・選択）: 識別�
   assert.equal(ws.selectionToC02Wire({ ...selection, guidance: { ...selection.guidance, text: `選択 ${SECRET} です` } }).status, "refused");
 });
 
-test("O10+ 既知の限界（設計の集合 BR5.2 (b) は語の先頭の接頭辞だけを見る）: 設定の対の = の後ろに付いた秘密らしい形は、この判定では拒まれない（設計の判断が要る。監査の項目）", () => {
-  assert.equal(ws.rejectionReasonOf("list", [`models.token=${SECRET}`], "setting-pair"), null);
+test("O10+ （R-07 で解消した限界）設定の対の = の後ろに付いた秘密らしい形は、BR5.2 (b) が区切りの直後も見るので拒まれる。通常の対は拒まれない", () => {
+  assert.equal(ws.rejectionReasonOf("list", [`models.token=${SECRET}`], "setting-pair"), "secret_like");
+  assert.equal(ws.rejectionReasonOf("list", ["models.preset=thorough"], "setting-pair"), null);
   assert.equal(ws.rejectionReasonOf("list", [SECRET], "setting-pair"), "secret_like");
 });
 

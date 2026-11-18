@@ -106,8 +106,11 @@ test("T1.5+ OS の付随ファイル・編集の一時ファイルは値とし�
   }
 });
 
-test("T1.5- 特殊文字・空白・非 ASCII・長い名前の通常の file は通常と同じに扱う", () => {
-  for (const locator of [".shirube/sample file.json", ".shirube/日本語の名前.json", `.shirube/${"n".repeat(120)}.json`, ".shirube/a;b$c`d.json", ".shirube/sds-pin.json.bak2"]) {
+test("T1.5- 特殊文字・空白・非 ASCII・長い名前（読める語を - でつないだ名前）の通常の file は通常と同じに扱う。20 文字以上の 1 語の名前は秘密らしい連なりとして使わない（malformed）", () => {
+  const long = Array.from({ length: 20 }, () => "name").join("-");
+  const secretLike = pinResult({ locator: `.shirube/${"n".repeat(120)}.json` });
+  assertUnavailable(unit(secretLike, "kit_version", "sds_pin", "sds_pin"), "malformed");
+  for (const locator of [".shirube/sample file.json", ".shirube/日本語の名前.json", `.shirube/${long}.json`, ".shirube/a;b$c`d.json", ".shirube/sds-pin.json.bak2"]) {
     const result = observe({ reads: [fileRead("sds_pin", pinText(), { locator }), ...goodReads().filter((r) => r.sourceKind !== "sds_pin")] });
     assert.equal(unit(result, "kit_version", "sds_pin", locator).value, "0.1.0", locator);
   }
