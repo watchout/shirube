@@ -32,16 +32,14 @@ const BEARER_RE = new RegExp(`(?<![A-Za-z0-9])Bearer\\s+\\S{${BEARER_WORD_MIN},}
 const JWT_RE = new RegExp(`(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{${JWT_PART_MIN},}\\.[A-Za-z0-9_-]{${JWT_PART_MIN},}\\.[A-Za-z0-9_-]*(?![A-Za-z0-9_.-])`);
 const RUN_RE = new RegExp(`[A-Za-z0-9+/_=-]{${SECRET_RUN_MIN},}`);
 
-// (e) の例外: 読める名前。語の全体が [A-Za-z0-9._*/-] だけで、* を除いて / . - _ で分けた部品が、19 文字以下の小文字・数字だけ、大文字・数字だけ、
+// (e) の例外: 読める名前。* を除いて / . - _ で分けた部品（英数字以外の文字を含む部品は読める語にならず、全体も読める名前にならない）が、19 文字以下の小文字・数字だけ、大文字・数字だけ、
 // または先頭だけ大文字の語で、さらに数字と英字が混ざった 4 文字以上の部品（16 進・乱数らしい部品）の長さの合計が DENSE_TOTAL_MAX 以下の時。
 // 20 文字以上の 1 語・大小文字が混ざった乱数らしい語・UUID のように混ざった部品を区切って並べた形は説明できない。
 // 読める path = さらに / か . を含む語（拡張子つきの名前・path。- と _ だけで続く 1 語の名前は含めない）。* は glob の印で、部品の長さに数えない。
-const PATH_CHARS_RE = /^[A-Za-z0-9._*/-]+$/;
 const READABLE_WORD_RE = /^(?:[a-z0-9]{1,19}|[A-Z0-9]{1,19}|[A-Z][a-z0-9]{0,18})$/;
 const DENSE_PIECE_RE = /^(?=.*[0-9])(?=.*[A-Za-z])[A-Za-z0-9]{4,}$/;
 const DENSE_TOTAL_MAX = 16;
 function isReadableName(word) {
-  if (!PATH_CHARS_RE.test(word)) return false;
   const pieces = word.replaceAll("*", "").split(/[/._-]/u).filter((piece) => piece !== "");
   if (!pieces.every((piece) => READABLE_WORD_RE.test(piece))) return false;
   return pieces.filter((piece) => DENSE_PIECE_RE.test(piece)).reduce((total, piece) => total + piece.length, 0) <= DENSE_TOTAL_MAX;
