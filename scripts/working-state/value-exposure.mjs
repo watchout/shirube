@@ -130,20 +130,20 @@ const [VALID, INVALID_FORMAT, SECRET_LIKE] = VALUE_CLASSIFICATIONS;
 
 // 文字列が (a) 秘密鍵・証明書の見出し、(b) 既知の token の接頭辞（先頭か英数字でない文字の直後）、(c) Bearer + 長い語、(d) JWT の形のどれかを、
 // どこかに含むか。長い連なり (e) は見ない（識別・符号・手で作った構造体は、正当な長い名前・UUID を持つので、(e) は門の種類が許す時にだけ門の中で当てる）。
-export const hasSecretShape = (text) => typeof text === "string" && (KEY_HEADER_RE.test(text) || BEARER_RE.test(text) || TOKEN_PREFIX_RE.test(text) || JWT_RE.test(text));
+// 文字列でない物は調べられないので秘密らしい（失敗側）。この 1 つの条件が、門・参照・構造体の全部の「文字列でない」を持つ。
+export const hasSecretShape = (text) => typeof text !== "string" || KEY_HEADER_RE.test(text) || BEARER_RE.test(text) || TOKEN_PREFIX_RE.test(text) || JWT_RE.test(text);
 
 // 唯一の門。外から来る文字列は全部ここを通る。種類ごとに (e) を当てるか決める（理由は種類ごとにここ 1 か所）:
 //   answer = 回答・観測した値、name = 位置・対象の名前・表示する参照（どちらも (e) を当てる）、
 //   ref = 呼出側が渡す識別・参照・項目名・符号（正当な長い名前・UUID があるので (e) を当てない）、
 //   structure = 手で作った構造体の中の文字列と key（同じ理由で (e) を当てない）。
-// 順: (1) 未知の種類・文字列でない物は秘密らしい（失敗側）、(2) 生の文字列全体に (a)〜(d)、(3) (e) を当てる種類だけ、読める名前・形の説明（wordsOf）を
+// 順: (1) 未知の種類・文字列でない物（hasSecretShape が持つ）は秘密らしい（失敗側）、(2) 生の文字列全体に (a)〜(d)、(3) (e) を当てる種類だけ、読める名前・形の説明（wordsOf）を
 // 通した語ごとに 20 文字以上の連なりを調べる。例外 (3) は (2) を飛ばさない。
 const GATE_RUN = new Map([["answer", true], ["name", true], ["ref", false], ["structure", false]]);
 export const GATE_CLASSES = Object.freeze([...GATE_RUN.keys()]);
 export function exposesText(gateClass, text, wordsOf = FREE_WORDS) {
   const applyRun = GATE_RUN.get(gateClass);
-  if (applyRun === undefined || typeof text !== "string") return true;
-  if (hasSecretShape(text)) return true;
+  if (applyRun === undefined || hasSecretShape(text)) return true;
   if (!applyRun) return false;
   return wordsOf(text).some((word) => RUN_RE.test(word));
 }
@@ -152,7 +152,7 @@ export function exposesText(gateClass, text, wordsOf = FREE_WORDS) {
 export const isSecretLikeRefText = (text) => exposesText("name", text, REF_WORDS);
 
 // 呼出側が渡す識別・対象・参照・項目名・符号として受けてよい文字列か（空でなく、(a)〜(d) の形を持たない）。
-export const isRefName = (value) => typeof value === "string" && value !== "" && !exposesText("ref", value);
+export const isRefName = (value) => value !== "" && !exposesText("ref", value);
 
 const DEEP_MAX = 8;
 const KNOWN_PROTOTYPES = new Set([Object.prototype, null, Array.prototype, Map.prototype, Set.prototype]);
