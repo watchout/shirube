@@ -115,8 +115,19 @@ function assemble({ context, itemKey, ref, usage, observedAt }, fields) {
 
 const stopped = (status) => deepFreeze({ status, items: [] });
 
+// 項目名が門を通らない項目は、観測しない・黙って外さない。観測できず（unavailable・malformed）の単位として返し、項目名は書かず項目一覧の中の位置で示す（決定 95 の追い指示 (b)）。
+// 出典の種類は、項目の出典のうち参照に入れてよい最初の種類（無ければ道具の確かめ）。値・presence は持たず、観測した物にも確認にも数えない（item-state は一覧に無い項目として扱う）。
+const positionKeyOf = (position) => `catalog_position_${position}`;
+function droppedUnits(context, given) {
+  return given.flatMap((item, position) => {
+    if (isItemKeyText(item?.itemKey)) return [];
+    const kind = (Array.isArray(item?.sources) ? item.sources : []).map((source) => source?.kind).find(isRefName) ?? TOOL_PROBE;
+    return [{ parts: { context, itemKey: positionKeyOf(position), ref: { sourceKind: kind, locator: positionKeyOf(position) }, usage: NO_USAGE, observedAt: context.now }, fields: { unobservableCause: "malformed" }, key: null }];
+  });
+}
+
 // 入力: { targetRef, now, catalog, reads, requiredVersions }。対象・現在時刻が無ければ観測せず止まる（補わない）。
-// 項目名が項目名の門（(e) も当てる）を通らない項目は観測しない（項目名・observationId・位置に写さない）。draft の入口（buildDraft）は同じ項目一覧を invalid_input にする。
+// 項目名が項目名の門（(e) も当てる）を通らない項目は観測しない（項目名・observationId・位置に写さない）が、黙って外さず droppedUnits の単位で返す。draft の入口（buildDraft）は同じ項目一覧を invalid_input にする。
 export function observeAll({ targetRef, now, catalog: given, reads, requiredVersions }) {
   if (!isRefName(targetRef)) return stopped("target_required");
   if (parseInstant(now) === null) return stopped("now_required");
@@ -124,6 +135,6 @@ export function observeAll({ targetRef, now, catalog: given, reads, requiredVers
   const context = { targetRef, now, required: new Map(Object.entries(Object(requiredVersions))) };
   const candidates = reads.filter(isReadFact).flatMap((read) => entriesFor(catalog, read).map((entry) => candidateOf(context, entry, read)));
   const selected = latestPerUnit(candidates);
-  const sorted = [...selected, ...unreadUnits(context, catalog, selected)].sort(compareUnits);
+  const sorted = [...selected, ...unreadUnits(context, catalog, selected), ...droppedUnits(context, given)].sort(compareUnits);
   return deepFreeze({ status: "observed", items: numberMatchGroups(sorted).map((candidate) => assemble(candidate.parts, candidate.fields)) });
 }
