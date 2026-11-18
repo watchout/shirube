@@ -115,6 +115,16 @@ test("T6.4 読めない入力・項目の定義が無い時は、一致と示さ
   assert.equal(ws.answerStatusOf({ answer: answers[0], entry: undefined, observedItems: observeWith().items, reobserved: true }), "unobservable");
   assert.equal(ws.answerStatusOf({ answer: null, entry: VERSION, observedItems: observeWith().items, reobserved: true }), "unobservable");
   assert.equal(ws.answerStatusOf({ answer: { ...answers[0], state: "weird" }, entry: VERSION, observedItems: observeWith().items, reobserved: true }), "unobservable");
+  assert.equal(ws.answerStatusOf({ answer: answers[0], entry: VERSION, observedItems: null, reobserved: true }), "unobservable");
+});
+
+test("T5.1- 読むと例外を起こす入力（欄の取得で例外）は unreadable。例外は外へ出ず、入力も結果に出ない", () => {
+  const marker = "gh" + "p_" + "t".repeat(12);
+  const hostile = { get answerId() { throw new Error(marker); } };
+  let result;
+  assert.doesNotThrow(() => { result = send(hostile); });
+  assert.deepEqual([result.status, result.answer], ["unreadable", null]);
+  assert.equal(JSON.stringify(result).includes(marker), false);
 });
 
 test("T6.1 回答・draft・選択は対話の間だけ: 回答の部品は file・子 process・network・時計・乱数・環境変数に触れず、何も保存しない", () => {
