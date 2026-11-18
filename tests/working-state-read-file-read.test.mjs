@@ -43,7 +43,7 @@ test("T6.1- profile が読めない・欠落・破損の時は、file を開か�
 test("T1.4+ 読めた実体の生の事実: 前後の digest が中身の digest と一致し、読んだ大きさ・回数・所要時間（整数）・時計の時刻を返す。複数回に分けて読む大きさでも中身は欠けない", () => withDir(async (dir) => {
   const big = "a".repeat(lc1.CHUNK_BYTES * 2 + 17);
   dir.put("big.txt", big);
-  const fact = await readThrough(dir, "big.txt");
+  const fact = await readThrough(dir, "big.txt", { loadProfile: async () => profileOf({ maxBytesPerResponse: big.length * 2 }) });
   assert.equal(fact.content, big);
   assert.deepEqual([fact.digestBefore, fact.digestAfter], [ws.sha256Hex(big), ws.sha256Hex(big)]);
   assert.deepEqual(fact.measured, { elapsedMs: fact.measured.elapsedMs, bytesRead: big.length, requests: 1 });
@@ -142,6 +142,21 @@ test("T1.1+ LC1 の事実は LC2（observeAll）がそのまま読める。profi
   assert.deepEqual([good.observation.availability, good.value], ["observed", OID_A]);
   const stopped = unit(observeWith(await readThrough(dir, PIN_LOCATOR, { loadProfile: async () => null })), "sds_commit", "sds_pin");
   assert.deepEqual([stopped.observation.availability, stopped.unobservableCause], ["unavailable", "malformed"]);
+}));
+
+test("T1.4+ 閉じるのに失敗しても、読めた事実は変わらない。実際の時計・実際の信頼版の profile（既定）でも読める", () => withDir(async (dir) => {
+  dir.put(PIN_LOCATOR, PIN_TEXT);
+  const closing = { ...countingFs().fs, open: async (...args) => {
+    const handle = await countingFs().fs.open(...args);
+    return { stat: (...rest) => handle.stat(...rest), read: (...rest) => handle.read(...rest), close: async () => { await handle.close(); throw new Error(MARKER); } };
+  } };
+  const fact = await readThrough(dir, PIN_LOCATOR, { fs: closing });
+  assert.deepEqual([fact.access, fact.content], ["ok", PIN_TEXT]);
+  assert.equal(JSON.stringify(fact).includes(MARKER), false);
+  const real = await lc1.readFileFact(request(dir), allowByCore);
+  assert.deepEqual([real.content, real.budget.maxBytes, real.budgetProfile.version], [PIN_TEXT, BUDGET.maxBytesPerResponse, RULESET]);
+  assert.equal(ws.parseInstant(real.observedAt) !== null, true);
+  assert.equal(Number.isSafeInteger(real.measured.elapsedMs), true);
 }));
 
 test("T6.1 時計と file を使うのは LC1 だけ。LC1 は原因の名前・判定の部品・出力の経路を持たず、核は LC1 を import しない", () => {
