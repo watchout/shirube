@@ -6,7 +6,7 @@ import test from "node:test";
 import * as ws from "../scripts/working-state/index.mjs";
 import { ANSWER, BASE, selectionWireOf, wireOf } from "./working-state-gate-fixtures.mjs";
 import { buildDraft, createSelection, guidanceOf } from "./working-state-draft-fixtures.mjs";
-import { JWT3, TOKEN } from "./working-state-secret-fixtures.mjs";
+import { JWT3, SHAPES, TOKEN } from "./working-state-secret-fixtures.mjs";
 
 const carries = (value) => ws.carriesSecretShape(value);
 class Box { constructor(value) { this.value = value; } }
@@ -87,3 +87,24 @@ test("S8+ 出口: wire の回答の値・案内の文・手で作った回答の
   assert.equal(selectionWireOf({ guidance: { text: "x", [TOKEN]: 1 } }), "refused");
   assert.equal(wireOf({ answers: [{ ...ANSWER, value: { plain: ["harmless"] } }] }), "converted");
 });
+
+// 入れ物の種類 × 文字列の位置（key・値・Map の組・Set の要素）× (a)〜(d) の形。構造体の中の文字列は (e) を当てない（長い名前・UUID があるため）ので、列は (a)〜(d) だけ。
+const OWN = (make) => ({ key: (s) => Object.assign(make(), { [s]: 1 }), value: (s) => Object.assign(make(), { plain: s }) });
+const HOLDERS = [
+  ["S9a+ 素の object", OWN(() => ({}))],
+  ["S9b+ prototype の無い object", OWN(() => Object.create(null))],
+  ["S9c+ 配列（key は添字でない欄、値は要素）", { key: (s) => Object.assign([], { [s]: 1 }), value: (s) => [s] }],
+  ["S9d+ Map の自分の欄", OWN(() => new Map())],
+  ["S9e+ Map の組（key・値）", { entryKey: (s) => new Map([[s, 1]]), entryValue: (s) => new Map([["k", s]]) }],
+  ["S9f+ Set の自分の欄", OWN(() => new Set())],
+  ["S9g+ Set の要素", { member: (s) => new Set([s]) }],
+  ["S9h+ 文字列そのもの", { top: (s) => s }],
+];
+for (const [title, roles] of HOLDERS) {
+  test(`${title}: 置いた場所のどれでも (a)〜(d) の形は含む側（無害な文字列は含まない）`, () => {
+    for (const [role, make] of Object.entries(roles)) {
+      for (const column of ["a", "b", "c", "d"]) assert.equal(carries(make(SHAPES[column])), true, `${role} ${column}`);
+      assert.equal(carries(make("harmless")), false, role);
+    }
+  });
+}
