@@ -9,7 +9,7 @@ import { evaluateItem } from "./item-state.mjs";
 import { normalizeValue } from "./normalize.mjs";
 import { factsOf, itemObservationDigestOf } from "./observation-facts.mjs";
 import { unitsFit } from "./observed-unit.mjs";
-import { VALUE_REJECTION_REASONS, carriesSecretShape, isAnswerValue, isItemKeyText, isRefName, isSecretLikeRefText, rejectionReasonOf } from "./value-exposure.mjs";
+import { VALUE_REJECTION_REASONS, carriesSecretShape, isAnswerValue, isItemKeyText, isRefName, rejectionReasonOf } from "./value-exposure.mjs";
 
 // 回答を拒む理由の固定の分類（BR5.1）。値の検査の分類に、受付の分類（古い回答・同時刻で値が違う回答）を足した全部。
 export const REJECTION_REASONS = Object.freeze([...VALUE_REJECTION_REASONS, "stale_answer", "duplicate_conflict"]);
@@ -96,11 +96,11 @@ function place(current, base, answer) {
 }
 
 // 今までの回答の列（呼出側が渡す。手で作れる）の 1 件の欄。結果の answers にそのまま写るので、受け付けた記録が持つ欄と形だけを通す（決定 95 の追い指示 (a)）。
-// 判定は value-exposure の 1 か所（carriesSecretShape・isItemKeyText・isSecretLikeRefText・rejectionReasonOf）に問い、ここは欄ごとに呼ぶだけ（S3）。
+// 判定は value-exposure の 1 か所（carriesSecretShape・isItemKeyText・isRefName・rejectionReasonOf）に問い、ここは欄ごとに呼ぶだけ（S3）。
 const ANSWER_KEYS = ["answerId", "itemKey", "kind", "value", "valueDigest", "selectedCandidateRef", "boundObservationDigest", "answeredAt", "state", "rejectionReason"];
 const ANSWER_STATES = ["answered", "invalidated", "rejected"];
 const isOptional = (value, isGood) => value === undefined || isGood(value);
-const isRefText = (value) => typeof value === "string" && isRefName(value) && !isSecretLikeRefText(value);
+const isRefText = (value) => typeof value === "string" && isRefName(value);
 
 // 値は、値を持つ種類（value）の有効・無効の回答だけが持ち、項目一覧の項目の形式（値の検査と同じ 1 か所）に合う時だけ通す。ほかの回答は値を持たない。
 function hasReadableValue(answer, catalog) {
