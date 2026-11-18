@@ -9,7 +9,7 @@ import { CATALOG, NOTE_ITEM, answerInput, observeWith, send } from "./working-st
 import { BASE, wireOf } from "./working-state-gate-fixtures.mjs";
 import { buildDraft, createSelection } from "./working-state-draft-fixtures.mjs";
 import { guide, handDraft, unobservableItem } from "./working-state-guidance-fixtures.mjs";
-import { absent } from "./working-state-secret-fixtures.mjs";
+import { COLUMNS, SHAPES, absent } from "./working-state-secret-fixtures.mjs";
 
 const LEAK = "k3j9x0q2m7v1z8w4n6b5c3d2f1g0h9j8k7l6m5n4b3v2c1x0z9a8s7d6f5g4h3j2"; // 架空の 64 文字（先頭は英字）
 const LONG_OK = "aidlc_settings_extra_long_name"; // 30 文字。区切りの `_` で分かれた部品が全部 19 文字以下の正当な形
@@ -86,4 +86,14 @@ test("I8+ 限界の試験: 区切りの無い 20 文字以上の連なりは項�
   assert.equal(guide(handDraft([{ itemKey: "a".repeat(20), state: "missing", observationRefs: [] }])).reason, "invalid_input");
   assert.equal(wireOf({ missingItems: ["a".repeat(20)] }), "refused");
   assert.equal(guide(handDraft([{ itemKey: `${"a".repeat(19)}_${"a".repeat(19)}`, state: "missing", observationRefs: [] }])).status, "built");
+});
+
+test("I9+ 手で作った観測の単位の項目名: (a)〜(e) の全部が draft の入口で断られ（invalid_input）、unknownItemKeys にも写らない（以前は内部の欄に入った）", () => {
+  const units = observeWith().items;
+  for (const column of COLUMNS) {
+    const result = buildDraft({ observedItems: units.map((unit, i) => (i === 0 ? { ...unit, itemKey: SHAPES[column] } : unit)) });
+    assert.deepEqual([result.status, result.draft, result.reason], ["refused", null, "invalid_input"], column);
+    assert.equal(absent(SHAPES[column], result), true, column);
+  }
+  assert.equal(buildDraft({ observedItems: units.map((unit, i) => (i === 0 ? { ...unit, itemKey: "legacy_item" } : unit)) }).draft.unknownItemKeys.includes("legacy_item"), true);
 });

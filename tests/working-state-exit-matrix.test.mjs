@@ -7,7 +7,7 @@ import { OID_B, callerText, goodReads, pinText, probeRead, settingsText } from "
 import { CATALOG, NOTE_ITEM, answerInput, observeWith, send, withContent } from "./working-state-answer-fixtures.mjs";
 import { buildDraft, builtDraft, conflictObserved, createSelection, createdSelection, guidanceOf } from "./working-state-draft-fixtures.mjs";
 import { guide, handDraft } from "./working-state-guidance-fixtures.mjs";
-import { COLUMNS, JWT3, RUN, SHAPES, absent, pinAt, variants } from "./working-state-secret-fixtures.mjs";
+import { COLUMNS, RUN, SHAPES, absent, pinAt, variants } from "./working-state-secret-fixtures.mjs";
 
 const APPLIED = ["a", "b", "c", "d"];
 const BASE = builtDraft({ observedItems: conflictObserved().items });
@@ -247,10 +247,9 @@ test("M16+ 案内の固定の語彙の欄（状態・観測できない原因・
   });
 });
 
-test("M17+ 手で作った観測の項目（項目名・観測の識別・出典の種類・位置）と draft の内部の欄（unknownItemKeys・items・observationFacts）: (a)〜(e) の全部が案内・選択・wire のどれにも写らない", () => {
+test("M17+ 手で作った観測の項目（観測の識別・出典の種類・位置）と draft の内部の欄（items・observationFacts）: (a)〜(e) の全部が案内・選択・wire のどれにも写らない（項目名は draft の入口が断る。gate-itemkey I3+・I9+）", () => {
   const baseItems = observeWith(CATALOG, withContent(goodReads(), "workflow_caller", callerText(OID_B))).items;
   const tweaks = [
-    (form) => (unit) => ({ ...unit, itemKey: form }),
     (form) => (unit) => ({ ...unit, observation: { ...unit.observation, observationId: form } }),
     (form) => (unit) => ({ ...unit, sourceRef: { ...unit.sourceRef, sourceKind: form } }),
     (form) => (unit) => ({ ...unit, sourceRef: { ...unit.sourceRef, locator: form } }),
@@ -262,13 +261,12 @@ test("M17+ 手で作った観測の項目（項目名・観測の識別・出典
       assert.notEqual(draft, null, `${column} ${form}`);
       const result = guide(draft);
       assert.equal(absent(secret, result), true, `${column} ${form}`);
-      if (index === 1) assert.equal(result.guidance.text.includes("表示しない参照 1 件"), true, `${column} ${form}`);
-      if (index === 3) assert.equal(result.guidance.text.includes("（表示しません）"), true, `${column} ${form}`);
-      if (column === "e" && index === 1) return; // 観測の識別（index 1）は観測の参照になる。選択と wire は参照に (e) を当てない（M6+ の限界）ので、(e) の列は案内だけを調べる。
-      assert.equal(absent(secret, ws.draftToC02Wire(draft), createSelection(draft, { observationRef: index === 1 ? form : draft.observationRefs[0] })), true, `${column} ${form}`);
+      if (index === 0) assert.equal(result.guidance.text.includes("表示しない参照 1 件"), true, `${column} ${form}`);
+      if (index === 2) assert.equal(result.guidance.text.includes("（表示しません）"), true, `${column} ${form}`);
+      if (column === "e" && index === 0) return; // 観測の識別（index 0）は観測の参照になる。選択と wire は参照に (e) を当てない（M6+ の限界）ので、(e) の列は案内だけを調べる。
+      assert.equal(absent(secret, ws.draftToC02Wire(draft), createSelection(draft, { observationRef: index === 0 ? form : draft.observationRefs[0] })), true, `${column} ${form}`);
     });
   });
-  assert.equal(buildDraft({ observedItems: baseItems.map((unit, i) => (i === at ? { ...unit, itemKey: JWT3 } : unit)) }).draft.unknownItemKeys.includes(JWT3), true);
 });
 
 test("M18+ 候補の表示値（displayValue。閉じた形の項目の食い違い）: (a)〜(e) の全部が案内に写らず、形式に合う値だけが示される", () => {

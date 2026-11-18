@@ -238,7 +238,7 @@ test("O17+ 残りの入力: 一致の組・回答の参照・不正の分類・�
   assert.equal(observeWith(CATALOG, goodReads(), { now: SECRET }).status, "now_required");
   assert.equal(absent(SECRET, observeWith(CATALOG, goodReads(), { now: SECRET })), true);
   const named = CATALOG.map((entry, index) => (index === 0 ? { ...entry, itemKey: SECRET } : entry));
-  const draft = builtDraft({ catalog: named, observedItems: observeWith(named).items });
-  assert.equal(guide(draft, { catalog: named }).reason, "invalid_input");
-  assert.equal(ws.draftToC02Wire(draft).status, "refused");
+  const refusedDraft = buildDraft({ catalog: named, observedItems: observeWith(named).items }); // 項目名が秘密らしい項目一覧からは、draft を作らない（決定 95。以前は draft を作り、案内と wire が断った）。
+  assert.deepEqual([refusedDraft.status, refusedDraft.reason], ["refused", "invalid_input"]);
+  assert.equal(absent(SECRET, observeWith(named), refusedDraft), true);
 });
