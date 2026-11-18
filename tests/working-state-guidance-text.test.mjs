@@ -188,6 +188,25 @@ test("T7.7- 対象違いの名前が秘密らしい形（接頭辞・長い連�
   }
 });
 
+test("T7.7- 出典の種類と位置（sourceKind・locator）が秘密らしい形なら、不正・食い違いのどちらの行にも写らず「（表示しません）」と示す。普通の位置は示す", () => {
+  const secretNames = [marker, "s" + "k" + "-" + "v".repeat(24), "AK" + "IA" + "W".repeat(16), "q".repeat(24)];
+  const normal = { sourceKind: "sds_pin", locator: ".shirube/sds-pin.json" };
+  const candidate = (candidateRef, sourceRef, matchGroup) => ({ candidateRef, sourceRef, presence: "value", lengthBucket: "short", matchGroup, displayValue: OID_A });
+  for (const secret of secretNames) {
+    for (const bad of [{ sourceKind: "sds_pin", locator: secret }, { sourceKind: secret, locator: ".shirube/sds-pin.json" }]) {
+      const invalid = { itemKey: "sds_commit", state: "invalid", invalidSources: [{ sourceRef: normal, withheld: "invalid_format" }, { sourceRef: bad, withheld: "invalid_format" }], observationRefs: [] };
+      const conflict = { itemKey: "kit_version", state: "conflict", candidates: [candidate("c1", normal, 1), candidate("c2", bad, 2)], observationRefs: [] };
+      for (const item of [invalid, conflict]) {
+        const { guidance } = guided(handDraft([item]));
+        assert.equal(guidance.text.includes(secret), false);
+        assert.equal(JSON.stringify(guidance).includes(secret), false);
+        assert.equal(guidance.text.includes("sds_pin:.shirube/sds-pin.json"), true);
+        assert.equal(guidance.text.includes("（表示しません）"), true);
+      }
+    }
+  }
+});
+
 test("T7.7- 回答済みで未適用の項目は「回答済み・未適用（実際の設定はまだ確認できていません）」と書き、確認済みと書かない", () => {
   const draft = draftOf(CATALOG, allAbsentObserved(), []);
   const answered = { ...draft, items: draft.items.map((item) => (item.itemKey === "sds_commit" ? { ...item, answerRef: "ans-1" } : item)) };
