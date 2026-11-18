@@ -68,11 +68,15 @@ test("U8+ 項目 1 つの評価（evaluateItem）: 読めない単位（乱数�
   assert.equal(result.state, "unobservable");
 });
 
-test("U9+ 項目の一覧の 1 項目は object だけ（欄を持つ function は読めない）、位置の鍵は 0 以上の整数だけ", () => {
+test("U9+ 項目の一覧の 1 項目は object だけ（欄を持つ function は読めない）、位置の鍵（項目・観測の単位）は 0 以上の整数だけ", () => {
   const entry = CATALOG.find((candidate) => candidate.itemKey === "sds_commit");
   assert.equal(ws.isReadableCatalogItem(entry), true);
   assert.equal(ws.isReadableCatalogItem(withFunction(entry)), false);
   assert.equal(ws.positionKeyOf(0), "catalog-position-0");
   assert.equal(ws.positionKeyOf(5), "catalog-position-5");
-  for (const position of [-1, 1.5, Number.NaN, "1", 2 ** 53, null]) assert.throws(() => ws.positionKeyOf(position), (error) => error instanceof TypeError && !error.message.includes(String(position)), String(position));
+  assert.equal(ws.observedPositionKeyOf(0), "observed-position-0");
+  assert.equal(ws.observedPositionKeyOf(7), "observed-position-7");
+  for (const position of [-1, 1.5, Number.NaN, "1", 2 ** 53, null]) {
+    for (const keyOf of [ws.positionKeyOf, ws.observedPositionKeyOf]) assert.throws(() => keyOf(position), (error) => error instanceof TypeError && !error.message.includes(String(position)), String(position));
+  }
 });

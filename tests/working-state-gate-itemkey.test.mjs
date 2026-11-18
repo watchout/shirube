@@ -157,3 +157,19 @@ test("I13+ 外した項目の単位の形: 出典の種類は参照に入れて�
   for (const unit of dropped) assert.deepEqual([unit.budgetUsed, unit.matchGroup], [{ requests: 0, bytes: 0, elapsedMs: 0 }, undefined]);
   assert.equal(absent(LEAK, observed), true);
 });
+
+test("I14+ wire の項目名の列は項目名の門を通す（識別の門ではない）: 大文字で始まる読める長い項目名は変換でき、乱数らしい名前・空は断る", () => {
+  const name = "Aidlc_Settings_Extra_Long_Name"; // 区切りの部品が全部 19 文字以下の読める名前。識別の門（項目名の形に当たらない語は (e) に通す）は断る形
+  assert.equal(ws.isItemKeyText(name), true);
+  assert.equal(ws.isRefName(name), false);
+  assert.equal(wireOf({ missingItems: [name], conflicts: [name] }), "converted");
+  assert.equal(wireOf({ missingItems: [name, LEAK] }), "refused");
+});
+
+test("I15+ 外した項目の単位の出典の種類は、閉じた一覧の外なら読める名前でも写さない（tool_probe）", () => {
+  const source = (kind) => ({ kind, requiredForConfirmed: true, targetBinding: "by-location" });
+  const observed = observeWith([...CATALOG, leakItem({ sources: [source("other_kind")] })]);
+  const [dropped] = droppedIn(observed);
+  assert.equal(dropped.sourceRef.sourceKind, "tool_probe");
+  assert.equal(absent("other_kind", observed), true);
+});

@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import * as ws from "../scripts/working-state/index.mjs";
 import { MIXED40 } from "./working-state-gate-fixtures.mjs";
-import { BEARER, KEY_HEADING, TOKEN } from "./working-state-secret-fixtures.mjs";
+import { BEARER, KEY_HEADING, SHAPES, TOKEN, variants } from "./working-state-secret-fixtures.mjs";
 
 const JWT_LOWER = "aaaaaaaaaaaa.bbbbbbbbbbbb.cccc"; // 小文字だけの JWT の形（読める path にも見える）
 const WORDS_BEARER = "Bearer abcdefghijklmnop";
@@ -80,4 +80,13 @@ test("X6+ 性能: 長い連なりの (d) の判定は文字列の長さの二乗
   for (const text of ["a".repeat(100000), `${"a".repeat(100000)}.`, `${"a".repeat(50000)}.${"b".repeat(50000)}`, "a_".repeat(100000), "a-".repeat(100000)]) assert.equal(ws.hasSecretShape(text), false); // _ と - も名前の文字（直前の条件が数える）
   assert.equal(ws.hasSecretShape(`${"a".repeat(30)}.${"b".repeat(30)}.c`), true);
   assert.ok(performance.now() - started < 1500, "長い連なりの判定が遅い");
+});
+
+test("X8+ (e) を当てない種類（識別・構造体）も (a)〜(d) は生の全体に当てる: 読める path の例外が先に語を外す形（区切りの直後・括弧の中・query の値）でも断る", () => {
+  for (const gateClass of ["ref", "structure"]) {
+    for (const column of ["a", "b", "c", "d"]) {
+      for (const form of variants(SHAPES[column])) assert.equal(ws.exposesText(gateClass, form), true, `${gateClass} ${column} ${form}`);
+    }
+    assert.equal(ws.exposesText(gateClass, "docs/readable/path.md"), false, gateClass);
+  }
 });
