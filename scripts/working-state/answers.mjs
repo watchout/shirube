@@ -14,6 +14,9 @@ export const REJECTION_REASONS = Object.freeze([...VALUE_REJECTION_REASONS, "sta
 const KINDS = ["value", "keep-absent"];
 const ID_RE = /^[A-Za-z0-9._:-]{1,64}$/;
 
+// 呼出側が渡す識別（回答・draft・選択）の形。識別の許される形はここ 1 か所が持つ（S3）。
+export const isRefId = (value) => typeof value === "string" && ID_RE.test(value);
+
 const isStale = (answer, facts) => answer.state === "answered" && itemObservationDigestOf(answer.itemKey, facts) !== answer.boundObservationDigest;
 
 // 有効な回答のうち、結びの先の項目の観測 digest が変わったものを invalidated にする（BR6.2）。ほかの回答はそのまま。
@@ -87,7 +90,7 @@ export function receiveAnswer({ catalog, observedItems, answers, input }) {
   const fields = snapshot(input);
   const current = reconcileAnswers(answers, observedItems);
   const entry = fields === null ? undefined : catalog.find((candidate) => candidate.itemKey === fields.itemKey);
-  const usable = entry !== undefined && typeof fields.answerId === "string" && ID_RE.test(fields.answerId) && parseInstant(fields.answeredAt) !== null;
+  const usable = entry !== undefined && isRefId(fields.answerId) &&parseInstant(fields.answeredAt) !== null;
   if (!usable) return outcome("unreadable", null, current);
   const existing = current.find((answer) => answer.answerId === fields.answerId);
   if (existing !== undefined) return outcome("duplicate", existing, current);

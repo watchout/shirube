@@ -3,13 +3,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import * as ws from "../scripts/working-state/index.mjs";
-import { OID_B, TARGET, callerText, goodReads } from "./working-state-fixtures.mjs";
-import { CATALOG, observeWith, withContent } from "./working-state-answer-fixtures.mjs";
+import { TARGET } from "./working-state-fixtures.mjs";
+import { CATALOG, observeWith } from "./working-state-answer-fixtures.mjs";
 import { EFFECT_KEYS, GUIDANCE_TEXT, PIN_CANDIDATE, SELECTION_ID, absentConflictObserved, builtDraft, conflictObserved, createSelection, createdSelection, guidanceOf, keysDeep } from "./working-state-draft-fixtures.mjs";
 
 const marker = "gh" + "p_" + "t".repeat(12);
 const conflictDraft = () => builtDraft({ observedItems: conflictObserved().items });
-const conflictFor = (catalog) => observeWith(catalog, withContent(goodReads(), "workflow_caller", callerText(OID_B)));
 const swapCommit = (patch) => CATALOG.map((entry) => (entry.itemKey === "sds_commit" ? { ...entry, ...patch } : entry));
 
 test("T8.1+ 食い違う候補を選ぶと選択ができ、欄は決まった形（draft への参照・候補・対象・案内・観測の参照・結びの観測 digest）、凍結される", () => {
@@ -44,11 +43,10 @@ test("T8.1- 選べない候補は選択にしない: draft に無い候補・食
   refused(createSelection(draft, { candidateRef: "sds_commit@sds_pin:other" }), "unknown_candidate");
   const calm = builtDraft();
   refused(createSelection(calm, { candidateRef: PIN_CANDIDATE, observationRef: calm.observationRefs[0] }), "unknown_candidate");
+  // 選べるかは、渡した項目一覧の定義で決める（draft の候補の有無だけでは決めない）。開いた形の定義の項目は、候補があっても選ばせない。
   for (const patch of [{ userAnswerable: false }, { valueType: "string" }]) {
-    const catalog = swapCommit(patch);
-    const draft2 = builtDraft({ catalog, observedItems: conflictFor(catalog).items });
-    assert.equal(draft2.conflicts.includes("sds_commit"), true);
-    refused(createSelection(draft2, { catalog }), "not_selectable");
+    assert.equal(draft.conflicts.includes("sds_commit"), true);
+    refused(createSelection(draft, { catalog: swapCommit(patch) }), "not_selectable");
   }
   assert.equal(ws.SELECTION_REFUSALS.includes("not_selectable"), true);
   assert.equal(Object.isFrozen(ws.SELECTION_REFUSALS), true);

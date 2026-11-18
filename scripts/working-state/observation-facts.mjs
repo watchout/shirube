@@ -38,5 +38,16 @@ export function factsOf(observedItems) {
 // 事実の列（factsOf の出力）から、正規の JSON の SHA-256。古さの判定（BR8.3）に使う。回答・参照名は入力に入らない。
 export const observationDigestOf = (facts) => digestOf(facts);
 
+// draft・選択が古いか（BR8.3）。結びの digest（owner[field]）を、今の観測の事実から再計算した digest と比べる。
+// 結びが読めない・観測が読めない・例外が起きる入力は古い（失敗側。一致と読み替えない）。
+export function isObservationStale(owner, field, observedItems) {
+  try {
+    const bound = owner[field];
+    return typeof bound !== "string" || observationDigestOf(factsOf(observedItems)) !== bound;
+  } catch {
+    return true;
+  }
+}
+
 // 1 つの項目の観測 digest（BR6.2）。その項目の全出典の事実だけから作る。
 export const itemObservationDigestOf = (itemKey, facts) => digestOf(facts.filter((fact) => fact.unit.itemKey === itemKey));

@@ -26,7 +26,7 @@ export const conflictObserved = () => observeWith(CATALOG, withContent(goodReads
 // pin には無く workflow_caller にはある（値のある候補 1 つと、無い候補 1 つ）。
 export const absentConflictObserved = () => observeWith(CATALOG, withContent(goodReads(), "sds_pin", JSON.stringify({ schema: "sds-pin/1", kit_version: "0.1.0", protected_paths: ["a"] })));
 // pin にも workflow_caller にも無い（missing）。
-export const allAbsentObserved = () => observeWith(CATALOG, withContent(withContent(goodReads(), "sds_pin", JSON.stringify({ schema: "sds-pin/1" })), "workflow_caller", "name: sample\njobs: {}\n"));
+export const allAbsentObserved = () => observeWith(CATALOG, withContent(withContent(goodReads(), "sds_pin", JSON.stringify({ schema: "sds-pin/1", kit_version: "0.1.0" })), "workflow_caller", "name: sample\njobs: {}\n"));
 // pin の中身だけが変わる（参照名は同じ）。
 export const pinChangedObserved = () => observeWith(CATALOG, withContent(goodReads(), "sds_pin", pinText({ sds_commit: OID_B })));
 
