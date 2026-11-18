@@ -113,7 +113,12 @@ const textRows = [
 // 選択が古いか（isSelectionStale）。
 const staleRows = [
   row("isSelectionStale", "selection.draftObservationDigest", "B", "digest の比べだけ", "x", (value) => ws.isSelectionStale({ draftObservationDigest: value }, CLOSED.units), (r) => r === true, (r) => r === true),
-  row("isSelectionStale", "observedItems[].itemKey", "C", "readableUnitsOf", UNIT.itemKey, (value) => ws.isSelectionStale({ draftObservationDigest: "x" }, CLOSED.units.map((unit, i) => (i === CLOSED.index ? { ...unit, itemKey: value } : unit))), isBool, isBool),
+  // 結びの digest は、読めない項目名（空の文字列）の単位から作る。読めない単位は同じ位置の単位に置き換わるので、LEAK の項目名の単位の事実も同じ digest になり、古くない（false）。
+  // 守りを外すと LEAK の項目名が事実に入って digest が変わり、古い（true）になる。正しい項目名は置き換わらず、結びの digest と違うので古い（true）。
+  row("isSelectionStale", "observedItems[].itemKey", "C", "readableUnitsOf", UNIT.itemKey, (value) => {
+    const withKey = (key) => CLOSED.units.map((unit, i) => (i === CLOSED.index ? { ...unit, itemKey: key } : unit));
+    return ws.isSelectionStale({ draftObservationDigest: ws.observationDigestOf(ws.factsOf(withKey(""))) }, withKey(value));
+  }, (r) => r === true, (r) => r === false),
   row("isSelectionStale", "selection（欠け）", "B", "?? {}", {}, (value) => ws.isSelectionStale(value, CLOSED.units), (r) => r === true, (r) => r === true),
 ];
 
