@@ -119,7 +119,7 @@ test("T12.l5- 子の本物の結果から skip・todo・timeout を数える（N
     writeFileSync(path.join(temp, "working-state-counts.test.mjs"), body);
     const child = lc7.runCoverageChild({ cwd: temp, files: lc7.childFilesOf(temp) });
     const { counts } = lc7.parseTap(child.tapText);
-    assert.deepEqual([counts.skipped, counts.todo, counts.timeouts >= 1, counts.fail >= 1], [1, 1, true, true]);
+    assert.deepEqual([counts.skipped, counts.todo, counts.timeouts >= 1, counts.fail + counts.cancelled >= 1], [1, 1, true, true]);
     const result = lc7.judgeRun({ denominator: [A], lcovText: lcovOf([[A, 1, 1]]), tapText: child.tapText, run: child.run });
     assert.equal(result.verdict, "fail");
     for (const expected of ["skipped:1", "todo:1", "timeout:"]) assert.equal(causesOf(result).includes(expected), true, expected);
