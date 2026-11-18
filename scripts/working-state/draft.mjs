@@ -4,6 +4,7 @@
 // 時刻・乱数・識別子は呼出側が渡す（S4）。draft は対話の間だけ持つ値で、何も保存しない（BR6.1）。
 import { isRefId, reconcileAnswers } from "./answers.mjs";
 import { deepFreeze, digestOf } from "./canonical.mjs";
+import { isReadableCatalogItem } from "./catalog.mjs";
 import { evaluateItems } from "./item-state.mjs";
 import { factsOf, isObservationStale, observationDigestOf } from "./observation-facts.mjs";
 import { carriesSecretShape, isItemKeyText, isRefName } from "./value-exposure.mjs";
@@ -15,11 +16,11 @@ const refuse = (reason) => deepFreeze({ status: "refused", draft: null, reason }
 
 // 作れる入力か。観測の対象が draft の対象と違う観測は混ぜない（別の対象の事実で draft を作らない）。
 // 回答の列は呼出側が渡す（手で作れる）ので、どの欄にも BR5.2 の (a)〜(d) の形を含まないこと（draft は回答の値をそのまま持つため）。
-// 項目名（項目一覧・観測の単位・回答）は draft の items・missingItems・conflicts・answers・unknownItemKeys に写るので、(e) も当てる門（isItemKeyText）を通す。
+// 項目名（観測の単位・回答）は draft の items・missingItems・conflicts・answers・unknownItemKeys に写るので、(e) も当てる門（isItemKeyText）を通す。項目一覧の項目は、項目名の門に加えて出典の種類も閉じた一覧の中であること（isReadableCatalogItem）。
 const hasItemKeys = (lists) => lists.every((list) => list.every((entry) => isItemKeyText(entry?.itemKey)));
 function usable({ draftId, targetRef, catalog, observedItems, answers }) {
   const shapes = [catalog, observedItems, answers].every(Array.isArray);
-  return isRefId(draftId) && isRefName(targetRef) && shapes && !carriesSecretShape(answers) && hasItemKeys([catalog, observedItems, answers]) && observedItems.every((unit) => unit.sourceRef.targetRef === targetRef);
+  return isRefId(draftId) && isRefName(targetRef) && shapes && !carriesSecretShape(answers) && catalog.every(isReadableCatalogItem) && hasItemKeys([observedItems, answers]) && observedItems.every((unit) => unit.sourceRef.targetRef === targetRef);
 }
 
 const itemKeysIn = (items, state) => items.filter((item) => item.state === state).map((item) => item.itemKey);

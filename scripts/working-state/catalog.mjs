@@ -2,7 +2,7 @@
 // 許される形式の検査は value-exposure.mjs が持つ。ここは項目・出典・正規化・答えやすさだけを持つ純粋な値。
 // 時刻・乱数・環境変数・file・子 process・network を使わない（S4）。
 import { deepFreeze } from "./canonical.mjs";
-import { ELEMENT_SHAPES } from "./value-exposure.mjs";
+import { ELEMENT_SHAPES, isItemKeyText } from "./value-exposure.mjs";
 
 export const SOURCE_KINDS = Object.freeze(["sds_pin", "aidlc_version", "aidlc_settings", "claude_settings", "workflow_caller", "tool_probe", "remote_metadata"]);
 export const TARGET_BINDINGS = Object.freeze(["by-location", "named"]);
@@ -38,6 +38,15 @@ const NOT_HANDLED = new Map(NOT_HANDLED_BY_U2.map((entry) => [entry.itemKey, ent
 // Map で引くので、継承された名前（__proto__・constructor など）や型違いの名前は項目として返らない。
 export const findItem = (itemKey) => ITEMS.get(itemKey);
 export const findNotHandled = (itemKey) => NOT_HANDLED.get(itemKey);
+
+// 外した項目の単位の印（項目名の位置）。項目名の形（小文字で始まる英数字と _）に当たらない形で、この形の項目名は予約（項目として読まない）。
+const POSITION_MARKER = /^catalog-position-\d+$/;
+export const positionKeyOf = (position) => `catalog-position-${position}`;
+
+// 項目一覧の 1 項目を読んでよいか（閉じた一覧 A・固定の形 B・門 C の入口の 1 か所）。項目名は門（(e) も当てる）を通り、印の形でなく、出典の一覧は配列で、
+// 全部の出典の種類が閉じた一覧（SOURCE_KINDS）にある。呼出側の文字列（種類）が観測の参照・単位に写る道は、この判定に通った項目だけ。
+const isSourceEntry = (sourceEntry) => typeof sourceEntry === "object" && sourceEntry !== null && SOURCE_KINDS.includes(sourceEntry.kind);
+export const isReadableCatalogItem = (entry) => typeof entry === "object" && entry !== null && isItemKeyText(entry.itemKey) && !POSITION_MARKER.test(entry.itemKey) && Array.isArray(entry.sources) && entry.sources.every(isSourceEntry);
 
 // 書かれていない・不正な requiredForConfirmed は必須（false と明記された時だけ任意）。
 export const isRequiredSource = (sourceEntry) => sourceEntry?.requiredForConfirmed !== false;
