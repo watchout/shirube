@@ -4,6 +4,7 @@
 // 時刻・乱数・識別子・環境変数・file を使わない（S4）。
 import { deepFreeze } from "./canonical.mjs";
 import { ACTION_TEXTS, formOf, questionsOf, strongestAction } from "./guidance-actions.mjs";
+import { VALUE_CLASSIFICATIONS, classifyValue } from "./value-exposure.mjs";
 
 // 案内にしない理由の固定の分類（入力を写さない）。
 export const GUIDANCE_REFUSALS = Object.freeze(["invalid_input", "build_failed"]);
@@ -22,6 +23,9 @@ const NOT_STARTABLE = "開始できない理由: 未確認の項目が残って�
 const isObject = (value) => typeof value === "object" && value !== null;
 const listOf = (value) => (Array.isArray(value) ? value.filter(isObject) : []);
 const isSafe = (value) => typeof value === "string" && value !== "" && value.length <= NAME_MAX && !UNSAFE_TEXT.test(value);
+// 対象の名前は、安全な文字の範囲に加えて、秘密らしさを value-exposure の 1 か所の判定（classifyValue）に通す。秘密らしい・判定できない名前は示さない。
+const [, , SECRET_LIKE] = VALUE_CLASSIFICATIONS;
+const isShowableName = (value) => isSafe(value) && classifyValue("string", value) !== SECRET_LIKE;
 const safeOr = (value) => (isSafe(value) ? value : WITHHELD_NAME);
 const sourceName = (ref) => `${safeOr(ref?.sourceKind)}:${safeOr(ref?.locator)}`;
 const causesOf = (item) => (Array.isArray(item.unobservableCauses) ? item.unobservableCauses.filter((cause) => CAUSE_PATTERN.test(cause)) : []);
@@ -57,7 +61,7 @@ const LINES = new Map([
     const sources = listOf(item.invalidSources);
     return [`- ${item.itemKey}: 不正（${withheldNote(sources)}）`, ...sources.map((source) => `  - ${sourceName(source.sourceRef)}`)];
   }],
-  ["wrong_target", (item) => [`- ${item.itemKey}: 対象違い（観測の対象名: ${listOf(item.wrongTargets).map((entry) => (isSafe(entry.namedTarget) ? entry.namedTarget : "対象の名前は表示しません")).join(", ")}）`]],
+  ["wrong_target", (item) => [`- ${item.itemKey}: 対象違い（観測の対象名: ${listOf(item.wrongTargets).map((entry) => (isShowableName(entry.namedTarget) ? entry.namedTarget : "対象の名前は表示しません")).join(", ")}）`]],
   ["unobservable", (item) => [`- ${item.itemKey}: 観測不能${causesOf(item).length > 0 ? `（原因: ${causesOf(item).join(", ")}）` : ""}`]],
 ]);
 
