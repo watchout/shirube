@@ -5,7 +5,8 @@ import test from "node:test";
 import * as ws from "../scripts/working-state/index.mjs";
 import { OID_A, OID_B, ROOT, availabilityOf, fileRead, goodReads, observe, pinText, unit } from "./working-state-fixtures.mjs";
 
-const swap = (replacement) => goodReads().map((r) => (r.sourceKind === replacement.sourceKind && r.locator === replacement.locator ? replacement : r));
+// 同じ種類の出典の読取りを置き換える（locator を変えた読取りも、元の読取りの代わりに入る）。道具は名前（locator）で選ぶ。
+const swap = (replacement) => goodReads().map((r) => (r.sourceKind === replacement.sourceKind && (r.sourceKind !== "tool_probe" || r.locator === replacement.locator) ? replacement : r));
 const pinItems = ["sds_commit", "kit_version", "protected_paths"];
 const absentKeys = ["presence", "targetMatch", "value", "valueDigest", "lengthBucket", "matchGroup", "withheld"];
 

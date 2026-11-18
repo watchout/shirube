@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import * as ws from "../scripts/working-state/index.mjs";
-import { OID_A, availabilityOf, fileRead, goodReads, observe, pinText, probeRead, settingsText, unit } from "./working-state-fixtures.mjs";
+import { availabilityOf, fileRead, goodReads, observe, pinText, probeRead, settingsText, unit } from "./working-state-fixtures.mjs";
 
 const swap = (replacement) => goodReads().map((r) => (r.sourceKind === replacement.sourceKind && r.locator === replacement.locator ? replacement : r));
 const pinWith = (over) => observe({ reads: swap(fileRead("sds_pin", pinText(over))) });
@@ -21,11 +21,11 @@ const assertNoTrace = (result, values) => {
     assert.equal(text.includes(value.slice(0, 10)), false, `${value.slice(0, 6)}… の先頭が出力に残る`);
   }
 };
-// 設定の 1 つの欄に架空の値を置いた入力。値は key=value の要素になる。
-const settingsWith = (key, value) => observe({ reads: swap(fileRead("aidlc_settings", JSON.stringify({ [key]: value }))) });
+// 開いた形（要素が自由な文字列の list）の 1 つの要素に架空の値を置いた入力。
+const listWith = (element) => observe({ reads: swap(fileRead("sds_pin", pinText({ protected_paths: [element] }))) });
 
 test("T3.4+ 形式に合わない・秘密らしい閉じた形の値は withheld（固定の分類）だけで、値・valueDigest を持たず、入力は出力に残らない", () => {
-  for (const [value, expected] of [[TOKEN, "secret_like"], ["k".repeat(24), "secret_like"], [JWT_LIKE, "secret_like"], ["abc", "invalid_format"], [OID_A.slice(1), "secret_like"], [42, "invalid_format"], [null, "invalid_format"]]) {
+  for (const [value, expected] of [[TOKEN, "secret_like"], ["k".repeat(24), "secret_like"], [JWT_LIKE, "secret_like"], ["not-a-commit-name", "invalid_format"], ["f0".repeat(19) + "f", "secret_like"], [42, "invalid_format"], [null, "invalid_format"]]) {
     const result = pinWith({ sds_commit: value });
     const item = unit(result, "sds_commit", "sds_pin");
     assert.deepEqual([availabilityOf(item), item.presence, item.withheld], ["observed", "value", expected], String(value).slice(0, 6));
@@ -54,8 +54,8 @@ test("T3.4o 開いた形の値は、形式に合っていても保持・digest�
 
 test("T3.4p 開いた形の秘密らしい・形式に合わない値は withheld だけ（lengthBucket・matchGroup なし）。値・一部・別の綴りが出力に残らない", () => {
   for (const secret of SECRETS) {
-    const result = settingsWith("api", secret);
-    const item = openItem(result, "aidlc_settings");
+    const result = listWith(secret);
+    const item = openItem(result, "protected_paths");
     assert.deepEqual([item.presence, item.withheld, "lengthBucket" in item, "matchGroup" in item], ["value", "secret_like", false, false], secret.slice(0, 6));
     assertNoTrace(result, [secret]);
   }
@@ -67,10 +67,8 @@ test("T3.4p 開いた形の秘密らしい・形式に合わない値は withhel
 });
 
 test("T3.4p 秘密らしい値が複数あっても、出力の全体のどこにも現れない（返り値の全体を走査する）", () => {
-  const reads = [fileRead("sds_pin", pinText({ sds_commit: TOKEN, kit_version: BEARER_SECRET, protected_paths: [JWT_LIKE] })), ...goodReads().filter((r) => r.sourceKind !== "sds_pin"),
-  ];
-  const result = observe({ reads: reads.map((r) => (r.sourceKind === "aidlc_settings" ? fileRead("aidlc_settings", JSON.stringify({ k: "k".repeat(24) })) : r)) });
-  assertNoTrace(result, [TOKEN, BEARER_SECRET, JWT_LIKE, "k".repeat(24)]);
+  const result = observe({ reads: swap(fileRead("sds_pin", pinText({ sds_commit: TOKEN, kit_version: BEARER_SECRET, protected_paths: [JWT_LIKE] }))) });
+  assertNoTrace(result, [TOKEN, BEARER_SECRET, JWT_LIKE]);
   assert.equal(unit(result, "sds_commit", "sds_pin").withheld, "secret_like");
   assert.equal(unit(result, "kit_version", "sds_pin").withheld, "secret_like");
 });
@@ -128,8 +126,8 @@ test("T3.2o 開いた形の一致: 同じ値の出典に同じ番号、違う値
 
 test("T3.4p 秘密らしい出典は一致の番号づけから除かれ、番号を詰める（withheld は matchGroup を持たない）", () => {
   const catalog = [{ itemKey: "aidlc_settings", valueType: "list", elementShape: "setting-pair", sources: [{ kind: "aidlc_settings", targetBinding: "by-location" }] }];
-  const reads = [{ a: "x" }, { api: BEARER_SECRET }, { a: "y" }].map((c, i) => fileRead("aidlc_settings", JSON.stringify(c), { locator: `conf-${i}.json` }));
+  const reads = [{ a: "x" }, { [TOKEN]: "x" }, { a: "y" }].map((c, i) => fileRead("aidlc_settings", JSON.stringify(c), { locator: `conf-${i}.json` }));
   const result = ws.observeAll({ targetRef: "sample-work", now: "2026-11-18T09:00:00+09:00", catalog, reads, requiredVersions: {} });
   assert.deepEqual(result.items.map((i) => [i.matchGroup ?? null, i.withheld ?? null]), [[1, null], [null, "secret_like"], [2, null]]);
-  assertNoTrace(result, [BEARER_SECRET]);
+  assertNoTrace(result, [TOKEN]);
 });

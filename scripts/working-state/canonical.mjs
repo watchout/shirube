@@ -34,6 +34,14 @@ export function sha256Hex(text) {
   return createHash("sha256").update(text, "utf8").digest("hex");
 }
 
+// 入れ子の object・配列をすべて凍結する（出力を後から書き換えられない形にする）。
+export function deepFreeze(value) {
+  for (const inner of Object.values(value)) {
+    if (typeof inner === "object" && inner !== null) deepFreeze(inner);
+  }
+  return Object.freeze(value);
+}
+
 // 値の digest = 正規の JSON の SHA-256。
 export function digestOf(value) {
   return sha256Hex(canonicalJson(value));

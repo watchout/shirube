@@ -5,5 +5,7 @@ export * from "./catalog.mjs";
 export * from "./escape.mjs";
 export * from "./instant.mjs";
 export * from "./normalize.mjs";
+export * from "./observation.mjs";
+export * from "./read-check.mjs";
 export * from "./source-extract.mjs";
 export * from "./value-exposure.mjs";

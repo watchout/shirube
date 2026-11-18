@@ -1,6 +1,7 @@
 // U2 項目の一覧（initialCatalog）と、一覧の読み方の既定（失敗側）。項目の一覧は 1 か所だけが持つ（S3）。
 // 許される形式の検査は value-exposure.mjs が持つ。ここは項目・出典・正規化・答えやすさだけを持つ純粋な値。
 // 時刻・乱数・環境変数・file・子 process・network を使わない（S4）。
+import { deepFreeze } from "./canonical.mjs";
 import { ELEMENT_SHAPES } from "./value-exposure.mjs";
 
 export const SOURCE_KINDS = Object.freeze(["sds_pin", "aidlc_version", "aidlc_settings", "claude_settings", "workflow_caller", "tool_probe", "remote_metadata"]);
@@ -15,13 +16,6 @@ const DEFAULT_TARGET_BINDING = "named";
 const source = (kind) => ({ kind, requiredForConfirmed: true, targetBinding: "by-location" });
 const item = (itemKey, valueType, kinds, rest) => ({ itemKey, valueType, sources: kinds.map(source), ...rest });
 const version = (itemKey, kind) => item(itemKey, "version", [kind], { normalization: "version-compare", userAnswerable: false });
-
-function deepFreeze(value) {
-  for (const inner of Object.values(value)) {
-    if (typeof inner === "object" && inner !== null) deepFreeze(inner);
-  }
-  return Object.freeze(value);
-}
 
 export const INITIAL_CATALOG = deepFreeze([
   item("sds_commit", "commit-oid", ["sds_pin", "workflow_caller"], { normalization: "lowercase-hex", userAnswerable: false }),
