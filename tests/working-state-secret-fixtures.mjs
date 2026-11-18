@@ -5,7 +5,7 @@ import { fileRead, goodReads, pinText } from "./working-state-fixtures.mjs";
 export const TOKEN = "gh" + "p_" + "u".repeat(12);
 export const RUN = "Zq".repeat(12);
 export const JWT3 = ["a".repeat(12), "b".repeat(12), "c".repeat(12)].join(".");
-export const BEARER = "Bearer " + "w".repeat(20);
+export const BEARER = "Bearer " + "w".repeat(16); // 16 文字は (c) の最小。(e) の 20 文字に届かないので、(c) だけがこの形を断つ
 export const KEY_HEADING = ["-----BEGIN ", "PRIVATE KEY", "-----"].join("");
 // BR5.2 の (a) 秘密鍵の見出し・(b) 接頭辞・(c) Bearer・(d) JWT・(e) 20 文字以上の連なり。
 export const SHAPES = Object.freeze({ a: KEY_HEADING, b: TOKEN, c: BEARER, d: JWT3, e: RUN });
