@@ -98,10 +98,14 @@ export function isAllowedFormat(valueType, value, elementShape = "string") {
 export const VALUE_CLASSIFICATIONS = Object.freeze(["valid", "invalid_format", "secret_like"]);
 const [VALID, INVALID_FORMAT, SECRET_LIKE] = VALUE_CLASSIFICATIONS;
 
+// 空白で分けた語のどれかが、既知の token の接頭辞（BR5.2 の (b)）で始まるか。長さ・文字の範囲を見ない。
+// 項目名・原因・理由の符号のように、長い連なり (e) を持つ正当な固定の語は、接頭辞だけで判定する側がこの関数を使う。
+export const hasTokenPrefix = (text) => typeof text === "string" && text.split(/\s+/u).some((word) => TOKEN_PREFIXES.some((prefix) => word.startsWith(prefix)));
+
 // 1 つの文字列が秘密らしいか（BR5.2 の (a)〜(e)）。explained = 項目の許される形式（構造のある形）が文字列全体を説明する時 (e) だけ外す。
 function looksSecret(text, explained) {
-  if (KEY_HEADER_RE.test(text) || BEARER_RE.test(text)) return true;
-  return text.split(/\s+/u).some((word) => TOKEN_PREFIXES.some((prefix) => word.startsWith(prefix)) || JWT_RE.test(word) || (!explained && RUN_RE.test(word)));
+  if (KEY_HEADER_RE.test(text) || BEARER_RE.test(text) || hasTokenPrefix(text)) return true;
+  return text.split(/\s+/u).some((word) => JWT_RE.test(word) || (!explained && RUN_RE.test(word)));
 }
 
 // 観測値・回答が共有する判定。値の分類（valid | invalid_format | secret_like）だけを返し、入力は写さない（BR5.2・BR3.4）。

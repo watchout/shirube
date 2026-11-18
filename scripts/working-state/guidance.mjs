@@ -3,59 +3,52 @@
 // 開いた形の値は示さない（長さの区分と一致の組だけ）。外から来た文字列は固定の文字の範囲だけ写す。同じ入力は同じ案内（BR7.3）。
 // 時刻・乱数・識別子・環境変数・file を使わない（S4）。
 import { deepFreeze } from "./canonical.mjs";
-import { ACTION_TEXTS, formOf, questionsOf, strongestAction } from "./guidance-actions.mjs";
-import { isSecretLike } from "./value-exposure.mjs";
+import { ACTION_TEXTS, ITEM_STATES, WITHHELD_NAME, formOf, isItemName, isKnownCause, isLengthBucket, isShowableName, isShowableRef, questionsOf, shownValueOf, strongestAction } from "./guidance-actions.mjs";
+import { hasTokenPrefix } from "./value-exposure.mjs";
 
 // 案内にしない理由の固定の分類（入力を写さない）。
 export const GUIDANCE_REFUSALS = Object.freeze(["invalid_input", "build_failed"]);
 
 const OUTCOMES = ["PASS", "FAIL", "UNKNOWN"];
 const REASON_PATTERN = /^[A-Z][A-Z0-9_]{0,63}$/;
-const CAUSE_PATTERN = /^[a-z][a-z0-9_]{0,39}$/;
-const STATE_PATTERN = /^[a-z_]{1,24}$/;
-const UNSAFE_TEXT = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}「」]/u;
-const NAME_MAX = 64;
-const WITHHELD_NAME = "（表示しません）";
 const UNREAD_RESULT = "結果を確認できず";
 const ANSWERED = "回答済み・未適用（実際の設定はまだ確認できていません）";
 const NOT_STARTABLE = "開始できない理由: 未確認の項目が残っているため、開始できません。";
 
 const isObject = (value) => typeof value === "object" && value !== null;
 const listOf = (value) => (Array.isArray(value) ? value.filter(isObject) : []);
-const isSafe = (value) => typeof value === "string" && value !== "" && value.length <= NAME_MAX && !UNSAFE_TEXT.test(value);
-// 対象の名前・出典の種類と位置は、安全な文字の範囲に加えて、秘密らしさを value-exposure の 1 か所の判定（isSecretLike）に通す。秘密らしい・判定できない名前は示さない。
-const isShowableName = (value) => isSafe(value) && !isSecretLike("string", value);
-const safeOr = (value) => (isSafe(value) ? value : WITHHELD_NAME);
+// 語彙・形の検査は guidance-actions が持つ（項目名・状態・原因・区分・参照・値は、固定の集合か秘密らしさの 1 か所の判定に通した物だけ写す）。
 const nameOr = (value) => (isShowableName(value) ? value : WITHHELD_NAME);
+const bucketOr = (value) => (isLengthBucket(value) ? value : WITHHELD_NAME);
 const sourceName = (ref) => `${nameOr(ref?.sourceKind)}:${nameOr(ref?.locator)}`;
-const causesOf = (item) => (Array.isArray(item.unobservableCauses) ? item.unobservableCauses.filter((cause) => CAUSE_PATTERN.test(cause)) : []);
+const causesOf = (item) => (Array.isArray(item.unobservableCauses) ? item.unobservableCauses.filter(isKnownCause) : []);
 
 // 門の結果。読めない形（欠け・型違い・U1 の符号の形でない文字）は null で、結果を確認できずと書く。
 function conformanceOf(value) {
   try {
     if (!isObject(value) || !OUTCOMES.includes(value.outcome) || !Array.isArray(value.reasons)) return null;
     const reasons = [...value.reasons];
-    return reasons.every((reason) => typeof reason === "string" && REASON_PATTERN.test(reason)) ? { outcome: value.outcome, reasons } : null;
+    return reasons.every((reason) => typeof reason === "string" && REASON_PATTERN.test(reason) && !hasTokenPrefix(reason)) ? { outcome: value.outcome, reasons } : null;
   } catch {
     return null;
   }
 }
 const gateLine = (gate) => (gate === null ? UNREAD_RESULT : `${gate.outcome}${gate.reasons.length > 0 ? `（${gate.reasons.join(", ")}）` : ""}`);
 
-function candidateLine(candidate, closed) {
+function candidateLine(candidate, closed, shown) {
   const name = sourceName(candidate.sourceRef);
   if (candidate.presence === "absent") return `  - ${name}: 無し`;
-  if (closed) return `  - ${name}: ${safeOr(candidate.displayValue)}`;
-  return `  - ${name}: 長さ ${safeOr(candidate.lengthBucket)}・一致の組 ${Number.isInteger(candidate.matchGroup) ? candidate.matchGroup : "不明"}`;
+  if (closed) return `  - ${name}: ${shown(candidate.displayValue)}`;
+  return `  - ${name}: 長さ ${bucketOr(candidate.lengthBucket)}・一致の組 ${Number.isInteger(candidate.matchGroup) ? candidate.matchGroup : "不明"}`;
 }
 const withheldNote = (sources) => (sources.some((source) => source.withheld === "secret_like") ? "秘密に見える値のため、値は表示しません。存在と参照名だけを知らせてください" : "形式が正しくありません");
 
 // 状態ごとの行（先頭の行 + 補足の行）。値は閉じた形の有効な値だけ示す。
 const LINES = new Map([
   ["missing", (item) => [`- ${item.itemKey}: 不足`]],
-  ["conflict", (item, form) => {
+  ["conflict", (item, form, shown) => {
     const candidates = listOf(item.candidates);
-    return [`- ${item.itemKey}: 食い違い（候補 ${candidates.length} 件）`, ...candidates.map((candidate) => candidateLine(candidate, form === "closed"))];
+    return [`- ${item.itemKey}: 食い違い（候補 ${candidates.length} 件）`, ...candidates.map((candidate) => candidateLine(candidate, form === "closed", shown))];
   }],
   ["invalid", (item) => {
     const sources = listOf(item.invalidSources);
@@ -67,7 +60,7 @@ const LINES = new Map([
 
 function linesOf(item, catalog) {
   if (item.answerRef !== undefined) return [`- ${item.itemKey}: ${ANSWERED}`];
-  return (LINES.get(item.state) ?? ((entry) => [`- ${entry.itemKey}: 状態を読めません`]))(item, formOf(catalog, item.itemKey));
+  return LINES.get(item.state)(item, formOf(catalog, item.itemKey), (value) => shownValueOf(catalog, item.itemKey, value));
 }
 
 // 原因の欄。観測できない項目は原因ごとに 1 つ、ほかは状態だけ。
@@ -76,14 +69,14 @@ function causesFor(item) {
   return causes.length === 0 ? [{ itemKey: item.itemKey, state: item.state }] : causes.map((unobservableCause) => ({ itemKey: item.itemKey, state: item.state, unobservableCause }));
 }
 
-const validItem = (item) => isObject(item) && isSafe(item.itemKey) && typeof item.state === "string" && STATE_PATTERN.test(item.state);
+const validItem = (item) => isObject(item) && isItemName(item.itemKey) && ITEM_STATES.includes(item.state);
 const isTextList = (value) => Array.isArray(value) && value.every((entry) => typeof entry === "string");
 
 // 作れる入力か。draft は項目 1 つ以上・対象・観測の参照を持ち、項目一覧は配列。
 function wellFormed(input) {
   if (!isObject(input) || !isObject(input.draft) || !Array.isArray(input.catalog)) return false;
   const { items, targetRef, observationRefs } = input.draft;
-  return Array.isArray(items) && items.length > 0 && items.every(validItem) && typeof targetRef === "string" && targetRef !== "" && isTextList(observationRefs);
+  return Array.isArray(items) && items.length > 0 && items.every(validItem) && typeof targetRef === "string" && targetRef !== "" && !hasTokenPrefix(targetRef) && isTextList(observationRefs);
 }
 
 const refuse = (reason) => deepFreeze({ status: "refused", guidance: null, questions: null, reason });
@@ -96,15 +89,17 @@ function compose(input) {
   const nextAction = { kind: best.kind, text: best.itemKey === null ? ACTION_TEXTS[best.kind] : `${best.itemKey}: ${ACTION_TEXTS[best.kind]}` };
   const conclusion = unconfirmed.length === 0 ? "確認が必要な項目はありません。" : `未確認の項目が ${unconfirmed.length} 件あります。`;
   const lines = unconfirmed.flatMap((item) => linesOf(item, catalog));
+  const refs = draft.observationRefs.filter(isShowableRef);
+  const hidden = draft.observationRefs.length - refs.length;
   const text = [
     `結論: ${conclusion}`, `次の操作: ${nextAction.text}`, "原因・未確認:", ...(lines.length > 0 ? lines : ["- なし"]),
     `ゲートの結果: ${gateLine(gate)}`, ...(unconfirmed.length > 0 ? [NOT_STARTABLE] : []),
-    `根拠の参照: ${draft.observationRefs.length > 0 ? draft.observationRefs.join(", ") : "なし"}`,
+    `根拠の参照: ${refs.length > 0 ? refs.join(", ") : "なし"}${hidden > 0 ? `（表示しない参照 ${hidden} 件）` : ""}`,
   ].join("\n");
   const guidance = {
     targetRef: draft.targetRef, conclusion, nextAction,
     causes: unconfirmed.flatMap(causesFor), unconfirmed: unconfirmed.map((item) => item.itemKey), reasons: gate === null ? [] : gate.reasons,
-    observationRefs: [...draft.observationRefs], blocking: best.kind !== "none", text,
+    observationRefs: refs, blocking: best.kind !== "none", text,
   };
   return deepFreeze({ status: "built", guidance, questions: questionsOf(draft.items, catalog) });
 }

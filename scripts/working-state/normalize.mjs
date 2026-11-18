@@ -6,11 +6,15 @@ import { isAllowedFormat } from "./value-exposure.mjs";
 // 長さの区分の境界（実装で決めた数値）: 0 = empty、1〜shortMax = short、shortMax+1〜mediumMax = medium、それより長い = long。
 export const LENGTH_BUCKET_BOUNDS = Object.freeze({ shortMax: 16, mediumMax: 64 });
 
+// 長さの区分の固定の集合（返す値の全部。表示する側は、この集合に入る値だけを示す）。
+export const LENGTH_BUCKETS = Object.freeze(["empty", "short", "medium", "long"]);
+const [EMPTY, SHORT, MEDIUM, LONG] = LENGTH_BUCKETS;
+
 export function lengthBucketOf(length) {
   if (!Number.isInteger(length) || length < 0) throw new TypeError("length must be a non-negative integer");
-  if (length === 0) return "empty";
-  if (length <= LENGTH_BUCKET_BOUNDS.shortMax) return "short";
-  return length <= LENGTH_BUCKET_BOUNDS.mediumMax ? "medium" : "long";
+  if (length === 0) return EMPTY;
+  if (length <= LENGTH_BUCKET_BOUNDS.shortMax) return SHORT;
+  return length <= LENGTH_BUCKET_BOUNDS.mediumMax ? MEDIUM : LONG;
 }
 
 // 測る量は valueType ごとに 1 つ: string = code point の数、list = 要素の数。

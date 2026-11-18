@@ -60,7 +60,7 @@ function detailsOf(state, groups, form) {
   if (state === "conflict") return { candidates: [...groups.value, ...groups.absent].sort((a, b) => byUnit(a.unit, b.unit)).map((result) => candidateOf(result, form)) };
   if (state === "wrong_target") {
     return {
-      wrongTargets: groups.wrong_target.map((result) => ({ sourceRef: copyRef(result.unit), namedTarget: result.unit.namedTarget })),
+      wrongTargets: groups.wrong_target.map((result) => ({ sourceRef: copyRef(result.unit), ...(result.unit.namedTarget === undefined ? {} : { namedTarget: result.unit.namedTarget }) })),
       referenceValues: groups.value.map((result) => viewOf(result, form)),
     };
   }

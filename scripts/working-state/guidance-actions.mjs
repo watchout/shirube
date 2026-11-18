@@ -2,7 +2,29 @@
 // 次の操作の種類・観測できない原因ごとの操作は、この表だけが持つ（S3）。値を作らず、開始・適用の操作を持たない。
 // 決める順は NEXT_ACTIONS の並び（先にあるほど先に済ませる操作）。時刻・乱数・環境変数・file を使わない（S4）。
 import { deepFreeze } from "./canonical.mjs";
-import { valueFormOf } from "./value-exposure.mjs";
+import { LENGTH_BUCKETS } from "./normalize.mjs";
+import { classifyValue, hasTokenPrefix, isSecretLike, valueFormOf } from "./value-exposure.mjs";
+
+// 案内に出す語の固定の語彙（この file が持つ。案内の文面・質問・原因の欄は、入力の文字列をこの語彙と形の検査に通した物だけ写す）。
+// 項目名・状態・原因・長さの区分・参照・値は入力（呼出側の draft）から来るので、固定の集合か、秘密らしさの判定の 1 か所（value-exposure）に通す。
+export const WITHHELD_NAME = "（表示しません）";
+const UNSAFE_TEXT = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}「」]/u;
+const NAME_MAX = 64;
+const REF_MAX = 200;
+const ITEM_NAME = /^[a-z][a-z0-9_]{0,63}$/;
+const REF_PARTS = /[|@:]/u;
+
+// 安全な文字の範囲の 1〜64 文字の文字列か。
+const isPlain = (value, max) => typeof value === "string" && value !== "" && value.length <= max && !UNSAFE_TEXT.test(value);
+const isSafe = (value) => isPlain(value, NAME_MAX);
+// 項目名: 項目一覧の語の形（小文字の英数字と _）で、既知の token の接頭辞で始まらない。長い連なり (e) は項目名の形が説明する。
+export const isItemName = (value) => typeof value === "string" && ITEM_NAME.test(value) && !hasTokenPrefix(value);
+// 対象の名前・出典の種類と位置: 安全な文字の範囲で、秘密らしい・判定できない文字列は示さない。
+export const isShowableName = (value) => isSafe(value) && !isSecretLike("string", value);
+// 参照（観測の参照・候補の参照）: 安全な文字の範囲の 1〜200 文字で、区切りで分けた部品のどれも秘密らしくない。
+export const isShowableRef = (value) => isPlain(value, REF_MAX) && value.split(REF_PARTS).every((part) => !isSecretLike("string", part));
+// 長さの区分は固定の集合の値だけ。
+export const isLengthBucket = (value) => LENGTH_BUCKETS.includes(value);
 
 // 次の操作の種類（E05 の nextAction.kind）。並びが優先の順（権限 → 道具 → 質問 → 選択 → 対象 → 出典 → 待ち → なし）。
 export const NEXT_ACTIONS = Object.freeze(["confirm-permission", "install-or-upgrade-tool", "answer-question", "choose-source", "review-target", "fix-source", "wait-for-person", "none"]);
@@ -30,6 +52,8 @@ const FALLBACK_ACTION = "wait-for-person";
 const rankOf = (kind) => NEXT_ACTIONS.indexOf(kind);
 const strongest = (kinds) => kinds.reduce((best, kind) => (rankOf(kind) < rankOf(best) ? kind : best), "none");
 
+// 観測できない原因は、上の表にある固定の原因だけ（案内に出す原因も同じ集合）。
+export const isKnownCause = (cause) => CAUSE_ACTIONS.has(cause);
 const causesOf = (item) => (Array.isArray(item.unobservableCauses) ? item.unobservableCauses : []);
 const unobservableAction = (item) => {
   const kinds = causesOf(item).map((cause) => CAUSE_ACTIONS.get(cause) ?? FALLBACK_ACTION);
@@ -46,8 +70,16 @@ const BY_STATE = new Map([
   ["unobservable", ({ item }) => unobservableAction(item)],
 ]);
 const QUESTION_KINDS = new Set(["answer-question", "choose-source"]);
+// 項目の状態の固定の集合（BY_STATE の鍵。案内に出す状態も同じ集合）。
+export const ITEM_STATES = Object.freeze([...BY_STATE.keys()]);
 
 const entryOf = (catalog, itemKey) => catalog.find((entry) => entry?.itemKey === itemKey);
+
+// 閉じた形の候補の表示値。項目一覧の値の型の形式に合う値（valid）だけ示し、ほかは示さない（値の分類は value-exposure の 1 か所）。
+export function shownValueOf(catalog, itemKey, value) {
+  const entry = entryOf(catalog, itemKey);
+  return entry !== undefined && valueFormOf(entry.valueType) === "closed" && classifyValue(entry.valueType, value) === "valid" ? value : WITHHELD_NAME;
+}
 
 // 項目の値の形（閉じた形か開いた形か）。項目一覧にない項目は開いた形として扱い、値を示さない側に倒す。
 export const formOf = (catalog, itemKey) => {
@@ -78,7 +110,7 @@ export function strongestAction(items, catalog) {
   return best === null ? { kind: "none", itemKey: null } : { kind: best.kind, itemKey: best.item.itemKey };
 }
 
-const refsOf = (item) => (Array.isArray(item.candidates) ? item.candidates.map((candidate) => candidate.candidateRef).filter((ref) => typeof ref === "string") : []);
+const refsOf = (item) => (Array.isArray(item.candidates) ? item.candidates.map((candidate) => candidate.candidateRef).filter(isShowableRef) : []);
 
 // 利用者に聞く質問（BR4.1）。答えられる項目の不足・閉じた形の食い違い・直せる不正だけ。値・回答を作らない。
 export function questionsOf(items, catalog) {

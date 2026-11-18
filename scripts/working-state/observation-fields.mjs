@@ -7,7 +7,7 @@ import { canonicalJson, digestOf } from "./canonical.mjs";
 import { elementShapeOf, normalizationOf, targetBindingOf } from "./catalog.mjs";
 import { compareVersions, lengthBucketOf, lengthOf, normalizeValue } from "./normalize.mjs";
 import { extractToolVersion, pickItem } from "./source-extract.mjs";
-import { classifyValue, valueFormOf } from "./value-exposure.mjs";
+import { classifyValue, isSecretLike, valueFormOf } from "./value-exposure.mjs";
 
 const TOOL_PROBE = "tool_probe";
 const ABSENT = Object.freeze({ presence: "absent" });
@@ -16,9 +16,13 @@ const gone = (cause, notes) => ({ fields: notes === undefined ? { unobservableCa
 const isGone = (result) => result.fields.unobservableCause !== undefined;
 
 // 出典が実際に名指した対象（読取りの結果だけから）と渡された対象の突き合わせ（BR1.1）。名指さない出典は targetBinding で決める。
+// 違う対象の名前が秘密らしい・判定できない時は、名前を写さず、違うことだけを知らせる（入力の名前を出力の欄に入れる前の 1 か所）。
 function targetOf(context, source, read) {
   const named = typeof read.namedTarget === "string" && read.namedTarget !== "" ? read.namedTarget : undefined;
-  if (named !== undefined) return { targetMatch: named === context.targetRef ? "matches" : "differs", namedTarget: named };
+  if (named !== undefined) {
+    const matches = named === context.targetRef;
+    return { targetMatch: matches ? "matches" : "differs", ...(matches || !isSecretLike("string", named) ? { namedTarget: named } : {}) };
+  }
   return { targetMatch: targetBindingOf(source) === "by-location" ? "matches" : "unspecified" };
 }
 
