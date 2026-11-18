@@ -6,7 +6,7 @@ import test from "node:test";
 import * as ws from "../scripts/working-state/index.mjs";
 import { NOW, OID_B, TARGET, callerText, fileRead, goodReads, pinText, probeRead } from "./working-state-fixtures.mjs";
 import { CATALOG, answerInput, observeWith, send, withContent } from "./working-state-answer-fixtures.mjs";
-import { buildDraft, builtDraft, createSelection, createdSelection, guidanceOf } from "./working-state-draft-fixtures.mjs";
+import { buildDraft, builtDraft, conflictObserved, createSelection, createdSelection, guidanceOf } from "./working-state-draft-fixtures.mjs";
 import { guide, guided, handDraft } from "./working-state-guidance-fixtures.mjs";
 
 const SECRET = "gh" + "p_" + "u".repeat(12);
@@ -16,10 +16,10 @@ const NORMAL_TARGET = "other-work";
 const absent = (secret, ...values) => values.every((value) => !JSON.stringify(value).includes(secret));
 const pinRead = (over) => fileRead("sds_pin", pinText(), over);
 const readsWith = (replaced) => goodReads().map((read) => (read.sourceKind === replaced.sourceKind && read.locator === replaced.locator ? replaced : read));
-const allOutputs = (reads) => {
-  const observed = observeWith(CATALOG, reads);
-  const draft = builtDraft({ observedItems: observed.items });
-  const result = guided(draft);
+const allOutputs = (reads, catalog = CATALOG) => {
+  const observed = observeWith(catalog, reads);
+  const draft = builtDraft({ catalog, observedItems: observed.items });
+  const result = guided(draft, { catalog });
   return [observed, draft, result, ws.draftToC02Wire(draft)];
 };
 
@@ -38,17 +38,23 @@ test("O1+ 観測の入力 namedTarget: 違う対象を名指す出典の名前�
 });
 
 test("O2+ 観測の入力 sourceKind・観測の時刻・道具の位置: 秘密らしい形は項目一覧の出典に当たらず、または時刻が読めず、どの出口にも写らない", () => {
-  const stray = [{ ...pinRead(), sourceKind: SECRET }, { ...pinRead(), observedAt: SECRET }, { ...probeRead("node", "v24.22.3\n"), locator: SECRET }, { ...probeRead("node", "v24.22.3\n"), sourceKind: KEY_LIKE }];
-  for (const read of stray) {
-    const outputs = allOutputs([...goodReads(), read]);
-    assert.equal(absent(SECRET, ...outputs), true);
-    assert.equal(absent(KEY_LIKE, ...outputs), true);
+  // 時刻が読めない読取りは、同じ単位の唯一の読取りに差し替える（足すだけでは、ほかの正しい読取りに負けて出口に届かない）。
+  const stray = [[...goodReads(), { ...pinRead(), sourceKind: SECRET }], readsWith({ ...pinRead(), observedAt: SECRET }), [...goodReads(), { ...probeRead("node", "v24.22.3\n"), locator: SECRET }], [...goodReads(), { ...probeRead("node", "v24.22.3\n"), sourceKind: KEY_LIKE }]];
+  for (const catalog of [CATALOG, ws.INITIAL_CATALOG]) {
+    for (const reads of stray) {
+      const outputs = allOutputs(reads, catalog);
+      assert.equal(absent(SECRET, ...outputs), true);
+      assert.equal(absent(KEY_LIKE, ...outputs), true);
+    }
   }
+  assert.equal(ws.INITIAL_CATALOG.some((entry) => entry.itemKey === "tool_node"), true);
 });
 
 test("O3+ 観測の入力 道具の出力: 秘密らしい出力は版として取り出されず、どの出口にも写らない", () => {
-  const outputs = allOutputs(goodReads().map((read) => (read.locator === "node" ? probeRead("node", `${SECRET}\n`) : read)));
+  // 道具の項目（tool_node）を持つ項目一覧で流す（試験用の項目一覧には道具の項目が無く、何も確かめられない）。
+  const outputs = allOutputs(goodReads().map((read) => (read.locator === "node" ? probeRead("node", `${SECRET}\n`) : read)), ws.INITIAL_CATALOG);
   assert.equal(absent(SECRET, ...outputs), true);
+  assert.equal(outputs[0].items.find((item) => item.itemKey === "tool_node").withheld, "invalid_format");
 });
 
 test("O4+ 回答の入力 値・選んだ候補・項目名・回答の時刻: 秘密らしい形は拒まれるか読まれず、回答・draft・案内・wire のどこにも写らない", () => {
@@ -62,10 +68,12 @@ test("O4+ 回答の入力 値・選んだ候補・項目名・回答の時刻: �
 });
 
 test("O5+ 呼出側の入力 選択の候補・観測の参照: 秘密らしい形は選択にならず、結果にも wire にも写らない", () => {
-  const draft = builtDraft({ observedItems: observeWith().items });
-  for (const over of [{ candidateRef: `sds_commit@sds_pin:${SECRET}` }, { observationRef: SECRET }]) {
+  // 食い違いのある draft で流す（候補の無い draft では、どの入力も最初の検査で断られ、後の検査を確かめられない）。
+  const draft = builtDraft({ observedItems: conflictObserved().items });
+  assert.equal(createSelection(draft).status, "created");
+  for (const [over, reason] of [[{ candidateRef: `sds_commit@sds_pin:${SECRET}` }, "unknown_candidate"], [{ observationRef: SECRET }, "unknown_observation"]]) {
     const result = createSelection(draft, over);
-    assert.equal(result.status, "refused");
+    assert.equal(result.reason, reason);
     assert.equal(absent(SECRET, result), true);
     assert.equal(ws.selectionToC02Wire(result.selection).status, "refused");
   }
@@ -121,9 +129,12 @@ test("O9+ 呼出側の識別・対象（draftId・selectionId・answerId・targe
 test("O11+ 呼出側の識別・対象（draftId・targetRef・answerId・selectionId）が既知の token の接頭辞で始まる形なら、draft・回答・選択は作らない", () => {
   assert.equal(ws.isRefId(SECRET), false);
   assert.equal(buildDraft({ draftId: SECRET }).reason, "invalid_input");
-  assert.equal(buildDraft({ targetRef: SECRET, observedItems: observeWith(CATALOG, goodReads(), { targetRef: SECRET }).items }).reason, "invalid_input");
+  assert.equal(observeWith(CATALOG, goodReads(), { targetRef: SECRET }).status, "target_required");
+  assert.equal(buildDraft({ targetRef: SECRET, observedItems: [] }).reason, "invalid_input");
+  assert.equal(buildDraft({ observedItems: [] }).status, "built");
   assert.equal(send(answerInput({ answerId: SECRET })).status, "unreadable");
-  const draft = builtDraft({ observedItems: observeWith().items });
+  const draft = builtDraft({ observedItems: conflictObserved().items });
+  assert.equal(createSelection(draft).status, "created");
   assert.equal(createSelection(draft, { selectionId: SECRET }).reason, "invalid_input");
   assert.equal(createSelection({ ...draft, targetRef: SECRET }).reason, "invalid_input");
   assert.equal(createSelection(draft, { guidance: { ...guidanceOf(), text: `選択 ${SECRET} です` } }).reason, "invalid_guidance");
@@ -131,7 +142,7 @@ test("O11+ 呼出側の識別・対象（draftId・targetRef・answerId・select
 });
 
 test("O12+ C02 の wire（呼出側が手で作った draft・選択）: 識別・項目名・参照・選んだ候補が既知の token の接頭辞で始まる形なら、変換を断る。普通の形は変換する", () => {
-  const draft = builtDraft({ observedItems: observeWith().items });
+  const draft = builtDraft({ observedItems: conflictObserved().items });
   const answer = { answerId: "ans-1", itemKey: "note_text", kind: "value", value: ["models.preset=thorough"], state: "answered" };
   assert.equal(ws.draftToC02Wire({ ...draft, answers: [answer] }).status, "converted");
   const stray = [{ draftId: SECRET }, { targetRef: SECRET }, { missingItems: [SECRET] }, { conflicts: [SECRET] }, { observationRefs: [SECRET] },
