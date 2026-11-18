@@ -64,6 +64,16 @@ test("X5+ 40 桁の 16 進（commit-oid）の形そのものの例外は、(a)�
   assert.equal(ws.classifyValue("commit-oid", hex.repeat(2) + hex.slice(0, 9)), "secret_like");
 });
 
+test("X7+ 判定できない入力は秘密らしい（失敗側）: 文字列でない物・未知の要素の形（空の列でも）・未知の種類。識別は空・文字列でない物・(a)〜(d) の形を受けない", () => {
+  for (const bad of [5, null, undefined, {}, ["x"], Symbol("s")]) assert.equal(ws.hasSecretShape(bad), true, String(bad));
+  assert.equal(ws.hasSecretShape(""), false);
+  assert.equal(ws.classifyValue("list", [], "unknown-shape"), "secret_like");
+  assert.equal(ws.classifyValue("list", [], "string"), "valid");
+  assert.equal(ws.classifyValue("nope", ""), "secret_like");
+  for (const bad of ["", 5, null, undefined, {}, TOKEN, JWT_LOWER, WORDS_BEARER, KEY_HEADING]) assert.equal(ws.isRefName(bad), false, String(bad));
+  assert.equal(ws.isRefName(MIXED40), true);
+});
+
 test("X6+ 性能: 長い連なりの (d) の判定は文字列の長さの二乗にならない（直前の条件の守り。長さに上限の無い案内の文・識別にも当たる）", () => {
   const started = performance.now();
   for (const text of ["a".repeat(100000), `${"a".repeat(100000)}.`, `${"a".repeat(50000)}.${"b".repeat(50000)}`]) assert.equal(ws.hasSecretShape(text), false);

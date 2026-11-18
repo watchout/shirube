@@ -25,6 +25,8 @@ test("R2+ 読める部品の合計: 数字と英字が混ざった部品（4 文
   const dense = (n) => Array.from({ length: n }, (_, i) => `a${i % 10}bc`).join("-");
   assert.equal(cls(`x/${dense(4)}`), "valid");
   assert.equal(cls(`x/${dense(5)}`), "secret_like");
+  assert.equal(cls("x/a0bc-a1bc-a2bc-a3bc"), "valid"); // 合計ちょうど 16
+  assert.equal(cls("x/a0bc-a1bc-a2bc-a3bcd"), "secret_like"); // 合計 17（上限の 1 つ上）
   assert.equal(cls("x/" + Array.from({ length: 6 }, () => "a1b").join("-") + "-aaaaaaaaaaaa"), "valid"); // 3 文字の部品は数えない（6 つで 18 文字でも合計に入れない）
   assert.equal(cls("x/" + Array.from({ length: 6 }, () => "a1b2c").join("-")), "secret_like"); // 5 文字の部品を 6 つ（30 文字）
   for (const uuid of ["123e4567-e89b-12d3-a456-426614174000", "7d6e8f9a-0b1c-4d2e-8f3a-5b6c7d8e9f01"]) {
