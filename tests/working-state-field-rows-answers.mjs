@@ -18,7 +18,7 @@ const on = (over, options) => send(answerInput({ answerId: "ans-1", ...over }), 
 
 const inputRows = [
   row("RA.answerId", "input.answerId", "C", "isRefId", "ans-1", (v) => on({ answerId: v }), recorded, unreadable),
-  row("RA.itemKey", "input.itemKey", "C", "isItemKeyText（項目一覧に有ること）", "aidlc_settings", (v) => on({ itemKey: v }), recorded, unreadable),
+  row("RA.input.itemKey", "input.itemKey", "C", "isItemKeyText（項目一覧に有ること）", "aidlc_settings", (v) => on({ itemKey: v }), recorded, unreadable),
   row("RA.kind", "input.kind", "A", "KINDS", "value", (v) => on({ kind: v }), recorded, rejectedAs("invalid_type")),
   row("RA.value.list", "input.value（list の値）", "C", "rejectionReasonOf（classifyValue）", ["models.preset=thorough"], (v) => on({ value: v }), recorded, (r) => r.status === "rejected"),
   row("RA.value.element", "input.value（list の要素）", "C", "rejectionReasonOf（classifyValue）", "models.preset=thorough", (v) => on({ value: [v] }), recorded, (r) => r.status === "rejected"),
