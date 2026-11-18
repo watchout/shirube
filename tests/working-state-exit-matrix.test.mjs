@@ -1,6 +1,5 @@
 // U2 出口の項目 × BR5.2 の (a)〜(e) の全部の組（code-summary「出口の項目 × BR5.2 の表」の 1 行 = 1 つの試験 M1〜M19）。
-// 各試験は 5 つの列（a 秘密鍵の見出し・b 接頭辞・c Bearer・d JWT・e 20 文字以上の連なり）に同じ入力の作り方を当て、
-// 当てる列は拒まれるか写らないこと、当てない列（意図した限界）はその場面の通常の入力として通ることを、その場で示す。
+// 各試験は 5 つの列（a 秘密鍵の見出し・b 接頭辞・c Bearer・d JWT・e 20 文字以上の連なり）に同じ入力の作り方を当て、当てる列は拒まれるか写らないこと、当てない列（意図した限界）は通常の入力として通ることを示す。
 import assert from "node:assert/strict";
 import test from "node:test";
 import * as ws from "../scripts/working-state/index.mjs";
@@ -22,8 +21,7 @@ const selectionWireOf = (over) => ws.selectionToC02Wire({ ...createdSelection(BA
 test("M1+ 位置（locator）: (a)〜(e) の全部。使えない観測（malformed）になり、観測・draft・案内・wire のどこにも写らない", () => {
   eachColumn((column, secret, form) => {
     const observed = observeWith(CATALOG, pinAt({ locator: form }));
-    const pin = observed.items.find((item) => item.itemKey === "sds_commit" && item.sourceRef.sourceKind === "sds_pin");
-    assert.equal(pin.unobservableCause, "malformed", `${column} ${form}`);
+    assert.equal(observed.items.find((item) => item.itemKey === "sds_commit" && item.sourceRef.sourceKind === "sds_pin").unobservableCause, "malformed", `${column} ${form}`);
     const draft = builtDraft({ observedItems: observed.items });
     assert.equal(absent(secret, observed, draft, guide(draft), ws.draftToC02Wire(draft)), true, `${column} ${form}`);
   });
@@ -37,8 +35,7 @@ test("M2+ 対象違いの名前（namedTarget）: (a)〜(e) の全部。対象�
     assert.equal(draft.items.find((item) => item.itemKey === "sds_commit").state, "wrong_target", `${column} ${form}`);
     assert.equal(result.guidance.text.includes("対象の名前は表示しません"), true, `${column} ${form}`);
     assert.equal(absent(secret, observed, draft, result, ws.draftToC02Wire(draft)), true, `${column} ${form}`);
-    // 観測の入口を通らない、手で作った draft の対象違いの名前。案内の入口が示さない。
-    const hand = guide(handDraft([{ itemKey: "aidlc_version", state: "wrong_target", wrongTargets: [{ sourceRef: { sourceKind: "sds_pin", locator: "p" }, namedTarget: form }], observationRefs: [] }]));
+    const hand = guide(handDraft([{ itemKey: "aidlc_version", state: "wrong_target", wrongTargets: [{ sourceRef: { sourceKind: "sds_pin", locator: "p" }, namedTarget: form }], observationRefs: [] }])); // 観測の入口を通らない、手で作った draft の対象違いの名前。案内の入口が示さない。
     assert.equal(hand.status, "built", `${column} ${form}`);
     assert.equal(hand.guidance.text.includes("対象の名前は表示しません"), true, `${column} ${form}`);
     assert.equal(absent(secret, hand), true, `${column} ${form}`);
@@ -117,8 +114,7 @@ test("M7+ 候補の参照（candidateRef・selectedCandidateRef）: 案内は (a
     const result = guide(draft);
     assert.equal(result.questions[0].candidateRefs.length, 1, `${column} ${form}`);
     assert.equal(absent(secret, result), true, `${column} ${form}`);
-    // 回答の入力の選んだ候補（selectedCandidateRef）は、項目の候補に当たる物だけ受ける。当たらない形は拒まれ、記録に写らない。
-    const answered = send(answerInput({ kind: "value", selectedCandidateRef: form }), { observed: observeWith() });
+    const answered = send(answerInput({ kind: "value", selectedCandidateRef: form }), { observed: observeWith() }); // 選んだ候補（selectedCandidateRef）は項目の候補に当たる物だけ受ける。当たらない形は拒まれ、記録に写らない。
     assert.equal(answered.status, "rejected", `${column} ${form}`);
     assert.equal(absent(secret, answered), true, `${column} ${form}`);
   });
@@ -140,8 +136,7 @@ test("M8+ 項目名（itemKey・原因の欄・質問・wire の項目の列）:
     const { draft } = buildDraft({ catalog, observedItems: [] });
     assert.equal(guide(draft, { catalog }).reason, "invalid_input", form);
     assert.equal(absent(form, ws.draftToC02Wire(draft)), true, form);
-    // 回答の入力の項目名は、項目一覧の項目名に当たる物だけ読む。当たらない形は読まれず（unreadable）、記録に写らない。
-    const unread = send(answerInput({ itemKey: form }), { observed: observeWith() });
+    const unread = send(answerInput({ itemKey: form }), { observed: observeWith() }); // 回答の項目名は項目一覧に当たる物だけ読む。当たらない形は読まれず（unreadable）、記録に写らない。
     assert.equal(unread.status, "unreadable", form);
     assert.equal(absent(form, unread), true, form);
   }
@@ -178,8 +173,7 @@ test("M10+ 回答の値（文字列の項目）: (a)〜(e) の全部が拒まれ
 });
 
 test("M11+ 回答の値（列の要素。設定の対の列と文字列の列）: (a)〜(e) の全部が拒まれ、どの出口にも写らない", () => {
-  const listItem = { ...NOTE_ITEM, itemKey: "note_list", valueType: "list", elementShape: "string" };
-  const catalog = [...CATALOG, listItem];
+  const catalog = [...CATALOG, { ...NOTE_ITEM, itemKey: "note_list", valueType: "list", elementShape: "string" }];
   const observed = observeWith(catalog);
   eachColumn((column, secret, form) => {
     for (const input of [answerInput({ value: [form] }), answerInput({ itemKey: "note_list", value: [form] })]) {
@@ -230,9 +224,7 @@ test("M14+ 選択に写す案内の構造体（text・conclusion・nextAction・
 test("M15+ draft を作る時の手で作った回答の列（回答の識別・項目名・値・選んだ候補）: (a)〜(d) は draft を作らない。(e) は通常の値として通る（意図した限界）", () => {
   for (const column of APPLIED) {
     for (const form of variants(SHAPES[column])) {
-      for (const over of [{ value: form }, { value: [form] }, { answerId: form }, { itemKey: form }, { selectedCandidateRef: form }]) {
-        assert.equal(buildDraft({ answers: [{ ...ANSWER, ...over }] }).reason, "invalid_input", `${column} ${form}`);
-      }
+      for (const over of [{ value: form }, { value: [form] }, { answerId: form }, { itemKey: form }, { selectedCandidateRef: form }]) assert.equal(buildDraft({ answers: [{ ...ANSWER, ...over }] }).reason, "invalid_input", `${column} ${form}`);
     }
   }
   assert.equal(buildDraft({ answers: [{ ...ANSWER, value: [RUN] }] }).status, "built");
@@ -242,16 +234,14 @@ test("M16+ 案内の固定の語彙の欄（状態・観測できない原因・
   eachColumn((column, secret, form) => {
     const items = [
       { itemKey: "aidlc_version", state: "unobservable", unobservableCauses: [form], observationRefs: [] },
-      // 長さの区分・一致の組は開いた形の項目の候補の行にだけ出る（閉じた形の項目は表示値を出す。M18+）ので、開いた形の項目（note_text）で調べる。
-      { itemKey: "note_text", state: "conflict", candidates: [candidate({ lengthBucket: form, matchGroup: form }), candidate({ presence: form, matchGroup: 2 })], observationRefs: [] },
+      { itemKey: "note_text", state: "conflict", candidates: [candidate({ lengthBucket: form, matchGroup: form }), candidate({ presence: form, matchGroup: 2 })], observationRefs: [] }, // 長さの区分・一致の組は開いた形の項目の候補の行にだけ出る（閉じた形の項目は表示値。M18+）ので note_text で調べる。
       { itemKey: "aidlc_settings", state: "invalid", invalidSources: [{ sourceRef: { sourceKind: "sds_pin", locator: "p" }, withheld: form }], observationRefs: [] },
     ];
     const result = guide(handDraft(items), { conformance: { outcome: form, reasons: [] } });
     assert.equal(result.status, "built", `${column} ${form}`);
     assert.equal(guide(handDraft([{ itemKey: "aidlc_version", state: form, observationRefs: [] }])).reason, "invalid_input", `${column} ${form}`);
     assert.equal(absent(secret, result), true, `${column} ${form}`);
-    // 回答の時刻（answeredAt）は時刻の形だけ読む。読めない形は読まれず（unreadable）、記録に写らない。
-    const unread = send(answerInput({ answeredAt: form }), { observed: observeWith() });
+    const unread = send(answerInput({ answeredAt: form }), { observed: observeWith() }); // 回答の時刻（answeredAt）は時刻の形だけ読む。読めない形は読まれず（unreadable）、記録に写らない。
     assert.equal(unread.status, "unreadable", `${column} ${form}`);
     assert.equal(absent(secret, unread), true, `${column} ${form}`);
   });
@@ -265,8 +255,7 @@ test("M17+ 手で作った観測の項目（項目名・観測の識別・出典
     (form) => (unit) => ({ ...unit, sourceRef: { ...unit.sourceRef, sourceKind: form } }),
     (form) => (unit) => ({ ...unit, sourceRef: { ...unit.sourceRef, locator: form } }),
   ];
-  // 食い違いの項目（sds_commit の pin）の単位を書き換える。観測の識別・位置は、食い違いの候補の参照と行に出る。
-  const at = baseItems.findIndex((unit) => unit.itemKey === "sds_commit" && unit.sourceRef.sourceKind === "sds_pin");
+  const at = baseItems.findIndex((unit) => unit.itemKey === "sds_commit" && unit.sourceRef.sourceKind === "sds_pin"); // 食い違いの項目（sds_commit の pin）の単位を書き換える。観測の識別・位置は候補の参照と行に出る。
   eachColumn((column, secret, form) => {
     tweaks.forEach((tweak, index) => {
       const { draft } = buildDraft({ observedItems: baseItems.map((unit, i) => (i === at ? tweak(form)(unit) : unit)) });
@@ -275,8 +264,7 @@ test("M17+ 手で作った観測の項目（項目名・観測の識別・出典
       assert.equal(absent(secret, result), true, `${column} ${form}`);
       if (index === 1) assert.equal(result.guidance.text.includes("表示しない参照 1 件"), true, `${column} ${form}`);
       if (index === 3) assert.equal(result.guidance.text.includes("（表示しません）"), true, `${column} ${form}`);
-      // 観測の識別（index 1）は観測の参照になる。選択と wire は参照に (e) を当てない（M6+ の限界）ので、(e) の列は案内だけを調べる。
-      if (column === "e" && index === 1) return;
+      if (column === "e" && index === 1) return; // 観測の識別（index 1）は観測の参照になる。選択と wire は参照に (e) を当てない（M6+ の限界）ので、(e) の列は案内だけを調べる。
       assert.equal(absent(secret, ws.draftToC02Wire(draft), createSelection(draft, { observationRef: index === 1 ? form : draft.observationRefs[0] })), true, `${column} ${form}`);
     });
   });
