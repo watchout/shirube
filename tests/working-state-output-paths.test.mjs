@@ -215,3 +215,29 @@ test("O16+ 呼出側の識別・対象・参照が、区切り（| @ :）の後�
     assert.equal(ws.selectionToC02Wire({ ...selection, ...over }).status, "refused", JSON.stringify(over));
   }
 });
+
+test("O17+ 残りの入力: 一致の組・回答の参照・不正の分類・必要な版・現在時刻・道具の落とした欄・実測が秘密らしい形でも、どの出口にも写らない。項目一覧の項目名は案内と wire が断る", () => {
+  const normal = { sourceKind: "sds_pin", locator: ".shirube/sds-pin.json" };
+  const hand = [
+    { itemKey: "aidlc_settings", state: "conflict", candidates: [{ candidateRef: "c1", sourceRef: normal, presence: "value", lengthBucket: "short", matchGroup: SECRET }], observationRefs: [] },
+    { itemKey: "aidlc_version", state: "missing", answerRef: SECRET, observationRefs: [] },
+    { itemKey: "sds_commit", state: "invalid", invalidSources: [{ sourceRef: normal, withheld: SECRET }], observationRefs: [] },
+  ];
+  for (const item of hand) assert.equal(absent(SECRET, guided(handDraft([item]))), true, JSON.stringify(item));
+  assert.equal(guided(handDraft([hand[0]])).guidance.text.includes("一致の組 不明"), true);
+  const initial = ws.INITIAL_CATALOG;
+  const reads = goodReads().map((read) => (read.locator === "node" ? probeRead("node", "", { launch: "not_found", dropped: { count: 1, kinds: [SECRET] } }) : read));
+  const outputs = (catalog, over, list = goodReads()) => {
+    const observed = observeWith(catalog, list, over);
+    const draft = builtDraft({ catalog, observedItems: observed.items });
+    return [observed, draft, guided(draft, { catalog }), ws.draftToC02Wire(draft)];
+  };
+  for (const list of [reads, readsWith({ ...pinRead(), measured: { elapsedMs: SECRET, bytesRead: 1, requests: 1 } })]) assert.equal(absent(SECRET, ...outputs(initial, {}, list)), true);
+  assert.equal(absent(SECRET, ...outputs(initial, { requiredVersions: { tool_node: SECRET } })), true);
+  assert.equal(observeWith(CATALOG, goodReads(), { now: SECRET }).status, "now_required");
+  assert.equal(absent(SECRET, observeWith(CATALOG, goodReads(), { now: SECRET })), true);
+  const named = CATALOG.map((entry, index) => (index === 0 ? { ...entry, itemKey: SECRET } : entry));
+  const draft = builtDraft({ catalog: named, observedItems: observeWith(named).items });
+  assert.equal(guide(draft, { catalog: named }).reason, "invalid_input");
+  assert.equal(ws.draftToC02Wire(draft).status, "refused");
+});
