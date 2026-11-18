@@ -1,12 +1,14 @@
 // U2 観測値・回答が共有する判定の関数（value-exposure）のうち、許される形式の表の試験。BR5.1・BR3.4。
 // 表は valueType ごとに 1 か所だけが持ち、LC3 の invalid の判定と LC5 の回答の検査が同じ関数を通す（S3）。
 // fixture は架空の値だけ。秘密らしさの集合（BR5.2 の a〜e）は Step 6 で足す。
+// 見えない文字・紛れやすい文字は、file に生で書かず code point から作る（読む人に見えない文字を source に置かない）。
 import assert from "node:assert/strict";
 import test from "node:test";
 import { inspect } from "node:util";
 import { ELEMENT_SHAPES, VALUE_TYPES, isAllowedFormat, valueFormOf } from "../scripts/working-state/index.mjs";
 
 const OID = "0123456789abcdef".repeat(2) + "01234567";
+const cp = (n) => String.fromCodePoint(n);
 const ok = (type, value, shape) => assert.equal(isAllowedFormat(type, value, shape), true, `${String(type)} ${inspect(value)}`);
 const ng = (type, value, shape) => assert.equal(isAllowedFormat(type, value, shape), false, `${String(type)} ${inspect(value)}`);
 const NON_STRINGS = [undefined, null, 0, 1, true, {}, [], ["x"], Symbol("s"), 10n];
@@ -42,7 +44,7 @@ test("T5.1- commit-oid は桁数・文字・空白・型が違えば受けない
   ng("commit-oid", `${OID}\n`);
   ng("commit-oid", `${OID}\n${OID}`);
   ng("commit-oid", "");
-  ng("commit-oid", `${OID.slice(0, 39)}١`);
+  ng("commit-oid", OID.slice(0, 39) + cp(0x661));
   for (const v of NON_STRINGS) ng("commit-oid", v);
 });
 
@@ -51,7 +53,7 @@ test("T5.1+ version は数字を . でつないだ 2〜4 個と、任意の接�
 });
 
 test("T5.1- version は個数・先頭の v・区切り・接尾辞・空白・型が違えば受けない", () => {
-  for (const v of ["", "1", "v2.11.1", "2.11.", ".1", "1..2", "1.2.3.4.5", "1.a.3", "1.2.3-", "1.2.3+", "1.2.3-é", "2.11.1 ", " 2.11.1", "2.11.1\n", "2.11.1\n2.11.2", "1.2.3 rc", "1,2,3", "1.2.3-rc;x", "١.2.3", "1234567890.1", `1.2.3-${"a".repeat(33)}`]) ng("version", v);
+  for (const v of ["", "1", "v2.11.1", "2.11.", ".1", "1..2", "1.2.3.4.5", "1.a.3", "1.2.3-", "1.2.3+", `1.2.3-${cp(0xe9)}`, "2.11.1 ", " 2.11.1", "2.11.1\n", "2.11.1\n2.11.2", "1.2.3 rc", "1,2,3", "1.2.3-rc;x", `${cp(0x661)}.2.3`, "1234567890.1", `1.2.3-${"a".repeat(33)}`]) ng("version", v);
   for (const v of NON_STRINGS) ng("version", v);
 });
 
@@ -67,15 +69,16 @@ test("T5.1+ string は空白と制御文字を含まない 1〜256 文字（code
   ok("string", "sample-work");
   ok("string", "x");
   ok("string", "a".repeat(256));
-  ok("string", "\u{20BB7}".repeat(256));
+  ok("string", cp(0x20bb7).repeat(256));
   ok("string", "日本語の名前");
 });
 
 test("T5.1- string は空・長すぎ・空白・制御文字・不可視の文字・型が違えば受けない", () => {
   ng("string", "");
   ng("string", "a".repeat(257));
-  ng("string", "\u{20BB7}".repeat(257));
-  for (const bad of [" ", "a b", "a\tb", "a\nb", "a\rb", "a b", "a　b", "a b", "a\u0000b", "a\u007fb", "a​b", "a‮b", "a﻿b", "a\ud800b", "ab", "͸"]) ng("string", bad);
+  ng("string", cp(0x20bb7).repeat(257));
+  const inner = [0xa0, 0x3000, 0x2028, 0x200b, 0x202e, 0xfeff, 0xe000, 0x378].map((n) => `a${cp(n)}b`);
+  for (const bad of [" ", "a b", "a\tb", "a\nb", "a\rb", "a\u0000b", "a\u007fb", "a\ud800b", ...inner]) ng("string", bad);
   for (const v of NON_STRINGS) ng("string", v);
 });
 
@@ -120,9 +123,8 @@ test("T5.1+ setting-pair の要素は key=value（key は . でつなぐ 1〜4 �
 
 test("T5.1- setting-pair は空の列・形の違う要素・数の超過を受けない（迷えば rejected。A-08）", () => {
   ng("list", [], "setting-pair");
-  for (const e of ["models.preset", "models.preset=", "=x", "Models.preset=x", "models..preset=x", ".models=x", "models.=x", "a.b.c.d.e=1", "k=a b", "k=a=b", "k=a/b", "k=a,b", "k=é", "k=" + "v".repeat(65), `${"k".repeat(33)}=v`, "k=v\n", " k=v", "1k=v", "k-1=v", "k_1=v"]) {
-    ng("list", [e], "setting-pair");
-  }
+  const shapes = ["models.preset", "models.preset=", "=x", "Models.preset=x", "models..preset=x", ".models=x", "models.=x", "a.b.c.d.e=1", "k=a b", "k=a=b", "k=a/b", "k=a,b", `k=${cp(0xe9)}`, "k=" + "v".repeat(65), `${"k".repeat(33)}=v`, "k=v\n", " k=v", "1k=v", "k-1=v", "k_1=v"];
+  for (const e of shapes) ng("list", [e], "setting-pair");
   ng("list", Array.from({ length: 65 }, (_, i) => `k${i}=v`), "setting-pair");
   ng("list", ["k=v", ""], "setting-pair");
   ng("list", ["k=v", 1], "setting-pair");

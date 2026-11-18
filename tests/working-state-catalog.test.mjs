@@ -3,6 +3,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  ELEMENT_SHAPES,
   INITIAL_CATALOG,
   NOT_HANDLED_BY_U2,
   NORMALIZATIONS,
@@ -66,6 +67,16 @@ test("T3.5+ 一覧は自己整合している（型・出典・正規化・結�
       assert.ok(SOURCE_KINDS.includes(source.kind), `${entry.itemKey}/${source.kind}`);
       assert.ok(TARGET_BINDINGS.includes(targetBindingOf(source)), `${entry.itemKey}/${source.kind}`);
     }
+  }
+});
+
+test("T3.5+ 項目に書かれた要素の形・正規化は列挙の内側で、要素の形は list の項目だけが持つ（書き間違いを一覧の自己検査で止める）", () => {
+  for (const entry of INITIAL_CATALOG) {
+    if ("elementShape" in entry) {
+      assert.equal(entry.valueType, "list", entry.itemKey);
+      assert.ok(ELEMENT_SHAPES.includes(entry.elementShape), entry.itemKey);
+    }
+    if ("normalization" in entry) assert.ok(NORMALIZATIONS.includes(entry.normalization), entry.itemKey);
   }
 });
 
