@@ -5,6 +5,7 @@ import { deepFreeze } from "./canonical.mjs";
 import { parseInstant } from "./instant.mjs";
 import { interpretItem } from "./observation-fields.mjs";
 import { interpretFile, interpretProbe, usageOf } from "./read-check.mjs";
+import { isSecretLike } from "./value-exposure.mjs";
 
 const TOOL_PROBE = "tool_probe";
 const NO_USAGE = Object.freeze({ requests: 0, bytes: 0, elapsedMs: 0 });
@@ -25,13 +26,24 @@ function entriesFor(catalog, read) {
   });
 }
 
-// 1 つの観測の候補。時刻が読めない観測は使わず（malformed）、最新の判定では最も古い扱いにする（混ぜない）。
+// 読取りのない単位の位置（固定）。道具の確かめは道具の名前、そのほかは出典の種類（項目一覧が持つ名前だけ。入力から作らない）。
+const fixedLocatorOf = (itemKey, kind) => (kind === TOOL_PROBE ? toolNameOf(itemKey) : kind);
+
+// 参照（observationId・sourceRef・candidateRef・observationRefs）に入る前の 1 か所の門。位置が秘密らしい・判定できない読取りは、位置を
+// 参照に入れない（秘密らしさの判定は value-exposure の 1 か所）。道具の確かめの位置は項目一覧の名前と一致した時だけ当たる（entriesFor）ので対象にしない。
+const isWithheldLocator = (read) => read.sourceKind !== TOOL_PROBE && isSecretLike("string", read.locator);
+
+// 1 つの観測の候補。時刻が読めない・位置が秘密らしい観測は使わず（malformed）、最新の判定では最も古い扱いにする（混ぜない）。
+// 位置が秘密らしい観測の参照は、固定の位置（読取りのない単位と同じ）で作り、入力の位置を写さない。
 function candidateOf(context, entry, read) {
   const time = parseInstant(read.observedAt);
+  const withheld = isWithheldLocator(read);
+  const usable = time !== null && !withheld;
   const interpret = read.sourceKind === TOOL_PROBE ? interpretProbe : interpretFile;
-  const outcome = time === null ? { status: "unavailable", cause: "malformed" } : interpret(read);
-  const parts = { context, itemKey: entry.item.itemKey, ref: { sourceKind: read.sourceKind, locator: read.locator }, usage: usageOf(read), observedAt: time === null ? context.now : read.observedAt };
-  return { time: time ?? Number.NEGATIVE_INFINITY, parts, ...interpretItem(context, entry, read, outcome) };
+  const outcome = usable ? interpret(read) : { status: "unavailable", cause: "malformed" };
+  const locator = withheld ? fixedLocatorOf(entry.item.itemKey, read.sourceKind) : read.locator;
+  const parts = { context, itemKey: entry.item.itemKey, ref: { sourceKind: read.sourceKind, locator }, usage: usageOf(read), observedAt: usable ? read.observedAt : context.now };
+  return { time: usable ? time : Number.NEGATIVE_INFINITY, parts, ...interpretItem(context, entry, read, outcome) };
 }
 
 // 同じ単位で最新の 1 件。最新の時刻が同じで内容が違う 2 件は、どちらも採らず changed_during_read。
@@ -60,8 +72,7 @@ function unreadUnits(context, catalog, selected) {
       const key = `${item.itemKey}\u0000${source.kind}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      const locator = source.kind === TOOL_PROBE ? toolNameOf(item.itemKey) : source.kind;
-      units.push({ parts: { context, itemKey: item.itemKey, ref: { sourceKind: source.kind, locator }, usage: NO_USAGE, observedAt: context.now }, fields: { unobservableCause: "fetch_failed" }, key: null });
+      units.push({ parts: { context, itemKey: item.itemKey, ref: { sourceKind: source.kind, locator: fixedLocatorOf(item.itemKey, source.kind) }, usage: NO_USAGE, observedAt: context.now }, fields: { unobservableCause: "fetch_failed" }, key: null });
     }
   }
   return units;

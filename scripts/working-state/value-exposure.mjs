@@ -118,6 +118,9 @@ export function classifyValue(valueType, value, elementShape = "string") {
   }
 }
 
+// 秘密らしい（判定できない場合も含む）か。呼ぶ側が分類の並び順や名前を持たず、判定の持ち主（この file）の 1 か所に問う。
+export const isSecretLike = (valueType, value, elementShape = "string") => classifyValue(valueType, value, elementShape) === SECRET_LIKE;
+
 // 回答を拒む理由の固定の分類（BR5.1・BR5.2）。入力から作らない定数で、入力の一部も写さない。
 // 回答の受付の分類（stale_answer・duplicate_conflict）は値の検査の外なので、回答の部品が持つ。
 export const VALUE_REJECTION_REASONS = Object.freeze(["secret_like", "invalid_type", "too_long", "invalid_character", "invalid_format", "out_of_boundary"]);
