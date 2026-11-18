@@ -129,7 +129,7 @@ test("M7+ 候補の参照（candidateRef・selectedCandidateRef）: 案内は (a
   assert.equal(selectionWireOf({ candidateRef: RUN }), "converted");
 });
 
-test("M8+ 項目名（itemKey・原因の欄・質問・wire の項目の列）: (a)〜(d) は案内・wire が断る。(e) は大文字混じりを文字の範囲で断り、小文字・数字・_ の長い名前は項目名の形が説明する（意図した限界）", () => {
+test("M8+ 項目名（itemKey・原因の欄・質問・wire の項目の列）: (a)〜(d) は案内・wire が断る。(e) は門が断る（区切りの無い 20 文字以上の連なり。gate-itemkey I1+〜I8+ が全部の出口を覆う）", () => {
   for (const form of [...COLUMNS.map((column) => SHAPES[column]), `x_${SHAPES.b}`]) {
     assert.equal(guide(handDraft([{ itemKey: form, state: "missing", observationRefs: [] }])).reason, "invalid_input", form);
     const catalog = [{ ...NOTE_ITEM, itemKey: form }];
@@ -145,8 +145,8 @@ test("M8+ 項目名（itemKey・原因の欄・質問・wire の項目の列）:
     assert.equal(wireOf({ conflicts: [SHAPES[column]] }), "refused", column);
     assert.equal(wireOf({ answers: [{ ...ANSWER, itemKey: SHAPES[column] }] }), "refused", column);
   }
-  assert.equal(guide(handDraft([{ itemKey: "a".repeat(24), state: "missing", observationRefs: [] }])).status, "built");
-  assert.equal(wireOf({ missingItems: [RUN], conflicts: [RUN] }), "converted");
+  assert.equal(guide(handDraft([{ itemKey: "a".repeat(24), state: "missing", observationRefs: [] }])).reason, "invalid_input");
+  assert.equal(wireOf({ missingItems: [RUN], conflicts: [RUN] }), "refused");
 });
 
 test("M9+ 理由の符号（門の結果の reasons）: (a)〜(d) と大文字混じりの連なり (e) は符号の形（大文字・数字・_）で断り、結果を確認できずと書く。大文字・数字・_ の長い符号は符号の形が説明する（意図した限界）", () => {
