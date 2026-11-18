@@ -4,22 +4,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import * as ws from "../scripts/working-state/index.mjs";
-import { NOW, OID_B, callerText, fileRead, goodReads, pinText } from "./working-state-fixtures.mjs";
+import { NOW, OID_B, callerText, goodReads } from "./working-state-fixtures.mjs";
+import { BEARER, JWT3, KEY_HEADING, RUN, TOKEN, absent, forms, pinAt } from "./working-state-secret-fixtures.mjs";
 import { CATALOG, answerInput, observeWith, send, withContent } from "./working-state-answer-fixtures.mjs";
 import { buildDraft, builtDraft, conflictObserved, createSelection, createdSelection, guidanceOf } from "./working-state-draft-fixtures.mjs";
 import { guide, guided, handDraft } from "./working-state-guidance-fixtures.mjs";
 
-const TOKEN = "gh" + "p_" + "u".repeat(12);
-const RUN = "Zq".repeat(12);
-const JWT3 = ["a".repeat(12), "b".repeat(12), "c".repeat(12)].join(".");
-const BEARER = "Bearer " + "w".repeat(20);
-const KEY_HEADING = ["-----BEGIN ", "PRIVATE KEY", "-----"].join("");
-// 位置・対象違いの名前・値に付ける埋まった形。区切り・括弧・URL の利用者情報（接頭辞つきと、接頭辞の無い長い連なり）。
-const forms = (secret) => [`a.${secret}`, `cfg~${secret}`, `x#${secret}`, `p?token=${secret}`, `(${secret})`, `a:${secret}`, `u/${secret}`, `q|${secret}`, `v@${secret}`, `m,${secret}`, `n;${secret}`, `"${secret}"`,
-  `https://x-access-token:${secret}@github.com/o/r`, `https://${secret}@github.com/o/r`];
 const EMBEDDED = [...forms(TOKEN), ...forms(RUN)];
-const absent = (secret, ...values) => values.every((value) => !JSON.stringify(value).includes(secret));
-const pinAt = (over) => goodReads().map((read) => (read.sourceKind === "sds_pin" ? fileRead("sds_pin", pinText(), over) : read));
 const secretOf = (form) => (form.includes(TOKEN) ? TOKEN : RUN);
 
 test("P1+ 位置（locator）が埋まった秘密らしい形: 観測の項目・draft・案内・wire のどこにも写らず、使えない観測（malformed）になる", () => {
