@@ -5,7 +5,7 @@ import { deepFreeze } from "./canonical.mjs";
 import { parseInstant } from "./instant.mjs";
 import { interpretItem } from "./observation-fields.mjs";
 import { interpretFile, interpretProbe, usageOf } from "./read-check.mjs";
-import { hasRefTokenPrefix, isSecretLike } from "./value-exposure.mjs";
+import { isRefName, isSecretLike } from "./value-exposure.mjs";
 
 const TOOL_PROBE = "tool_probe";
 const NO_USAGE = Object.freeze({ requests: 0, bytes: 0, elapsedMs: 0 });
@@ -114,11 +114,10 @@ function assemble({ context, itemKey, ref, usage, observedAt }, fields) {
 }
 
 const stopped = (status) => deepFreeze({ status, items: [] });
-const isName = (value) => typeof value === "string" && value !== "" && !hasRefTokenPrefix(value);
 
 // 入力: { targetRef, now, catalog, reads, requiredVersions }。対象・現在時刻が無ければ観測せず止まる（補わない）。
 export function observeAll({ targetRef, now, catalog, reads, requiredVersions }) {
-  if (!isName(targetRef)) return stopped("target_required");
+  if (!isRefName(targetRef)) return stopped("target_required");
   if (parseInstant(now) === null) return stopped("now_required");
   const context = { targetRef, now, required: new Map(Object.entries(Object(requiredVersions))) };
   const candidates = reads.filter(isReadFact).flatMap((read) => entriesFor(catalog, read).map((entry) => candidateOf(context, entry, read)));

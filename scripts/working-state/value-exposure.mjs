@@ -20,11 +20,20 @@ const SECRET_RUN_MIN = 20; // (e) 空白を含まない英数字・記号（+ / 
 const BEARER_WORD_MIN = 16; // (c) `Bearer ` に続く語の長さ。
 const JWT_PART_MIN = 10; // (d) JWT の形の先の 2 つの部分の長さ。3 つ目は空でもよい（署名の無い形）。
 // (a) 秘密鍵・証明書の見出し行。(b) 既知の token の接頭辞で始まる語。(c) Bearer + 長い語。(d) 3 つの部分を . でつないだ形。(e) 長い連なり。
+// 語の中のどこに埋まっていても当てる（区切り・引用符・括弧・URL の利用者情報・設定の対の = の後ろ・別の語の末尾の . の後ろ）。
+// (b) は直前が英数字でない所（先頭を含む）か %XX（URL の符号化した区切り）の直後にある接頭辞、(c) は直前が英数字でない所の Bearer、(d) は直前が名前の文字でない所から始まる 3 つの部分
+// （後ろにも名前の文字・. が続かない）、(e) は語の中の 20 文字以上の連なり。
 const KEY_HEADER_RE = /-----BEGIN [A-Z0-9 ]*(?:PRIVATE KEY|CERTIFICATE)-----/;
 const TOKEN_PREFIXES = ["ghp_", "gho_", "ghu_", "ghs_", "ghr_", "github_pat_", "AKIA", "sk-", "xoxb-", "xoxp-"];
-const BEARER_RE = new RegExp(`(?:^|\\s)Bearer\\s+\\S{${BEARER_WORD_MIN},}`);
-const JWT_RE = new RegExp(`^[A-Za-z0-9_-]{${JWT_PART_MIN},}\\.[A-Za-z0-9_-]{${JWT_PART_MIN},}\\.[A-Za-z0-9_-]*$`);
-const RUN_RE = new RegExp(`^[A-Za-z0-9+/_=-]{${SECRET_RUN_MIN},}$`);
+const TOKEN_PREFIX_RE = new RegExp(`(?:(?<![A-Za-z0-9])|(?<=%[0-9A-Fa-f]{2}))(?:${TOKEN_PREFIXES.join("|")})`);
+const BEARER_RE = new RegExp(`(?<![A-Za-z0-9])Bearer\\s+\\S{${BEARER_WORD_MIN},}`);
+const JWT_RE = new RegExp(`(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{${JWT_PART_MIN},}\\.[A-Za-z0-9_-]{${JWT_PART_MIN},}\\.[A-Za-z0-9_-]*(?![A-Za-z0-9_.-])`);
+const RUN_RE = new RegExp(`[A-Za-z0-9+/_=-]{${SECRET_RUN_MIN},}`);
+// (e) の例外: 読める path・名前。語の全体が [A-Za-z0-9._*/-] だけで、/ か . でつないだ部品が、- と _ で分けた語（19 文字以下の
+// 小文字・数字だけ、大文字・数字だけ、または先頭だけ大文字）の並びである時。20 文字以上の 1 語・大小文字が混ざった乱数らしい語は説明できない。
+const PATH_CHARS_RE = /^[A-Za-z0-9._*/-]+$/;
+const READABLE_WORD_RE = /^(?:[a-z0-9*]{1,19}|[A-Z0-9*]{1,19}|[A-Z][a-z0-9*]{0,18})$/;
+const isReadablePath = (word) => /[/.]/.test(word) && PATH_CHARS_RE.test(word) && word.split(/[/.]/u).every((part) => part.split(/[-_]/u).filter((piece) => piece !== "").every((piece) => READABLE_WORD_RE.test(piece)));
 
 const isText = (value, pattern) => typeof value === "string" && pattern.test(value);
 
@@ -98,27 +107,34 @@ export function isAllowedFormat(valueType, value, elementShape = "string") {
 export const VALUE_CLASSIFICATIONS = Object.freeze(["valid", "invalid_format", "secret_like"]);
 const [VALID, INVALID_FORMAT, SECRET_LIKE] = VALUE_CLASSIFICATIONS;
 
-// 空白で分けた語のどれかが、既知の token の接頭辞（BR5.2 の (b)）で始まるか。長さ・文字の範囲を見ない。
+// 文字列のどこかに、既知の token の接頭辞（BR5.2 の (b)）が、先頭か英数字でない文字の直後にあるか。長さ・文字の範囲を見ない。
 // 項目名・原因・理由の符号のように、長い連なり (e) を持つ正当な固定の語は、接頭辞だけで判定する側がこの関数を使う。
-export const hasTokenPrefix = (text) => typeof text === "string" && text.split(/\s+/u).some((word) => TOKEN_PREFIXES.some((prefix) => word.startsWith(prefix)));
+export const hasTokenPrefix = (text) => typeof text === "string" && TOKEN_PREFIX_RE.test(text);
+
+// 文字列が (a) 秘密鍵・証明書の見出し、(b) 接頭辞、(c) Bearer + 長い語、(d) JWT の形のどれかを、どこかに含むか。長い連なり (e) は見ない
+// （識別・対象・参照・案内の文・回答の値の写しは、正当な長い名前や項目の形式で説明される長い値を持つので、(e) は項目の形式を知る判定だけが持つ）。
+export const hasSecretShape = (text) => typeof text === "string" && (KEY_HEADER_RE.test(text) || BEARER_RE.test(text) || hasTokenPrefix(text) || JWT_RE.test(text));
 
 // 参照（<項目>|<出典>|<位置>|<時刻>、<項目>@<出典>:<位置>）を部品に分ける区切り。参照の部品の分け方はここ 1 か所が持つ。
 export const refPartsOf = (text) => text.split(/[|@:]/u);
-// 識別・対象・参照が、区切りの後ろも含めて、既知の token の接頭辞で始まる部品を持つか。長い連なり (e) は見ない（正当な長い名前を断らない）。
-export const hasRefTokenPrefix = (text) => typeof text === "string" && refPartsOf(text).some(hasTokenPrefix);
+// 識別・対象・参照が、区切りの後ろも含めて、(a)〜(d) の形を持つ部品を持つか。
+const hasRefSecretShape = (text) => hasSecretShape(text) || refPartsOf(text).some(hasSecretShape);
+// 呼出側が渡す識別・対象・参照として受けてよい文字列か（空でなく、(a)〜(d) の形を持たない）。識別・対象の「秘密らしくない」の判定はここ 1 か所。
+export const isRefName = (value) => typeof value === "string" && value !== "" && !hasRefSecretShape(value);
 
 const DEEP_MAX = 8;
-// 手で作った構造体（回答の値・案内・回答の列）の中のどこかの文字列が、既知の token の接頭辞で始まる語を含むか。確かめきれない深さは含む側（失敗側）。
-export function carriesTokenPrefix(value, depth = 0) {
-  if (typeof value === "string") return hasTokenPrefix(value);
+// 手で作った構造体（回答の値・案内・回答の列）の中のどこかの文字列が、(a)〜(d) の形を含むか。確かめきれない深さは含む側（失敗側）。
+export function carriesSecretShape(value, depth = 0) {
+  if (typeof value === "string") return hasSecretShape(value);
   if (typeof value !== "object" || value === null) return false;
-  return depth >= DEEP_MAX || Object.values(value).some((inner) => carriesTokenPrefix(inner, depth + 1));
+  return depth >= DEEP_MAX || Object.values(value).some((inner) => carriesSecretShape(inner, depth + 1));
 }
 
 // 1 つの文字列が秘密らしいか（BR5.2 の (a)〜(e)）。explained = 項目の許される形式（構造のある形）が文字列全体を説明する時 (e) だけ外す。
+// (e) は空白で分けた語の中の連なりを見る。読める path・名前の語は連なりに数えない。
 function looksSecret(text, explained) {
-  if (KEY_HEADER_RE.test(text) || BEARER_RE.test(text) || hasTokenPrefix(text)) return true;
-  return text.split(/\s+/u).some((word) => JWT_RE.test(word) || (!explained && RUN_RE.test(word)));
+  if (hasSecretShape(text)) return true;
+  return !explained && text.split(/\s+/u).some((word) => RUN_RE.test(word) && !isReadablePath(word));
 }
 
 // 観測値・回答が共有する判定。値の分類（valid | invalid_format | secret_like）だけを返し、入力は写さない（BR5.2・BR3.4）。
