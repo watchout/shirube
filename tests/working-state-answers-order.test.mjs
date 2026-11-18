@@ -69,6 +69,17 @@ test("T6.2m 項目の定義（catalog）が渡されない・項目が見つか�
   assert.equal(verdict(answers, undefined, applied), "invalidated");
 });
 
+test("T6.2m 項目の定義が壊れていて評価が例外を起こしても、例外は外へ出ず、一致と読み替えず invalidated", () => {
+  const answers = versionAnswers("9.9.9");
+  const applied = withVersion("9.9.9\n");
+  const broken = { itemKey: "aidlc_version", valueType: "version" };
+  assert.equal(ws.closedMatches(answers[0], broken, applied.items), false);
+  assert.doesNotThrow(() => reconcile(answers, applied, [broken]));
+  assert.equal(reconcile(answers, applied, [broken])[0].state, "invalidated");
+  assert.equal(ws.closedMatches(answers[0], VERSION, applied.items), true);
+  assert.equal(ws.closedMatches(answers[0], VERSION, null), false);
+});
+
 test("T6.2n 観測 digest が変わり、再観測の値が回答と食い違う時は invalidated（reconcile も答えの言い方も）", () => {
   const answers = versionAnswers("9.9.9");
   const other = withVersion("8.8.8\n");

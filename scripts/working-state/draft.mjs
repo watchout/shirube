@@ -23,7 +23,7 @@ const itemKeysIn = (items, state) => items.filter((item) => item.state === state
 
 function assemble({ draftId, targetRef, catalog, observedItems, answers }) {
   const { items: evaluated, unknownItemKeys } = evaluateItems(catalog, observedItems);
-  const current = reconcileAnswers(answers, observedItems);
+  const current = reconcileAnswers(answers, observedItems, catalog);
   const bound = new Map(current.filter((answer) => answer.state === "answered").map((answer) => [answer.itemKey, answer.answerId]));
   const items = evaluated.map((item) => (bound.has(item.itemKey) ? { ...item, answerRef: bound.get(item.itemKey) } : item));
   const observationFacts = factsOf(observedItems);
