@@ -24,7 +24,7 @@ const JWT_PART_MIN = 10; // (d) JWT の形の先の 2 つの部分の長さ。3 
 // (a) 秘密鍵・証明書の見出し行。(b) 既知の token の接頭辞で始まる語。(c) Bearer + 長い語。(d) 3 つの部分を . でつないだ形。(e) 長い連なり。
 // 語の中のどこに埋まっていても当てる（区切り・引用符・括弧・URL の利用者情報・設定の対の = の後ろ・別の語の末尾の . の後ろ）。
 // (b) は直前が英数字でない所（先頭を含む）か %XX（URL の符号化した区切り）の直後にある接頭辞、(c) は直前が英数字でない所の Bearer、(d) は直前が名前の文字でない所から始まる 3 つの部分
-// （後ろにも名前の文字・. が続かない）、(e) は語の中の 20 文字以上の連なり。
+// （後ろにも名前の文字・. が続かない。直前の条件は当たる・当たらないを変えず、長い連なりで各位置から数え直す二乗の時間を防ぐ性能の守り）、(e) は語の中の 20 文字以上の連なり。
 const KEY_HEADER_RE = /-----BEGIN [A-Z0-9 ]*(?:PRIVATE KEY|CERTIFICATE)-----/;
 const TOKEN_PREFIXES = ["ghp_", "gho_", "ghu_", "ghs_", "ghr_", "github_pat_", "AKIA", "sk-", "xoxb-", "xoxp-"];
 const TOKEN_PREFIX_RE = new RegExp(`(?:(?<![A-Za-z0-9])|(?<=%[0-9A-Fa-f]{2}))(?:${TOKEN_PREFIXES.join("|")})`);
@@ -32,17 +32,17 @@ const BEARER_RE = new RegExp(`(?<![A-Za-z0-9])Bearer\\s+\\S{${BEARER_WORD_MIN},}
 const JWT_RE = new RegExp(`(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{${JWT_PART_MIN},}\\.[A-Za-z0-9_-]{${JWT_PART_MIN},}\\.[A-Za-z0-9_-]*(?![A-Za-z0-9_.-])`);
 const RUN_RE = new RegExp(`[A-Za-z0-9+/_=-]{${SECRET_RUN_MIN},}`);
 
-// (e) の例外: 読める名前。語の全体が [A-Za-z0-9._*/-] だけで、/ . - _ で分けた部品が、19 文字以下の小文字・数字だけ、大文字・数字だけ、
+// (e) の例外: 読める名前。語の全体が [A-Za-z0-9._*/-] だけで、* を除いて / . - _ で分けた部品が、19 文字以下の小文字・数字だけ、大文字・数字だけ、
 // または先頭だけ大文字の語で、さらに数字と英字が混ざった 4 文字以上の部品（16 進・乱数らしい部品）の長さの合計が DENSE_TOTAL_MAX 以下の時。
 // 20 文字以上の 1 語・大小文字が混ざった乱数らしい語・UUID のように混ざった部品を区切って並べた形は説明できない。
-// 読める path = さらに / か . を含む語（拡張子つきの名前・path。- と _ だけで続く 1 語の名前は含めない）。
+// 読める path = さらに / か . を含む語（拡張子つきの名前・path。- と _ だけで続く 1 語の名前は含めない）。* は glob の印で、部品の長さに数えない。
 const PATH_CHARS_RE = /^[A-Za-z0-9._*/-]+$/;
-const READABLE_WORD_RE = /^(?:[a-z0-9*]{1,19}|[A-Z0-9*]{1,19}|[A-Z][a-z0-9*]{0,18})$/;
-const DENSE_PIECE_RE = /^(?=.*[0-9])(?=.*[A-Za-z])[A-Za-z0-9*]{4,}$/;
+const READABLE_WORD_RE = /^(?:[a-z0-9]{1,19}|[A-Z0-9]{1,19}|[A-Z][a-z0-9]{0,18})$/;
+const DENSE_PIECE_RE = /^(?=.*[0-9])(?=.*[A-Za-z])[A-Za-z0-9]{4,}$/;
 const DENSE_TOTAL_MAX = 16;
 function isReadableName(word) {
   if (!PATH_CHARS_RE.test(word)) return false;
-  const pieces = word.split(/[/._-]/u).filter((piece) => piece !== "");
+  const pieces = word.replaceAll("*", "").split(/[/._-]/u).filter((piece) => piece !== "");
   if (!pieces.every((piece) => READABLE_WORD_RE.test(piece))) return false;
   return pieces.filter((piece) => DENSE_PIECE_RE.test(piece)).reduce((total, piece) => total + piece.length, 0) <= DENSE_TOTAL_MAX;
 }
@@ -159,11 +159,11 @@ export const isRefName = (value) => typeof value === "string" && value !== "" &&
 
 const DEEP_MAX = 8;
 const KNOWN_PROTOTYPES = new Set([Object.prototype, null, Array.prototype, Map.prototype, Set.prototype]);
-// 入れ物の自分の key と値の並び。symbol の key・getter・setter があれば null（読まずに含む側）。
+// 入れ物の自分の key と値の並び。getter・setter があれば null（呼ばずに含む側）。symbol の key は並びに入り、carriesIn が含む側にする。
 function ownFieldsOf(container) {
   const fields = [];
   for (const key of Reflect.ownKeys(container)) {
-    const descriptor = typeof key === "symbol" ? undefined : Object.getOwnPropertyDescriptor(container, key);
+    const descriptor = Object.getOwnPropertyDescriptor(container, key);
     if (descriptor === undefined || !("value" in descriptor)) return null;
     fields.push(key, descriptor.value);
   }
