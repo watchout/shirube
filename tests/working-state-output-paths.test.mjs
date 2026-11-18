@@ -6,7 +6,7 @@ import test from "node:test";
 import * as ws from "../scripts/working-state/index.mjs";
 import { NOW, OID_B, TARGET, callerText, fileRead, goodReads, pinText, probeRead } from "./working-state-fixtures.mjs";
 import { CATALOG, answerInput, observeWith, send, withContent } from "./working-state-answer-fixtures.mjs";
-import { buildDraft, builtDraft, createSelection } from "./working-state-draft-fixtures.mjs";
+import { buildDraft, builtDraft, createSelection, createdSelection, guidanceOf } from "./working-state-draft-fixtures.mjs";
 import { guide, guided, handDraft } from "./working-state-guidance-fixtures.mjs";
 
 const SECRET = "gh" + "p_" + "u".repeat(12);
@@ -116,6 +116,32 @@ test("O9+ 呼出側の識別・対象（draftId・selectionId・answerId・targe
   assert.equal(result.status, "built");
   assert.equal(ws.draftToC02Wire(result.draft).wire.draftId, uuid);
   assert.equal(longTarget.length > 20, true);
+});
+
+test("O11+ 呼出側の識別・対象（draftId・targetRef・answerId・selectionId）が既知の token の接頭辞で始まる形なら、draft・回答・選択は作らない", () => {
+  assert.equal(ws.isRefId(SECRET), false);
+  assert.equal(buildDraft({ draftId: SECRET }).reason, "invalid_input");
+  assert.equal(buildDraft({ targetRef: SECRET, observedItems: observeWith(CATALOG, goodReads(), { targetRef: SECRET }).items }).reason, "invalid_input");
+  assert.equal(send(answerInput({ answerId: SECRET })).status, "unreadable");
+  const draft = builtDraft({ observedItems: observeWith().items });
+  assert.equal(createSelection(draft, { selectionId: SECRET }).reason, "invalid_input");
+  assert.equal(createSelection({ ...draft, targetRef: SECRET }).reason, "invalid_input");
+  assert.equal(createSelection(draft, { guidance: { ...guidanceOf(), text: `選択 ${SECRET} です` } }).reason, "invalid_guidance");
+  assert.equal(guide(handDraft([{ itemKey: "aidlc_version", state: "missing", observationRefs: [] }], { targetRef: SECRET })).reason, "invalid_input");
+});
+
+test("O12+ C02 の wire（呼出側が手で作った draft・選択）: 識別・項目名・参照・選んだ候補が既知の token の接頭辞で始まる形なら、変換を断る。普通の形は変換する", () => {
+  const draft = builtDraft({ observedItems: observeWith().items });
+  const answer = { answerId: "ans-1", itemKey: "note_text", kind: "value", value: ["models.preset=thorough"], state: "answered" };
+  assert.equal(ws.draftToC02Wire({ ...draft, answers: [answer] }).status, "converted");
+  const stray = [{ draftId: SECRET }, { targetRef: SECRET }, { missingItems: [SECRET] }, { conflicts: [SECRET] }, { observationRefs: [SECRET] },
+    { answers: [{ ...answer, answerId: SECRET }] }, { answers: [{ ...answer, itemKey: SECRET }] }, { answers: [{ ...answer, selectedCandidateRef: SECRET }] }];
+  for (const over of stray) assert.equal(ws.draftToC02Wire({ ...draft, answers: [answer], ...over }).status, "refused", JSON.stringify(over));
+  const selection = createdSelection(draft);
+  for (const over of [{ selectionId: SECRET }, { draftRef: SECRET }, { candidateRef: SECRET }, { targetRef: SECRET }, { observationRef: SECRET }]) {
+    assert.equal(ws.selectionToC02Wire({ ...selection, ...over }).status, "refused", JSON.stringify(over));
+  }
+  assert.equal(ws.selectionToC02Wire({ ...selection, guidance: { ...selection.guidance, text: `選択 ${SECRET} です` } }).status, "refused");
 });
 
 test("O10+ 既知の限界（設計の集合 BR5.2 (b) は語の先頭の接頭辞だけを見る）: 設定の対の = の後ろに付いた秘密らしい形は、この判定では拒まれない（設計の判断が要る。監査の項目）", () => {
