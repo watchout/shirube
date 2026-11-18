@@ -49,17 +49,17 @@ function isReadableName(word) {
 const isReadablePath = (word) => /[/.]/.test(word) && isReadableName(word);
 
 const isText = (value, pattern) => typeof value === "string" && pattern.test(value);
-const never = () => false;
 const isString = (value) => typeof value === "string";
 
-// (e) に通す語の分け方（門が (a)〜(d) の後で呼ぶ。値の形ごとの例外はここにだけある）。words = 連なりを調べる語、readable = その語を連なりに数えない条件。
-const FREE_WORDS = (text) => ({ words: text.split(/\s+/u), readable: isReadablePath });
+// (e) に通す語の分け方（門が (a)〜(d) の後で呼ぶ。値の形ごとの例外はここにだけある）。文字列を語に分け、読める名前の語（例外）を外した、
+// 連なりを調べる語の並びを返す。
+const FREE_WORDS = (text) => text.split(/\s/u).filter((word) => !isReadablePath(word));
 // 設定の対は = で分けた key と value を別々の語として調べる（形が全体を説明する例外にしない）。value は - と _ でつないだ読める名前も通す。
-const PAIR_WORDS = (text) => ({ words: text.split("="), readable: isReadableName });
+const PAIR_WORDS = (text) => text.split("=").filter((word) => !isReadableName(word));
 // 参照（<項目>|<出典>|<位置>|<時刻>、<項目>@<出典>:<位置>）は区切りで分けた部品を別々の語として調べる。部品の分け方はここ 1 か所が持つ。
-const REF_WORDS = (text) => ({ words: text.split(/[|@:\s]+/u), readable: isReadablePath });
+const REF_WORDS = (text) => text.split(/[|@:\s]/u).filter((word) => !isReadablePath(word));
 // 形そのものが 40 文字の連なり（commit-oid）。形に合った全体は連なりに数えない（意図した限界: 40 桁の 16 進は何でも通る）。
-const NO_WORDS = () => ({ words: [], readable: never });
+const OID_WORDS = (text) => (COMMIT_OID_RE.test(text) ? [] : FREE_WORDS(text));
 
 // 要素の形ごとの列の規則。最小の個数・最大の個数・要素の検査・(e) に通す語の分け方。
 const LIST_RULES = new Map([
@@ -90,7 +90,7 @@ const listParts = (value) => (Array.isArray(value) ? listCopy(value).filter(isSt
 const FORMATS = new Map([
   ["string", { form: "open", check: (v) => isText(v, STRING_RE), typed: isString, parts: stringParts, words: FREE_WORDS }],
   ["version", { form: "closed", check: (v) => isText(v, VERSION_RE), typed: isString, parts: stringParts, words: FREE_WORDS }],
-  ["commit-oid", { form: "closed", check: (v) => isText(v, COMMIT_OID_RE), typed: isString, parts: stringParts, words: (t) => (COMMIT_OID_RE.test(t) ? NO_WORDS() : FREE_WORDS(t)) }],
+  ["commit-oid", { form: "closed", check: (v) => isText(v, COMMIT_OID_RE), typed: isString, parts: stringParts, words: OID_WORDS }],
   [
     "list",
     {
@@ -117,10 +117,8 @@ export function valueFormOf(valueType) {
 // 値が許される形式か。未知の valueType・未知の要素の形・型違い・例外を起こす入力は、どれも false（失敗側）。
 // 例外の文面は値を含みうるので、捕まえて捨て、結果を false にするだけにする（入力は写さない）。
 export function isAllowedFormat(valueType, value, elementShape = "string") {
-  const format = FORMATS.get(valueType);
-  if (format === undefined) return false;
   try {
-    return format.check(value, elementShape) === true;
+    return FORMATS.get(valueType).check(value, elementShape) === true; // 未知の valueType は undefined の check で例外になり、下の catch が false にする（失敗側の道は 1 つ）
   } catch {
     return false;
   }
@@ -147,8 +145,7 @@ export function exposesText(gateClass, text, wordsOf = FREE_WORDS) {
   if (applyRun === undefined || typeof text !== "string") return true;
   if (hasSecretShape(text)) return true;
   if (!applyRun) return false;
-  const { words, readable } = wordsOf(text);
-  return words.some((word) => RUN_RE.test(word) && !readable(word));
+  return wordsOf(text).some((word) => RUN_RE.test(word));
 }
 
 // 表示する参照（区切りで分けた部品ごとに (e) を調べる）が秘密らしいか。
@@ -159,22 +156,22 @@ export const isRefName = (value) => typeof value === "string" && value !== "" &&
 
 const DEEP_MAX = 8;
 const KNOWN_PROTOTYPES = new Set([Object.prototype, null, Array.prototype, Map.prototype, Set.prototype]);
-// 入れ物の自分の key と値の並び。getter・setter があれば null（呼ばずに含む側）。symbol の key は並びに入り、carriesIn が含む側にする。
+// 入れ物の自分の key と値の並び。getter・setter は呼ばずに例外にする（含む側）。symbol の key は並びに入り、carriesIn が含む側にする。
 function ownFieldsOf(container) {
   const fields = [];
   for (const key of Reflect.ownKeys(container)) {
     const descriptor = Object.getOwnPropertyDescriptor(container, key);
-    if (descriptor === undefined || !("value" in descriptor)) return null;
+    if (!("value" in descriptor)) throw new TypeError("accessor");
     fields.push(key, descriptor.value);
   }
   return fields;
 }
-// 入れ物の中身（調べる key と値の並び）。知らない入れ物・読めない欄は null。Map・Set は組み込みの読み方で key と値を出す。
+// 入れ物の中身（調べる key と値の並び）。知らない入れ物は例外にする（含む側）。Map・Set は組み込みの読み方で key と値を出す。
 function childrenOf(container) {
   const prototype = Object.getPrototypeOf(container);
-  const fields = KNOWN_PROTOTYPES.has(prototype) ? ownFieldsOf(container) : null;
-  if (fields === null) return null;
-  if (prototype === Map.prototype) return [...fields, ...[...Map.prototype.entries.call(container)].flat()];
+  if (!KNOWN_PROTOTYPES.has(prototype)) throw new TypeError("unknown container");
+  const fields = ownFieldsOf(container);
+  if (prototype === Map.prototype) return [...fields, ...Map.prototype.entries.call(container)];
   return prototype === Set.prototype ? [...fields, ...Set.prototype.values.call(container)] : fields;
 }
 function carriesIn(value, depth, seen) {
@@ -184,11 +181,10 @@ function carriesIn(value, depth, seen) {
   if (depth >= DEEP_MAX) return true;
   if (seen.has(value)) return false;
   seen.add(value);
-  const children = childrenOf(value);
-  return children === null || children.some((child) => carriesIn(child, depth + 1, seen));
+  return childrenOf(value).some((child) => carriesIn(child, depth + 1, seen));
 }
 // 手で作った構造体（回答の値・案内・回答の列）の中のどこかの文字列・key が、(a)〜(d) の形を含むか。
-// 知っている入れ物（配列・素の object・Map・Set）の外・読めない欄・確かめきれない深さ・例外は含む側（失敗側）。同じ入れ物は 1 回だけ調べる。
+// 知っている入れ物（配列・素の object・Map・Set）の外・getter・確かめきれない深さ・例外は含む側（失敗側。失敗側の道は下の catch の 1 つ）。同じ入れ物は 1 回だけ調べる。
 export function carriesSecretShape(value) {
   try {
     return carriesIn(value, 0, new Set());
@@ -203,7 +199,7 @@ export function carriesSecretShape(value) {
 export function classifyValue(valueType, value, elementShape = "string") {
   try {
     const format = FORMATS.get(valueType);
-    if (format === undefined || format.knows?.(elementShape) === false) return SECRET_LIKE;
+    if (format.knows?.(elementShape) === false) return SECRET_LIKE; // 未知の valueType は format が undefined で例外になり、下の catch が SECRET_LIKE にする
     if (format.parts(value).some((text) => exposesText("answer", text, (t) => format.words(t, elementShape)))) return SECRET_LIKE;
     return format.check(value, elementShape) === true ? VALID : INVALID_FORMAT;
   } catch {
