@@ -5,7 +5,7 @@ import { deepFreeze } from "./canonical.mjs";
 import { parseInstant } from "./instant.mjs";
 import { interpretItem } from "./observation-fields.mjs";
 import { interpretFile, interpretProbe, usageOf } from "./read-check.mjs";
-import { isRefName, isSecretLike } from "./value-exposure.mjs";
+import { isItemKeyText, isRefName, isSecretLike } from "./value-exposure.mjs";
 
 const TOOL_PROBE = "tool_probe";
 const NO_USAGE = Object.freeze({ requests: 0, bytes: 0, elapsedMs: 0 });
@@ -116,9 +116,11 @@ function assemble({ context, itemKey, ref, usage, observedAt }, fields) {
 const stopped = (status) => deepFreeze({ status, items: [] });
 
 // 入力: { targetRef, now, catalog, reads, requiredVersions }。対象・現在時刻が無ければ観測せず止まる（補わない）。
-export function observeAll({ targetRef, now, catalog, reads, requiredVersions }) {
+// 項目名が項目名の門（(e) も当てる）を通らない項目は観測しない（項目名・observationId・位置に写さない）。draft の入口（buildDraft）は同じ項目一覧を invalid_input にする。
+export function observeAll({ targetRef, now, catalog: given, reads, requiredVersions }) {
   if (!isRefName(targetRef)) return stopped("target_required");
   if (parseInstant(now) === null) return stopped("now_required");
+  const catalog = given.filter((item) => isItemKeyText(item?.itemKey));
   const context = { targetRef, now, required: new Map(Object.entries(Object(requiredVersions))) };
   const candidates = reads.filter(isReadFact).flatMap((read) => entriesFor(catalog, read).map((entry) => candidateOf(context, entry, read)));
   const selected = latestPerUnit(candidates);

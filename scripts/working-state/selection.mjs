@@ -5,7 +5,7 @@
 import { isRefId } from "./answers.mjs";
 import { deepFreeze } from "./canonical.mjs";
 import { isObservationStale } from "./observation-facts.mjs";
-import { carriesSecretShape, isRefName, valueFormOf } from "./value-exposure.mjs";
+import { carriesSecretShape, isItemKeyText, isRefName, valueFormOf } from "./value-exposure.mjs";
 
 // 選択にしない理由の固定の分類（入力を写さない）。
 export const SELECTION_REFUSALS = Object.freeze(["invalid_input", "unknown_candidate", "not_selectable", "unknown_observation", "invalid_guidance"]);
@@ -37,6 +37,7 @@ function check(input) {
   if (!wellFormed(input)) return "invalid_input";
   const item = itemOf(input.draft, input.candidateRef);
   if (item === null) return "unknown_candidate";
+  if (!isItemKeyText(item.itemKey)) return "invalid_input"; // 候補の参照（項目名@…）に入る項目名も、(e) を当てる門を通す。
   if (!selectable(input.catalog, item)) return "not_selectable";
   if (!input.draft.observationRefs.includes(input.observationRef)) return "unknown_observation";
   // 選んだ候補・観測の参照は選択の構造体にそのまま入るので、手で作った draft の参照でも (a)〜(d) の形を持たないこと。

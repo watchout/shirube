@@ -3,7 +3,7 @@
 // answers は state = answered の回答だけを itemKey をキーにした object にし、開いた形の項目の回答の値はここ（wire）にだけ現れる。
 // items・draftDigest・observationFacts・observationDigest は wire に渡らない。全部が空でも「確認済み」の意味は持たない（BR8.5）。
 import { deepFreeze } from "./canonical.mjs";
-import { carriesSecretShape, isRefName } from "./value-exposure.mjs";
+import { carriesSecretShape, isItemKeyText, isRefName } from "./value-exposure.mjs";
 
 // 変換できない時の固定の分類（入力を写さない）。
 export const WIRE_REFUSALS = Object.freeze(["not_convertible"]);
@@ -13,6 +13,8 @@ const converted = (wire) => deepFreeze({ status: "converted", wire });
 // 渡す識別・参照・案内の文は、空でなく、区切りの後ろも含めて BR5.2 の (a)〜(d) の形を含まない（判定は value-exposure の 1 か所）。
 const isRef = isRefName;
 const isList = (value) => Array.isArray(value) && value.every(isRef);
+// 項目名（回答の key・不足・食い違いの列）は (e) も当てる門（項目名の種類）を通す。
+const isItemList = (value) => Array.isArray(value) && value.every(isItemKeyText);
 
 // 回答 1 件が C02 の entry にできるか。値の回答は値が要り、選んだ候補があれば名前が要る。無いまま（keep-absent）は選んだ候補が要る。
 function convertible({ answerId, kind, value, selectedCandidateRef }) {
@@ -31,7 +33,7 @@ function answersObject(answers) {
   if (!Array.isArray(answers)) return null;
   const answered = answers.filter((answer) => answer?.state === "answered");
   const unique = new Set(answered.map((answer) => answer.itemKey)).size === answered.length;
-  if (!unique || !answered.every((answer) => isRef(answer.itemKey) && convertible(answer))) return null;
+  if (!unique || !answered.every((answer) => isItemKeyText(answer.itemKey) && convertible(answer))) return null;
   return Object.fromEntries(answered.map((answer) => [answer.itemKey, entryOf(answer)]));
 }
 
@@ -40,7 +42,7 @@ export function draftToC02Wire(draft) {
   try {
     const { draftId, targetRef, missingItems, conflicts, observationRefs } = draft;
     const answers = answersObject(draft.answers);
-    const valid = answers !== null && isRef(draftId) && isRef(targetRef) && [missingItems, conflicts, observationRefs].every(isList);
+    const valid = answers !== null && isRef(draftId) && isRef(targetRef) && [missingItems, conflicts].every(isItemList) && isList(observationRefs);
     return valid ? converted({ draftId, targetRef, answers, missingItems: [...missingItems], conflicts: [...conflicts], observationRefs: [...observationRefs] }) : refused();
   } catch {
     return refused();

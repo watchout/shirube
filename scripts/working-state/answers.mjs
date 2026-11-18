@@ -8,7 +8,7 @@ import { parseInstant } from "./instant.mjs";
 import { evaluateItem } from "./item-state.mjs";
 import { normalizeValue } from "./normalize.mjs";
 import { factsOf, itemObservationDigestOf } from "./observation-facts.mjs";
-import { VALUE_REJECTION_REASONS, isRefName, rejectionReasonOf } from "./value-exposure.mjs";
+import { VALUE_REJECTION_REASONS, isItemKeyText, isRefName, rejectionReasonOf } from "./value-exposure.mjs";
 
 // 回答を拒む理由の固定の分類（BR5.1）。値の検査の分類に、受付の分類（古い回答・同時刻で値が違う回答）を足した全部。
 export const REJECTION_REASONS = Object.freeze([...VALUE_REJECTION_REASONS, "stale_answer", "duplicate_conflict"]);
@@ -99,7 +99,7 @@ export function receiveAnswer({ catalog, observedItems, answers, input }) {
   const fields = snapshot(input);
   const current = reconcileAnswers(answers, observedItems, catalog);
   const entry = fields === null ? undefined : catalog.find((candidate) => candidate.itemKey === fields.itemKey);
-  const usable = entry !== undefined && isRefId(fields.answerId) &&parseInstant(fields.answeredAt) !== null;
+  const usable = entry !== undefined && isItemKeyText(fields.itemKey) && isRefId(fields.answerId) && parseInstant(fields.answeredAt) !== null;
   if (!usable) return outcome("unreadable", null, current);
   const existing = current.find((answer) => answer.answerId === fields.answerId);
   if (existing !== undefined) return outcome("duplicate", existing, current);

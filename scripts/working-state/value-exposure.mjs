@@ -58,6 +58,8 @@ const PAIR_WORDS = (text) => text.split("=").filter((word) => !isReadableName(wo
 const REF_WORDS = (text) => text.split(/[|@:\s]/u).filter((word) => !isReadablePath(word));
 // 形そのものが 40 文字の連なり（commit-oid）。形に合った全体は連なりに数えない（意図した限界: 40 桁の 16 進は何でも通る）。
 const OID_WORDS = (text) => (COMMIT_OID_RE.test(text) ? [] : FREE_WORDS(text));
+// 項目名は 1 語。読める名前（`_` で分けた部品が 19 文字以下で、数字混じりの部品の合計が 16 以下）なら連なりに数えず、そうでなければ語全体を調べる。
+const ITEM_WORDS = (text) => (isReadableName(text) ? [] : [text]);
 
 // 要素の形ごとの列の規則。最小の個数・最大の個数・要素の検査・(e) に通す語の分け方。
 const LIST_RULES = new Map([
@@ -149,8 +151,11 @@ export function exposesText(gateClass, text, wordsOf = FREE_WORDS) {
 // 表示する参照（区切りで分けた部品ごとに (e) を調べる）が秘密らしいか。
 export const isSecretLikeRefText = (text) => exposesText("name", text, REF_WORDS);
 
-// 呼出側が渡す識別・対象・参照・項目名・符号として受けてよい文字列か（空でなく、(a)〜(d) の形を持たない）。
+// 呼出側が渡す識別・対象・参照・符号として受けてよい文字列か（空でなく、(a)〜(d) の形を持たない。(e) は当てない）。
 export const isRefName = (value) => value !== "" && !exposesText("ref", value);
+
+// 項目名として受けてよい文字列か（空でなく、(a)〜(d) の形を持たず、読める名前でない 20 文字以上の連なりを持たない）。項目名は name の種類で (e) を当てる（決定 95）。
+export const isItemKeyText = (value) => value !== "" && !exposesText("name", value, ITEM_WORDS);
 
 const DEEP_MAX = 8;
 const KNOWN_PROTOTYPES = new Set([Object.prototype, null, Array.prototype, Map.prototype, Set.prototype]);
