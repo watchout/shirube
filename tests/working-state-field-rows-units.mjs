@@ -33,7 +33,7 @@ const ENTRIES = [
   ["EV", "evaluateItems", (b, units) => ws.evaluateItems(b.catalog, units), (b, bj) => (r) => json(r) === bj || stateOf(r, b.itemKey) === "unobservable"],
   ["FA", "factsOf", (b, units) => ws.factsOf(units), (b, bj) => (r) => json(r) === bj || r.some((fact) => POSITION.test(fact.unit.itemKey))],
   ["BD", "buildDraft", (b, units) => ws.buildDraft(buildInput({ catalog: b.catalog, observedItems: units })), (b, bj) => (r) => json(r) === bj || (r.status === "refused" && r.reason === "invalid_input")],
-  ["RA", "receiveAnswer", (b, units) => ws.receiveAnswer({ catalog: b.catalog, observedItems: units, answers: [], input: answerInput({ answerId: "ans-9" }) }), (b, bj) => (r) => json(r) === bj || (r.status === "unreadable" && r.answers.length === 0)],
+  ["RA", "receiveAnswer", (b, units) => ws.receiveAnswer({ catalog: b.catalog, observedItems: units, answers: [], input: answerInput({ answerId: "ans-9", itemKey: b.itemKey }) }), (b, bj) => (r) => json(r) === bj || (r.status === "unreadable" && r.answers.length === 0)],
 ];
 
 // [欄の名前, 基, path, 種類, 守りの場所]。U の欄は、どの入口も読まない（外の値で結果が変わらない）。
@@ -63,13 +63,17 @@ const FIELDS = [
   ["probeNotes", "unavailable", ["probeNotes"], "U", "読まない"],
 ];
 
+// 回答の入口は、観測の単位を結果に写さない（結びの観測 digest にだけ入る）。そこで回答の対象を単位の項目にし（観測 digest が単位の欄で変わる）、門が単位を断る時の外側は読めなかった形（unreadable・answers は空）だけにする。
+// 事実の入口は値を読まない（事実は valueDigest だけ。値の形式の確かめ unitFits は評価・draft・回答の入口が持つ）ので、値の欄の行は「読まない」欄として扱う。
+const strictRefused = (code, name, cls, refused) => (code === "RA" && cls !== "U" ? (r) => r.status === "unreadable" && r.answers.length === 0 : (code === "FA" && name === "value" ? () => true : refused));
 function fieldRow(code, label, run, refusedOf, [name, baseName, path, cls, check]) {
   const given = BASES[baseName];
   const withValue = (value) => run(given, given.units.map((unit, i) => (i === given.index ? cloneWith(unit, path, value) : unit)));
   const bj = json(withValue(getIn(given.units[given.index], path)));
-  const refused = refusedOf(given, bj);
+  const refused = strictRefused(code, name, cls, refusedOf(given, bj));
   const cleanPath = cls === "U" ? () => true : refused;
-  return { id: `${code}.${name}`, entry: label, field: `observedItems[].${name}`, cls: cls === "U" ? "A" : cls, check, legit: getIn(given.units[given.index], path), run: withValue, ok: (r) => json(r) === bj, refused: cleanPath };
+  const shownCheck = code === "FA" && name === "value" ? "読まない（事実は valueDigest だけ）" : check;
+  return { id: `${code}.${name}`, entry: label, field: `observedItems[].${name}`, cls: cls === "U" || (code === "FA" && name === "value") ? "A" : cls, check: shownCheck, legit: getIn(given.units[given.index], path), run: withValue, ok: (r) => json(r) === bj, refused: cleanPath };
 }
 
 const unitRows = ENTRIES.flatMap(([code, label, run, refusedOf]) => FIELDS.map((field) => fieldRow(code, label, run, refusedOf, field)));
@@ -81,7 +85,7 @@ const containerRows = ENTRIES.flatMap(([code, label, run, refusedOf]) => {
   const refused = refusedOf(given, bj);
   return [
     { id: `${code}.unit`, entry: label, field: "observedItems[]（object でない単位）", cls: "B", check: "isReadableUnit（object だけ）", legit: given.units[0], run: (value) => run(given, [value, ...given.units.slice(1)]), ok: (r) => json(r) !== undefined, refused: (r) => refused(r) || (r.unknownItemKeys ?? []).some((key) => POSITION.test(key)) },
-    { id: `${code}.list`, entry: label, field: "observedItems（配列でない）", cls: "B", check: "Array.isArray", legit: given.units, run: (value) => run(given, value), ok: (r) => json(r) === bj, refused, throws: true },
+    { id: `${code}.list`, entry: label, field: "observedItems（配列でない）", cls: "B", check: "Array.isArray", legit: given.units, run: (value) => run(given, value), ok: (r) => json(r) === bj, ...(code === "EV" || code === "FA" ? { refused: () => false, throws: true } : { refused }) },
   ];
 });
 

@@ -167,3 +167,11 @@ test("T6.2p 回答の時は読めなかった出典が、後から現れた時: 
   assert.equal(reconcile(answers, disagrees)[0].state, "invalidated");
   assert.equal(verdict(answers, COMMIT, disagrees), "invalidated");
 });
+
+test("T6.2q 一致の判定は回答の種類を見る: 値の digest が同じでも、種類が value でない回答は一致にならない", () => {
+  const item = { state: "confirmed", confirmedValue: OID_A };
+  const digest = ws.digestOf(OID_A);
+  assert.equal(ws.closedMatchesItem({ kind: "value", valueDigest: digest }, item), true);
+  assert.equal(ws.closedMatchesItem({ kind: "select-candidate", valueDigest: digest }, item), false);
+  assert.equal(ws.closedMatchesItem({ kind: "keep-absent", valueDigest: digest }, item), false);
+});

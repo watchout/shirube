@@ -5,7 +5,7 @@ import * as ws from "../scripts/working-state/index.mjs";
 import { NOW } from "./working-state-fixtures.mjs";
 import { CATALOG, NOTE_ITEM, answerInput, send } from "./working-state-answer-fixtures.mjs";
 import { conflictObserved } from "./working-state-draft-fixtures.mjs";
-import { json } from "./working-state-field-fixtures.mjs";
+import { LEAK, LEAK_LOWER, json } from "./working-state-field-fixtures.mjs";
 
 const ITEMS = conflictObserved().items;
 const SDS = CATALOG.find((entry) => entry.itemKey === "sds_commit");
@@ -34,7 +34,7 @@ const matchRows = [
 const staleRows = [
   ["isObservationStale", (owner, field) => ws.isObservationStale(owner, field, ITEMS)],
   ["isDraftStale", (owner, field) => ws.isDraftStale({ ...owner, [field]: owner[field] }, ITEMS)],
-].flatMap(([name, call]) => [bool(name, "owner[field]", "B", "digest の比べだけ", "observationDigest", (v) => call({ observationDigest: v }, "observationDigest")), bool(name, "field（名前）", "A", "owner[field] の引きだけ", "observationDigest", (v) => call({ observationDigest: "x" }, v))]);
+].flatMap(([name, call]) => [bool(name, "owner[field]", "B", "digest の比べだけ", "observationDigest", (v) => call({ observationDigest: v }, "observationDigest")), ...(name === "isObservationStale" ? [bool(name, "field（名前）", "A", "owner[field] の引きだけ", "observationDigest", (v) => call({ observationDigest: "x" }, v))] : [])]);
 const pureRows = [
   num("parseInstant", "text", "B", "INSTANT_RE（固定の形）", NOW, (v) => ws.parseInstant(v)),
   num("compareVersions", "a", "B", "数の比べ", "1.2.3", (v) => ws.compareVersions(v, "1.2.3")),
@@ -88,7 +88,7 @@ const actionRows = [
   H("shownValueOf", "value", "C", "classifyValue（閉じた形で valid だけ示す）", "0123456789abcdef0123456789abcdef01234567", (v) => ws.shownValueOf(CATALOG, "sds_commit", v), (r) => r === ws.WITHHELD_NAME, () => true),
   H("shownValueOf", "itemKey", "C", "項目一覧を引くだけ", "sds_commit", (v) => ws.shownValueOf(CATALOG, v, "0123456789abcdef0123456789abcdef01234567"), (r) => r === ws.WITHHELD_NAME, () => true),
   H("strongestAction", "items[].itemKey", "C", "isItemName", "note_text", (v) => ws.strongestAction([{ itemKey: v, state: "missing" }], [{ ...NOTE_ITEM, itemKey: v }]), (r) => r.kind === "none" || ws.isItemName(r.itemKey), (r) => r.kind === "answer-question" && r.itemKey === "note_text"),
-  H("strongestAction", "items[].state", "A", "ITEM_STATES", "conflict", (v) => ws.strongestAction([{ itemKey: "sds_commit", state: v }], CATALOG), (r) => ws.NEXT_ACTIONS.includes(r.kind), () => true),
+  H("strongestAction", "items[].state", "A", "BY_STATE の引き（未知の状態は wait-for-person）", "conflict", (v) => ws.strongestAction([{ itemKey: "sds_commit", state: v }], CATALOG), (r) => r.kind === "wait-for-person" && r.itemKey === "sds_commit", () => true),
   H("questionsOf", "items[].itemKey", "C", "isItemName", "note_text", (v) => ws.questionsOf([{ itemKey: v, state: "missing", candidates: [] }], [{ ...NOTE_ITEM, itemKey: v }]), (r) => r.length === 0, (r) => r.length === 1 && r[0].itemKey === "note_text"),
   H("questionsOf", "items[].state", "A", "ITEM_STATES", "conflict", (v) => ws.questionsOf([{ itemKey: "sds_commit", state: v, candidates: [] }], CATALOG), (r) => r.length === 0, (r) => r.length === 1),
   H("questionsOf", "items[].candidates[].candidateRef", "C", "isShowableRef", "sds_commit@sds_pin:.shirube/sds-pin.json", (v) => ws.questionsOf([{ itemKey: "sds_commit", state: "conflict", candidates: [{ candidateRef: v }] }], CATALOG), (r) => r[0].candidateRefs.length === 0, (r) => r[0].candidateRefs.length === 1),
@@ -99,7 +99,31 @@ const evalRows = [
   H("evaluateItem", "observedItems（配列でない）", "B", "Array.isArray", ITEMS, (v) => ws.evaluateItem(SDS, v), () => false, (r) => r.state === "conflict"),
 ];
 
+// 守りの外れを見分ける行は、64 文字の乱数らしい連なりを入れた時の結果の値そのものを決める（型だけの確かめでは、守りを外して真偽が逆になっても通る）。
+// [結果の値, 入れる連なり]。連なりを省いた行は LEAK（大小文字・数字が混ざった 64 文字。門の (e) だけが当てる）。(a)〜(d) だけを見る門と構造体の走査には、接頭辞（b）を持つ連なりを入れる
+// （LEAK は (e) にしか当たらず、この 2 つは「当たらない」が正しい結果になるため）。項目名の形の門には、小文字・数字だけの連なりを入れる（項目名の形は通り、(e) だけが断る）。
+const LEAK_B = `ghp_${LEAK.slice(4)}`;
+const TIGHT = new Map([
+  ["isSecretLike.value", [true]], ["rejectionReasonOf.value", ["secret_like"]], ["hasSecretShape.text", [true, LEAK_B]], ["exposesText.text", [true]], ["exposesText.gateClass", [true]],
+  ["isSecretLikeRefText.text", [true]], ["isRefName.value", [false]], ["isItemKeyText.value", [false]], ["isRefId.value", [false]], ["carriesSecretShape.value", [true, LEAK_B]],
+  ["isItemName.value", [false, LEAK_LOWER]], ["isShowableName.value", [false]], ["isShowableRef.value", [false]], ["isLengthBucket.value", [false]], ["isKnownCause.cause", [false]],
+  ["isAllowedFormat.value", [false]], ["isAllowedFormat.valueType", [false]], ["isAllowedFormat.elementShape", [false]],
+  ["isReadableCatalogItem.entry.itemKey", [false]], ["isReadableCatalogItem.entry.sources[].kind", [false]],
+  ["closedMatches.answer.kind", [false]], ["closedMatches.answer.valueDigest", [false]], ["closedMatches.entry.valueType", [false]], ["closedMatchesItem.item.confirmedValue", [false]],
+  ["isObservationStale.owner[field]", [true]], ["isObservationStale.field（名前）", [true]], ["isDraftStale.owner[field]", [true]], ["isRequiredSource.sourceEntry.requiredForConfirmed", [true]],
+  ["parseInstant.text", [null]], ["compareVersions.a", [null]], ["compareVersions.b", [null]], ["lengthOf.value", [64]],
+  ["targetBindingOf.sourceEntry.targetBinding", ["named"]], ["normalizationOf.entry.normalization", ["exact"]], ["elementShapeOf.entry.elementShape", ["string"]],
+  ["classifyValue.value", ["secret_like"]], ["classifyValue.valueType", ["secret_like"]], ["classifyValue.elementShape", ["secret_like"]], ["valueFormOf.valueType", ["open"]],
+  ["formOf.itemKey", ["open"]], ["actionOf.item.state", ["wait-for-person"]], ["actionOf.item.itemKey", ["fix-source"]],
+]);
+const tighten = (row) => {
+  const given = TIGHT.get(row.id);
+  if (given === undefined) return row;
+  const [expected, leak] = given;
+  return { ...row, ...(leak === undefined ? {} : { leak }), refused: (r) => r === expected };
+};
+
 // 例外を起こして断る欄（例外の文面は固定で、入力を写さない。試験が文面にも LEAK が無いことを確かめる）。
 const THROWS = new Set(["lengthOf.valueType", "lengthBucketOf.length", "evaluateItem.observedItems（配列でない）", "positionKeyOf.position"]);
 
-export const HELPER_ROWS =[...statusRows, ...matchRows, ...staleRows, ...pureRows, ...hashRows, ...actionRows, ...evalRows].map((row) => (THROWS.has(row.id) ? { ...row, throws: true } : row));
+export const HELPER_ROWS =[...statusRows, ...matchRows, ...staleRows, ...pureRows, ...hashRows, ...actionRows, ...evalRows].map((row) => tighten(THROWS.has(row.id) ? { ...row, throws: true } : row));

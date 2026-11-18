@@ -56,7 +56,7 @@ const unitContainerRows = [
 const fitsRows = [
   truth("unitFits", "unit.value", "C", "classifyValue（閉じた形で valid だけ）", COMMIT, (value) => ws.unitFits(SDS, { ...UNIT, value })),
   truth("unitFits", "entry.valueType", "A", "valueFormOf（閉じた形だけ）", "commit-oid", (value) => ws.unitFits({ ...SDS, valueType: value }, { ...UNIT, value: COMMIT })),
-  row("unitFits", "entry.elementShape", "A", "elementShapeOf（既定は string）", "string", (value) => ws.unitFits({ itemKey: "x_list", valueType: "list", elementShape: value }, { ...UNIT, value: ["a"] }), isBool, isBool),
+  row("unitFits", "entry.elementShape", "A", "読まない（閉じた形の形式は要素の形を読まない。unitFits は elementShapeOf を呼ばない）", "string", (value) => ws.unitFits({ itemKey: "x_list", valueType: "list", elementShape: value }, { ...UNIT, value: ["a"] }), (r) => r === false, (r) => r === false),
 ];
 
 // 全部の単位が読めて合うか（unitsFit）。
@@ -98,7 +98,7 @@ const answerContainerRows = [
   truth("isReadableAnswer", "answer（object でない）", "B", "typeof object", ANSWER, (value) => ws.isReadableAnswer(value, [NOTE_ITEM])),
   row("isReadableAnswer", "answer.（知らない欄の名前）", "A", "ANSWER_KEYS（名指しの欄だけ）", undefined, (value) => ws.isReadableAnswer(value === undefined ? ANSWER : { ...ANSWER, [value]: 1 }, [NOTE_ITEM]), (r) => r === true, (r) => r === false),
   truth("isReadableAnswer", "catalog[].valueType", "A", "rejectionReasonOf", "string", (value) => ws.isReadableAnswer(ANSWER, [{ ...NOTE_ITEM, valueType: value }])),
-  row("isReadableAnswer", "catalog（配列でない）", "B", "Array.isArray", [NOTE_ITEM], (value) => ws.isReadableAnswer(ANSWER, value), isBool, isBool),
+  row("isReadableAnswer", "catalog（配列でない）", "B", "Array.isArray（配列でない項目一覧は省いた時と同じ。値は門だけを通す）", [NOTE_ITEM], (value) => ws.isReadableAnswer(ANSWER, value), (r) => r === true, (r) => r === true),
 ];
 
 // 公開の文字列の判定（どれも真偽だけ返す）。
