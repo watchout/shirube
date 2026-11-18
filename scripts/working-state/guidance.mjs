@@ -23,11 +23,12 @@ const NOT_STARTABLE = "開始できない理由: 未確認の項目が残って�
 const isObject = (value) => typeof value === "object" && value !== null;
 const listOf = (value) => (Array.isArray(value) ? value.filter(isObject) : []);
 const isSafe = (value) => typeof value === "string" && value !== "" && value.length <= NAME_MAX && !UNSAFE_TEXT.test(value);
-// 対象の名前は、安全な文字の範囲に加えて、秘密らしさを value-exposure の 1 か所の判定（classifyValue）に通す。秘密らしい・判定できない名前は示さない。
+// 対象の名前・出典の種類と位置は、安全な文字の範囲に加えて、秘密らしさを value-exposure の 1 か所の判定（classifyValue）に通す。秘密らしい・判定できない名前は示さない。
 const [, , SECRET_LIKE] = VALUE_CLASSIFICATIONS;
 const isShowableName = (value) => isSafe(value) && classifyValue("string", value) !== SECRET_LIKE;
 const safeOr = (value) => (isSafe(value) ? value : WITHHELD_NAME);
-const sourceName = (ref) => `${safeOr(ref?.sourceKind)}:${safeOr(ref?.locator)}`;
+const nameOr = (value) => (isShowableName(value) ? value : WITHHELD_NAME);
+const sourceName = (ref) => `${nameOr(ref?.sourceKind)}:${nameOr(ref?.locator)}`;
 const causesOf = (item) => (Array.isArray(item.unobservableCauses) ? item.unobservableCauses.filter((cause) => CAUSE_PATTERN.test(cause)) : []);
 
 // 門の結果。読めない形（欠け・型違い・U1 の符号の形でない文字）は null で、結果を確認できずと書く。
