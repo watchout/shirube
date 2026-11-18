@@ -8,7 +8,7 @@ import { parseInstant } from "./instant.mjs";
 import { evaluateItem } from "./item-state.mjs";
 import { normalizeValue } from "./normalize.mjs";
 import { factsOf, itemObservationDigestOf } from "./observation-facts.mjs";
-import { VALUE_REJECTION_REASONS, rejectionReasonOf } from "./value-exposure.mjs";
+import { VALUE_REJECTION_REASONS, hasTokenPrefix, rejectionReasonOf } from "./value-exposure.mjs";
 
 // 回答を拒む理由の固定の分類（BR5.1）。値の検査の分類に、受付の分類（古い回答・同時刻で値が違う回答）を足した全部。
 export const REJECTION_REASONS = Object.freeze([...VALUE_REJECTION_REASONS, "stale_answer", "duplicate_conflict"]);
@@ -16,7 +16,8 @@ const KINDS = ["value", "keep-absent"];
 const ID_RE = /^[A-Za-z0-9._:-]{1,64}$/;
 
 // 呼出側が渡す識別（回答・draft・選択）の形。識別の許される形はここ 1 か所が持つ（S3）。
-export const isRefId = (value) => typeof value === "string" && ID_RE.test(value);
+// 既知の token の接頭辞で始まる形は識別にしない（識別は出力・wire にそのまま写るため。判定は value-exposure の 1 か所）。
+export const isRefId = (value) => typeof value === "string" && ID_RE.test(value) && !hasTokenPrefix(value);
 
 const entryIn = (catalog, itemKey) => (Array.isArray(catalog) ? catalog.find((candidate) => candidate?.itemKey === itemKey) : undefined);
 

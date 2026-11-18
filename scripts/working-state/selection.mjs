@@ -5,7 +5,7 @@
 import { isRefId } from "./answers.mjs";
 import { deepFreeze } from "./canonical.mjs";
 import { isObservationStale } from "./observation-facts.mjs";
-import { valueFormOf } from "./value-exposure.mjs";
+import { hasTokenPrefix, valueFormOf } from "./value-exposure.mjs";
 
 // 選択にしない理由の固定の分類（入力を写さない）。
 export const SELECTION_REFUSALS = Object.freeze(["invalid_input", "unknown_candidate", "not_selectable", "unknown_observation", "invalid_guidance"]);
@@ -17,12 +17,12 @@ const refuse = (reason) => deepFreeze({ status: "refused", selection: null, reas
 const isObject = (value) => typeof value === "object" && value !== null;
 
 function guidanceCopy(guidance) {
-  if (!isObject(guidance) || typeof guidance.text !== "string" || guidance.text === "") return null;
+  if (!isObject(guidance) || typeof guidance.text !== "string" || guidance.text === "" || hasTokenPrefix(guidance.text)) return null;
   return Object.fromEntries(GUIDANCE_KEYS.filter((key) => guidance[key] !== undefined).map((key) => [key, structuredClone(guidance[key])]));
 }
 
 const wellFormed = ({ selectionId, draft, catalog }) =>
-  isRefId(selectionId) && isObject(draft) && Array.isArray(draft.items) && Array.isArray(draft.observationRefs) && Array.isArray(catalog) && isRefId(draft.draftId) && typeof draft.targetRef === "string";
+  isRefId(selectionId) && isObject(draft) && Array.isArray(draft.items) && Array.isArray(draft.observationRefs) && Array.isArray(catalog) && isRefId(draft.draftId) && typeof draft.targetRef === "string" && !hasTokenPrefix(draft.targetRef);
 
 // 候補を持つ項目（食い違いの項目）。見つからなければ null。
 const itemOf = (draft, candidateRef) => draft.items.find((item) => item.candidates?.some((candidate) => candidate.candidateRef === candidateRef)) ?? null;

@@ -6,11 +6,12 @@ import { isRefId, reconcileAnswers } from "./answers.mjs";
 import { deepFreeze, digestOf } from "./canonical.mjs";
 import { evaluateItems } from "./item-state.mjs";
 import { factsOf, isObservationStale, observationDigestOf } from "./observation-facts.mjs";
+import { hasTokenPrefix } from "./value-exposure.mjs";
 
 // draft を返さない理由の固定の分類（入力を写さない）。
 export const DRAFT_REFUSALS = Object.freeze(["invalid_input", "build_failed"]);
 
-const isName = (value) => typeof value === "string" && value !== "";
+const isName = (value) => typeof value === "string" && value !== "" && !hasTokenPrefix(value);
 const refuse = (reason) => deepFreeze({ status: "refused", draft: null, reason });
 
 // 作れる入力か。観測の対象が draft の対象と違う観測は混ぜない（別の対象の事実で draft を作らない）。
