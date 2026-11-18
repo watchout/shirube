@@ -77,9 +77,9 @@ test("T6.4+ 閉じた形: 再観測で実際の設定が回答と一致なら ma
   assert.equal(status(versionAnswer("2.11.1", { observed: wrongTarget }), VERSION, wrongTarget), "unobservable");
 });
 
-test("T6.4- 観測の digest が変わった回答は、一致していても invalidated（BR6.2 の文面どおり）。invalidated・rejected はそのまま示す", () => {
+test("T6.4- 観測の digest が変わり、値が回答と一致しない回答は invalidated（一致する時は T6.2m で一致を確認）。invalidated・rejected はそのまま示す", () => {
   const answers = versionAnswer("9.9.9");
-  const changed = observeWith(CATALOG, withContent(goodReads(), "aidlc_version", "9.9.9\n"));
+  const changed = observeWith(CATALOG, withContent(goodReads(), "aidlc_version", "8.8.8\n"));
   assert.equal(status(answers, VERSION, changed), "invalidated");
   assert.equal(status(ws.reconcileAnswers(answers, changed.items), VERSION, changed), "invalidated");
   const rejected = send(answerInput({ value: "x" })).answers;
