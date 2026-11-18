@@ -1,4 +1,4 @@
-// U2 出口の項目 × BR5.2 の (a)〜(e) の全部の組（code-summary「出口の項目 × BR5.2 の表」の 1 行 = 1 つの試験 M1〜M17）。
+// U2 出口の項目 × BR5.2 の (a)〜(e) の全部の組（code-summary「出口の項目 × BR5.2 の表」の 1 行 = 1 つの試験 M1〜M18）。
 // 各試験は 5 つの列（a 秘密鍵の見出し・b 接頭辞・c Bearer・d JWT・e 20 文字以上の連なり）に同じ入力の作り方を当て、
 // 当てる列は拒まれるか写らないこと、当てない列（意図した限界）はその場面の通常の入力として通ることを、その場で示す。
 import assert from "node:assert/strict";
@@ -257,4 +257,16 @@ test("M17+ 手で作った観測の項目（項目名・観測の識別・出典
     });
   });
   assert.equal(buildDraft({ observedItems: baseItems.map((unit, i) => (i === 0 ? { ...unit, itemKey: JWT3 } : unit)) }).draft.unknownItemKeys.includes(JWT3), true);
+});
+
+test("M18+ 候補の表示値（displayValue。閉じた形の項目の食い違い）: (a)〜(e) の全部が案内に写らず、形式に合う値だけが示される", () => {
+  const oid = "0123456789abcdef".repeat(2) + "01234567";
+  eachColumn((column, secret, form) => {
+    const draft = handDraft([{ itemKey: "sds_commit", state: "conflict", candidates: [candidate({ displayValue: form }), candidate({ displayValue: oid, matchGroup: 2 })], observationRefs: [] }]);
+    const result = guide(draft);
+    assert.equal(result.status, "built", `${column} ${form}`);
+    assert.equal(absent(secret, result), true, `${column} ${form}`);
+    assert.equal(result.guidance.text.includes("（表示しません）"), true, `${column} ${form}`);
+    assert.equal(result.guidance.text.includes(oid), true, `${column} ${form}`);
+  });
 });
