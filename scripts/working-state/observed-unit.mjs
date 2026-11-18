@@ -3,7 +3,7 @@
 // 列の位置で示す観測できず（unavailable・malformed）の単位に置き換える（印は項目名の形の observed-position-N。入力から作らない）。
 // 他の部品へ import するのは閉じた一覧・門だけ（判定の持ち主は value-exposure・catalog・guidance-actions の各 1 か所）。時刻・乱数・環境変数・file を使わない（S4）。
 import { isDigest } from "./canonical.mjs";
-import { SOURCE_KINDS, elementShapeOf } from "./catalog.mjs";
+import { SOURCE_KINDS } from "./catalog.mjs";
 import { LENGTH_BUCKETS, isKnownCause } from "./normalize.mjs";
 import { classifyValue, isItemKeyText, isRefName, isSecretLike, valueFormOf } from "./value-exposure.mjs";
 
@@ -47,7 +47,7 @@ export function isReadableUnit(unit) {
 // 値が項目の定義に合うか。値を持てるのは閉じた形の項目の形式に合う値だけ（開いた形・知らない項目の単位は値を持たない側は問わず、値は写らない）。
 export function unitFits(entry, unit) {
   if (entry === undefined || unit.value === undefined) return true;
-  return valueFormOf(entry.valueType) === "closed" && classifyValue(entry.valueType, unit.value, elementShapeOf(entry)) === "valid";
+  return valueFormOf(entry.valueType) === "closed" && classifyValue(entry.valueType, unit.value) === "valid";
 }
 
 // 読めない単位の代わり。観測できず（malformed）で、値・presence・対象の結びを持たない。この形自身も isReadableUnit を通る（置き換えは何度しても同じ）。
