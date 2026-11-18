@@ -265,17 +265,22 @@ test("M17+ 手で作った観測の項目（項目名・観測の識別・出典
     (form) => (unit) => ({ ...unit, sourceRef: { ...unit.sourceRef, sourceKind: form } }),
     (form) => (unit) => ({ ...unit, sourceRef: { ...unit.sourceRef, locator: form } }),
   ];
+  // 食い違いの項目（sds_commit の pin）の単位を書き換える。観測の識別・位置は、食い違いの候補の参照と行に出る。
+  const at = baseItems.findIndex((unit) => unit.itemKey === "sds_commit" && unit.sourceRef.sourceKind === "sds_pin");
   eachColumn((column, secret, form) => {
     tweaks.forEach((tweak, index) => {
-      const { draft } = buildDraft({ observedItems: baseItems.map((unit, i) => (i === 0 ? tweak(form)(unit) : unit)) });
+      const { draft } = buildDraft({ observedItems: baseItems.map((unit, i) => (i === at ? tweak(form)(unit) : unit)) });
       assert.notEqual(draft, null, `${column} ${form}`);
-      assert.equal(absent(secret, guide(draft)), true, `${column} ${form}`);
+      const result = guide(draft);
+      assert.equal(absent(secret, result), true, `${column} ${form}`);
+      if (index === 1) assert.equal(result.guidance.text.includes("表示しない参照 1 件"), true, `${column} ${form}`);
+      if (index === 3) assert.equal(result.guidance.text.includes("（表示しません）"), true, `${column} ${form}`);
       // 観測の識別（index 1）は観測の参照になる。選択と wire は参照に (e) を当てない（M6+ の限界）ので、(e) の列は案内だけを調べる。
       if (column === "e" && index === 1) return;
-      assert.equal(absent(secret, ws.draftToC02Wire(draft), createSelection(draft, { observationRef: draft.observationRefs[0] })), true, `${column} ${form}`);
+      assert.equal(absent(secret, ws.draftToC02Wire(draft), createSelection(draft, { observationRef: index === 1 ? form : draft.observationRefs[0] })), true, `${column} ${form}`);
     });
   });
-  assert.equal(buildDraft({ observedItems: baseItems.map((unit, i) => (i === 0 ? { ...unit, itemKey: JWT3 } : unit)) }).draft.unknownItemKeys.includes(JWT3), true);
+  assert.equal(buildDraft({ observedItems: baseItems.map((unit, i) => (i === at ? { ...unit, itemKey: JWT3 } : unit)) }).draft.unknownItemKeys.includes(JWT3), true);
 });
 
 test("M18+ 候補の表示値（displayValue。閉じた形の項目の食い違い）: (a)〜(e) の全部が案内に写らず、形式に合う値だけが示される", () => {
