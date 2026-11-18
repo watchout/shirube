@@ -112,9 +112,9 @@ const textRows = [
 
 // 選択が古いか（isSelectionStale）。
 const staleRows = [
-  row("isSelectionStale", "selection.draftObservationDigest", "B", "digest の比べだけ", "x", (value) => ws.isSelectionStale({ draftObservationDigest: value }, CLOSED.units), isBool, isBool),
+  row("isSelectionStale", "selection.draftObservationDigest", "B", "digest の比べだけ", "x", (value) => ws.isSelectionStale({ draftObservationDigest: value }, CLOSED.units), (r) => r === true, (r) => r === true),
   row("isSelectionStale", "observedItems[].itemKey", "C", "readableUnitsOf", UNIT.itemKey, (value) => ws.isSelectionStale({ draftObservationDigest: "x" }, CLOSED.units.map((unit, i) => (i === CLOSED.index ? { ...unit, itemKey: value } : unit))), isBool, isBool),
-  row("isSelectionStale", "selection（欠け）", "B", "?? {}", {}, (value) => ws.isSelectionStale(value, CLOSED.units), isBool, isBool),
+  row("isSelectionStale", "selection（欠け）", "B", "?? {}", {}, (value) => ws.isSelectionStale(value, CLOSED.units), (r) => r === true, (r) => r === true),
 ];
 
 // 案内の写し（guidanceCopyOf）。名指しの欄だけを欄ごとの検査に通して写し、通らなければ null。
