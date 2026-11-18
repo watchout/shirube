@@ -58,6 +58,7 @@ test("G3+ 設定の対でない文字列には全体の (e) が当たる（部�
   assert.equal(ws.classifyValue("list", [`models.preset=${MIXED40}=x`], "setting-pair"), "secret_like");
   assert.equal(ws.classifyValue("list", [MIXED40], "setting-pair"), "secret_like");
   assert.equal(ws.classifyValue("list", [`models.preset=${MIXED40}`], "string"), "secret_like");
+  assert.equal(ws.classifyValue("list", ["docs/abcdefghijklmnopqrs-abcdefghij=x"], "setting-pair"), "secret_like"); // 対の形でない（key に / がある）読める path の = は部品に分けない
   assert.equal(ws.classifyValue("list", ["models.preset=thorough"], "string"), "valid");
 });
 

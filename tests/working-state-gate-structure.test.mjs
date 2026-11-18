@@ -48,6 +48,7 @@ test("S4+ key が symbol・値が getter・symbol・function の入れ物は含�
 test("S5- 普通の構造体は含まない（文字列・数・真偽・undefined・null・入れ子の配列と object・Map・Set・prototype の無い object）", () => {
   const harmless = { a: "harmless", b: [1, true, null, undefined, "x"], c: { d: new Map([["k", ["v"]]]), e: new Set(["s"]) }, f: Object.create(null) };
   assert.equal(carries(harmless), false);
+  assert.equal(carries({ id: "x".repeat(40), uuid: "123e4567-e89b-12d3-a456-426614174000", [`k${"y".repeat(30)}`]: [new Set(["z".repeat(30)])] }), false); // 構造体の文字列・key は (e) を当てない（正当な長い名前・UUID）
   for (const value of ["harmless", "", 0, 1.5, true, null, undefined, 10n, [], {}, new Map(), new Set(), [[[]]]]) assert.equal(carries(value), false, String(value));
 });
 

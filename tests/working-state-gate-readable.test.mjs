@@ -39,6 +39,14 @@ test("R3+ 読める path は * を含められる（glob の形）。* を使っ
   assert.equal(cls("docs/**/some-long-readable-name/**/spec.md"), "valid");
   assert.equal(cls("src/*/some-long-readable-name.test.js"), "valid");
   assert.equal(cls("a/**/" + word(20)), "secret_like");
+  assert.equal(cls(`src/${word(19)}*${word(19)}/x.js`), "secret_like"); // * で分けても、* を除いた 1 つの部品の長さで数える
+});
+
+test("R8+ 読める path は / か . を含む語に限る（- と _ だけで続く 1 語の長い名前は読める path にしない）。空の部品（先頭の ./ ・ // ）は数えない", () => {
+  assert.equal(cls(`${word(19)}-${word(19)}`), "secret_like");
+  assert.equal(cls(`${word(10)}_${word(10)}`), "secret_like");
+  assert.equal(cls("./docs/shirube/readable-long-path/spec.md"), "valid");
+  assert.equal(cls("docs//shirube/readable-long-path//spec.md"), "valid");
 });
 
 test("R4+ 語は空白で分けて 1 語ずつ (e) に通す（空白を含む文でも、読める path は連なりに数えない）", () => {
