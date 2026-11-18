@@ -66,7 +66,7 @@ test("T5.2+ 秘密らしい入力は secret_like（形式に合っていても�
   assert.equal(reason("string", "-----BEGIN " + "PRIVATE KEY-----"), "secret_like");
   assert.equal(reason("string", "x".repeat(30)), "secret_like");
   const fixed = new Set(["secret_like", "invalid_type", "too_long", "invalid_character", "invalid_format", "out_of_boundary"]);
-  for (const value of [TOKEN, "a b", LONG_TEXT, 7, "../x", ""]) {
+  for (const value of [TOKEN, "a b", LONG_TEXT, 7, "../x", "a\tb"]) {
     const result = reason("string", value);
     assert.equal(fixed.has(result), true, String(result));
     assert.equal(String(result).includes(String(value)), false);
@@ -81,6 +81,20 @@ test("T5.2- 判定できない入力（未知の型・未知の要素の形・�
   assert.doesNotThrow(() => { result = reason("list", hostile, "setting-pair"); });
   assert.equal(result, "secret_like");
   assert.equal(JSON.stringify(result).includes(TOKEN), false);
+});
+
+test("T5.2- 途中で（判定の後の段で）例外を起こす入力でも、例外は外へ出ず secret_like になる（何回目の参照で例外にしても同じ）", () => {
+  const results = new Set();
+  for (let allowed = 0; allowed < 400; allowed += 1) {
+    let reads = 0;
+    const hostile = new Proxy(["a=1", "b=2"], { get(target, key) { reads += 1; if (reads > allowed) throw new Error(TOKEN); return Reflect.get(target, key); } });
+    let result;
+    assert.doesNotThrow(() => { result = reason("list", hostile, "setting-pair"); }, `allowed ${allowed}`);
+    results.add(result);
+    assert.equal(String(result).includes(TOKEN), false);
+  }
+  assert.equal(results.has("secret_like"), true);
+  assert.equal(results.has(null), true);
 });
 
 test("T5.1 拒否の分類の一覧は固定の定数で、classifyValue の判定と矛盾しない（valid ⇔ null）", () => {

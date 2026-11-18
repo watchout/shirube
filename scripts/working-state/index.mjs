@@ -6,6 +6,7 @@ export * from "./escape.mjs";
 export * from "./instant.mjs";
 export * from "./item-state.mjs";
 export * from "./normalize.mjs";
+export * from "./observation-facts.mjs";
 export * from "./observation.mjs";
 export * from "./read-check.mjs";
 export * from "./source-extract.mjs";

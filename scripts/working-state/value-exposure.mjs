@@ -6,7 +6,9 @@
 // 時刻・乱数・環境変数・file・子 process・network を使わない（S4）。
 
 // 文字列の境界: 空白と制御・書式・私用・未割当・単独の surrogate を含まない 1〜256 文字（code point で数える）。
-const STRING_RE = /^[^\s\p{C}]{1,256}$/u;
+const TEXT_MAX = 256;
+const STRING_RE = new RegExp(`^[^\\s\\p{C}]{1,${TEXT_MAX}}$`, "u");
+const UNSAFE_CHAR_RE = /[\s\p{C}]/u;
 // 版: 数字（1〜9 桁）を . でつないだ 2〜4 個と、任意の接尾辞 1 つ（英数字で始まり、英数字・.・- の 32 文字まで）。
 const VERSION_RE = /^[0-9]{1,9}(?:\.[0-9]{1,9}){1,3}(?:[-+][0-9A-Za-z][0-9A-Za-z.-]{0,31})?$/;
 const COMMIT_OID_RE = /^[0-9a-fA-F]{40}$/;
@@ -29,7 +31,7 @@ const isText = (value, pattern) => typeof value === "string" && pattern.test(val
 // 要素の形ごとの列の規則。最小の個数・最大の個数・要素の検査。
 // structural = 要素の形が構造を持ち、(e) の長い連なりがその形で説明できる（自由な文字列の形は構造を持たない）。
 const LIST_RULES = new Map([
-  ["string", { min: 0, max: 256, structural: false, element: (e) => isText(e, STRING_RE) }],
+  ["string", { min: 0, max: TEXT_MAX, structural: false, element: (e) => isText(e, STRING_RE) }],
   ["setting-pair", { min: 1, max: 64, structural: true, element: (e) => isText(e, SETTING_PAIR_RE) }],
 ]);
 
@@ -48,24 +50,27 @@ function isListOf(value, rule) {
 const stringParts = (value) => (typeof value === "string" ? [value] : []);
 const listParts = (value) => (Array.isArray(value) ? Array.from(value).filter((e) => typeof e === "string") : []);
 const never = () => false;
+const isString = (value) => typeof value === "string";
 
 // valueType ごとの形（closed = 形式が閉じていて秘密らしい値と区別できる、open = 区別できない）と検査。1 つの表。
 // parts = 秘密らしさを調べる文字列、explains = (e) の長い連なりを項目の許される形式が説明できるか（構造のある形だけ）。
+// typed = 値の型が形として合うか（回答を拒む時の理由 invalid_type の根拠。形式の検査 check とは別に、型だけを見る）。
 const FORMATS = new Map([
-  ["string", { form: "open", check: (v) => isText(v, STRING_RE), parts: stringParts, explains: never }],
-  ["version", { form: "closed", check: (v) => isText(v, VERSION_RE), parts: stringParts, explains: (t) => VERSION_RE.test(t) }],
-  ["commit-oid", { form: "closed", check: (v) => isText(v, COMMIT_OID_RE), parts: stringParts, explains: (t) => COMMIT_OID_RE.test(t) }],
+  ["string", { form: "open", check: (v) => isText(v, STRING_RE), typed: isString, parts: stringParts, explains: never }],
+  ["version", { form: "closed", check: (v) => isText(v, VERSION_RE), typed: isString, parts: stringParts, explains: (t) => VERSION_RE.test(t) }],
+  ["commit-oid", { form: "closed", check: (v) => isText(v, COMMIT_OID_RE), typed: isString, parts: stringParts, explains: (t) => COMMIT_OID_RE.test(t) }],
   [
     "list",
     {
       form: "open",
       check: (v, shape) => LIST_RULES.has(shape) && isListOf(v, LIST_RULES.get(shape)),
+      typed: (v) => Array.isArray(v) && Array.from(v).every(isString),
       parts: listParts,
       explains: (t, shape) => LIST_RULES.get(shape).structural && LIST_RULES.get(shape).element(t),
       knows: (shape) => LIST_RULES.has(shape),
     },
   ],
-  ["boolean", { form: "closed", check: (v) => v === true || v === false || v === "true" || v === "false", parts: stringParts, explains: (t) => t === "true" || t === "false" }],
+  ["boolean", { form: "closed", check: (v) => v === true || v === false || v === "true" || v === "false", typed: (v) => typeof v === "boolean" || isString(v), parts: stringParts, explains: (t) => t === "true" || t === "false" }],
 ]);
 
 export const VALUE_TYPES = Object.freeze([...FORMATS.keys()]);
@@ -108,6 +113,38 @@ export function classifyValue(valueType, value, elementShape = "string") {
     if (format === undefined || format.knows?.(elementShape) === false) return SECRET_LIKE;
     if (format.parts(value).some((text) => looksSecret(text, format.explains(text, elementShape)))) return SECRET_LIKE;
     return format.check(value, elementShape) === true ? VALID : INVALID_FORMAT;
+  } catch {
+    return SECRET_LIKE;
+  }
+}
+
+// 回答を拒む理由の固定の分類（BR5.1・BR5.2）。入力から作らない定数で、入力の一部も写さない。
+// 回答の受付の分類（stale_answer・duplicate_conflict）は値の検査の外なので、回答の部品が持つ。
+export const VALUE_REJECTION_REASONS = Object.freeze(["secret_like", "invalid_type", "too_long", "invalid_character", "invalid_format", "out_of_boundary"]);
+const [, INVALID_TYPE, TOO_LONG, INVALID_CHARACTER, , OUT_OF_BOUNDARY] = VALUE_REJECTION_REASONS;
+
+const DRIVE_RE = /^[A-Za-z]:[\\/]/;
+// 対象の根の外へ出る path: 区切りで始まる・drive 付き・`..` の段を含む（BR5.1 の path の境界）。
+const escapesRoot = (text) => /^[\\/]/.test(text) || DRIVE_RE.test(text) || text.split(/[\\/]/u).includes("..");
+
+// 形式に合わない値の理由を、型 → 長さ → 文字 → 形の順で 1 つに絞る。
+function refine(format, value, elementShape) {
+  if (!format.typed(value)) return INVALID_TYPE;
+  const limit = LIST_RULES.get(elementShape)?.max ?? Number.POSITIVE_INFINITY;
+  const texts = format.parts(value);
+  if (texts.some((text) => [...text].length > TEXT_MAX) || (Array.isArray(value) && value.length > limit)) return TOO_LONG;
+  return texts.some((text) => UNSAFE_CHAR_RE.test(text)) ? INVALID_CHARACTER : INVALID_FORMAT;
+}
+
+// 回答の値を受け入れてよいか。受け入れてよければ null、だめなら固定の理由を 1 つ返す。分類は classifyValue の 1 回だけ
+// （秘密らしさ・許される形式の表の持ち主はこの file の 1 か所）。判定できない・例外を起こす入力は secret_like（失敗側）。
+export function rejectionReasonOf(valueType, value, elementShape = "string") {
+  const classification = classifyValue(valueType, value, elementShape);
+  if (classification === SECRET_LIKE) return SECRET_LIKE;
+  try {
+    const format = FORMATS.get(valueType);
+    if (classification === VALID) return format.parts(value).some(escapesRoot) ? OUT_OF_BOUNDARY : null;
+    return refine(format, value, elementShape);
   } catch {
     return SECRET_LIKE;
   }
