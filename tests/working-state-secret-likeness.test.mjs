@@ -111,6 +111,14 @@ test("T5.2- (d) JWT の形の境界: 3 つの部分で、先の 2 つが 10 文�
   is("valid", "string", [filler(10, "a"), filler(10, "b"), filler(5, "c"), filler(5, "d")].join("."));
 });
 
+test("T5.2- (d) JWT の形は各部分の _ と - も含めて同じ（base64url の 3 つの部分それぞれ）", () => {
+  const part = "b_b-b_b-b_b";
+  is("secret_like", "string", [part, filler(10, "b"), filler(10, "c")].join("."));
+  is("secret_like", "string", [filler(10, "a"), part, filler(10, "c")].join("."));
+  is("secret_like", "string", [filler(10, "a"), filler(10, "b"), part].join("."));
+  is("secret_like", "string", ["-" + filler(9, "a"), "_" + filler(9, "b"), "-_"].join("."));
+});
+
 test("T5.2- 形式に合わず秘密らしくもない値は invalid_format（型違い・範囲外・形の違い）", () => {
   is("invalid_format", "version", "abc");
   is("invalid_format", "version", "1");
