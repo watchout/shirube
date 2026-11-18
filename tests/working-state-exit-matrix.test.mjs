@@ -111,6 +111,10 @@ test("M7+ 候補の参照（candidateRef・selectedCandidateRef）: 案内は (a
     const result = guide(draft);
     assert.equal(result.questions[0].candidateRefs.length, 1, `${column} ${form}`);
     assert.equal(absent(secret, result), true, `${column} ${form}`);
+    // 回答の入力の選んだ候補（selectedCandidateRef）は、項目の候補に当たる物だけ受ける。当たらない形は拒まれ、記録に写らない。
+    const answered = send(answerInput({ kind: "value", selectedCandidateRef: form }), { observed: observeWith() });
+    assert.equal(answered.status, "rejected", `${column} ${form}`);
+    assert.equal(absent(secret, answered), true, `${column} ${form}`);
   });
   for (const column of APPLIED) {
     for (const form of variants(SHAPES[column])) {
@@ -130,6 +134,10 @@ test("M8+ 項目名（itemKey・原因の欄・質問・wire の項目の列）:
     const { draft } = buildDraft({ catalog, observedItems: [] });
     assert.equal(guide(draft, { catalog }).reason, "invalid_input", form);
     assert.equal(absent(form, ws.draftToC02Wire(draft)), true, form);
+    // 回答の入力の項目名は、項目一覧の項目名に当たる物だけ読む。当たらない形は読まれず（unreadable）、記録に写らない。
+    const unread = send(answerInput({ itemKey: form }), { observed: observeWith() });
+    assert.equal(unread.status, "unreadable", form);
+    assert.equal(absent(form, unread), true, form);
   }
   for (const column of APPLIED) {
     assert.equal(wireOf({ missingItems: [SHAPES[column]] }), "refused", column);
@@ -235,6 +243,10 @@ test("M16+ 案内の固定の語彙の欄（状態・観測できない原因・
     assert.equal(result.status, "built", `${column} ${form}`);
     assert.equal(guide(handDraft([{ itemKey: "aidlc_version", state: form, observationRefs: [] }])).reason, "invalid_input", `${column} ${form}`);
     assert.equal(absent(secret, result), true, `${column} ${form}`);
+    // 回答の時刻（answeredAt）は時刻の形だけ読む。読めない形は読まれず（unreadable）、記録に写らない。
+    const unread = send(answerInput({ answeredAt: form }), { observed: observeWith() });
+    assert.equal(unread.status, "unreadable", `${column} ${form}`);
+    assert.equal(absent(secret, unread), true, `${column} ${form}`);
   });
 });
 
