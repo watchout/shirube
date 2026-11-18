@@ -94,4 +94,22 @@ const inputRows = [
 inputRows[inputRows.length - 1].run = (v) => ws.buildGuidance(typeof v === "string" ? v : { draft: DRAFTS.closed, catalog: CATALOG, conformance: GATE_FAIL });
 inputRows[inputRows.length - 1].ok = (r) => built(r);
 
-export const DRAFT_ROWS = [...buildRows, ...guidanceRows, ...inputRows];
+// 知らない欄: draft・項目・候補・出典の参照に呼出側が足した欄（名前も値も）。案内は写す欄を名指しで読むので、どれも結果に現れない。
+const GUIDE_BASE = json(guideWith(DRAFTS.closed));
+const candidateOf = (draft) => draft.items[indexOf(draft, "sds_commit")].candidates[0];
+const SPOTS = [
+  ["draft", (draft) => draft, "draft"],
+  ["item", (draft) => draft.items[indexOf(draft, "sds_commit")], "draft.items[]"],
+  ["cand", (draft) => candidateOf(draft), "draft.items[].candidates[]"],
+  ["candRef", (draft) => candidateOf(draft).sourceRef, "draft.items[].candidates[].sourceRef"],
+];
+const extraRows = SPOTS.flatMap(([code, spot, label]) => {
+  const at = (patch) => guideWith(patch(structuredClone(DRAFTS.closed)));
+  const make = (id, field, legit, patch) => ({ id: `GU.${code}.${id}`, entry: "buildGuidance", field: `${label}（知らない欄の${field}）`, cls: "A", check: "写す欄を名指しで読む", legit, run: (v) => at((draft) => patch(draft, v)), ok: (r) => json(r) === GUIDE_BASE, refused: SHOWN });
+  return [
+    make("extraKey", "名前", "targetRef", (draft, v) => { spot(draft)[v] ??= 1; return draft; }),
+    make("extraValue", "値", undefined, (draft, v) => { if (v === undefined) delete spot(draft).extra; else spot(draft).extra = v; return draft; }),
+  ];
+});
+
+export const DRAFT_ROWS = [...buildRows, ...guidanceRows, ...inputRows, ...extraRows];

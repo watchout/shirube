@@ -98,4 +98,23 @@ const selectionWireRows = [
   SW("SW.selection", "selection（object でない）", "B", "destructure", SELECTION, (v) => ws.selectionToC02Wire(v)),
 ].map((r) => (r.cls === "U" ? { ...r, cls: "A" } : r));
 
-export const SELECTION_ROWS = [...inputRows, ...guidanceRows, ...guidanceMisc, ...draftWireRows, ...selectionWireRows];
+// 知らない欄: draft・項目・候補・答え・選択・案内に呼出側が足した欄（名前も値も）。写す欄を名指しで読むので、どれも結果に現れない。
+const itemOf = (draft) => draft.items[draft.items.findIndex((item) => item.itemKey === "sds_commit")];
+const EXTRA_SPOTS = [
+  ["CS", "draft", "createSelection", "draft", (given) => given, (v) => createSelection(v), DRAFT, BASE_SEL, created],
+  ["CS", "item", "createSelection", "draft.items[]", (given) => itemOf(given), (v) => createSelection(v), DRAFT, BASE_SEL, created],
+  ["CS", "cand", "createSelection", "draft.items[].candidates[]", (given) => itemOf(given).candidates[0], (v) => createSelection(v), DRAFT, BASE_SEL, created],
+  ["DW", "draft", "draftToC02Wire", "draft", (given) => given, (v) => ws.draftToC02Wire(v), DRAFT, BASE_WIRE, wiredOk],
+  ["DW", "answer", "draftToC02Wire", "answers[]", (given) => given.answers[answerIdx], (v) => ws.draftToC02Wire(v), DRAFT, BASE_WIRE, wiredOk],
+  ["SW", "selection", "selectionToC02Wire", "selection", (given) => given, (v) => ws.selectionToC02Wire(v), SELECTION, BASE_SEL_WIRE, wiredOk],
+  ["SW", "guidance", "selectionToC02Wire", "selection.guidance", (given) => given.guidance, (v) => ws.selectionToC02Wire(v), SELECTION, BASE_SEL_WIRE, wiredOk],
+];
+const extraRows = EXTRA_SPOTS.flatMap(([code, tag, entry, label, spot, call, source, baseline, refused]) => {
+  const make = (id, field, legit, patch) => ({ id: `${code}.${tag}.${id}`, entry, field: `${label}（知らない欄の${field}）`, cls: "A", check: "写す欄を名指しで読む", legit, run: (v) => call(patch(structuredClone(source), v)), ok: (r) => json(r) === baseline, refused });
+  return [
+    make("extraKey", "名前", "targetRef", (given, v) => { spot(given)[v] ??= 1; return given; }),
+    make("extraValue", "値", undefined, (given, v) => { if (v === undefined) delete spot(given).extra; else spot(given).extra = v; return given; }),
+  ];
+});
+
+export const SELECTION_ROWS = [...inputRows, ...guidanceRows, ...guidanceMisc, ...draftWireRows, ...selectionWireRows, ...extraRows];

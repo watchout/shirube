@@ -85,4 +85,21 @@ const containerRows = ENTRIES.flatMap(([code, label, run, refusedOf]) => {
   ];
 });
 
-export const UNIT_ROWS = [...unitRows, ...containerRows];
+// 知らない欄: 単位・出典の参照に呼出側が足した欄（名前も値も）。写す欄を名指しで取るので、どれも結果に現れない。
+const extraRows = ENTRIES.flatMap(([code, label, run, refusedOf]) => {
+  const given = BASES.closed;
+  const bj = json(run(given, given.units));
+  const refused = refusedOf(given, bj);
+  const at = (patch) => run(given, given.units.map((unit, i) => (i === given.index ? patch(structuredClone(unit)) : unit)));
+  const row = (id, field, legit, patch) => ({ id: `${code}.${id}`, entry: label, field, cls: "A", check: "写す欄を名指しで取る", legit, run: (value) => at((unit) => patch(unit, value)), ok: (r) => json(r) === bj, refused });
+  const key = (target) => (unit, value) => { target(unit)[value] ??= 1; return unit; };
+  const val = (target) => (unit, value) => { if (value === undefined) delete target(unit).extra; else target(unit).extra = value; return unit; };
+  return [
+    row("sourceRef.extraKey", "observedItems[].sourceRef（知らない欄の名前）", "locator", key((unit) => unit.sourceRef)),
+    row("sourceRef.extraValue", "observedItems[].sourceRef（知らない欄の値）", undefined, val((unit) => unit.sourceRef)),
+    row("unit.extraKey", "observedItems[]（知らない欄の名前）", "itemKey", key((unit) => unit)),
+    row("unit.extraValue", "observedItems[]（知らない欄の値）", undefined, val((unit) => unit)),
+  ];
+});
+
+export const UNIT_ROWS = [...unitRows, ...containerRows, ...extraRows];
