@@ -64,8 +64,8 @@ test("T6.2m 項目の定義（catalog）が渡されない・項目が見つか�
   const answers = versionAnswers("9.9.9");
   const applied = withVersion("9.9.9\n");
   assert.equal(ws.reconcileAnswers(answers, applied.items)[0].state, "invalidated");
-  assert.equal(reconcile(answers, applied, [])[0].state, "invalidated");
-  assert.equal(reconcile(answers, applied, [COMMIT])[0].state, "invalidated");
+  assert.deepEqual(reconcile(answers, applied, []), []); // 項目が項目一覧に無い回答は読めない（entities.md:92-102・BR5.1）。1 件でも読めなければ空の列で、呼出側は自分の列を持ち続ける。
+  assert.deepEqual(reconcile(answers, applied, [COMMIT]), []);
   assert.equal(verdict(answers, undefined, applied), "invalidated");
 });
 

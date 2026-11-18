@@ -72,7 +72,7 @@ test("X7+ 判定できない入力は秘密らしい（失敗側）: 文字列�
   assert.equal(ws.classifyValue("list", [], "string"), "valid");
   assert.equal(ws.classifyValue("nope", ""), "secret_like");
   for (const bad of ["", 5, null, undefined, {}, TOKEN, JWT_LOWER, WORDS_BEARER, KEY_HEADING]) assert.equal(ws.isRefName(bad), false, String(bad));
-  assert.equal(ws.isRefName(MIXED40), true);
+  assert.equal(ws.isRefName(MIXED40), false); // 識別・参照にも (e) を当てる（決定 95 の 2 回目の追い指示）。40 桁の混ざった連なりは読める部品でないので断る。
 });
 
 test("X6+ 性能: 長い連なりの (d) の判定は文字列の長さの二乗にならない（直前の条件の守り。長さに上限の無い案内の文・識別にも当たる）", () => {

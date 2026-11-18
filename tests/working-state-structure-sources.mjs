@@ -10,8 +10,8 @@ const ROOT = fileURLToPath(new URL("../", import.meta.url));
 const SOURCE_DIR = "scripts/working-state";
 const CLASSES = {
   lc1: ["read-file", "probe-path", "probe-run", "probe-tool"], lc6: ["escape"], index: ["index"],
-  lc2: ["observation", "observation-fields", "read-check", "source-extract"], lc3: ["item-state", "catalog", "value-exposure"], lc4: ["guidance", "guidance-actions"],
-  lc5: ["answers", "answer-match", "answer-status", "observation-facts", "draft", "selection", "c02-wire"], leaf: ["canonical", "instant", "normalize"],
+  lc2: ["observation", "observation-fields", "read-check", "source-extract"], lc3: ["item-state", "catalog", "value-exposure", "observed-unit"], lc4: ["guidance", "guidance-actions"],
+  lc5: ["answers", "answer-match", "answer-status", "observation-facts", "draft", "selection", "guidance-copy", "c02-wire"], leaf: ["canonical", "instant", "normalize"],
 };
 const CLASS_OF = new Map(Object.entries(CLASSES).flatMap(([name, files]) => files.map((file) => [`${file}.mjs`, name])));
 const OUTSIDE_CORE = new Set(["lc1", "lc6", "index"]);

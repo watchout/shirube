@@ -33,13 +33,13 @@ test("J2+ 項目名の (a)〜(e) の形: 項目名が (a)〜(e) のどの形で�
   assert.equal(next([marked({ itemKey: "" })]).status, "unreadable");
 });
 
-test("J3+ 回答の識別: (a)〜(d) の形の識別は読まず（unreadable）、写さない。限界: 識別は呼出側が作る値なので (e) は当てない（限界 2）", () => {
-  for (const column of COLUMNS.filter((name) => name !== "e")) {
+test("J3+ 回答の識別: (a)〜(e) の形の識別は読まず（unreadable）、写さない（識別も (e) を当てる門を通る。決定 95 の 2 回目の追い指示。UUID の形の識別も断る）", () => {
+  for (const column of COLUMNS) {
     const result = next([marked({ answerId: SHAPES[column] })]);
     assert.deepEqual(refused(result), ["unreadable", null, []], column);
     assert.equal(absent(SHAPES[column], result), true, column);
   }
-  assert.equal(next([marked({ answerId: RUN })]).status, "recorded");
+  assert.equal(next([marked({ answerId: RUN })]).status, "unreadable");
 });
 
 test("J4+ 値: (a)〜(e) の形・設定の対の値・入れ子の配列と object の中の形は、どれも読まず（unreadable）、写さない", () => {

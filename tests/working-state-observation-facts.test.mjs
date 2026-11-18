@@ -119,6 +119,7 @@ test("T8.3 入力を書き換えず、読めない入力は例外を起こさず
   ws.factsOf(items);
   assert.equal(JSON.stringify(items), before);
   assert.throws(() => ws.factsOf(null), TypeError);
-  assert.throws(() => ws.factsOf([null]), TypeError);
+  const [position] = ws.factsOf([null]); // 読めない単位は値を写さず、列の位置で示す観測できずの事実にする（例外にしない）。
+  assert.deepEqual([position.unit.itemKey, position.availability, position.unobservableCause], ["observed-position-0", "unavailable", "malformed"]);
   assert.throws(() => ws.observationDigestOf([{ unit: 1n }]), TypeError);
 });

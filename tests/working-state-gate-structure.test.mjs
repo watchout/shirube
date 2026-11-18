@@ -86,7 +86,8 @@ test("S8+ 出口: wire の回答の値・案内の文・手で作った回答の
   assert.equal(createSelection(BASE, { guidance: guidanceOf({ nextAction: { kind: "choose-source", text: "x", [TOKEN]: 1 } }) }).reason, "invalid_guidance");
   assert.equal(createSelection(BASE, { guidance: guidanceOf({ unconfirmed: [new Map([["k", TOKEN]])] }) }).reason, "invalid_guidance");
   assert.equal(selectionWireOf({ guidance: { text: "x", [TOKEN]: 1 } }), "refused");
-  assert.equal(wireOf({ answers: [{ ...ANSWER, value: { plain: ["harmless"] } }] }), "converted");
+  assert.equal(wireOf({ answers: [{ ...ANSWER, value: { plain: ["harmless"] } }] }), "refused"); // 入れ子の object は回答の値の形（真偽・文字列・文字列の列）でない。
+  assert.equal(wireOf({ answers: [{ ...ANSWER, value: ["harmless"] }] }), "converted");
 });
 
 // 入れ物の種類 × 文字列の位置（key・値・Map の組・Set の要素）× (a)〜(d) の形。構造体の中の文字列は (e) を当てない（長い名前・UUID があるため）ので、列は (a)〜(d) だけ。
@@ -109,3 +110,12 @@ for (const [title, roles] of HOLDERS) {
     }
   });
 }
+
+test("S10+ 案内の写し（guidanceCopyOf）: 名指しの欄だけを写す。上位の知らない欄は落とし、入れ子の知らない欄・読めない欄・例外を起こす getter は null（呼ばずに断る）", () => {
+  const copy = ws.guidanceCopyOf({ text: "x", extra: TOKEN, blocking: false, nextAction: { kind: "none", text: "y" } });
+  assert.deepEqual(copy, { nextAction: { kind: "none", text: "y" }, blocking: false, text: "x" });
+  assert.equal(ws.guidanceCopyOf({ text: "x", nextAction: { kind: "none", text: "y", extra: 1 } }), null);
+  assert.equal(ws.guidanceCopyOf({ text: "x", blocking: "no" }), null);
+  assert.equal(ws.guidanceCopyOf({ get text() { throw new Error(TOKEN); } }), null);
+  assert.equal(createSelection(BASE, { guidance: { get text() { throw new Error(TOKEN); } } }).reason, "invalid_guidance");
+});

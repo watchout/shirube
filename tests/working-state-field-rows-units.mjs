@@ -80,7 +80,7 @@ const containerRows = ENTRIES.flatMap(([code, label, run, refusedOf]) => {
   const bj = json(run(given, given.units));
   const refused = refusedOf(given, bj);
   return [
-    { id: `${code}.unit`, entry: label, field: "observedItems[]（object でない単位）", cls: "B", check: "isReadableUnit（object だけ）", legit: given.units[0], run: (value) => run(given, [value, ...given.units.slice(1)]), ok: (r) => json(r) !== undefined, refused },
+    { id: `${code}.unit`, entry: label, field: "observedItems[]（object でない単位）", cls: "B", check: "isReadableUnit（object だけ）", legit: given.units[0], run: (value) => run(given, [value, ...given.units.slice(1)]), ok: (r) => json(r) !== undefined, refused: (r) => refused(r) || (r.unknownItemKeys ?? []).some((key) => POSITION.test(key)) },
     { id: `${code}.list`, entry: label, field: "observedItems（配列でない）", cls: "B", check: "Array.isArray", legit: given.units, run: (value) => run(given, value), ok: (r) => json(r) === bj, refused, throws: true },
   ];
 });

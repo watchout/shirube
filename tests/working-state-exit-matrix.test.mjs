@@ -11,7 +11,7 @@ import { COLUMNS, RUN, SHAPES, absent, pinAt, variants } from "./working-state-s
 
 const APPLIED = ["a", "b", "c", "d"];
 const BASE = builtDraft({ observedItems: conflictObserved().items });
-const ANSWER = { answerId: "ans-1", itemKey: "note_text", kind: "value", value: ["models.preset=thorough"], state: "answered" };
+const ANSWER = { answerId: "ans-1", itemKey: "aidlc_settings", kind: "value", value: ["models.preset=thorough"], state: "answered", answeredAt: "2026-11-18T09:00:00+09:00" };
 const candidate = (over) => ({ candidateRef: "sds_commit@sds_pin:p", sourceRef: { sourceKind: "sds_pin", locator: "p" }, presence: "value", lengthBucket: "short", matchGroup: 1, ...over });
 const eachColumn = (body) => COLUMNS.forEach((column) => variants(SHAPES[column]).forEach((form) => body(column, SHAPES[column], form)));
 const withCandidateRef = (draft, candidateRef) => ({ ...draft, items: draft.items.map((item) => (item.candidates === undefined ? item : { ...item, candidates: item.candidates.map((entry, i) => (i === 0 ? { ...entry, candidateRef } : entry)) })) });
@@ -56,8 +56,8 @@ test("M3+ 出典の種類（sourceKind）: 案内に出る候補・不正・対�
   });
 });
 
-test("M4+ 呼出側の対象（targetRef）: (a)〜(d) は観測・draft・案内・選択・wire のどれも作らない。(e) は通常の対象として通る（意図した限界）", () => {
-  for (const column of APPLIED) {
+test("M4+ 呼出側の対象（targetRef）: (a)〜(e) の全部が観測・draft・案内・選択・wire のどれも作らない（対象にも (e) を当てる門。決定 95 の 2 回目の追い指示）", () => {
+  for (const column of COLUMNS) {
     for (const form of variants(SHAPES[column])) {
       assert.equal(observeWith(CATALOG, goodReads(), { targetRef: form }).status, "target_required", `${column} ${form}`);
       assert.equal(buildDraft({ targetRef: form, observedItems: [] }).reason, "invalid_input", `${column} ${form}`);
@@ -67,12 +67,12 @@ test("M4+ 呼出側の対象（targetRef）: (a)〜(d) は観測・draft・案�
       assert.equal(selectionWireOf({ targetRef: form }), "refused", `${column} ${form}`);
     }
   }
-  assert.equal(wireOf({ targetRef: RUN }), "converted");
-  assert.equal(guide(handDraft([{ itemKey: "aidlc_version", state: "missing", observationRefs: [] }], { targetRef: RUN })).status, "built");
+  assert.equal(wireOf({ targetRef: "a-readable-target" }), "converted");
+  assert.equal(guide(handDraft([{ itemKey: "aidlc_version", state: "missing", observationRefs: [] }], { targetRef: "a-readable-target" })).status, "built");
 });
 
-test("M5+ 呼出側の識別（draftId・selectionId・answerId・draftRef）: (a)〜(d) は識別にならず、(a)(c) は文字の範囲（空白なし）でも拒まれる。(e) は通常の識別として通る（意図した限界）", () => {
-  for (const column of APPLIED) {
+test("M5+ 呼出側の識別（draftId・selectionId・answerId・draftRef）: (a)〜(e) の全部が識別にならない（(a)(c) は文字の範囲（空白なし）でも拒まれ、(e) は読める名前でない 20 文字以上の連なりとして拒まれる）", () => {
+  for (const column of COLUMNS) {
     for (const form of variants(SHAPES[column])) {
       assert.equal(ws.isRefId(form), false, `${column} ${form}`);
       assert.equal(buildDraft({ draftId: form }).reason, "invalid_input", `${column} ${form}`);
@@ -84,31 +84,34 @@ test("M5+ 呼出側の識別（draftId・selectionId・answerId・draftRef）: (
       assert.equal(selectionWireOf({ draftRef: form }), "refused", `${column} ${form}`);
     }
   }
-  assert.equal(ws.isRefId(RUN), true);
-  assert.equal(buildDraft({ draftId: RUN }).status, "built");
-  assert.equal(send(answerInput({ answerId: RUN })).status, "recorded");
-  assert.equal(selectionWireOf({ selectionId: RUN, draftRef: RUN }), "converted");
+  assert.equal(ws.isRefId(RUN), false);
+  assert.equal(buildDraft({ draftId: RUN }).status, "refused");
+  assert.equal(send(answerInput({ answerId: RUN })).status, "unreadable");
+  assert.equal(selectionWireOf({ selectionId: RUN, draftRef: RUN }), "refused");
+  assert.equal(ws.isRefId("ans-1"), true);
+  assert.equal(selectionWireOf({ selectionId: "selection-9", draftRef: "draft-9" }), "converted");
 });
 
-test("M6+ 観測の参照（observationRefs・observationRef）: 案内は (a)〜(e) の全部を表示しない。選択は (a)〜(d) で作らず、wire は (a)〜(d) で断る。(e) は通常の参照として通る（意図した限界）", () => {
+test("M6+ 観測の参照（observationRefs・observationRef）: 案内は (a)〜(e) の全部を表示しない。選択・wire は (a)〜(e) の全部で作らず・断る", () => {
   eachColumn((column, secret, form) => {
     const result = guide(handDraft([{ itemKey: "aidlc_version", state: "missing", observationRefs: [] }], { observationRefs: [form] }));
     assert.equal(result.status, "built", `${column} ${form}`);
     assert.equal(result.guidance.text.includes("表示しない参照 1 件"), true, `${column} ${form}`);
     assert.equal(absent(secret, result), true, `${column} ${form}`);
   });
-  for (const column of APPLIED) {
+  for (const column of COLUMNS) {
     for (const form of variants(SHAPES[column])) {
       assert.equal(wireOf({ observationRefs: [form] }), "refused", `${column} ${form}`);
       assert.equal(createSelection({ ...BASE, observationRefs: [form] }, { observationRef: form }).reason, "invalid_input", `${column} ${form}`);
       assert.equal(selectionWireOf({ observationRef: form }), "refused", `${column} ${form}`);
     }
   }
-  assert.equal(wireOf({ observationRefs: [RUN] }), "converted");
-  assert.equal(createSelection({ ...BASE, observationRefs: [RUN] }, { observationRef: RUN }).status, "created");
+  assert.equal(wireOf({ observationRefs: [RUN] }), "refused");
+  assert.equal(createSelection({ ...BASE, observationRefs: [RUN] }, { observationRef: RUN }).reason, "invalid_input");
+  assert.equal(wireOf({ observationRefs: ["obs-1"] }), "converted");
 });
 
-test("M7+ 候補の参照（candidateRef・selectedCandidateRef）: 案内は (a)〜(e) の全部を質問に出さない。選択・wire は (a)〜(d) で断る。(e) は通常の参照として通る（意図した限界）", () => {
+test("M7+ 候補の参照（candidateRef・selectedCandidateRef）: 案内は (a)〜(e) の全部を質問に出さない。選択・wire は (a)〜(e) の全部で断る", () => {
   eachColumn((column, secret, form) => {
     const draft = handDraft([{ itemKey: "sds_commit", state: "conflict", candidates: [candidate({ candidateRef: form }), candidate({ matchGroup: 2 })], observationRefs: [] }]);
     const result = guide(draft);
@@ -118,15 +121,16 @@ test("M7+ 候補の参照（candidateRef・selectedCandidateRef）: 案内は (a
     assert.equal(answered.status, "rejected", `${column} ${form}`);
     assert.equal(absent(secret, answered), true, `${column} ${form}`);
   });
-  for (const column of APPLIED) {
+  for (const column of COLUMNS) {
     for (const form of variants(SHAPES[column])) {
       assert.equal(createSelection(withCandidateRef(BASE, form), { candidateRef: form }).reason, "invalid_input", `${column} ${form}`);
       assert.equal(selectionWireOf({ candidateRef: form }), "refused", `${column} ${form}`);
       assert.equal(wireOf({ answers: [{ answerId: "ans-1", itemKey: "sds_commit", kind: "keep-absent", selectedCandidateRef: form, state: "answered" }] }), "refused", `${column} ${form}`);
     }
   }
-  assert.equal(createSelection(withCandidateRef(BASE, RUN), { candidateRef: RUN }).status, "created");
-  assert.equal(selectionWireOf({ candidateRef: RUN }), "converted");
+  assert.equal(createSelection(withCandidateRef(BASE, RUN), { candidateRef: RUN }).reason, "invalid_input");
+  assert.equal(selectionWireOf({ candidateRef: RUN }), "refused");
+  assert.equal(selectionWireOf({ candidateRef: "cand-1" }), "converted");
 });
 
 test("M8+ 項目名（itemKey・原因の欄・質問・wire の項目の列）: (a)〜(d) は案内・wire が断る。(e) は門が断る（区切りの無い 20 文字以上の連なり。gate-itemkey I1+〜I8+ が全部の出口を覆う）", () => {
@@ -149,7 +153,7 @@ test("M8+ 項目名（itemKey・原因の欄・質問・wire の項目の列）:
   assert.equal(wireOf({ missingItems: [RUN], conflicts: [RUN] }), "refused");
 });
 
-test("M9+ 理由の符号（門の結果の reasons）: (a)〜(d) と大文字混じりの連なり (e) は符号の形（大文字・数字・_）で断り、結果を確認できずと書く。大文字・数字・_ の長い符号は符号の形が説明する（意図した限界）", () => {
+test("M9+ 理由の符号（門の結果の reasons）: (a)〜(e) と大文字・数字・_ だけの 20 文字以上の連なりは符号の形と参照の門（isReasonCode）で断り、結果を確認できずと書く。短い符号は通る", () => {
   const draft = handDraft([{ itemKey: "aidlc_version", state: "missing", observationRefs: [] }]);
   const reasonsOf = (reason) => guide(draft, { conformance: { outcome: "FAIL", reasons: [reason] } }).guidance;
   for (const reason of [...COLUMNS.map((column) => SHAPES[column]), "AKIA" + "X".repeat(16), "X_AKIA" + "X".repeat(16), "SK-" + "X".repeat(16)]) {
@@ -158,7 +162,8 @@ test("M9+ 理由の符号（門の結果の reasons）: (a)〜(d) と大文字�
     assert.equal(guidance.text.includes("結果を確認できず"), true, reason);
     assert.equal(absent(reason, guidance), true, reason);
   }
-  assert.deepEqual(reasonsOf("ABCDEFGHIJ".repeat(2) + "KLMN").reasons, ["ABCDEFGHIJ".repeat(2) + "KLMN"]);
+  assert.deepEqual(reasonsOf("ABCDEFGHIJ".repeat(2) + "KLMN").reasons, []);
+  assert.deepEqual(reasonsOf("GATE_FAILED").reasons, ["GATE_FAILED"]);
 });
 
 test("M10+ 回答の値（文字列の項目）: (a)〜(e) の全部が拒まれ、回答・draft・案内・wire のどこにも写らない", () => {
@@ -200,34 +205,37 @@ test("M12+ 回答の値（設定の対の = の後ろ）: (a)〜(e) の全部が
   assert.equal(send(answerInput({ value: [`models.token=${RUN}`] }), { observed }).status, "rejected");
 });
 
-test("M13+ wire の回答の値（手で作った draft）: (a)〜(d) は文字列・列・入れ子のどれでも変換を断る。(e) は通常の値として通る（意図した限界。回答の受付が (e) を断る）", () => {
-  for (const column of APPLIED) {
+test("M13+ wire の回答の値（手で作った draft）: (a)〜(e) の全部が文字列・列・入れ子のどれでも変換を断る（値は回答の値の門 isAnswerValue を通る）。通常の値は変換する", () => {
+  for (const column of COLUMNS) {
     for (const form of variants(SHAPES[column])) {
       for (const value of [form, [form], { inner: [`z ${form}`] }]) assert.equal(wireOf({ answers: [{ ...ANSWER, value }] }), "refused", `${column} ${form}`);
     }
   }
-  assert.equal(wireOf({ answers: [{ ...ANSWER, value: [RUN] }] }), "converted");
+  assert.equal(wireOf({ answers: [{ ...ANSWER, value: [RUN] }] }), "refused");
+  assert.equal(wireOf({ answers: [ANSWER] }), "converted");
 });
 
-test("M14+ 選択に写す案内の構造体（text・conclusion・nextAction・causes・unconfirmed・reasons・observationRefs）と wire の案内の文: (a)〜(d) は断る。(e) は通常の文として通る（意図した限界）", () => {
+test("M14+ 選択に写す案内の構造体（text・conclusion・nextAction・causes・unconfirmed・reasons・observationRefs）と wire の案内の文: (a)〜(e) の全部を断る（案内の写しは欄ごとの形の判定 guidanceCopyOf を通る）", () => {
   const fieldsOf = (form) => [{ text: form }, { conclusion: `結論 ${form}` }, { nextAction: { kind: "choose-source", text: form } }, { causes: [{ itemKey: "sds_commit", state: form }] }, { unconfirmed: [form] }, { reasons: [form] }, { observationRefs: [form] }];
-  for (const column of APPLIED) {
+  for (const column of COLUMNS) {
     for (const form of variants(SHAPES[column])) {
       for (const over of fieldsOf(form)) assert.equal(createSelection(BASE, { guidance: guidanceOf(over) }).reason, "invalid_guidance", `${column} ${form}`);
       assert.equal(selectionWireOf({ guidance: { text: form } }), "refused", `${column} ${form}`);
     }
   }
-  for (const over of fieldsOf(RUN)) assert.equal(createSelection(BASE, { guidance: guidanceOf(over) }).status, "created");
-  assert.equal(selectionWireOf({ guidance: { text: RUN } }), "converted");
+  for (const over of fieldsOf(RUN)) assert.equal(createSelection(BASE, { guidance: guidanceOf(over) }).reason, "invalid_guidance");
+  assert.equal(selectionWireOf({ guidance: { text: RUN } }), "refused");
+  assert.equal(createSelection(BASE, { guidance: guidanceOf() }).status, "created");
 });
 
-test("M15+ draft を作る時の手で作った回答の列（回答の識別・項目名・値・選んだ候補）: (a)〜(d) は draft を作らない。(e) は通常の値として通る（意図した限界）", () => {
-  for (const column of APPLIED) {
+test("M15+ draft を作る時の手で作った回答の列（回答の識別・項目名・値・選んだ候補）: (a)〜(e) の全部で draft を作らない", () => {
+  for (const column of COLUMNS) {
     for (const form of variants(SHAPES[column])) {
       for (const over of [{ value: form }, { value: [form] }, { answerId: form }, { itemKey: form }, { selectedCandidateRef: form }]) assert.equal(buildDraft({ answers: [{ ...ANSWER, ...over }] }).reason, "invalid_input", `${column} ${form}`);
     }
   }
-  assert.equal(buildDraft({ answers: [{ ...ANSWER, value: [RUN] }] }).status, "built");
+  assert.equal(buildDraft({ answers: [{ ...ANSWER, value: [RUN] }] }).reason, "invalid_input");
+  assert.equal(buildDraft({ answers: [ANSWER] }).status, "built");
 });
 
 test("M16+ 案内の固定の語彙の欄（状態・観測できない原因・長さの区分・一致の組・存在・不正の分類・門の結果の種類）: (a)〜(e) の全部が案内に写らない", () => {
@@ -242,12 +250,11 @@ test("M16+ 案内の固定の語彙の欄（状態・観測できない原因・
     assert.equal(guide(handDraft([{ itemKey: "aidlc_version", state: form, observationRefs: [] }])).reason, "invalid_input", `${column} ${form}`);
     assert.equal(absent(secret, result), true, `${column} ${form}`);
     const unread = send(answerInput({ answeredAt: form }), { observed: observeWith() }); // 回答の時刻（answeredAt）は時刻の形だけ読む。読めない形は読まれず（unreadable）、記録に写らない。
-    assert.equal(unread.status, "unreadable", `${column} ${form}`);
-    assert.equal(absent(secret, unread), true, `${column} ${form}`);
+    assert.deepEqual([unread.status, absent(secret, unread)], ["unreadable", true], `${column} ${form}`);
   });
 });
 
-test("M17+ 手で作った観測の項目（観測の識別・出典の種類・位置）と draft の内部の欄（items・observationFacts）: (a)〜(e) の全部が案内・選択・wire のどれにも写らない（項目名は draft の入口が断る。gate-itemkey I3+・I9+）", () => {
+test("M17+ 手で作った観測の項目（観測の識別・出典の種類・位置）: (a)〜(e) の全部で draft を作らず（観測の単位の門 unitsFit が断る）、どの出口にも写らない。正しい単位の列では draft を作る", () => {
   const baseItems = observeWith(CATALOG, withContent(goodReads(), "workflow_caller", callerText(OID_B))).items;
   const tweaks = [
     (form) => (unit) => ({ ...unit, observation: { ...unit.observation, observationId: form } }),
@@ -255,16 +262,12 @@ test("M17+ 手で作った観測の項目（観測の識別・出典の種類・
     (form) => (unit) => ({ ...unit, sourceRef: { ...unit.sourceRef, locator: form } }),
   ];
   const at = baseItems.findIndex((unit) => unit.itemKey === "sds_commit" && unit.sourceRef.sourceKind === "sds_pin"); // 食い違いの項目（sds_commit の pin）の単位を書き換える。観測の識別・位置は候補の参照と行に出る。
+  assert.equal(buildDraft({ observedItems: baseItems }).status, "built");
   eachColumn((column, secret, form) => {
-    tweaks.forEach((tweak, index) => {
-      const { draft } = buildDraft({ observedItems: baseItems.map((unit, i) => (i === at ? tweak(form)(unit) : unit)) });
-      assert.notEqual(draft, null, `${column} ${form}`);
-      const result = guide(draft);
-      assert.equal(absent(secret, result), true, `${column} ${form}`);
-      if (index === 0) assert.equal(result.guidance.text.includes("表示しない参照 1 件"), true, `${column} ${form}`);
-      if (index === 2) assert.equal(result.guidance.text.includes("（表示しません）"), true, `${column} ${form}`);
-      if (column === "e" && index === 0) return; // 観測の識別（index 0）は観測の参照になる。選択と wire は参照に (e) を当てない（M6+ の限界）ので、(e) の列は案内だけを調べる。
-      assert.equal(absent(secret, ws.draftToC02Wire(draft), createSelection(draft, { observationRef: index === 0 ? form : draft.observationRefs[0] })), true, `${column} ${form}`);
+    tweaks.forEach((tweak) => {
+      const built = buildDraft({ observedItems: baseItems.map((unit, i) => (i === at ? tweak(form)(unit) : unit)) });
+      assert.deepEqual([built.status, built.draft, built.reason], ["refused", null, "invalid_input"], `${column} ${form}`);
+      assert.equal(absent(secret, built), true, `${column} ${form}`);
     });
   });
 });
@@ -272,8 +275,7 @@ test("M17+ 手で作った観測の項目（観測の識別・出典の種類・
 test("M18+ 候補の表示値（displayValue。閉じた形の項目の食い違い）: (a)〜(e) の全部が案内に写らず、形式に合う値だけが示される", () => {
   const oid = "0123456789abcdef".repeat(2) + "01234567";
   eachColumn((column, secret, form) => {
-    const draft = handDraft([{ itemKey: "sds_commit", state: "conflict", candidates: [candidate({ displayValue: form }), candidate({ displayValue: oid, matchGroup: 2 })], observationRefs: [] }]);
-    const result = guide(draft);
+    const result = guide(handDraft([{ itemKey: "sds_commit", state: "conflict", candidates: [candidate({ displayValue: form }), candidate({ displayValue: oid, matchGroup: 2 })], observationRefs: [] }]));
     assert.equal(result.status, "built", `${column} ${form}`);
     assert.equal(absent(secret, result), true, `${column} ${form}`);
     assert.equal(result.guidance.text.includes("（表示しません）"), true, `${column} ${form}`);

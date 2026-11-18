@@ -100,6 +100,6 @@ const evalRows = [
 ];
 
 // 例外を起こして断る欄（例外の文面は固定で、入力を写さない。試験が文面にも LEAK が無いことを確かめる）。
-const THROWS = new Set(["lengthOf.valueType", "lengthBucketOf.length", "evaluateItem.observedItems（配列でない）"]);
+const THROWS = new Set(["lengthOf.valueType", "lengthBucketOf.length", "evaluateItem.observedItems（配列でない）", "positionKeyOf.position"]);
 
 export const HELPER_ROWS =[...statusRows, ...matchRows, ...staleRows, ...pureRows, ...hashRows, ...actionRows, ...evalRows].map((row) => (THROWS.has(row.id) ? { ...row, throws: true } : row));

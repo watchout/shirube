@@ -115,15 +115,16 @@ test("O8+ 通常の入力は変わらない: 項目名・状態・原因・閉�
   assert.equal(guidance.causes.every((cause) => draft.items.some((item) => item.itemKey === cause.itemKey && item.state === cause.state)), true);
 });
 
-test("O9+ 呼出側の識別・対象（draftId・selectionId・answerId・targetRef）は呼出側が作る値で、形の制限だけを受ける: UUID の形・長いハイフン名の識別は拒まない（意図した限界）", () => {
+test("O9+ 呼出側の識別・対象（draftId・selectionId・answerId・targetRef）にも (e) を当てる: UUID の形・20 文字以上のハイフン名の識別は断る（意図した限界。報告に書く）。読める短い名前は受ける", () => {
   const uuid = "123e4567-e89b-12d3-a456-426614174000";
   const longTarget = "omotenasu-ai-control-plane-sample";
-  assert.equal(ws.isRefId(uuid), true);
+  assert.equal(ws.isRefId(uuid), false);
+  assert.equal(ws.isRefId(longTarget), false);
   assert.equal(ws.classifyValue("string", uuid), "secret_like");
-  const result = buildDraft({ draftId: uuid, targetRef: TARGET, catalog: CATALOG, observedItems: observeWith().items, answers: [] });
+  assert.equal(buildDraft({ draftId: uuid, targetRef: TARGET, catalog: CATALOG, observedItems: observeWith().items, answers: [] }).reason, "invalid_input");
+  const result = buildDraft({ draftId: "draft-1", targetRef: TARGET, catalog: CATALOG, observedItems: observeWith().items, answers: [] });
   assert.equal(result.status, "built");
-  assert.equal(ws.draftToC02Wire(result.draft).wire.draftId, uuid);
-  assert.equal(longTarget.length > 20, true);
+  assert.equal(ws.draftToC02Wire(result.draft).wire.draftId, "draft-1");
 });
 
 test("O11+ 呼出側の識別・対象（draftId・targetRef・answerId・selectionId）が既知の token の接頭辞で始まる形なら、draft・回答・選択は作らない", () => {
@@ -166,10 +167,10 @@ const nested = (depth) => (depth === 0 ? "x" : [nested(depth - 1)]);
 test("O13+ C02 の wire の回答の値（手で作った draft）: 値・値の要素・入れ子の中が既知の token の接頭辞で始まる形、または深すぎて確かめられない形なら、変換を断る。通常の値は変換する", () => {
   const draft = builtDraft({ observedItems: conflictObserved().items });
   const answer = { answerId: "ans-1", itemKey: "note_text", kind: "value", value: ["models.preset=thorough"], state: "answered" };
-  for (const value of ["thorough", ["models.preset=thorough", "a.b=c"], true, { inner: ["x"] }]) {
+  for (const value of ["thorough", ["models.preset=thorough", "a.b=c"], true]) {
     assert.equal(ws.draftToC02Wire({ ...draft, answers: [{ ...answer, value }] }).status, "converted", JSON.stringify(value));
   }
-  for (const value of [SECRET, [SECRET], ["a", `x ${SECRET}`], { inner: [SECRET] }, nested(40)]) {
+  for (const value of [SECRET, [SECRET], ["a", `x ${SECRET}`], { inner: [SECRET] }, { inner: ["x"] }, nested(40)]) { // 入れ子の object は回答の値の形（真偽・文字列・文字列の列）でないので、中身が無害でも断る。
     const result = ws.draftToC02Wire({ ...draft, answers: [{ ...answer, value }] });
     assert.equal(result.status, "refused", JSON.stringify(value));
     assert.equal(absent(SECRET, result), true);
@@ -177,7 +178,7 @@ test("O13+ C02 の wire の回答の値（手で作った draft）: 値・値の
 });
 
 test("O14+ draft の回答の入口（手で作った回答の列）: 回答の値が既知の token の接頭辞で始まる形なら、draft を作らない。通常の回答は受ける", () => {
-  const answer = { answerId: "ans-1", itemKey: "note_text", kind: "value", value: ["models.preset=thorough"], state: "answered" };
+  const answer = { answerId: "ans-1", itemKey: "aidlc_settings", kind: "value", value: ["models.preset=thorough"], state: "answered", answeredAt: "2026-11-18T09:00:00+09:00" }; // 値のある回答は項目一覧の項目に当たる物だけ受ける。
   assert.equal(buildDraft({ answers: [answer] }).status, "built");
   for (const value of [SECRET, [SECRET], { inner: [`x ${SECRET}`] }]) {
     assert.equal(buildDraft({ answers: [{ ...answer, value }] }).reason, "invalid_input", JSON.stringify(value));
