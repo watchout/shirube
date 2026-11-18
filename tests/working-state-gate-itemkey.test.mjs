@@ -113,7 +113,7 @@ test("I10+ 空の項目名: 空の文字列は項目名にしない。wire・dra
   assert.equal(observeWith([...CATALOG, { ...NOTE_ITEM, itemKey: "" }]).items.some((unit) => unit.itemKey === ""), false);
 });
 
-const POSITION = /^catalog_position_\d+$/;
+const POSITION = /^catalog-position-\d+$/;
 const droppedIn = (observed) => observed.items.filter((unit) => POSITION.test(unit.itemKey));
 
 test("I11+ 観測（決定 95 (b)）: 項目名が門を通らない項目は黙って外さず、観測できず（unavailable・malformed）の単位として返す。項目名は書かず、項目一覧の位置で示す", () => {
@@ -121,7 +121,7 @@ test("I11+ 観測（決定 95 (b)）: 項目名が門を通らない項目は黙
   const observed = observeWith(catalog);
   assert.equal(observed.status, "observed");
   const dropped = droppedIn(observed);
-  assert.deepEqual(dropped.map((unit) => unit.itemKey).sort(), ["catalog_position_2", "catalog_position_6"]);
+  assert.deepEqual(dropped.map((unit) => unit.itemKey).sort(), ["catalog-position-2", "catalog-position-6"]);
   for (const unit of dropped) {
     assert.deepEqual([unit.observation.availability, unit.unobservableCause, unit.presence, unit.valueDigest, unit.observation.observedDigest], ["unavailable", "malformed", undefined, undefined, null]);
     assert.equal(unit.observedAt, observed.items[0].observedAt);
@@ -140,10 +140,10 @@ test("I12+ 外した項目は観測した物にも成功にも数えない: 外�
   assert.deepEqual(observed.items.filter((unit) => !POSITION.test(unit.itemKey)), clean.items);
   const evaluated = ws.evaluateItems(CATALOG, observed.items);
   assert.deepEqual(evaluated.items, ws.evaluateItems(CATALOG, clean.items).items);
-  assert.deepEqual(evaluated.unknownItemKeys, ["catalog_position_5"]);
+  assert.deepEqual(evaluated.unknownItemKeys, ["catalog-position-5"]);
   assert.equal(buildDraft({ catalog, observedItems: observed.items }).reason, "invalid_input");
   const draft = buildDraft({ observedItems: observed.items }).draft;
-  assert.deepEqual(draft.unknownItemKeys, ["catalog_position_5"]);
+  assert.deepEqual(draft.unknownItemKeys, ["catalog-position-5"]);
   assert.equal(draft.items.some((item) => item.state === "confirmed" && POSITION.test(item.itemKey)), false);
   assert.equal(absent(LEAK, [observed, draft]), true);
 });
