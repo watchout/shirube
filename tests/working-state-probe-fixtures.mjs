@@ -77,7 +77,10 @@ export const probe = (tool, b, over = {}, root = b.root) =>
 // 起動の呼び出しを記録して、本物の spawn へ渡す。
 export function spawnSpy() {
   const calls = [];
-  return { calls, spawn: (...args) => { calls.push(args); return realSpawn(...args); } };
+  const pids = [];
+  // 呼び出しの時点の写しを残す（Node は coverage の実行の時、渡した env の object へ NODE_V8_COVERAGE を足すので、本物の spawn へ渡す前に写す）。
+  const snapshot = ([file, args, options]) => [file, args, { ...options, env: { ...options?.env } }];
+  return { calls, pids, spawn: (...args) => { calls.push(snapshot(args)); const child = realSpawn(...args); pids.push(child.pid); return child; } };
 }
 
 export const fsWith = (over) => ({ ...fsPromises, ...over });

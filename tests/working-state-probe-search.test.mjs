@@ -2,7 +2,7 @@
 // 見つけた実行ファイルの実体も根の外。見つからない時は (a) 未導入、(b) dir を捨てた上で見つからない = 観測不能（件数と種別）、(c) 権限・起動失敗。
 // 実際の一時 dir と架空の実行ファイル（sh の script）を使う。実在する道具は実行しない。
 import assert from "node:assert/strict";
-import { mkdirSync, renameSync, symlinkSync } from "node:fs";
+import { mkdirSync, renameSync, symlinkSync, unlinkSync } from "node:fs";
 import fsPromises from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
@@ -137,6 +137,19 @@ test("T2.2 子の起動 見つけた後・起動の直前に実体が差し替�
     const swapping = fsWith({ access: async (target, ...rest) => { if (target === path.parse(file).root) renameSync(swapped, file); return fsPromises.access(target, ...rest); } });
     const fact = await probe("aidlc", b, { fs: swapping, spawn: spy.spawn });
     assert.deepEqual([fact.launch, spy.calls.length, b.ran("first"), b.ran("second")], ["cannot_start", 0, false, false]);
+  });
+});
+
+test("T2.2 子の起動 起動の直前に実体が消えた・候補の実体を解決できない（権限）時も cannot_start。同一性を確かめられないものは同じと読まない", async () => {
+  await inBox(async (b) => {
+    const file = b.exe(b.outside, "aidlc", marking(b, "gone"));
+    const spy = spawnSpy();
+    const vanishing = fsWith({ access: async (target, ...rest) => { if (target === path.parse(file).root) unlinkSync(file); return fsPromises.access(target, ...rest); } });
+    const gone = await probe("aidlc", b, { fs: vanishing, spawn: spy.spawn });
+    b.exe(b.outside, "aidlc", marking(b, "hidden"));
+    const hidden = fsWith({ realpath: async (target, ...rest) => { if (target === file) throw denied; return fsPromises.realpath(target, ...rest); } });
+    const unresolved = await probe("aidlc", b, { fs: hidden, spawn: spy.spawn });
+    assert.deepEqual([gone.launch, unresolved.launch, spy.calls.length, b.ran("gone"), b.ran("hidden")], ["cannot_start", "cannot_start", 0, false, false]);
   });
 });
 

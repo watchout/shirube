@@ -10,14 +10,18 @@ import { fsWith, inBox, isGone, marking, probe, profileOf, sampleEnv, spawnSpy }
 
 const cause = (fact) => ws.interpretProbe(fact);
 const pidOf = (b, name) => Number(readFileSync(b.flag(name), "utf8").trim());
-// 試験の後始末: 止まらなかった子を group ごと止める（印が無い・もう居ない時は何もしない。試験の判定には使わない）。
-function reap(b) {
-  try {
-    process.kill(-pidOf(b, "pid"), "SIGKILL");
-  } catch {
-    // 子がもう居ない・印が書かれる前に落ちた。後始末なので続ける。
+// 試験の後始末: 止まらなかった子を group ごと止める（もう居ない時は何もしない。試験の判定には使わない）。
+function reap(pids) {
+  for (const pid of pids) {
+    try {
+      process.kill(-pid, "SIGKILL");
+    } catch {
+      // 子がもう居ない。後始末なので続ける。
+    }
   }
 }
+// 子の起動（sh の読み込み）が遅い手元でも、印を書く前に枠が来ないだけの枠。
+const SLOW_MS = 1000;
 const limited =(over) => ({ loadProfile: async () => profileOf(over) });
 const OS_ROOT = path.parse(process.cwd()).root;
 
@@ -79,6 +83,15 @@ test("T2.2 子の起動 process group の停止を確かめられない OS（Win
   });
 });
 
+test("T2.2 子の起動 起動の呼び出し自体が失敗した（例外）時は cannot_start。起動を試みたので requests は 1（成功にも未導入にもしない）", async () => {
+  await inBox(async (b) => {
+    b.exe(b.outside, "aidlc", marking(b, "throws"));
+    const fact = await probe("aidlc", b, { spawn: () => { throw Object.assign(new Error("not permitted"), { code: "EPERM" }); } });
+    assert.deepEqual([fact.launch, fact.exitCode, fact.output, fact.measured.requests, b.ran("throws")], ["cannot_start", null, undefined, 1, false]);
+    assert.deepEqual(cause(fact), { status: "unavailable", cause: "tool_cannot_start" });
+  });
+});
+
 test("T2.2 子の起動 profile（予算）が読めない・形が不正な時は起動せず、既定の予算を使わない（LC2 は malformed）", async () => {
   await inBox(async (b) => {
     b.exe(b.outside, "aidlc", marking(b, "profile"));
@@ -117,7 +130,7 @@ test("T2.2 出力の枠: 出し続ける子は上限で打ち切り、子（grou
 test("T2.2 時間の枠: 応答しない子は枠で止め、timed_out（成功にしない）。止めたあとに子は生きていない", async () => {
   await inBox(async (b) => {
     b.exe(b.outside, "aidlc", `echo $$ > "${b.flag("pid")}"\nwhile :; do :; done`);
-    const fact = await probe("aidlc", b, limited({ timeoutMs: 150 }));
+    const fact = await probe("aidlc", b, limited({ timeoutMs: SLOW_MS }));
     assert.deepEqual([fact.launch, fact.stop, fact.output, fact.exitCode], ["ok", { reason: "timeout", confirmed: true }, undefined, null]);
     assert.deepEqual(cause(fact), { status: "unavailable", cause: "timed_out" });
     assert.equal(await isGone(pidOf(b, "pid")), true);
@@ -127,7 +140,7 @@ test("T2.2 時間の枠: 応答しない子は枠で止め、timed_out（成功�
 test("T2.2 孫を作る子が枠を超えたら、孫も group ごと止まる（子だけを止めて孫を残さない）", async () => {
   await inBox(async (b) => {
     b.exe(b.outside, "aidlc", `( while :; do :; done ) &\necho $! > "${b.flag("grandchild")}"\necho $$ > "${b.flag("pid")}"\nwhile :; do :; done`);
-    const fact = await probe("aidlc", b, limited({ timeoutMs: 200 }));
+    const fact = await probe("aidlc", b, limited({ timeoutMs: SLOW_MS }));
     assert.deepEqual(fact.stop, { reason: "timeout", confirmed: true });
     assert.deepEqual([await isGone(pidOf(b, "pid")), await isGone(pidOf(b, "grandchild"))], [true, true]);
   });
@@ -140,12 +153,13 @@ test("T2.2 止めたか確かめられない（group がまだ残る・止める
     const stubborn = (pid, signal) => { attempts.push(signal); if (signal === 0) return process.kill(-pid, 0); return undefined; };
     const failing = (pid, signal) => { if (signal === 0) return process.kill(-pid, 0); throw Object.assign(new Error("not permitted"), { code: "EPERM" }); };
     for (const killGroup of [stubborn, failing]) {
+      const spy = spawnSpy();
       try {
-        const fact = await probe("aidlc", b, { ...limited({ timeoutMs: 100 }), killGroup });
+        const fact = await probe("aidlc", b, { ...limited({ timeoutMs: SLOW_MS }), killGroup, spawn: spy.spawn });
         assert.deepEqual([fact.stop.reason, fact.stop.confirmed, fact.output], ["timeout", false, undefined]);
         assert.equal(cause(fact).status, "unavailable");
       } finally {
-        reap(b);
+        reap(spy.pids);
       }
     }
     assert.equal(attempts.includes("SIGKILL"), true);

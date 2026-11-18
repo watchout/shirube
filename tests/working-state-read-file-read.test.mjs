@@ -165,9 +165,11 @@ test("T6.1 時計と file を使うのは LC1 だけ。LC1 は原因の名前・
   assert.equal(/console\.|process\.std|writeFile|appendFile|node:child_process|node:net|node:http|fetch\(|process\.env/.test(source), false);
   assert.equal(/(?:timeoutMs|maxBytes\w*|maxRequests|maxElapsedMs)\s*[:=]\s*\d/.test(source), false);
   assert.deepEqual([...source.matchAll(/from "(\.\/[^"]+)"/g)].map((match) => match[1]), ["./canonical.mjs"]);
-  for (const file of readdirSync(new URL("../scripts/working-state/", import.meta.url)).filter((name) => name !== "read-file.mjs")) {
+  // LC1 は file の読取り（read-file.mjs）と子 process の確かめ（probe-*.mjs）の 2 系統。核はどちらも import せず、時計・file・子 process・環境変数を使わない。
+  const lc1 = new Set(["read-file.mjs", "probe-path.mjs", "probe-run.mjs", "probe-tool.mjs"]);
+  for (const file of readdirSync(new URL("../scripts/working-state/", import.meta.url)).filter((name) => !lc1.has(name))) {
     const other = SRC(file);
     assert.equal(/node:fs|node:child_process|Date\.now|new Date\(\)|performance\.now|process\.env/.test(other), false, file);
-    assert.equal(other.includes("read-file.mjs"), false, file);
+    assert.equal(/(?:read-file|probe-path|probe-run|probe-tool)\.mjs/.test(other), false, file);
   }
 });

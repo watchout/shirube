@@ -16,7 +16,7 @@ const PASSES = 3;
 const DENIED = new Set(["EACCES", "EPERM"]);
 const REPLACED = new Set(["ELOOP", "ENOENT", "ENOTDIR"]);
 const ACCESS_OF_RESOLUTION = new Map([["denied", "denied"], ["absent", "absent"]]);
-const REAL_CLOCK = Object.freeze({ instant: () => new Date(), monotonic: () => performance.now() });
+export const REAL_CLOCK = Object.freeze({ instant: () => new Date(), monotonic: () => performance.now() });
 const isCount = (value) => Number.isSafeInteger(value) && value >= 0;
 
 // 信頼版の予算の profile（U1）。読めなければ例外になり、呼出側（readProfile）が「読めない」に倒す。
@@ -34,7 +34,7 @@ function budgetOf(profile) {
   return { version: profile.version, budget: { maxElapsedMs: raw.timeoutMs, maxBytes: raw.maxBytesPerResponse, maxRequests: raw.maxRequests } };
 }
 
-async function readProfile(deps) {
+export async function readProfile(deps) {
   try {
     return budgetOf(await deps.loadProfile());
   } catch {
