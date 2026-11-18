@@ -7,6 +7,8 @@ export * from "./canonical.mjs";
 export * from "./catalog.mjs";
 export * from "./draft.mjs";
 export * from "./escape.mjs";
+export * from "./guidance-actions.mjs";
+export * from "./guidance.mjs";
 export * from "./instant.mjs";
 export * from "./item-state.mjs";
 export * from "./normalize.mjs";

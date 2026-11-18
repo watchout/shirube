@@ -79,7 +79,7 @@ test("T7.4+ 未確認の項目は、観測不能は原因ごとに 1 つ、そ�
     { itemKey: "kit_version", state: "invalid" },
   ]);
   assert.equal(guidance.blocking, true);
-  assert.equal(guidance.conclusion.includes("4"), true);
+  assert.equal(guidance.conclusion, "未確認の項目が 3 件あります。");
 });
 
 test("T7.4- 未確認を成功・完了・適用済みと読ませない: どの形の入力でも文面に 成功・完了・適用済み を含まない", () => {
