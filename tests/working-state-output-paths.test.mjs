@@ -159,3 +159,59 @@ test("O10+ 既知の限界（設計の集合 BR5.2 (b) は語の先頭の接頭�
   assert.equal(ws.rejectionReasonOf("list", [`models.token=${SECRET}`], "setting-pair"), null);
   assert.equal(ws.rejectionReasonOf("list", [SECRET], "setting-pair"), "secret_like");
 });
+
+const nested = (depth) => (depth === 0 ? "x" : [nested(depth - 1)]);
+
+test("O13+ C02 の wire の回答の値（手で作った draft）: 値・値の要素・入れ子の中が既知の token の接頭辞で始まる形、または深すぎて確かめられない形なら、変換を断る。通常の値は変換する", () => {
+  const draft = builtDraft({ observedItems: conflictObserved().items });
+  const answer = { answerId: "ans-1", itemKey: "note_text", kind: "value", value: ["models.preset=thorough"], state: "answered" };
+  for (const value of ["thorough", ["models.preset=thorough", "a.b=c"], true, { inner: ["x"] }]) {
+    assert.equal(ws.draftToC02Wire({ ...draft, answers: [{ ...answer, value }] }).status, "converted", JSON.stringify(value));
+  }
+  for (const value of [SECRET, [SECRET], ["a", `x ${SECRET}`], { inner: [SECRET] }, nested(40)]) {
+    const result = ws.draftToC02Wire({ ...draft, answers: [{ ...answer, value }] });
+    assert.equal(result.status, "refused", JSON.stringify(value));
+    assert.equal(absent(SECRET, result), true);
+  }
+});
+
+test("O14+ draft の回答の入口（手で作った回答の列）: 回答の値が既知の token の接頭辞で始まる形なら、draft を作らない。通常の回答は受ける", () => {
+  const answer = { answerId: "ans-1", itemKey: "note_text", kind: "value", value: ["models.preset=thorough"], state: "answered" };
+  assert.equal(buildDraft({ answers: [answer] }).status, "built");
+  for (const value of [SECRET, [SECRET], { inner: [`x ${SECRET}`] }]) {
+    assert.equal(buildDraft({ answers: [{ ...answer, value }] }).reason, "invalid_input", JSON.stringify(value));
+  }
+});
+
+test("O15+ 選択の入口（手で作った案内の構造体）: 案内のどの欄でも既知の token の接頭辞で始まる語を含むなら、選択にしない。通常の案内は受ける", () => {
+  const draft = builtDraft({ observedItems: conflictObserved().items });
+  assert.equal(createSelection(draft).status, "created");
+  const bad = [{ targetRef: SECRET }, { conclusion: `結論 ${SECRET}` }, { nextAction: { kind: "choose-source", text: `操作 ${SECRET}` } }, { causes: [{ itemKey: "sds_commit", state: `x ${SECRET}` }] }, { reasons: [SECRET] }, { observationRefs: [SECRET] }];
+  for (const over of bad) {
+    const result = createSelection(draft, { guidance: guidanceOf(over) });
+    assert.equal(result.reason, "invalid_guidance", JSON.stringify(over));
+    assert.equal(absent(SECRET, result), true);
+  }
+});
+
+test("O16+ 呼出側の識別・対象・参照が、区切り（| @ :）の後ろに既知の token の接頭辞を持つ形でも、識別・対象にならず、wire に渡らない", () => {
+  const behind = [`a:${SECRET}`, `a@${SECRET}`, `a|${SECRET}`];
+  for (const text of behind) {
+    assert.equal(ws.isRefId(text), false, text);
+    assert.equal(observeWith(CATALOG, goodReads(), { targetRef: text }).status, "target_required", text);
+    assert.equal(buildDraft({ targetRef: text, observedItems: [] }).reason, "invalid_input", text);
+    assert.equal(guide(handDraft([{ itemKey: "aidlc_version", state: "missing", observationRefs: [] }], { targetRef: text })).reason, "invalid_input", text);
+  }
+  const draft = builtDraft({ observedItems: conflictObserved().items });
+  const ref = `sds_commit|sds_pin|${SECRET}|${NOW}`;
+  const answer = { answerId: "ans-1", itemKey: "note_text", kind: "value", value: ["models.preset=thorough"], state: "answered" };
+  for (const over of [{ observationRefs: [ref] }, { missingItems: [`a@${SECRET}`] }, { conflicts: [`a:${SECRET}`] }, { answers: [{ ...answer, selectedCandidateRef: `sds_commit@sds_pin:${SECRET}` }] }]) {
+    const result = ws.draftToC02Wire({ ...draft, answers: [answer], ...over });
+    assert.equal(result.status, "refused", JSON.stringify(over));
+    assert.equal(absent(SECRET, result), true);
+  }
+  const selection = createdSelection(draft);
+  for (const over of [{ candidateRef: `sds_commit@sds_pin:${SECRET}` }, { observationRef: ref }, { selectionId: `a:${SECRET}` }]) {
+    assert.equal(ws.selectionToC02Wire({ ...selection, ...over }).status, "refused", JSON.stringify(over));
+  }
+});
