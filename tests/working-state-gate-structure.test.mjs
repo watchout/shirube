@@ -30,6 +30,7 @@ test("S2+ Map・Set の中（key・値・入れ子）の (a)〜(d) の形も含�
 test("S3+ 知っている入れ物（配列・素の object・Map・Set）の外の object は含む側（RegExp・Error・String・Number・Date・ArrayBuffer・型付き配列・class の実体・配列と Map の継承）", () => {
   const outsiders = [new RegExp(TOKEN), new Error(TOKEN), new String(TOKEN), new RegExp("harmless"), new Error("harmless"), new String("harmless"), new Number(1), new Date(0), new ArrayBuffer(8), new Uint8Array(4), new Box("harmless"), new (class extends Array {})(), new (class extends Map {})()];
   for (const value of outsiders) assert.equal(carries(value), true, Object.prototype.toString.call(value));
+  for (const prototype of [Error.prototype, RegExp.prototype, String.prototype, Date.prototype]) assert.equal(carries(Object.create(prototype)), true, "自分の欄が無くても、知らない prototype の入れ物は含む側"); // Node の Error は stack が accessor なので上の new Error だけでは prototype の判定を試せない
   assert.equal(carries({ inner: new Box("harmless") }), true);
   assert.equal(carries([new Date(0)]), true);
 });

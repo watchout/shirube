@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import * as ws from "../scripts/working-state/index.mjs";
 import { MIXED40 } from "./working-state-gate-fixtures.mjs";
-import { TOKEN } from "./working-state-secret-fixtures.mjs";
+import { KEY_HEADING, TOKEN } from "./working-state-secret-fixtures.mjs";
 
 const cls = (value) => ws.classifyValue("string", value);
 const word = (length, char = "a") => char.repeat(length);
@@ -97,4 +97,34 @@ test("R7+ 配列の検査は元の配列の差し替え（filter・every・itera
   assert.equal(ws.classifyValue("list", iterated, "string"), "secret_like");
   assert.equal(ws.rejectionReasonOf("list", new Array(2), "string"), "invalid_type");
   assert.equal(ws.classifyValue("list", ["ok", "fine"], "string"), "valid");
+});
+
+test("R9+ 読める部品の 4 つの形（_ で区切った小文字・数字／数字つきの大文字／数字つきで先頭だけ大文字／全部数字）は 20 文字を超える path でも通る", () => {
+  assert.equal(cls("docs/read_me_please_now.md"), "valid");
+  assert.equal(cls("docs/AB1/CD2/EF3/GH4/IJ5/KL6.md"), "valid");
+  assert.equal(cls("docs/Ab1/Cd2/Ef3/Gh4/Ij5/Kl6.md"), "valid");
+  assert.equal(cls("docs/20261118/20261119/20261120.md"), "valid"); // 全部数字の部品は「数字と英字が混ざった部品」に数えない
+});
+
+test("R10+ 参照は読める path だけを連なりから外す（/ も . も無い読める名前の長い 1 語は外さない）。(a) は見出しの両端がそろった形だけ、(e) の連なりは + を含む", () => {
+  assert.equal(ws.isShowableRef("item-with-many-small-words"), false);
+  assert.equal(ws.isShowableRef("item-with-many/small-words.md"), true);
+  assert.equal(ws.hasSecretShape(KEY_HEADING), true);
+  assert.equal(ws.hasSecretShape(KEY_HEADING.slice(0, -5)), false); // 末尾の ----- が無い
+  assert.equal(ws.hasSecretShape(KEY_HEADING.slice(0, -1)), false); // 末尾が - 4 つ
+  assert.equal(cls("Zm9v+YmFy+Zm9v+YmFy+Zm9v"), "secret_like");
+});
+
+test("R11+ 回答を拒む理由を決める途中で読み直した入力が例外を出しても secret_like（失敗側）。配列でない物は、中に秘密の形があっても invalid_type で断る", () => {
+  const unstable = (okReads) => {
+    let reads = 0;
+    const list = ["a b"];
+    Object.defineProperty(list, 0, { enumerable: true, get() { reads += 1; if (reads > okReads) throw new Error("boom"); return "a b"; } });
+    return list;
+  };
+  assert.equal(ws.rejectionReasonOf("list", unstable(99), "string"), "invalid_character"); // 読み直しが無事なら、空白を含む要素の理由
+  assert.equal(ws.rejectionReasonOf("list", unstable(2), "string"), "secret_like"); // 分類の 2 回の読みの後の、理由を決める読み直しで例外
+  const arrayLike = { length: 1, 0: TOKEN };
+  assert.equal(ws.classifyValue("list", arrayLike, "string"), "invalid_format");
+  assert.equal(ws.rejectionReasonOf("list", arrayLike, "string"), "invalid_type");
 });
