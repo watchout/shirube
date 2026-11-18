@@ -84,5 +84,5 @@ test("K6+ 印と正当な項目名は同じにならない: 項目名の形・�
   assert.deepEqual([markersIn(reserved).length, unit.observation.availability, unit.unobservableCause, unit.presence], [1, "unavailable", "malformed", undefined]);
   assert.equal(buildDraft({ catalog: [...CATALOG, { ...NOTE_ITEM, itemKey: "catalog-position-5" }] }).reason, "invalid_input");
   const oldForm = observeWith([...CATALOG, { ...NOTE_ITEM, itemKey: "catalog_position_5" }]);
-  assert.deepEqual([markersIn(oldForm).length, oldForm.items.some((entry) => entry.itemKey === "catalog_position_5" && entry.observation.availability === "observed")], [0, true]);
+  assert.deepEqual([markersIn(oldForm).length, oldForm.items.some((entry) => entry.itemKey === "catalog_position_5" && entry.sourceRef.locator === "aidlc.settings.json")], [0, true]);
 });
