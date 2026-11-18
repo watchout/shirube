@@ -5,7 +5,7 @@
 import { isRefId } from "./answers.mjs";
 import { deepFreeze } from "./canonical.mjs";
 import { isObservationStale } from "./observation-facts.mjs";
-import { hasTokenPrefix, valueFormOf } from "./value-exposure.mjs";
+import { carriesTokenPrefix, hasRefTokenPrefix, valueFormOf } from "./value-exposure.mjs";
 
 // 選択にしない理由の固定の分類（入力を写さない）。
 export const SELECTION_REFUSALS = Object.freeze(["invalid_input", "unknown_candidate", "not_selectable", "unknown_observation", "invalid_guidance"]);
@@ -16,13 +16,15 @@ const GUIDANCE_KEYS = ["targetRef", "conclusion", "nextAction", "causes", "uncon
 const refuse = (reason) => deepFreeze({ status: "refused", selection: null, reason });
 const isObject = (value) => typeof value === "object" && value !== null;
 
+// 案内の構造体は呼出側が渡す（手で作れる）ので、写す欄のどこにも既知の token の接頭辞で始まる語を含まないこと。
 function guidanceCopy(guidance) {
-  if (!isObject(guidance) || typeof guidance.text !== "string" || guidance.text === "" || hasTokenPrefix(guidance.text)) return null;
-  return Object.fromEntries(GUIDANCE_KEYS.filter((key) => guidance[key] !== undefined).map((key) => [key, structuredClone(guidance[key])]));
+  if (!isObject(guidance) || typeof guidance.text !== "string" || guidance.text === "") return null;
+  const copy = Object.fromEntries(GUIDANCE_KEYS.filter((key) => guidance[key] !== undefined).map((key) => [key, structuredClone(guidance[key])]));
+  return carriesTokenPrefix(copy) ? null : copy;
 }
 
 const wellFormed = ({ selectionId, draft, catalog }) =>
-  isRefId(selectionId) && isObject(draft) && Array.isArray(draft.items) && Array.isArray(draft.observationRefs) && Array.isArray(catalog) && isRefId(draft.draftId) && typeof draft.targetRef === "string" && !hasTokenPrefix(draft.targetRef);
+  isRefId(selectionId) && isObject(draft) && Array.isArray(draft.items) && Array.isArray(draft.observationRefs) && Array.isArray(catalog) && isRefId(draft.draftId) && typeof draft.targetRef === "string" && !hasRefTokenPrefix(draft.targetRef);
 
 // 候補を持つ項目（食い違いの項目）。見つからなければ null。
 const itemOf = (draft, candidateRef) => draft.items.find((item) => item.candidates?.some((candidate) => candidate.candidateRef === candidateRef)) ?? null;

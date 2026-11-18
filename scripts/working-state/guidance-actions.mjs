@@ -3,7 +3,7 @@
 // 決める順は NEXT_ACTIONS の並び（先にあるほど先に済ませる操作）。時刻・乱数・環境変数・file を使わない（S4）。
 import { deepFreeze } from "./canonical.mjs";
 import { LENGTH_BUCKETS } from "./normalize.mjs";
-import { classifyValue, hasTokenPrefix, isSecretLike, valueFormOf } from "./value-exposure.mjs";
+import { classifyValue, hasTokenPrefix, isSecretLike, refPartsOf, valueFormOf } from "./value-exposure.mjs";
 
 // 案内に出す語の固定の語彙（この file が持つ。案内の文面・質問・原因の欄は、入力の文字列をこの語彙と形の検査に通した物だけ写す）。
 // 項目名・状態・原因・長さの区分・参照・値は入力（呼出側の draft）から来るので、固定の集合か、秘密らしさの判定の 1 か所（value-exposure）に通す。
@@ -12,7 +12,6 @@ const UNSAFE_TEXT = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}「」]/u;
 const NAME_MAX = 64;
 const REF_MAX = 200;
 const ITEM_NAME = /^[a-z][a-z0-9_]{0,63}$/;
-const REF_PARTS = /[|@:]/u;
 
 // 安全な文字の範囲の 1〜64 文字の文字列か。
 const isPlain = (value, max) => typeof value === "string" && value !== "" && value.length <= max && !UNSAFE_TEXT.test(value);
@@ -22,7 +21,7 @@ export const isItemName = (value) => typeof value === "string" && ITEM_NAME.test
 // 対象の名前・出典の種類と位置: 安全な文字の範囲で、秘密らしい・判定できない文字列は示さない。
 export const isShowableName = (value) => isSafe(value) && !isSecretLike("string", value);
 // 参照（観測の参照・候補の参照）: 安全な文字の範囲の 1〜200 文字で、区切りで分けた部品のどれも秘密らしくない。
-export const isShowableRef = (value) => isPlain(value, REF_MAX) && value.split(REF_PARTS).every((part) => !isSecretLike("string", part));
+export const isShowableRef = (value) => isPlain(value, REF_MAX) && refPartsOf(value).every((part) => !isSecretLike("string", part));
 // 長さの区分は固定の集合の値だけ。
 export const isLengthBucket = (value) => LENGTH_BUCKETS.includes(value);
 

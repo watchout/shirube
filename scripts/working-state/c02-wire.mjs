@@ -3,22 +3,22 @@
 // answers は state = answered の回答だけを itemKey をキーにした object にし、開いた形の項目の回答の値はここ（wire）にだけ現れる。
 // items・draftDigest・observationFacts・observationDigest は wire に渡らない。全部が空でも「確認済み」の意味は持たない（BR8.5）。
 import { deepFreeze } from "./canonical.mjs";
-import { hasTokenPrefix } from "./value-exposure.mjs";
+import { carriesTokenPrefix, hasRefTokenPrefix } from "./value-exposure.mjs";
 
 // 変換できない時の固定の分類（入力を写さない）。
 export const WIRE_REFUSALS = Object.freeze(["not_convertible"]);
 
 const refused = () => deepFreeze({ status: "refused", wire: null, reason: WIRE_REFUSALS[0] });
 const converted = (wire) => deepFreeze({ status: "converted", wire });
-// 渡す識別・参照・案内の文は、空でなく、既知の token の接頭辞で始まる語を含まない（判定は value-exposure の 1 か所）。
-const isRef = (value) => typeof value === "string" && value !== "" && !hasTokenPrefix(value);
+// 渡す識別・参照・案内の文は、空でなく、区切りの後ろも含めて既知の token の接頭辞で始まる部品を含まない（判定は value-exposure の 1 か所）。
+const isRef = (value) => typeof value === "string" && value !== "" && !hasRefTokenPrefix(value);
 const isList = (value) => Array.isArray(value) && value.every(isRef);
 
 // 回答 1 件が C02 の entry にできるか。値の回答は値が要り、選んだ候補があれば名前が要る。無いまま（keep-absent）は選んだ候補が要る。
 function convertible({ answerId, kind, value, selectedCandidateRef }) {
   if (!isRef(answerId)) return false;
   if (kind === "keep-absent") return isRef(selectedCandidateRef);
-  return kind === "value" && value !== undefined && (selectedCandidateRef === undefined || isRef(selectedCandidateRef));
+  return kind === "value" && value !== undefined && !carriesTokenPrefix(value) && (selectedCandidateRef === undefined || isRef(selectedCandidateRef));
 }
 
 function entryOf(answer) {

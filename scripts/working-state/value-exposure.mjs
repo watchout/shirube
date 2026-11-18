@@ -102,6 +102,19 @@ const [VALID, INVALID_FORMAT, SECRET_LIKE] = VALUE_CLASSIFICATIONS;
 // 項目名・原因・理由の符号のように、長い連なり (e) を持つ正当な固定の語は、接頭辞だけで判定する側がこの関数を使う。
 export const hasTokenPrefix = (text) => typeof text === "string" && text.split(/\s+/u).some((word) => TOKEN_PREFIXES.some((prefix) => word.startsWith(prefix)));
 
+// 参照（<項目>|<出典>|<位置>|<時刻>、<項目>@<出典>:<位置>）を部品に分ける区切り。参照の部品の分け方はここ 1 か所が持つ。
+export const refPartsOf = (text) => text.split(/[|@:]/u);
+// 識別・対象・参照が、区切りの後ろも含めて、既知の token の接頭辞で始まる部品を持つか。長い連なり (e) は見ない（正当な長い名前を断らない）。
+export const hasRefTokenPrefix = (text) => typeof text === "string" && refPartsOf(text).some(hasTokenPrefix);
+
+const DEEP_MAX = 8;
+// 手で作った構造体（回答の値・案内・回答の列）の中のどこかの文字列が、既知の token の接頭辞で始まる語を含むか。確かめきれない深さは含む側（失敗側）。
+export function carriesTokenPrefix(value, depth = 0) {
+  if (typeof value === "string") return hasTokenPrefix(value);
+  if (typeof value !== "object" || value === null) return false;
+  return depth >= DEEP_MAX || Object.values(value).some((inner) => carriesTokenPrefix(inner, depth + 1));
+}
+
 // 1 つの文字列が秘密らしいか（BR5.2 の (a)〜(e)）。explained = 項目の許される形式（構造のある形）が文字列全体を説明する時 (e) だけ外す。
 function looksSecret(text, explained) {
   if (KEY_HEADER_RE.test(text) || BEARER_RE.test(text) || hasTokenPrefix(text)) return true;

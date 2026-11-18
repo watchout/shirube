@@ -5,7 +5,7 @@ import { deepFreeze } from "./canonical.mjs";
 import { parseInstant } from "./instant.mjs";
 import { interpretItem } from "./observation-fields.mjs";
 import { interpretFile, interpretProbe, usageOf } from "./read-check.mjs";
-import { hasTokenPrefix, isSecretLike } from "./value-exposure.mjs";
+import { hasRefTokenPrefix, isSecretLike } from "./value-exposure.mjs";
 
 const TOOL_PROBE = "tool_probe";
 const NO_USAGE = Object.freeze({ requests: 0, bytes: 0, elapsedMs: 0 });
@@ -114,7 +114,7 @@ function assemble({ context, itemKey, ref, usage, observedAt }, fields) {
 }
 
 const stopped = (status) => deepFreeze({ status, items: [] });
-const isName = (value) => typeof value === "string" && value !== "" && !hasTokenPrefix(value);
+const isName = (value) => typeof value === "string" && value !== "" && !hasRefTokenPrefix(value);
 
 // 入力: { targetRef, now, catalog, reads, requiredVersions }。対象・現在時刻が無ければ観測せず止まる（補わない）。
 export function observeAll({ targetRef, now, catalog, reads, requiredVersions }) {

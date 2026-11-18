@@ -4,7 +4,7 @@
 // 時刻・乱数・識別子・環境変数・file を使わない（S4）。
 import { deepFreeze } from "./canonical.mjs";
 import { ACTION_TEXTS, ITEM_STATES, WITHHELD_NAME, formOf, isItemName, isKnownCause, isLengthBucket, isShowableName, isShowableRef, questionsOf, shownValueOf, strongestAction } from "./guidance-actions.mjs";
-import { hasTokenPrefix } from "./value-exposure.mjs";
+import { hasRefTokenPrefix, hasTokenPrefix } from "./value-exposure.mjs";
 
 // 案内にしない理由の固定の分類（入力を写さない）。
 export const GUIDANCE_REFUSALS = Object.freeze(["invalid_input", "build_failed"]);
@@ -76,7 +76,7 @@ const isTextList = (value) => Array.isArray(value) && value.every((entry) => typ
 function wellFormed(input) {
   if (!isObject(input) || !isObject(input.draft) || !Array.isArray(input.catalog)) return false;
   const { items, targetRef, observationRefs } = input.draft;
-  return Array.isArray(items) && items.length > 0 && items.every(validItem) && typeof targetRef === "string" && targetRef !== "" && !hasTokenPrefix(targetRef) && isTextList(observationRefs);
+  return Array.isArray(items) && items.length > 0 && items.every(validItem) && typeof targetRef === "string" && targetRef !== "" && !hasRefTokenPrefix(targetRef) && isTextList(observationRefs);
 }
 
 const refuse = (reason) => deepFreeze({ status: "refused", guidance: null, questions: null, reason });
