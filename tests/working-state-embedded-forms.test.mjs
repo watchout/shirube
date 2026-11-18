@@ -56,7 +56,7 @@ test("E5+ (a) 鍵の見出し: 区切りの直後でも秘密らしい。設定�
   const header = ["-----BEGIN ", "PRIVATE KEY", "-----"].join("");
   for (const form of [header, `x:${header}`, `"${header}"`, `(${header})`]) assert.equal(isSecret("string", form), true, form);
   assert.equal(ws.rejectionReasonOf("list", [`models.token=${TOKEN}`], "setting-pair"), "secret_like");
-  assert.equal(ws.rejectionReasonOf("list", [`models.preset=${"v".repeat(40)}`], "setting-pair"), null);
+  assert.equal(ws.rejectionReasonOf("list", ["models.preset=claude-sonnet-4-5-20250929"], "setting-pair"), null);
 });
 
 test("E6+ 読める path・名前は誤って断らない: 長い path・拡張子つきの名前・英数字に挟まれた sk- は valid。20 文字以上の 1 語・大小の混ざった語は断る", () => {

@@ -117,7 +117,7 @@ test("T5.1- list は穴のある配列と、長さ以外の余計な値を持つ
 test("T5.1+ setting-pair の要素は key=value（key は . でつなぐ 1〜4 個、value は英数字と . _ -）", () => {
   ok("list", ["schemaVersion=1", "models.schemaVersion=1", "models.preset=thorough"], "setting-pair");
   ok("list", ["a.b.c.d=x"], "setting-pair");
-  ok("list", ["k=" + "v".repeat(64)], "setting-pair");
+  ok("list", ["k=" + ["abcdefghijklmnopqrs", "abcdefghijklmnopqrs", "abcdefghijklmnopqrs", "wxyz"].join("-")], "setting-pair");
   ok("list", Array.from({ length: 64 }, (_, i) => `k${i}=v`), "setting-pair");
 });
 

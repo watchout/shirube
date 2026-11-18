@@ -186,7 +186,7 @@ test("M11+ 回答の値（列の要素。設定の対の列と文字列の列）
   });
 });
 
-test("M12+ 回答の値（設定の対の = の後ろ）: (a)〜(d) は拒まれ、どの出口にも写らない。(e) は設定の対の形が説明する値として通る（意図した限界）", () => {
+test("M12+ 回答の値（設定の対の = の後ろ）: (a)〜(e) の全部が拒まれ、どの出口にも写らない（(e) は = で分けた部品に当てる）", () => {
   const observed = observeWith();
   for (const column of APPLIED) {
     for (const form of variants(SHAPES[column])) {
@@ -197,7 +197,7 @@ test("M12+ 回答の値（設定の対の = の後ろ）: (a)〜(d) は拒まれ
       assert.equal(absent(SHAPES[column], result, draft, guide(draft), ws.draftToC02Wire(draft)), true, `${column} ${form}`);
     }
   }
-  assert.equal(send(answerInput({ value: [`models.token=${RUN}`] }), { observed }).status, "recorded");
+  assert.equal(send(answerInput({ value: [`models.token=${RUN}`] }), { observed }).status, "rejected");
 });
 
 test("M13+ wire の回答の値（手で作った draft）: (a)〜(d) は文字列・列・入れ子のどれでも変換を断る。(e) は通常の値として通る（意図した限界。回答の受付が (e) を断る）", () => {

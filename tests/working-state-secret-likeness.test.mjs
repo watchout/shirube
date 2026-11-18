@@ -81,11 +81,11 @@ test("T5.2+ (e) は空白を含まない 1 語だけ。. など集合の外の�
   is("invalid_format", "string", "aaaaaaaaaa bbbbbbbbbb");
 });
 
-test("T5.2+ (e) の例外: 項目の許される形式（構造のある形）に当たる長い連なりは secret_like にしない", () => {
+test("T5.2+ (e) の例外: commit-oid の形（40 文字の 16 進）は連なりにしない。設定の対の value は、読める単語の列なら 20 文字以上でも secret_like にしない", () => {
   is("valid", "commit-oid", OID);
   is("valid", "commit-oid", OID.toUpperCase());
-  is("valid", "list", ["k=" + filler(64, "v")], "setting-pair");
-  is("valid", "list", ["models.preset=" + filler(40, "v")], "setting-pair");
+  is("valid", "list", ["k=" + ["abcdefghijklmnopqrs", "abcdefghijklmnopqrs", "abcdefghijklmnopqrs", "wxyz"].join("-")], "setting-pair");
+  is("valid", "list", ["models.preset=claude-sonnet-4-5-20250929"], "setting-pair");
 });
 
 test("T5.2- (e) の例外は構造のある形だけ。形式に当たらない長い連なりは secret_like", () => {
