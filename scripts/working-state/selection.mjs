@@ -39,6 +39,8 @@ function check(input) {
   if (item === null) return "unknown_candidate";
   if (!selectable(input.catalog, item)) return "not_selectable";
   if (!input.draft.observationRefs.includes(input.observationRef)) return "unknown_observation";
+  // 選んだ候補・観測の参照は選択の構造体にそのまま入るので、手で作った draft の参照でも (a)〜(d) の形を持たないこと。
+  if (!isRefName(input.candidateRef) || !isRefName(input.observationRef)) return "invalid_input";
   return guidanceCopy(input.guidance) === null ? "invalid_guidance" : null;
 }
 

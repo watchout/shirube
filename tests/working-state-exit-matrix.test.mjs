@@ -247,14 +247,14 @@ test("M17+ 手で作った観測の項目（項目名・観測の識別・出典
     (form) => (unit) => ({ ...unit, sourceRef: { ...unit.sourceRef, locator: form } }),
   ];
   eachColumn((column, secret, form) => {
-    for (const tweak of tweaks) {
-      const observedItems = baseItems.map((unit, i) => (i === 0 ? tweak(form)(unit) : unit));
-      const { draft } = buildDraft({ observedItems });
-      if (draft === null) continue;
-      // 選択の観測の参照は (e) を見ない（M6+ の限界）ので、(e) の列だけ選択を調べない。
-      const selection = column === "e" ? null : createSelection(draft, { observationRef: draft.observationRefs[0] });
-      assert.equal(absent(secret, guide(draft), ws.draftToC02Wire(draft), selection), true, `${column} ${form}`);
-    }
+    tweaks.forEach((tweak, index) => {
+      const { draft } = buildDraft({ observedItems: baseItems.map((unit, i) => (i === 0 ? tweak(form)(unit) : unit)) });
+      assert.notEqual(draft, null, `${column} ${form}`);
+      assert.equal(absent(secret, guide(draft)), true, `${column} ${form}`);
+      // 観測の識別（index 1）は観測の参照になる。選択と wire は参照に (e) を当てない（M6+ の限界）ので、(e) の列は案内だけを調べる。
+      if (column === "e" && index === 1) return;
+      assert.equal(absent(secret, ws.draftToC02Wire(draft), createSelection(draft, { observationRef: draft.observationRefs[0] })), true, `${column} ${form}`);
+    });
   });
   assert.equal(buildDraft({ observedItems: baseItems.map((unit, i) => (i === 0 ? { ...unit, itemKey: JWT3 } : unit)) }).draft.unknownItemKeys.includes(JWT3), true);
 });
