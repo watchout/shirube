@@ -35,7 +35,8 @@ function flattenSettings(record, prefix, depth) {
 }
 
 const SDS_PIN_FIELDS = new Map([["sds_commit", "sds_commit"], ["kit_version", "kit_version"], ["protected_paths", "protected_paths"]]);
-const CALLER_USES_RE = /^\s*(?:-\s+)?uses:\s*watchout\/shirube\/\.github\/workflows\/sds-gate\.yml@([^\s#]+)/;
+const CALLER_NAME = "watchout/shirube/.github/workflows/sds-gate.yml";
+const CALLER_USES_RE = new RegExp(`^\\s*(?:-\\s+)?uses:\\s*${CALLER_NAME.replace(/[./]/gu, "\\$&")}@([^\\s#]+)`, "u");
 
 function pickSdsPin(itemKey, doc) {
   const field = SDS_PIN_FIELDS.get(itemKey);
@@ -43,10 +44,21 @@ function pickSdsPin(itemKey, doc) {
   return hasOwn(doc, field) ? value(doc[field]) : ABSENT;
 }
 
+// block scalar の開始（`|` `>` と、`|-` `>+` `|2` `>2-` など。直前は空白、後ろは行末か comment）。
+const BLOCK_SCALAR_RE = /(?:^|\s)[|>](?:[+-][1-9]?|[1-9][+-]?)?\s*(?:#.*)?$/u;
+const isCommentLine = (line) => line.trimStart().startsWith("#");
+
 // 実際の uses の行（comment でない行）が指す commit。別々の commit を指す呼び出しが複数あれば、どちらも選ばず malformed。
+// 行の正規表現だけでは、引用符つき・flow 形の本物を取りこぼし、文字列の中の行を本物と読む。疑わしい形は fail closed にする:
+// (1) 名前の出現数（comment の行を除く）が、行の正規表現で取れた件数と違う、(2) block scalar の開始の行がある。
 function pickWorkflowCaller(itemKey, text) {
   if (itemKey !== "sds_commit") return MALFORMED;
-  const refs = new Set(text.split(/\r?\n/u).flatMap((line) => CALLER_USES_RE.exec(line)?.slice(1) ?? []));
+  const lines = text.split(/\r?\n/u).filter((line) => !isCommentLine(line));
+  if (lines.some((line) => BLOCK_SCALAR_RE.test(line))) return MALFORMED;
+  const matched = lines.flatMap((line) => CALLER_USES_RE.exec(line)?.slice(1) ?? []);
+  const mentions = lines.reduce((count, line) => count + line.split(CALLER_NAME).length - 1, 0);
+  if (mentions !== matched.length) return MALFORMED;
+  const refs = new Set(matched);
   if (refs.size > 1) return MALFORMED;
   return refs.size === 0 ? ABSENT : value([...refs][0]);
 }
