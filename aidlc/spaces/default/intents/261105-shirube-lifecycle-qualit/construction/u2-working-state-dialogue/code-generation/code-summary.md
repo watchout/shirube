@@ -10,7 +10,7 @@ code は作業場の木ではなく、worktree `/Users/yuji/Developer/.worktrees
 ## 状態と範囲
 
 - 作る段の Step 3〜13 と、段のレビューの Major の直し（2 回の Red/Green）、出口の全部の道の直し（3 回の Red/Green と試験だけの commit 3 件）、審査 3 回目の直し（R-07・R-08・R-09。Red `286a12d` → Green `1375ca0`）、出口の項目 × (a)〜(e) の表の穴の直し（Red `5dbe799` → Green `70038c8`）は worktree の commit に済み（Red と Green は別の commit）。表の行を数え直して足した・直した試験だけの commit が 6 件（`f164239`・`863e3a6`・`504cfe4`・`e566668`・`7d1d8cf`・`8bf32a7`。最初から通る試験で、Red にならない。`8bf32a7` は、`e566668`・`7d1d8cf` で exit-matrix が 312 行になり `T12.g+`（300 行以内）と `T12.l6+` が落ちていたのを、300 行に収めた直し）。**審査 4 回目の直し（R-10〜R-14）は、Red `3b99b4a` → Green `3f2f6ae`、refactor `35647ce`・`bc27eae`、試験だけの commit `fd9adad`、Red `91b2644` → Green `120f786`、refactor `2f15a3b`、守りを外す実測で生き残った物を殺す試験だけの commit 7 件（`48e5109`・`e341ede`・`6bc3777`・`198b18e`・`7c304c7`・`f3ab70d`・`5a5acca`）で済み**（下の「審査 4 回目の直し」「変異の実測」）。**審査 4 回目の後の項目名の直し（arc の決定 95）は、Red `60765bc` → Red 2 `9817fd5` → Green `1676c73`、試験だけの commit `94f85b0`（空の項目名。変異の実測で見つけた欠け）**（下の「項目名（itemKey）の直し」）。**その追い指示の直し（今までの回答の列の門・外した項目）は、Red 3 `f846349` → Green 3 `7e9cc38`、Red 4 `a7ca00d` → Green 4 `676b7e3`**（下の「今までの回答の列と外した項目の直し」）。この記録の「出口の項目 × BR5.2 の (a)〜(e) の表」は、出口の項目 19 行 × 5 列 = 95 欄の行列で、前の版の表を置き換えた（HEAD `b64144d` の最終の数: 95 欄の全部を試験が支え、理由だけの欄は 0。以前の版の「試験だけで支えた欄 86、理由を持つ欄 6、両方の側を持つ欄 3」は古い数で、直した）。**4 回目の追い指示の直し（F3・F4・G-2(a)・G-7(b)・S4 ほか）は、Red `bfce272`・`62a47ad`・`510604a`・`eddeb18`・`c5680c6` → Green `5f45070`・`405e4fe`・`95aa028`・`2b7bb2b`、refactor `a2a9da0`・`620279f`、docs `595bb84`、試験だけの commit `8354c7d`・`ffe593a`・`c6e4afb`・`14bcbab`・`7d81c0d`・`fae2d66`・`b64144d`**（下の「4 回目の追い指示の直し」）。**決定 95 の 2 回目の追い指示（項目 1〜5）の直しは、Red 5 `251f5da`・`7b2260c` → Green 5 `b8d6f8c`、Red 6 `4c82598`・`56a31a9`・Red 6c `29f4782` → Green 6 `b6386cc`、試験だけの commit `66f93b0`・`4865617`、Red 7 `f16fb1b` → Green 7 `06bb6da`、試験だけの commit `75cea6b`、refactor `6b8cb6a`、行の試験を厳しくした試験だけの commit `0d9f2c3`、refactor `91abf07`、試験だけの commit `021420f`・`cd8ef5b`**（下の「入力の欄の表と欄ごとの守り」）。Step 14（この記録・追跡表・source-manifest）はこの file で作る。
-- 作った物: `scripts/working-state/*.mjs` 27 file（2312 行）、`tests/working-state-*` の試験 59 file（6733 行。1 file 300 行以内）と補助 module 20 file（1700 行）（0 件から追加）、`knip.jsonc` の `entry` に 1 件。
+- 作った物: `scripts/working-state/*.mjs` 27 file（HEAD `82483ae` で 2326 行。Step 15 の前は 2312 行）、`tests/working-state-*` の試験 61 file（Step 15 の前は 59 file・6733 行。新しい 2 file は 80 行・99 行。1 file 300 行以内）と補助 module 20 file（1700 行）（0 件から追加）、`knip.jsonc` の `entry` に 1 件。**Step 15（実装監査の前の先回りの点検の 3 件の直し。HEAD `82483ae`）の内容と実測は、下の「Step 15 の直し（N1・N2・N3・小文字の bearer）」の節。この記録の中の「HEAD `b64144d`」の数（1066 件・59 file ほか）は Step 15 の前の値で、Step 15 で変わった数はその節に書いた**（`source-extract.mjs`・`read-file.mjs`・`read-file-read` の試験の行・SHA-256 は、表の中で直した）。
 - 触っていない物: `package.json`・lockfile・`.github/workflows`・`.shirube/**`・契約 `.v2`・`scripts/hygiene`。`git diff --name-only f2d509b HEAD` の `aidlc/` 以外の path は、`docs/audit/u2-working-state-dialogue-design.json`（設計監査の項目集合。設計の PR 由来）、`knip.jsonc`、`scripts/working-state/*`、`tests/working-state-*` だけ。`git diff --stat f2d509b HEAD -- package.json package-lock.json .github .shirube scripts/hygiene` の出力は 0 件。
 - この記録は実行結果の写しではなく、観測した事を日付つき（2026-11-18）で書いた物。「観測できなかった」と書いた物は成功と読まない。
 - 実装監査・CI・作者の受領・統合は、この記録の時点ではまだ行っていない（「未実施」）。
@@ -116,9 +116,9 @@ base `f2d509b`（U5 の merge commit）から HEAD `b64144d` までの commit（
 | `scripts/working-state/probe-run.mjs` | 83 | `3ccb4af59b9c1d14c3d18fd9daf83aad783f7b1c141ce3738c54c36bf89c05a2` |
 | `scripts/working-state/probe-tool.mjs` | 73 | `bc6f1be901b31bd990457472614b1cd7c4fb9221fcfede32780e4f9421966704` |
 | `scripts/working-state/read-check.mjs` | 97 | `a298d84ae483b9841641716090c9de450d301fa38acbfc601141a36664cc678e` |
-| `scripts/working-state/read-file.mjs` | 188 | `c32e0eeb55ecb9775283eb4c546712d3d601d8628fdf5398882278e7d7a591e2` |
+| `scripts/working-state/read-file.mjs` | 190 | `33197cc339226bc8783aca3fb9e3cdce51125339f5e4d6d9db6fac8fc5a30f30`（Step 15 の N2 で変わった。HEAD `82483ae` の値。前は 188 行・`c32e0eeb…`） |
 | `scripts/working-state/selection.mjs` | 55 | `f09fa8d6416a4d8fc0fcef4931de55445481c1337fc42388830d9ccde5dab9cb` |
-| `scripts/working-state/source-extract.mjs` | 77 | `0204a400ed7a36b64c67baffadcae1d406e62b64b0142cadd4a8b8947a73be05` |
+| `scripts/working-state/source-extract.mjs` | 89 | `66db2dc4d655c3486794c066b0adc48e9702ac8c33e36f52ea5cfbdbdc2a521d`（Step 15 の N1 で変わった。HEAD `82483ae` の値。前は 77 行・`0204a400…`） |
 | `scripts/working-state/value-exposure.mjs` | 262 | `2a0c0b69be29d82343852e23feabfbc225425440e6594b56c24b1a947a42d6a2` |
 
 `knip.jsonc`（SHA-256 `81faeb3abfc76aa395f8b790cd7e55fcc0713a2228c3c9462da290155f6d0ba6`）: `git diff f2d509b HEAD --stat -- knip.jsonc` は 1 行の差分（`entry` に `"scripts/working-state/index.mjs!"` を 1 件）。
@@ -303,11 +303,13 @@ base `f2d509b`（U5 の merge commit）から HEAD `b64144d` までの commit（
 | probe-locator | 49 | `dfb77b246f21d72f04672dd0c52849d470a3bbff96cc20fc6a5df87c720e6c40` |
 | probe-search | 198 | `7b35ca7ce3b69876c546dae1008fcc420a7827cc9231fcc6a466564104a7e434` |
 | probe-timer | 122 | `ed1f5c155684701f0a37f724a7e423ca579a7164e00df22371ca724c8bc19a31` |
-| read-file-read | 176 | `d6b6af0fd5d55006b762ecb526a12d27dc8fbc4d84c5d3d7024dab243b66e807` |
+| read-file-read | 176 | `85dacc2756b2cd06c624f42362ca0300b44a1e93cd3d7e12e175f10655977bd4`（Step 15 の N2 で T1.5+ の期待を 1 か所改めた。HEAD `82483ae` の値。前は `d6b6af0f…`） |
 | read-file-resolve | 135 | `503d6313b0be5e177330342acc1d30d1965f55243f002fbfd81b93214723d0f6` |
+| read-file-special | 99 | `4ce429594bdc75c31aea78e401889e14d00bd76de86e5dfbfd01eded36afd1c2`（Step 15 で新規。HEAD `82483ae`） |
 | reread | 125 | `1dc43a7ed1cb7dea6b05f553d9a0a9d284d2342264ecaca625ced09e7da41abf` |
 | secret-likeness | 210 | `84b655ddfeb3d4f69f8c054e583ab6bf7989e80cdbfb225df1d9a7e3cb3b490e` |
 | selection | 99 | `c1a8a56c14faa57a01d94334728c6e876a606e6054ad387e80d7dfd6175aa668` |
+| source-caller | 80 | `bf05feb8ebf0d9848fc87cb499bf0f430861d60613a4e6285e3b405f13469b79`（Step 15 で新規。HEAD `82483ae`） |
 | source-extract | 111 | `6f6e9883351bdacd31a61aa418277dd3ddb8ab749034da4b2543c0ebb8388fac` |
 | source-kind | 88 | `a87653ef4c790caa821d6a71e85e2fa4b274e5244672a69517bf3e2b09cb4688` |
 | structure-open | 98 | `6efd4dea50ad94cf84a1190127a10e7dfb9656413789fb728480a322efef32ab` |
@@ -315,7 +317,7 @@ base `f2d509b`（U5 の merge commit）から HEAD `b64144d` までの commit（
 | unit-fields | 82 | `9f8519847ea2e630de8294baf0be892b2af4b7a8566ae308049f70d1115ca871` |
 | value-exposure | 167 | `fc0101c4c13dcdf1fe7647ae0f4fd035d01962230fd990d5653507dcbf46e177` |
 
-この記録に書いた SHA-256（`scripts/working-state/` 27 file・`tests/working-state-*` 71 file（試験 52 + 補助 module 19）・`knip.jsonc`。合計 99 file。`git ls-files scripts/working-state tests/working-state-* knip.jsonc` の件数と同じ）は、書いた後に全部を `git show HEAD:<path> | shasum -a 256` の出力と突き合わせる（この突き合わせの結果は下の「突き合わせの結果」）。前の版の下書きで 2 行（`read-file-resolve`・`value-exposure`）の桁が違っていたので直した経緯があり、今回も同じ突き合わせを書いた後に流す。
+この記録に書いた SHA-256（`scripts/working-state/` 27 file・`tests/working-state-*` 81 file（試験 61 + 補助 module 20。HEAD `82483ae`。以前の「71 file（試験 52 + 補助 19）・合計 99 file」は古い数で、実物に合わせて直した）・`knip.jsonc`。合計 109 file。`git ls-files scripts/working-state tests/working-state-* knip.jsonc` の件数と同じ）は、書いた後に全部を `git show HEAD:<path> | shasum -a 256` の出力と突き合わせる（この突き合わせの結果は下の「突き合わせの結果」）。前の版の下書きで 2 行（`read-file-resolve`・`value-exposure`）の桁が違っていたので直した経緯があり、今回も同じ突き合わせを書いた後に流す。
 
 ### 規則 ID ごとの試験
 
@@ -323,19 +325,19 @@ base `f2d509b`（U5 の merge commit）から HEAD `b64144d` までの commit（
 
 | ID | 試験の名前（file[SHA-256 先頭 12 桁] の T 番号） | 状態 | 結果・備考 |
 |---|---|---|---|
-| BR1.1 | observation-latest[ff04b00fc114] T1.1+ T1.1- T1.1u／read-file-read[d6b6af0fd5d5] T1.1+ | OK | 通る |
-| BR1.2 | observation-read[3d6a9f4689a8] T1.2+ T1.2-／source-extract[6f6e9883351b] T1.2+ | OK | 通る |
+| BR1.1 | observation-latest[ff04b00fc114] T1.1+ T1.1- T1.1u／read-file-read[85dacc2756b2] T1.1+ | OK | 通る |
+| BR1.2 | observation-read[3d6a9f4689a8] T1.2+ T1.2-／source-extract[6f6e9883351b] T1.2+／source-caller[bf05feb8ebf0] N1- N1+ | OK | 通る |
 | BR1.3 | observation-latest[ff04b00fc114] T1.3+ T1.3-／observation-read[3d6a9f4689a8] T1.3+ T1.3- | OK | 通る |
-| BR1.4 | observation-read[3d6a9f4689a8] T1.4+ T1.4-／read-file-read[d6b6af0fd5d5] T1.4+ T1.4- | OK | 通る |
-| BR1.5 | observation-read[3d6a9f4689a8] T1.5+ T1.5-／read-file-read[d6b6af0fd5d5] T1.5+ T1.5-／read-file-resolve[503d6313b0be] T1.5+ T1.5- | OK | 通る |
-| BR1.6 | observation-read[3d6a9f4689a8] T1.6+／read-file-read[d6b6af0fd5d5] T1.6- | OK | 通る |
+| BR1.4 | observation-read[3d6a9f4689a8] T1.4+ T1.4-／read-file-read[85dacc2756b2] T1.4+ T1.4- | OK | 通る |
+| BR1.5 | observation-read[3d6a9f4689a8] T1.5+ T1.5-／read-file-read[85dacc2756b2] T1.5+ T1.5-／read-file-resolve[503d6313b0be] T1.5+ T1.5-／read-file-special[4ce429594bdc] N2- N2+ | OK | 通る |
+| BR1.6 | observation-read[3d6a9f4689a8] T1.6+／read-file-read[85dacc2756b2] T1.6- | OK | 通る |
 | BR2.1 | observation-read[3d6a9f4689a8] T2.1+ T2.1-／read-file-resolve[503d6313b0be] T2.1+／source-extract[6f6e9883351b] T2.1+ | OK | 通る |
 | BR2.2 | observation-tool[825308f411bb] T2.2+ T2.2-／probe-child[d04f45dad8db] T2.2／probe-search[7b35ca7ce3b6] T2.2／source-extract[6f6e9883351b] T2.2+ T2.2- | OK | 通る |
 | BR2.3 | normalize[7a02f41acb9e] T2.3+ T2.3-／observation-tool[825308f411bb] T2.3+ T2.3- | OK | 通る |
 | BR3.1 | item-state[1b3d42a63109] T3.1+ T3.1x T3.1- | OK | 通る |
 | BR3.2 | item-state[1b3d42a63109] T3.2+ T3.2o／normalize[7a02f41acb9e] T3.2o／observation-values[70534c5cf977] T3.2o | OK | 通る |
 | BR3.3 | item-state[1b3d42a63109] T3.3+ | OK | 通る |
-| BR3.4 | item-state[1b3d42a63109] T3.4+ T3.4p／observation-values[70534c5cf977] T3.4+ T3.4o T3.4p／observation-read[3d6a9f4689a8] T3.4+／source-extract[6f6e9883351b] T3.4+ T3.4-／secret-likeness[84b655ddfeb3] T3.4p／value-exposure[fc0101c4c13d] T3.4+ T3.4-／read-file-read[d6b6af0fd5d5] T3.4p／output-paths[7c8d5db83394] O1+ O2+ O3+ O17+／observation-locator[0b8d106cc54f] T2.l1+ T2.l2+ T2.l3+／embedded-paths[b639b1c38149] P1+ P3+／exit-matrix[19b767145e3e] M1+ M2+ M17+／gate-itemkey[756b8ba83dd9] I11+ I12+ I13+（外した項目を観測できずで返す） | OK | 通る。観測の入力の出どころごとの負例は下の「出口の項目 × BR5.2 の (a)〜(e) の表」 |
+| BR3.4 | item-state[1b3d42a63109] T3.4+ T3.4p／observation-values[70534c5cf977] T3.4+ T3.4o T3.4p／observation-read[3d6a9f4689a8] T3.4+／source-extract[6f6e9883351b] T3.4+ T3.4-／secret-likeness[84b655ddfeb3] T3.4p／value-exposure[fc0101c4c13d] T3.4+ T3.4-／read-file-read[85dacc2756b2] T3.4p／output-paths[7c8d5db83394] O1+ O2+ O3+ O17+／observation-locator[0b8d106cc54f] T2.l1+ T2.l2+ T2.l3+／embedded-paths[b639b1c38149] P1+ P3+／exit-matrix[19b767145e3e] M1+ M2+ M17+／gate-itemkey[756b8ba83dd9] I11+ I12+ I13+（外した項目を観測できずで返す） | OK | 通る。観測の入力の出どころごとの負例は下の「出口の項目 × BR5.2 の (a)〜(e) の表」 |
 | BR3.5 | catalog[9552a8e54a58] T3.5+ T3.5- | OK | 通る |
 | BR4.1 | guidance-questions[36d9d48c475d] T4.1+ T4.1- T4.1 | OK | 通る |
 | BR4.2 | guidance-questions[36d9d48c475d] T4.2+ | OK | 通る |
@@ -345,7 +347,7 @@ base `f2d509b`（U5 の merge commit）から HEAD `b64144d` までの commit（
 | BR5.2 | answer-reason[b17af5e39287] T5.2+ T5.2-／answers-receive[6ba89fac5fe7] T5.2+ T5.2-／secret-likeness[84b655ddfeb3] T5.2+ T5.2-／output-paths[7c8d5db83394] O4+ O10+ O14+／embedded-forms[dfd5f1ad90f8] E1+ E2+ E3+ E4+ E5+ E6+ E7+／embedded-paths[b639b1c38149] P7+／exit-matrix[19b767145e3e] M1+〜M19+（出口の項目 19 行 × (a)〜(e) の 95 欄。下の表）／gate-itemkey[756b8ba83dd9] I1+〜I13+（項目名も (e) つきの門に通す。64 文字の乱数らしい項目名を案内・観測・draft・回答・選択・wire のどこでも断り、正当な項目名は全部通す。I11+〜I13+ は外した項目の単位の形）／answers-prior[3d471357b319] J1+〜J9+（今までの回答の列の全件を、項目名・識別・値・そのほかの欄・読めない作りまで門に通し、1 件でも通らなければ unreadable）／gate-order[4d1da8f06a4c] X1+ X2+ X3+ X4+ X5+ X6+ X7+（門が (a)〜(e) を生の文字列全体に例外より先に当てる順・門の種類・判定できない入力は秘密らしい側）／gate-pairs[709d44eefc87] G1+ G1- G2+ G2- G3+ G4+ G5 G6 G7（設定の対の key・value・版の接尾辞）／gate-readable[a313ac907d66] R1+〜R11+（読める名前・path の部品の上限と、語・Bearer・参照の区切り・配列の差し替え）／gate-structure[5e3a3190f84a] S1+〜S9h+（構造体の key・Map・Set・知らない入れ物・共有部品・入れ物 × 位置 × (a)〜(d)） | OK | 通る。O10+ は、設定の対の `=` の後ろの接頭辞を断ることを確かめる（審査 3 回目の R-07 で、以前の「既知の限界」は解消した。今の限界は下の「U2 が保証しないこと」）。審査 4 回目の R-11 で、設定の対の例外が (a)〜(d) を飛ばしていた穴は、門を例外より先に当てる形で塞いだ（G1+・G2+・G4+・M12+）。T5.2o という名前の試験は無い（設計の名前）。同じ観点は T5.2+・T5.2-・answers-binding T6.4o・structure-open T12.i が覆う |
 | BR5.3 | answers-receive[6ba89fac5fe7] T5.3 | OK | 通る（名前に +/- が付かない） |
 | BR5.4 | answers-receive[6ba89fac5fe7] T5.4 | OK | 通る（名前に +/- が付かない） |
-| BR6.1 | answers-binding[3b97b406cb21] T6.1／draft[c4b958eb674f] T6.1／guidance-text[37bd346262f7] T6.1／read-file-read[d6b6af0fd5d5] T6.1+ T6.1- T6.1 | OK | 通る |
+| BR6.1 | answers-binding[3b97b406cb21] T6.1／draft[c4b958eb674f] T6.1／guidance-text[37bd346262f7] T6.1／read-file-read[85dacc2756b2] T6.1+ T6.1- T6.1 | OK | 通る |
 | BR6.2 | answers-order[68943abb5cf2] T6.2m T6.2n T6.2o T6.2p／answers-binding[3b97b406cb21] T6.2 T6.2+ T6.2o／observation-facts[3b42440eb604] T6.2+ | OK | 通る。判定の順の直し（下の「設計の記録への訂正」の 5） |
 | BR6.3 | answers-binding[3b97b406cb21] T6.3／answers-order[68943abb5cf2] T6.2m | OK | 通る。T6.3 は 1 件。BR6.2・BR6.3 の順の直しの観点は T6.2m〜T6.2p が覆う |
 | BR6.4 | answers-binding[3b97b406cb21] T6.4 T6.4+ T6.4- T6.4o | OK | 通る |
@@ -397,16 +399,16 @@ base `f2d509b`（U5 の merge commit）から HEAD `b64144d` までの commit（
 | NFR2.6 | structure-open[6efd4dea50ad] T12.i+ T12.i-／observation-values[70534c5cf977] T3.4o T3.4p／answers-binding[3b97b406cb21] T6.4o／guidance-text[37bd346262f7] T7.7-（秘密らしい名前・出典の位置の 2 件）／observation-locator[0b8d106cc54f] T2.l1+ T7.7-／output-paths[7c8d5db83394] O1+〜O17+／exit-matrix[19b767145e3e] M1+〜M19+／gate-itemkey[756b8ba83dd9] I1+〜I13+（項目名・外した項目の位置の名前）／answers-prior[3d471357b319] J1+〜J9+（今までの回答の列）／gate-structure[5e3a3190f84a] S1+〜S9h+（構造体の鍵・値・Map・Set を 1 つの走査で調べる）／gate-readable[a313ac907d66] R6+（参照の区切り） | OK | 通る。決定 120・122。案内の文に写る名前の側の確かめと、出口の項目 × (a)〜(e) の行列（下の「出口の項目 × BR5.2 の (a)〜(e) の表」）を足した |
 | NFR2.6a | structure[9ca4afc7a4c0] T12.d+ T12.i+／structure-open[6efd4dea50ad] T12.i+／observation-values[70534c5cf977] T3.4p／output-paths[7c8d5db83394] O9+ O10+／embedded-forms[dfd5f1ad90f8] E7+／exit-matrix[19b767145e3e] M4+ M5+ M12+／gate-order[4d1da8f06a4c] X1+〜X7+（門は 1 つ）／gate-pairs[709d44eefc87] G5 G6 G7 | OK | 通る。判定の持ち主は value-exposure の 1 か所のまま（`exposesText`・`hasSecretShape`・`isRefName`・`carriesSecretShape` も同じ file。門 `exposesText` は `value-exposure.mjs:148-153`。項目名の判定 `isItemKeyText` も同じ file の `:158`）。O9+・E7+ と、行列の (e) の列で理由と限界の試験を持つ欄 9（理由だけ 6 = M4・M5・M9・M13・M14・M15、両方の側 3 = M6・M7・M17）は意図した限界の記録 |
 | NFR3.1 | answers-receive[6ba89fac5fe7] T5.1- T5.2-／escape[327588a532ef] T8.2+ T8.2-／guidance-text[37bd346262f7] T8.2+ | OK | 通る |
-| NFR3.2 | probe-search[7b35ca7ce3b6] T2.2／probe-child[d04f45dad8db] T2.2／read-file-resolve[503d6313b0be] T1.5+ T1.5-／read-file-read[d6b6af0fd5d5] T1.5- | OK | 通る |
-| NFR4.1 | observation-read[3d6a9f4689a8] T1.6+／read-file-read[d6b6af0fd5d5] T1.6-／answers-receive[6ba89fac5fe7] T5.4 | OK | 通る |
+| NFR3.2 | probe-search[7b35ca7ce3b6] T2.2／probe-child[d04f45dad8db] T2.2／read-file-resolve[503d6313b0be] T1.5+ T1.5-／read-file-read[85dacc2756b2] T1.5-／read-file-special[4ce429594bdc] N2- N2+ | OK | 通る |
+| NFR4.1 | observation-read[3d6a9f4689a8] T1.6+／read-file-read[85dacc2756b2] T1.6-／answers-receive[6ba89fac5fe7] T5.4 | OK | 通る |
 | NFR4.2 | answers-order[68943abb5cf2] T6.2m T6.2n T6.2o T6.2p／answers-binding[3b97b406cb21] T6.2o T6.4o | OK | 通る |
 | NFR4.3 | structure[9ca4afc7a4c0] T12.a+ T12.f+ | OK | 通る（核が環境・file・子 process・network を使わず、書込みの経路が無いことの間接の確かめ。対話どうしで共有する可変の状態の専用の試験ではない） |
 | NFR5.1 | structure[9ca4afc7a4c0] T12.a+／guidance-text[37bd346262f7] T7.3+ | OK | 通る |
-| NFR5.1a | structure[9ca4afc7a4c0] T12.a+ T12.a-／read-file-read[d6b6af0fd5d5] T6.1 | OK | 通る |
+| NFR5.1a | structure[9ca4afc7a4c0] T12.a+ T12.a-／read-file-read[85dacc2756b2] T6.1 | OK | 通る |
 | NFR5.2 | structure[9ca4afc7a4c0] T12.c+ | OK | 通る |
-| NFR6.1 | read-file-read[d6b6af0fd5d5] T6.1+ T6.1-／observation-read[3d6a9f4689a8] T1.4+ T1.4-／structure[9ca4afc7a4c0] T12.b+ | OK | 通る |
+| NFR6.1 | read-file-read[85dacc2756b2] T6.1+ T6.1-／observation-read[3d6a9f4689a8] T1.4+ T1.4-／structure[9ca4afc7a4c0] T12.b+ | OK | 通る |
 | NFR6.1a | probe-child[d04f45dad8db] T2.2／observation-tool[825308f411bb] T2.2+／observation-read[3d6a9f4689a8] T1.3+ | OK | 通る |
-| NFR6.1b | read-file-read[d6b6af0fd5d5] T1.4-／probe-child[d04f45dad8db] T2.2／guidance-text[37bd346262f7] T9.2 | OK | 通る |
+| NFR6.1b | read-file-read[85dacc2756b2] T1.4-／probe-child[d04f45dad8db] T2.2／guidance-text[37bd346262f7] T9.2 | OK | 通る |
 | NFR6.1c | item-state[1b3d42a63109] T3.1x／catalog[9552a8e54a58] T3.5+ T3.5- | OK | 通る |
 | NFR6.2 | probe-child[d04f45dad8db] T2.2（起動の呼び出しが失敗した時 requests は 1）／guidance-text[37bd346262f7] T7.4+ | OK | 通る。「retry」という名前の試験は無い。自動の再試行が 0 であることは起動の回数 1 の試験で間接に確かめる |
 | NFR7 | structure[9ca4afc7a4c0] T12.f+ | OK | 通る。外部への効果の経路（書込み・削除・push・投稿・network・標準出力・shell）が無い |
@@ -422,7 +424,7 @@ base `f2d509b`（U5 の merge commit）から HEAD `b64144d` までの commit（
 
 | 決定 | URL | 本文 SHA-256 | 試験 |
 |---|---|---|---|
-| 116（観測値は有効な形式のものだけ示す） | https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6962989955 | `3986367dcee537139c1065e71d9db339cd085e10f8fbf4f5cf1d7c771e5f3a6a` | observation-values[70534c5cf977] T3.4+ T3.4o T3.4p／item-state[1b3d42a63109] T3.4p／secret-likeness[84b655ddfeb3] T3.4p／read-file-read[d6b6af0fd5d5] T3.4p |
+| 116（観測値は有効な形式のものだけ示す） | https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6962989955 | `3986367dcee537139c1065e71d9db339cd085e10f8fbf4f5cf1d7c771e5f3a6a` | observation-values[70534c5cf977] T3.4+ T3.4o T3.4p／item-state[1b3d42a63109] T3.4p／secret-likeness[84b655ddfeb3] T3.4p／read-file-read[85dacc2756b2] T3.4p |
 | 120（string・list の値は示さない） | https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137 | `c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4` | observation-values[70534c5cf977] T3.2o T3.4o T8.3o／normalize[7a02f41acb9e] T3.2o／answers-binding[3b97b406cb21] T6.4o／structure-open[6efd4dea50ad] T12.i+ T12.i- |
 | 122（開いた形でも固定の分類だけは示す。値と digest は持たない） | https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6964964182 | `6662e49d5146bd9846a0bf304044293261a04faf18dfaa8f85da3052313b9304` | observation-values[70534c5cf977] T8.3p T3.4p／observation-facts[3b42440eb604] T8.3p／draft[c4b958eb674f] T8.3p |
 
@@ -2049,6 +2051,39 @@ G-7(b) の項目名の数え上げは、`enum-itemnames.mjs`（scratchpad）の�
 - **私が間違えた物**: (1) 3 行を変えなかった理由に、確かめていない理由を書いた。`uncovered` の結果で確かめる形に書き直した。(2) 「`.` が 2 つ以上なら (d)」と書いたが、実測は「19 文字の 3 つを `.` 2 つで繋いだ形」だった。実測の文に直した。(3) O14b+ の行の範囲を 188-199 に直した。(4) `14bcbab` の対照の基準を実装から作った（上の arc への報告 4。`b64144d` で直した）。(5) 「T2.2 だけが殺し手の変異は 0 件」と約束していたが、実測は 9 件だった（直した）。(6) `uncovered.mjs` は名前を空白で割るので、id に空白を含む 3 行を「落ちない行」と誤って数えた。`gen-field-table.mjs` の `uncovered` で数え直した（落ちない行 0）。
 - **私が流していない物**: 独立の監査。arc の中継が無い限り、監査の依頼も投稿もしていない。
 
+## Step 15 の直し（N1・N2・N3・小文字の bearer）
+
+実装監査の前の先回りの点検（devsecops の読むだけの見直し）が見つけた 3 件を、arc の判断（Owner の決定 95 による委任。Owner の言葉ではない）で、実装監査の前に直した。設計の水準は変えない（実装を設計の約束の水準に近づける直し。arc の確認）。前の commit は書き換えず、上に積んだ（gitleaks の fingerprint が commit に結ばれているため）。**push はしていない**（決定 140 の別 PR の統合と main の取り込みの後）。
+
+| 順 | commit | 内容 | 結果 |
+|---|---|---|---|
+| 1 | `096c665` | N1 の Red（`tests/working-state-source-caller.test.mjs` 新規 80 行） | 8 件中 6 件失敗、2 件は正例で通る |
+| 2 | `06a3ed9` | N1 の Green（`scripts/working-state/source-extract.mjs` +14 -2） | N1 の 8 件と既存の extract 13 件が通る |
+| 3 | `42190ba` | N2 の Red（`tests/working-state-read-file-special.test.mjs` 新規） | 5 件中 4 件失敗 |
+| 4 | `2f982b4` | N2 の Red の続き（既存の期待 1 か所の改めと fake の file 系の試験 1 件） | 18 件中 5 件失敗 |
+| 5 | `82483ae` | N2 の Green（`scripts/working-state/read-file.mjs` +2） | 全部通る |
+
+- **Red の失敗の名前**: `096c665` は N1- (a)・(b)・(c)・(d)・守り 1 だけ・観測まで通しても malformed の 6 件（(b) は、文字列の行だけの file で pin と同じ commit が値として取り出される欠陥そのもの）。`42190ba` は N2- の FIFO は解決で resolved にしない・FIFO で readFileFact が止まらず戻る（3000 ms の枠で「戻らなかった」と失敗）・FIFO への symlink・dir も open しない の 4 件。`2f982b4` は上の 4 件と T1.5+ の dir の期待の 5 件。試験側の枠は `AbortSignal.timeout(3000)`。FIFO は `mkfifo` を実行して作り、作れなければ例外で失敗する（skip にしない）。
+- **N1 の Green（`pickWorkflowCaller`）**: comment の行を除いた行で、`watchout/shirube/.github/workflows/sds-gate.yml` の出現数が `CALLER_USES_RE` で取れた件数と違えば `malformed`（守り 1）。block scalar の開始の行（`|`・`>`、`+`・`-`・桁の印つき）があれば `malformed`（守り 2）。`CALLER_USES_RE` は `CALLER_NAME` の 1 つの定義から作り、同じ文字列を 2 か所に書かない。YAML の解釈器は入れていない。comment の行を数えない理由: 数えると既存の T1.2+（`# uses: …@<pinned commit sha>` の行）が壊れる。印の直前を空白か行頭に限る理由: 既存の `@<SHIRUBE_COMMIT>` が `>` で終わる。残る形は限界 24。
+- **N2 の Green（`resolveFile`）**: `realpath` の後の `stat` で `isFile()` が偽なら `{resolution: "failed", rootRealPath}` を返し、`open` しない。残る競合は限界 25。
+- **N3**: 限界 13 の文を実物（`observation.mjs:19,22-27,35,137`）に合わせた（コードは変えていない）。
+- **小文字の `bearer`**: BR5.2 の (c) は文字どおり `Bearer ` で、大文字小文字を問わないとは書いていない。約束のまま、限界 23 に 1 行書いた（コードは変えていない）。
+- **既存の試験の期待を変えた 1 か所（緩めていない）**: `tests/working-state-read-file-read.test.mjs` の T1.5+（dir）の期待を `["same","failed",undefined]` から `["not_checked","failed",undefined]` に改めた。dir も普通の file でないので、解決の段で resolved にしなくなったため。「読まない・access は failed・核の原因は fetch_failed」は変えていない（fetch_failed は次の assert が通ることで確かめる）。識別が `same` から `not_checked` に変わる。workflow_caller を使う既存の観測・fields・extract の試験の期待は変えていない。
+- **足した試験（14 件）**: N1 の 8 件（N1- (a)・(b)・(c)・(d)・守り 1 だけ・観測まで通しても malformed、N1+ 引用符なしの本物の行は値・観測まで通すと値を持つ）、N2 の 6 件（FIFO は resolved にしない・FIFO で止まらず戻る・FIFO への symlink・dir も open しない・解決の後に普通の file でない実体へ置き換わっても読まない（fake の file 系。読む直前の `isFile` の確認が残ることを確かめる）・N2+ 普通の file は今までどおり）。
+
+### 実測（HEAD `82483ae`。この席が再実行して確かめた物と、子の報告だけの物を分ける）
+
+| 項目 | 結果 | 確かめ方 |
+|---|---|---|
+| `git log --oneline 763be90f..HEAD` | 上の 5 commit。`git status --short` は `?? node_modules` だけ | この席が実行 |
+| `node --test --test-concurrency=1 tests/working-state-*.test.mjs`（Node v24.22.3） | tests 1080 / pass 1080 / fail 0 / cancelled 0 / skipped 0 / todo 0（1066 + 14）。LC7 の T12.l6+ は全体の中で ok | この席が再実行（TAP を file に出して集計） |
+| 変更 file | `source-extract.mjs` 89 行（+14 -2）、`read-file.mjs` 190 行（+2）、試験 2 file 新規（80 行・99 行）、`read-file-read` の期待 1 か所。どの file も 300 行以内。新しい依存なし | `git diff --stat 763be90f..HEAD`（この席が実行） |
+| `check.py`（`python3 -I ~/Developer/arc/tools/pr-precheck/check.py <worktree> origin/main HEAD`） | 製品の code と試験の変更行 11034（Step 15 の前は 10794。+240）。AI-DLC の記録 7365 は数えない。上限 2000 を超える STOP は 1 PR の上限に対するもので、PR #112 は Owner の例外（決定 128）。決定 140 の予算の見込みは arc に伝えた | この席が実行 |
+| 守りを外す実測（17 件。1 件ずつ・並列度 1・`MUT_FULL=1`・Node v24.22.3） | 基線 1071 件が全部通る（LC7 の試験は除外）。killed 15・survived 2・bad-find 0。survive の 2 件は同値の変異（`!==` を `>` にする: 取れた行は必ず名前を含むので出現数 >= 取れた件数で `!==` と同値。確認を `lstat` に替える: `realpath` の結果は symlink を含まないので同値）で `expectSurvive` に指定。N1 の 11 件は 10 件 killed、N2 の 6 件は 5 件 killed。守り 2 を外した変異を殺すのは (b)・(d)・観測まで通しの 3 件、守り 1 を外した変異は (b)・(c)・守り 1 だけの試験が殺す | 子の報告（scratchpad の `mutation-final/mutations-n15.mjs` SHA-256 `b4be6e96e7fa27ccd3710b66bf69f67796c7e6010c3939e21c0fc1f303c4b819`・`result-n15.json` `d376b92b27d7aa76a4d943301cbd54811221f3fc98d1982418190dbc33edce78`。repo に入っていない）。この席は再実行していない |
+
+- **観測していない物**: 守りを外す実測 17 件の独立の再現（同じ席が作り、同じ席が流した。この席も再実行していない）、Linux の runner、Node v22・v26 での Step 15 の試験、`npm test` の全体と行の網羅率の HEAD での再計測（LC7 は U2 の試験の中で ok）。既存の変異 636 件の測定は Step 15 の前の HEAD `b64144d` の値のままで、Step 15 では取り直していない。
+- **U2 の件数の読み方**: この記録の「試験の実行と TDD」の表の 1066 件は Step 15 の前の HEAD `b64144d` の値。HEAD `82483ae` は 1080 件（Node v24.22.3）。Node v22・v26 の値は 1066 件のまま（再実行していない = 観測できなかった）。
+
 ## 持ち越し・ギャップ
 
 設計に足りない所を見つけたものは、黙って埋めずにここに書く（authority-and-waiting R3）。
@@ -2122,6 +2157,7 @@ G-7(b) の項目名の数え上げは、`enum-itemnames.mjs`（scratchpad）の�
   11. E7+ の限界: 接頭辞が英数字に直結した短い形（英数字の後ろの `ghp_` など）は (b) に当たらず、(e) の 20 文字から当たる。base64 の二重・文字の分割など、ほかの符号化は BR5.2 の集合の範囲の外。**区切りで割る形（限界 10 の F1）も同じ範囲**: 区切りが (e) の連なりの文字でない時、割った部品はどれも 20 文字未満で (e) に当たらない（表は限界 10）。
   12. （旧版の「冗長な守り m37」は、唯一の門の形にしたことで無くなった。参照の部品分けは `REF_WORDS`（`VX:58`）が 1 か所に持ち、変異 XR-delimiter-at・XR-* が `GR R6+`・`EM M17+` で落ちる。）
   13. **入れ物の走査の到達範囲**（`VX:176-213`）: 知っている入れ物（素の object・null の prototype・Array・Map・Set）の自分の key と値を全部調べる。知らない入れ物（RegExp・Error・String・Date・ArrayBuffer・型付き配列・class の実体）・getter・symbol・function・深さ 8 以上は「含む」（失敗側）。そのため、手で作った構造体にこれらが 1 つでも入ると、正当な入力でも断る（失敗側の誤り）。Map・Set の子 class と、prototype を差し替えた Map は、知らない入れ物として「含む」になる（`probe-proxy.mjs` で確かめた。repo の外）。Proxy は、trap が例外を起こせば含む側、起こさなければ trap が返した値を調べる。走査の時と後で値を入れ替える Proxy は、走査を通りうる（`probe-proxy.mjs` の proxyLyingKeys は false）。ただし wire へ写す道は `structuredClone` が Proxy を写せず、`draftToC02Wire` は refused になる（`probe-proxy2.mjs`。repo の外）。draft の `answers` の中の Proxy そのものを断る試験は無い（呼出側が手で作った入れ物を渡す前提の限界。限界 4・5）。
+     - **`observeAll` の `reads` の限り（Step 15 の N3。実物を読んで直した。コードは変えていない）**: `observeAll` は `reads` を入れ物として走査しない（`VX:176-213` の走査は通らない）。`reads.filter(isReadFact)`（`observation.mjs:19,137`）が各要素の `sourceKind`・`locator` を読み、`entriesFor`（`observation.mjs:22-27`）と `isWithheldLocator`（`observation.mjs:35`）が同じ欄をもう一度読む。**getter は断らず、確かめた後に値が変わる読み直しも閉じていない**（読み直しを閉じたのは、wire と案内の写しだけ。上の F3・F4）。`reads` は呼出側が手で作る入れ物で、その getter が確かめの後に別の値を返す入力は、U2 の設計の外の前提（限界 4・5 と同じ範囲）。この限りは記録だけで、BR5.2 の約束の水準は変えない。以前のこの限界 13 の文は、入れ物の走査が `observeAll` の `reads` にも及ぶように読めたので、実物に合わせて直した。
      - **確かめた後の読み直しを閉じた道と、残る道（4 回目の追い指示 F3・F4）**: `draftToC02Wire`・`selectionToC02Wire`（`c02-wire.mjs:43-44,49,61-63`）と `buildGuidance` の案内の写し（`guidanceCopyOf` `GC:33-44`）は、名指しの欄を `structuredClone` で 1 回だけ写し、門・検査も出す物も写しから作る（getter は 1 回だけ呼ばれ、確かめた後に別の値を返しても出ない。試験は `reread`（T8.5+・S10+）。Red `bfce272` → Green `5f45070`）。**Proxy・関数・symbol の値は `structuredClone` が断る（失敗側。wire は `refused`、案内は `invalid_input`）。symbol を key にした欄は写しに入らない（落ちる。断りではなく、出力に出ない）**。`probeToolFact` の `locator` は固定の集合 `TOOLS`（`node`・`aidlc`。`probe-tool.mjs:16`）の名前だけを返し、`tool`・`root` は 1 回だけ読む（`probe-tool.mjs:63-65`。Red `62a47ad` → Green `405e4fe`）。**残る道**: 入口の関数ごとに、確かめと出力の間で入力を読み直すかは、写しを使う上の 3 つ（wire 2・案内の写し 1）と `probeToolFact` だけを確かめた。ほかの入口（観測・回答・draft・選択の作成）は、入れ物の走査が getter を「含む」（断る）にするので読み直しの道を持たない（限界 13 の上の文）。
   14. **今までの回答の列の限り**: HEAD の限りは「入力の欄の表と欄ごとの守り」の限界 1〜3 に書いた（`receiveAnswer` が失敗の時に返す `answers: []`。`reconcileAnswers` は読めない件だけを `answer-position-N` の `invalidated` の件に置き換えて列を返す。呼出側は自分の列を持ち続ける。項目一覧に無い項目の値を持つ回答は読めない。digest の欄は小文字 16 進の 64 桁なら通り、正当な digest と区別できない）。以前の「`answerId` は (e) の形を通す」は Green 6 で直った。
   15. **外した項目の単位の限り（決定 95 の追い (b)。選択肢 1）**: (1) 外した位置の印は `catalog-position-N`（Green 5 `b8d6f8c`。項目名の形に当たらない予約の形。旧い `catalog_position_N` の名前の衝突は無い。`CA:43-48`）。(2) 外した項目の単位は draft に入らず、`buildDraft` が `invalid_input` にする（`GI I12+`）。U3 がこの単位をどう扱うかは U2 の外で観測できなかった（持ち越し 2）。
@@ -2132,6 +2168,10 @@ G-7(b) の項目名の数え上げは、`enum-itemnames.mjs`（scratchpad）の�
   20. **`exposesText` の第 3 引数 `wordsOf`（4 回目の追い指示 G-6）**: `exposesText(gateClass, text, wordsOf)`（`VX:148`）の `wordsOf` は、U2 の中の呼出（`VX:156`・`VX:165`・`VX:170`・`VX:174`・`VX:222`。どれも固定の語の分け方 `REF_WORDS`・`GUIDANCE_WORDS`・`ANSWER_WORDS`・`FORMATS` の `words`・`FREE_WORDS`）が渡す関数。**ただし `exposesText` 自体が `index.mjs` から公開されている（`export *`）ので、呼出側は自分の関数を第 3 引数に渡せる**。**これは信頼する側の入力として扱う**: `wordsOf` が例外を起こすと、その例外は門を通って外へ出る（門は捕まえない。`VX:151-153`）。呼出側の関数が返した語は、そのまま `RUN_RE` に通る（門が語を作り直さない）。U2 の入口（`observeAll`・`buildDraft`・`receiveAnswer` ほか）は、呼出側の関数を受け取る欄を持たない（`wordsOf` は入口の欄の表に無い）。U3 は `exposesText` に自分の関数を渡さない（持ち越し 3 に含める）。例外の message を観測していない。
   21. **`closedMatchesItem` の例外（4 回目の追い指示 G-5(b)。`595bb84`）**: `closedMatchesItem`（`AN:13-17`）は、読めない入力で `false` を返さず `TypeError`（見える失敗）を起こす。同じ形が `answerStatusOf()`・`unitFits(entry, null)`・`itemObservationDigestOf("k", null)`。例外を `false` にして隠すのは外へ出る入口の `closedMatches` だけ。注釈を実際の挙動に合わせた（コードは変えていない）。**失敗を成功に読み替えない**（S8）。
   22. **回答の列の読めない件の置き換え（G-2(a)）の最終の挙動と限り**: `reconcileAnswers` は読めない件だけを `answer-position-N`（`answerId`・`itemKey`）の `state: "invalidated"` の件に置き換えて列を返す（`AN:36-41`）。**限り**: 置き換えた件は `answerId` が位置の印で、元の `answerId` と結べない（呼出側が自分の列を持って対応づける）。`invalidated` の件は有効な回答でなく、`buildDraft` が `invalid_input` にする入口の門と、`wire` の answers に現れないことは `T6.2q`（6 件）で確かめた。
+  23. **小文字の `bearer`（Step 15 の B。コードは変えていない）**: BR5.2 の (c) は文字どおり `Bearer ` に続く長い語で、大文字小文字を問わないとは書いていない（`BEARER_RE` は大文字小文字を区別する）。そのため、`bearer ` + 16〜19 文字の語（20 文字未満）は (c) にも (e) にも当たらず通る（`bearer ` + 20 文字以上の連なりは (e) に当たる）。約束の水準の内側の限りとして記録だけにし、門は変えていない（変えると BR5.2 を変える）。
+  24. **`workflow_caller` の取り出し（Step 15 の N1。`pickWorkflowCaller` `source-extract.mjs`）の残る形**: `sds-gate.yml` を呼ぶ行を行の正規表現 `CALLER_USES_RE` で取る。守りは 2 つ: (1) comment の行を除いた行で、`watchout/shirube/.github/workflows/sds-gate.yml` の出現数が `CALLER_USES_RE` で取れた件数と違えば `malformed`、(2) 行末が `|`・`>`（block scalar の開始。`+`・`-`・桁の印つきを含む）の行がある file は `malformed`。YAML の解釈器は入れていない（新しい外部の依存は Owner の判断）。**残る形**: YAML の構造を確かめていないので、行の頭が `uses:`（任意で `- `）で始まり、名前を含む行は、実際の呼び出しか、引用符つきの複数行の文字列・複数行の plain scalar の継続の行か区別できない（`|`・`>` の印が無い複数行の文字列）。そのような行が名前の出現数と一致して取れると、その commit が値になりうる。行の頭が `uses:` でない文字列の行（`run: echo "uses: …"`・`run: |` の中の行。`|` の印の行は (2) で断る）と、引用符つき・flow 形の呼び出しは、(1)・(2) で `malformed` にする（`N1-` の試験）。これは「門が保証しないこと」に入れる。
+  25. **普通の file でない実体の読取り（Step 15 の N2。`resolveFile` `read-file.mjs`）の競合**: `realpath` の後の `stat` で `isFile()` が偽なら、`resolved` にせず `failed` で返し、`open` しない（FIFO で `open` が戻らず時間の枠が効かない形を断つ。dir も同じ。識別は `not_checked`）。**残る競合**: `stat` の後、`open` の前に、実体が FIFO に置き換わる競合は閉じていない（`open` が `O_NONBLOCK` を持たないので、その競合では止まりうる）。範囲の外として触っていない。fake の file 系の試験は、置き換わりの後の `isFile` の確認が残ることまでを確かめる。
+  26. **観測していない物（Step 15）**: 守りを外す実測 17 件の独立の再現（同じ席が作り、同じ席が流した）、Linux の runner、Node v22・v26 での Step 15 の試験、`npm test` の全体と行の網羅率の HEAD での再計測。
 - `stop.confirmed === false` の子の残存（止められなかった・確かめられなかった子 process。`probe-run.mjs:3,73-74`）は、記録に出ない既知の限り。`runChild` は子を止めたことを確かめられた時だけ `confirmed = true` にし、確かめられなければ `confirmed = false` で返す。しかし観測の解釈は `stop.reason` だけを読み（`read-check.mjs:93`）、`confirmed` は観測の項目にも案内にも出ない。そのため、止められなかった子が残ったことは記録に出ない（`grep -rn confirmed scripts/working-state/*.mjs` で、`stop` の `confirmed` を作る・渡す所が `probe-run.mjs:73-74` だけで、読む所が無いことを確かめた）。実装は変えていない（段のレビューの Minor。直すなら新しい設計の判断になる）。
 
 ## 作った過程の開示
@@ -2230,3 +2270,4 @@ G-7(b) の項目名の数え上げは、`enum-itemnames.mjs`（scratchpad）の�
   15. **回答の列の最終の挙動（4 回目の追い指示 G-2(a)。限界 22）**: `reconcileAnswers` が読めない件だけを `answer-position-N` の `invalidated` にして列を返し、入口の `receiveAnswer`（`unreadable`）・`buildDraft`（`invalid_input`）は変えないこと。置き換えた件が値・項目名・識別・欄の名前を写さないこと（`T6.2q`、6 件）。「列の全体を落とす」と読める文が残っていないこと。
   16. **負荷で揺れる試験の直し（4 回目の追い指示 S4。「4 回目の追い指示の直し」の S4 の節）**: (1) 本番の既定（20 回・10 ms・本物の `setTimeout`）が変わっていないこと（`620279f`）。(2) 試験の枠の時計を「子が印を書いてから」数えても、枠で止まる・止めたか確かめられない・孫も止まる、の 3 つの性質を同じ強さで確かめていること（57 行の表の #51〜#56）。(3) 再実行で通ったものを成功に数えていないこと。(4) 負荷に弱い試験が唯一の殺し手の変異を「殺された」と数えていないこと（「変異の実測」の取り直し）。
   17. **試験の期待を変えた行の表（57 行。「4 回目の追い指示の直し」）**: (1) 57 行の「前 → 後」と判定（stricter 28・equal 27・loosened 2）が、`git diff -U0 676b7e3 HEAD -- tests` の行を消した hunk と一致するか（57 hunk・消えた行 93）を、独立に数えてほしい。arc の指示の「68 行」と数が合わなかった（私は 57 hunk で数えた）。(2) loosened の M17+（#25・#26）が、手で作った draft の形（`exit-matrix-hand`。`ffe593a`）で取り戻されていると読めるか。入口を通る形の出口の確かめは、手で作った draft の形でだけ残る。(3) 入力の欄の表の弱い行 25 行（指示の 22 行と私が足した 3 行）の対照が、守りを外す変異を落とすか（「変異の実測」）。同じ形のまま残した 3 行（`isReadableUnit.unit（知らない欄の値）`・`unitFits.entry.elementShape`・`isReadableAnswer.catalog（配列でない）`）を許してよいか。
+  18. **Step 15 の直し（N1・N2・N3・小文字の bearer。「Step 15 の直し」の節。HEAD `82483ae`）**: (1) N1: `pickWorkflowCaller` の守り 1（名前の出現数と取れた件数の一致）と守り 2（block scalar の開始の行）が、`N1-` の 6 件で外すと落ち、残る形（限界 24）を許してよいか。(2) N2: `resolveFile` の `stat` → `isFile()` の確認で FIFO・dir が `open` に届かないこと、既存の T1.5+（dir）の期待の 1 か所の改め（`same` → `not_checked`）が緩めでなく設計の水準に合うか、`stat` の後の置き換わりの競合（限界 25）を許してよいか。(3) N3 と小文字の `bearer`（限界 13・23）が、設計の約束の水準（BR5.2 (c) は `Bearer ` に続く長い語）を変えず実物に合った記録か。(4) 守りを外す実測 17 件（killed 15・survived 2、同値）の独立の再現は観測できなかった。(5) 件数は 1066 → 1080（この席が Node v24.22.3 で再実行）。Node v22・v26・Linux の runner・`npm test` の全体は観測できなかった。
