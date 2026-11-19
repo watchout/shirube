@@ -27,13 +27,17 @@ const FIELD_CHECKS = {
   text: isGuidanceText,
 };
 
-// 写してよい案内の写し（名指しの欄だけ）。text が無い・読めない欄がある・例外を起こす（getter など）入力は null。
+// 写してよい案内の写し（名指しの欄だけ）。text が無い・読めない欄がある・例外を起こす入力は null。
+// 名指しの欄を 1 回だけ読んで写し（structuredClone。getter は 1 回だけ呼ばれ、Proxy・関数・symbol は断られる）、検査はその写しに当てて、返す物も写しから作る。
+// 元は確かめた後に読み直さない（F3）。symbol の key は写らない（読むのは名指しの欄の名前だけ）。
 export function guidanceCopyOf(guidance) {
   try {
-    if (!isObject(guidance) || !isGuidanceText(guidance.text)) return null;
-    const keys = Object.keys(FIELD_CHECKS).filter((key) => guidance[key] !== undefined);
-    if (!keys.every((key) => FIELD_CHECKS[key](guidance[key]))) return null;
-    return Object.fromEntries(keys.map((key) => [key, structuredClone(guidance[key])]));
+    if (!isObject(guidance)) return null;
+    const copy = structuredClone(Object.fromEntries(Object.keys(FIELD_CHECKS).map((key) => [key, guidance[key]])));
+    if (!isGuidanceText(copy.text)) return null;
+    const keys = Object.keys(FIELD_CHECKS).filter((key) => copy[key] !== undefined);
+    if (!keys.every((key) => FIELD_CHECKS[key](copy[key]))) return null;
+    return Object.fromEntries(keys.map((key) => [key, copy[key]]));
   } catch {
     return null;
   }

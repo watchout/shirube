@@ -23,9 +23,10 @@ function convertible({ answerId, kind, value, selectedCandidateRef }) {
   return kind === "value" && value !== undefined && isAnswerValue(value) && (selectedCandidateRef === undefined || isRef(selectedCandidateRef));
 }
 
+// 写しの上で動く（写しはもう getter を持たない）ので、値は写しからそのまま出す。
 function entryOf(answer) {
   const { answerId, kind, value, selectedCandidateRef } = answer;
-  return { answerId, kind, ...(kind === "value" ? { value: structuredClone(value) } : {}), ...(selectedCandidateRef === undefined ? {} : { selectedCandidateRef }) };
+  return { answerId, kind, ...(kind === "value" ? { value } : {}), ...(selectedCandidateRef === undefined ? {} : { selectedCandidateRef }) };
 }
 
 // 有効な回答の object。変換できない回答・同じ項目の有効な回答が 2 件以上なら null。
@@ -37,11 +38,18 @@ function answersObject(answers) {
   return Object.fromEntries(answered.map((answer) => [answer.itemKey, entryOf(answer)]));
 }
 
+// 呼出側が手で作った入力は、確かめた後に getter が別の値を返せる。出口へ渡す物は、入力の名指しの欄を 1 回だけ写し（structuredClone。
+// getter は 1 回だけ呼ばれ、Proxy・関数・symbol は断られる）、門・検査はその写しに当て、出す物も写しから作る。元は確かめた後に読み直さない（F3）。
+const draftCopyOf = (draft) => structuredClone({ draftId: draft.draftId, targetRef: draft.targetRef, missingItems: draft.missingItems, conflicts: draft.conflicts, observationRefs: draft.observationRefs, answers: draft.answers });
+const selectionCopyOf = (selection) => structuredClone({
+  selectionId: selection.selectionId, draftRef: selection.draftRef, candidateRef: selection.candidateRef, targetRef: selection.targetRef, guidance: selection.guidance, observationRef: selection.observationRef,
+});
+
 // ConfigurationDraft → C02 の draft。戻り値: { status: converted, wire } か { status: refused, wire: null, reason }。
 export function draftToC02Wire(draft) {
   try {
-    const { draftId, targetRef, missingItems, conflicts, observationRefs } = draft;
-    const answers = answersObject(draft.answers);
+    const { draftId, targetRef, missingItems, conflicts, observationRefs, answers: answersIn } = draftCopyOf(draft);
+    const answers = answersObject(answersIn);
     const valid = answers !== null && isRef(draftId) && isRef(targetRef) && [missingItems, conflicts].every(isItemList) && isList(observationRefs);
     return valid ? converted({ draftId, targetRef, answers, missingItems: [...missingItems], conflicts: [...conflicts], observationRefs: [...observationRefs] }) : refused();
   } catch {
@@ -52,7 +60,7 @@ export function draftToC02Wire(draft) {
 // GuidanceSelection → C02 の selection。guidance は案内の text（平文の文字列）。構造体の全体と結びの観測 digest は渡さない。
 export function selectionToC02Wire(selection) {
   try {
-    const { selectionId, draftRef, candidateRef, targetRef, guidance, observationRef } = selection;
+    const { selectionId, draftRef, candidateRef, targetRef, guidance, observationRef } = selectionCopyOf(selection);
     const valid = [selectionId, draftRef, candidateRef, targetRef, observationRef].every(isRef) && isGuidanceText(guidance?.text) && !carriesSecretShape(guidance);
     return valid ? converted({ selectionId, draftRef, candidateRef, targetRef, guidance: guidance.text, observationRef }) : refused();
   } catch {
