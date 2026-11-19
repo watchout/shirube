@@ -39,21 +39,39 @@ test("T7.1+ 文面の節は 結論 → 次の操作 → 原因・未確認 → �
   assert.equal(lineOf(text, "根拠の参照:"), "根拠の参照: obs-1, obs-2");
 });
 
-test("T7.2+ 文面は飾りのない文字だけ: 色の制御・復帰・進捗や記号の図形を含まない", () => {
-  for (const draft of [handDraft([unobservableItem("aidlc_version", "tool_missing")]), draftOf(CATALOG, conflictObserved()), draftOf(CATALOG, allAbsentObserved())]) {
-    const { text, conclusion, nextAction } = guided(draft, { conformance: GATE_FAIL }).guidance;
-    for (const part of [text, conclusion, nextAction.text]) assert.equal(/[\u001b\r\t▀-▟⠀-⣿✓✗✅❌]/u.test(part), false);
+// 文面・質問の全部の文字列（欄の中も）。
+const stringsOf = (value) => (typeof value === "string" ? [value] : value !== null && typeof value === "object" ? Object.values(value).flatMap(stringsOf) : []);
+// 入力の形を広げた案内（確認済み・食い違い・不足・観測不能・対象違い・設定 A 不足と権限 B 観測不能・全部確認済み）。
+const wideCases = () => [
+  [handDraft([unobservableItem("aidlc_version", "tool_missing")]), { conformance: GATE_FAIL }],
+  [draftOf(CATALOG, conflictObserved()), { conformance: GATE_FAIL }],
+  [draftOf(CATALOG, allAbsentObserved()), { conformance: GATE_FAIL }],
+  [draftOf(CATALOG, conflictObserved()), {}],
+  [draftOf(INITIAL, initialAbObserved()), { catalog: INITIAL, conformance: GATE_FAIL }],
+  [handDraft([{ itemKey: "aidlc_version", state: "wrong_target", wrongTargets: [{ sourceRef: { sourceKind: "aidlc_version", locator: ".aidlc-version" }, namedTarget: "sample-name" }], referenceValues: [], observationRefs: [] }]), {}],
+  [draftOf(plainCatalog, observeWith(plainCatalog)), { catalog: plainCatalog }],
+];
+
+test("T7.2+ 文面は飾りのない文字だけ: 色の制御・復帰・タブ・NUL・BEL・DEL・書式や向きの制御（U+202E・U+200B など）・進捗や記号の図形を含まない。改行（LF）だけが区切り", () => {
+  const forbidden = /[\p{Cc}\p{Cf}\u2028\u2029▀-▟⠀-⣿✓✗✅❌]/u;
+  assert.equal(forbidden.test("a\u0000b") && forbidden.test("a\u0007b") && forbidden.test("a\u007fb") && forbidden.test("a\u202eb") && forbidden.test("a\u200bb") && forbidden.test("a\tb") && forbidden.test("a\rb") && forbidden.test("a\u001bb"), true);
+  for (const [draft, options] of wideCases()) {
+    const result = guided(draft, options);
+    const parts = stringsOf(result);
+    assert.equal(parts.length > 0, true);
+    for (const part of parts) assert.equal(forbidden.test(part.replaceAll("\n", "")), false, JSON.stringify(part));
   }
 });
 
 test("T7.3+ 同じ入力は同じ案内と同じ質問（時刻・乱数・環境を読まない）。入力の draft は書き換えない", () => {
-  const draft = draftOf(CATALOG, conflictObserved());
-  const before = JSON.stringify(draft);
-  const first = guided(draft, { conformance: GATE_FAIL });
-  const second = guided(draft, { conformance: GATE_FAIL });
-  assert.deepEqual(first, second);
-  assert.equal(JSON.stringify(first), JSON.stringify(second));
-  assert.equal(JSON.stringify(draft), before);
+  for (const [draft, options] of wideCases()) {
+    const before = JSON.stringify(draft);
+    const first = guided(draft, options);
+    const second = guided(draft, options);
+    assert.deepEqual(first, second);
+    assert.equal(JSON.stringify(first), JSON.stringify(second));
+    assert.equal(JSON.stringify(draft), before);
+  }
 });
 
 test("T7.4+ 全項目が確認済みなら、未確認も原因も無く、次の操作は none・blocking は false。開始・適用はこの案内の範囲外と書く", () => {
@@ -120,12 +138,13 @@ test("T7.5- 読めない門の結果（欠け・形の違い・秘密らしい�
 });
 
 test("T7.6+ 案内は開始・適用の許可を作らない: 欄にも文面にも explicitStart・requestId・idempotencyKey・permission などが無い", () => {
-  const results = [guided(draftOf(CATALOG, conflictObserved()), { conformance: GATE_FAIL }), allConfirmed(), guided(handDraft([unobservableItem("aidlc_version", "tool_missing")]))];
+  const results = wideCases().map(([draft, options]) => guided(draft, options));
+  assert.equal(results.length >= 7, true);
   for (const result of results) {
     const keys = keysDeep(result);
     for (const forbidden of EFFECT_KEYS) {
       assert.equal(keys.has(forbidden), false, forbidden);
-      assert.equal(result.guidance.text.includes(forbidden), false, forbidden);
+      for (const part of stringsOf(result)) assert.equal(part.includes(forbidden), false, forbidden);
     }
   }
 });
@@ -236,4 +255,22 @@ test("T9.2 案内の文面の長さは項目数に比例して増えるだけで
   const { text } = guided(draft).guidance;
   assert.equal(text.length < 600, true);
   assert.equal(text.includes(long), false);
+});
+
+test("T9.2 案内の文面の長さは項目数だけで決まる（G-3）: 項目 1・3・10 件で、1 件あたりの増え方が一定。各項目の入力の文字列を 70・300・5000 文字にしても文面の長さは同じ", () => {
+  const keyOf = (index) => `item_${String(index).padStart(2, "0")}`;
+  const lengthFor = (count, namedTarget) => {
+    const catalog = Array.from({ length: count }, (_, index) => ({ ...CATALOG[0], itemKey: keyOf(index) }));
+    const items = catalog.map((entry) => ({ itemKey: entry.itemKey, state: "wrong_target", wrongTargets: [{ sourceRef: { sourceKind: "aidlc_version", locator: ".aidlc-version" }, namedTarget }], referenceValues: [], observationRefs: [] }));
+    const { text } = guided(handDraft(items), { catalog }).guidance;
+    assert.equal(text.includes(namedTarget), false);
+    return text.length;
+  };
+  const counts = [1, 3, 10];
+  const [short, ...others] = [70, 300, 5000].map((size) => counts.map((count) => lengthFor(count, "z".repeat(size)))); // 70 文字は名前として示す上限（64）を超え、示されない
+  for (const lengths of others) assert.deepEqual(lengths, short);
+  const bare = short.map((length, index) => length - String(counts[index]).length); // 結論の「N 件」の桁数だけは件数の写しなので除く
+  const step = (bare[1] - bare[0]) / 2;
+  assert.equal(step > 0 && Number.isInteger(step), true);
+  assert.equal(bare[2] - bare[0], step * 9);
 });
