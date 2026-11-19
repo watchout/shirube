@@ -1,0 +1,236 @@
+{
+  "stage": "infrastructure-design",
+  "unit": "u2-working-state-dialogue",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.1a",
+    "NFR1.1b",
+    "NFR1.2",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR2.6a",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR5.1",
+    "NFR5.1a",
+    "NFR5.2",
+    "NFR6.1",
+    "NFR6.1a",
+    "NFR6.1b",
+    "NFR6.1c",
+    "NFR6.2",
+    "NFR7",
+    "NFR8.1",
+    "NFR8.1a",
+    "NFR8.2",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR10.1",
+    "NFR10.2"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "infrastructure-specification の Deployment（行の網羅率の分母 scripts/working-state/**/*.mjs をディスクの列挙で決める、0 件・lcov に無い file は失敗、Q3 = A）、monitoring-design の Metrics（網羅率・分母の file 数）、cicd-pipeline の関門 4"
+    },
+    {
+      "id": "NFR1.1a",
+      "status": "OK",
+      "target": "infrastructure-specification の Deployment（資源の大きさは数値を置かない）、monitoring-design の Metrics（観測の実測は未計測の間は「未計測」）"
+    },
+    {
+      "id": "NFR1.1b",
+      "status": "OK",
+      "target": "infrastructure-specification の Infrastructure Services（網羅率の記録 LC7）、monitoring-design の Metrics、cicd-pipeline の確かめの記録"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "cicd-pipeline の stage と関門の対応（規則ごとの正例・負例、AC 由来の入力の差）"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "infrastructure-specification の子 process の起動の条件（Q4 = A、決定 106）、cicd-pipeline の権限と秘密（書ける資格情報を渡さない）"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "monitoring-design の Dashboards / Logs（診断に入力の写し・秘密らしい値を載せない）、cicd-pipeline の権限と秘密（架空 fixture、gitleaks）"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "infrastructure-specification の Deployment（入口を作らない、Q2 = A。開始・適用の許可を U2 が作る経路が無い）"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "OK",
+      "target": "cicd-pipeline の権限と秘密（audit/・.aidlc-engine/ を PR に含めない、非公開の記録を写さない、架空 fixture）"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "infrastructure-specification の費用（新しい外部の依存を足さない）、cicd-pipeline の関門（機械の部分: import が node: の組込みと相対 path だけの構造の試験。人の部分: package.json・lockfile・契約 .v2 の差分 0 は作者と独立監査の確認で、機械の関門ではない）"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "infrastructure-specification の論理部品と置き場（判定の関数を scripts/working-state/ の末端の 1 file に置く。開いた形の生の値の置き場、LC1→LC2 の受け渡しだけで保持・digest・表示をしない。U2 が保証しないこと）、monitoring-design の Metrics（観測値の取り扱いの負例・生の値の経路の構造の試験）、cicd-pipeline の stage と関門の対応（T1.1u・T3.2o・T3.4o・T5.2o・T6.4o・T8.3o・T8.3p・T3.4p。開いた形の固定の分類 withheld は arc の読み・Owner に確認中。LC1 の同一性の確認の例外と、profile 不読時は既存の原因 malformed）"
+    },
+    {
+      "id": "NFR2.6a",
+      "status": "OK",
+      "target": "infrastructure-specification の論理部品と置き場（判定の関数の置き場。BR5.2 の持ち主は 1 つ）、cicd-pipeline の stage と関門の対応（判定の関数が LC2・LC5 で同じ 1 つ、何も import しない）、monitoring-design の Metrics"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "N/A",
+      "target": "入力の検証と escape は LC5・LC6 の code の設計（security-design SC4）で、置き場・基盤の項目を持たない。試験は cicd-pipeline の関門 2・3 が実行する"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "infrastructure-specification の子 process の起動の条件（PATH から対象の根の下・相対・空を捨てる、見つけた実行ファイルの実体も根の外、cwd は OS の根 = Q7 = A・Owner の決定 111）、cicd-pipeline の stage と関門の対応（子の起動の負例）"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "N/A",
+      "target": "変化した入力を完全な観測にしない・二重送信は 1 件、は code の設計（reliability-design RL1）で、置き場・基盤の項目を持たない。試験は cicd-pipeline の関門 2・3 が実行する"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "N/A",
+      "target": "古い観測・回答を使わない、は code の設計（reliability-design RL2。閉じた形で値が一致し全出典が同じ値なら一致を確認を先に判定、それ以外で観測が変われば無効）で、置き場・基盤の項目を持たない。試験 T6.2m・T6.2n・T6.2o・T6.2p は cicd-pipeline の関門 2・3 が実行する"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "infrastructure-specification の Infrastructure Services（DB・cache・queue を持たず、共有の可変の状態を置く場所が無い）"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "cicd-pipeline の stage と関門の対応（核の構造の試験: Date・乱数・UUID が無い）"
+    },
+    {
+      "id": "NFR5.1a",
+      "status": "OK",
+      "target": "cicd-pipeline の stage と関門の対応（核の構造の試験。時計を読むのは LC1 だけ）、infrastructure-specification の論理部品と置き場"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "cicd-pipeline の stage と関門の対応（構造の試験: 理由コードの定義が無い）、infrastructure-specification の Shared Infrastructure（U1 の理由コードを読むだけ）"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "infrastructure-specification の Deployment（資源の大きさ: 予算は profile）、Shared Infrastructure（予算の profile は U1 が持つ）。PF4（開いた形の比較は追加の読取り・子の起動を作らない）は、論理部品と置き場の「開いた形の生の値の置き場」と cicd-pipeline の構造の試験（比較のための追加の読取り・子の起動が無い）"
+    },
+    {
+      "id": "NFR6.1a",
+      "status": "OK",
+      "target": "infrastructure-specification の子の止め方（超えたら観測不能）、monitoring-design の Metrics（観測結果の分類）"
+    },
+    {
+      "id": "NFR6.1b",
+      "status": "OK",
+      "target": "infrastructure-specification の子の止め方（出力は読みながら大きさを数え、上限で読取りを打ち切り、超えた分を保持しない。子は process group ごと止め、止められない時は観測不能。SC-GAP-1 は NFR 設計で反映済み）"
+    },
+    {
+      "id": "NFR6.1c",
+      "status": "N/A",
+      "target": "項目が増えても同じ規則、は code の設計（scalability-design SC-C）で、置き場・基盤の項目を持たない"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "infrastructure-specification の子の止め方（自動の再試行は 0）"
+    },
+    {
+      "id": "NFR7",
+      "status": "N/A",
+      "target": "外部への効果が 0。基盤の項目を持たない。外への通信・書込みが無いこと（infrastructure-specification の Deployment）を構造の試験で確かめる（cicd-pipeline の戻し方と段階）"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "infrastructure-specification の Deployment（実行環境: Node >=22 の宣言、確認した版は Build and Test で記録）、A-07 の突き合わせの結果（道具の版の観測）"
+    },
+    {
+      "id": "NFR8.1a",
+      "status": "OK",
+      "target": "infrastructure-specification の Deployment（実行環境の版を具体的に確認するまで未確認）、cicd-pipeline の確かめの記録"
+    },
+    {
+      "id": "NFR8.2",
+      "status": "OK",
+      "target": "infrastructure-specification の Shared Infrastructure（共通契約の形を変えず、契約の file を置き場に足さない）"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "N/A",
+      "target": "案内の形は LC4・LC6 の code の設計（observability-design OB1）で、置き場・基盤の項目を持たない"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "N/A",
+      "target": "A 不足・B 観測不能の区別と完了範囲は code の設計（observability-design OB2）で、置き場・基盤の項目を持たない。required_checks を U2 では扱わない項目にする（Q5 = A）案内は infrastructure-specification の A-07 の結果"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "OK",
+      "target": "infrastructure-specification の Deployment（ESM・Node 22・実行時 npm 依存なし、既存の検査に入る置き場）と knip の production の entry（Q6 = A）、cicd-pipeline の stage と関門の対応（hygiene job・test job の 80% の床・OWN-01・300 行）"
+    },
+    {
+      "id": "NFR10.2",
+      "status": "OK",
+      "target": "monitoring-design の Metrics と Alerts（失敗・skip・未実行を成功に数えない）、cicd-pipeline の stage と関門の対応（機械の部分: LC7 の記録の試験が skip・todo・cancelled・timeout を数えて 0 を確かめる。人の部分: 独立監査の項目。check:no-failure-hiding は Shirube の実物に無く担保にしない）"
+    }
+  ],
+  "review_findings_addressed_iteration_1": [
+    "Major: NFR10.2 の担保から存在しない check:no-failure-hiding を外し、LC7 の試験で skip・todo を数える形にした",
+    "Major: NFR2.5 を機械の部分（import の構造の試験）と人の部分（差分 0 の確認。機械の関門ではない）に分けた",
+    "Minor: LC7 の動く job と Node の版、再帰を断つ方法（A-INF-4a）",
+    "Minor: knip の集約 entry の見直しの持ち越し（A-INF-5a）",
+    "Minor: 動的な走査を主、静的な試験を補助とした",
+    "Minor: npm test と CI の test job の書き分け"
+  ],
+  "decisions_reflected": [
+    {
+      "id": "OD-116",
+      "ref": "https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6962989955",
+      "sha256": "3986367dcee537139c1065e71d9db339cd085e10f8fbf4f5cf1d7c771e5f3a6a"
+    },
+    {
+      "id": "OD-120",
+      "ref": "https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137",
+      "sha256": "c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4"
+    }
+  ],
+  "carried_minors_from_nfr_design_review_1": [
+    "判定の関数の名前は仮で、置き場と依存の向きの 1 行を infrastructure-specification に置いた",
+    "BR5.2 の持ち主は判定の関数（LC3）だけで、LC5 は呼んで適用するだけと書いた",
+    "開いた形の生の値は LC1→LC2 の受け渡しだけに存在し、構造の試験の項目を足した"
+  ],
+  "answers_recorded": [
+    {
+      "id": "Q6",
+      "by": "arc が Owner の決定 95 により入力（Owner の言葉ではない）"
+    },
+    {
+      "id": "Q7",
+      "by": "Owner の原文（決定 111、https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6942847653）"
+    }
+  ],
+  "saved_after_summary_confirmation": "決定 116・120・対象の結びを反映し、要約確認 Looks correct（2 回目。arc が決定 95 により入力）の後に保存し直した（未決の問いは無い）"
+}

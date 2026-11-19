@@ -1,0 +1,161 @@
+{
+  "stage": "functional-design",
+  "unit": "u2-working-state-dialogue",
+  "upstream_ids": [
+    "AC1.1.1",
+    "AC1.1.2",
+    "AC1.1.3",
+    "AC1.1.4",
+    "AC1.1.5",
+    "AC1.3.1",
+    "AC1.3.2",
+    "AC1.3.3",
+    "AC1.3.4",
+    "AC1.3.5",
+    "AC2.2.1",
+    "AC2.2.2",
+    "AC2.2.3",
+    "AC2.2.4",
+    "AC2.2.5",
+    "AC3.2.1",
+    "AC3.2.2",
+    "AC3.2.3",
+    "AC3.2.4",
+    "AC3.2.5",
+    "AC3.1.3"
+  ],
+  "coverage": [
+    {
+      "id": "AC1.1.1",
+      "status": "OK",
+      "target": "BR1.1 BR1.2 BR2.3 BR3.5 BR7.1"
+    },
+    {
+      "id": "AC1.1.2",
+      "status": "OK",
+      "target": "BR1.3 BR2.1 BR7.5"
+    },
+    {
+      "id": "AC1.1.3",
+      "status": "OK",
+      "target": "U2 の寄与: 道具の有無・版の観測と案内（BR2.2 BR2.3 BR7.1）。外の条件: 依存する開始を止める処理は u3-native-operation-control"
+    },
+    {
+      "id": "AC1.1.4",
+      "status": "OK",
+      "target": "BR1.5"
+    },
+    {
+      "id": "AC1.1.5",
+      "status": "OK",
+      "target": "BR1.3 BR1.4 BR1.6"
+    },
+    {
+      "id": "AC1.3.1",
+      "status": "OK",
+      "target": "BR3.1 BR3.5 BR4.1 BR4.2 BR4.3 BR4.4 BR7.5。Q3 = A の読み: 利用者が答えられない項目の不足・食い違いは質問にせず fix-source などの次の操作を示す。必須の出典が absent なら confirmed にしない（requiredForConfirmed、T3.1x）。required_checks は U2 で扱わない項目（Q5 = A）で、確認済みと示さない"
+    },
+    {
+      "id": "AC1.3.2",
+      "status": "OK",
+      "target": "U2 の寄与: BR3.2 BR3.3 BR3.4 BR4.1 BR5.3 BR6.2。Q1 = A の読み: 契約で優先関係は定めず、順位なしで全出典と値を示す。利用者が答えられる項目は利用者が選び、答えられない項目は出典の持ち主が採る（Q3 = A）。Owner の決定 120（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137 、本文 SHA-256 `c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4`）による読み: 閉じた形の項目は値と出典を示し、開いた形（string・list）の項目は値を示さず出典・presence・一致不一致を示す（食い違いは fix-source）。対象の結びは BR1.1（targetBinding）。決定 116 の閉じた形の読みも同じ（形式に合い秘密らしくない値だけ示す）。"
+    },
+    {
+      "id": "AC1.3.3",
+      "status": "OK",
+      "target": "BR5.2 BR9.3"
+    },
+    {
+      "id": "AC1.3.4",
+      "status": "OK",
+      "target": "BR1.6 BR5.4 BR6.1 BR6.2 BR6.3 BR6.4 BR8.3。Owner の決定 120（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137 、本文 SHA-256 `c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4`）による読み: 無効化・一致の確認は閉じた形の項目に限る。開いた形（string・list）の中身だけの変化は U2 が検出せず、開いた形の回答は BR6.4 で「比べられず観測できず」と示す（T6.4o）。実物の確かめは U3・U5 が行う前提。承認済みの要件の段は開き直さず、読みとして記録する（arc が Owner の決定 95 により入力。Owner の言葉ではない）。作る段で見つけた BR6.2 と BR6.3 の順の直し（arc が決定 95 により入力。https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758 ）: 閉じた形で再観測した値の digest が回答の値の digest と一致し、かつ項目の全出典が値を持ち回答と同じ値である時は、観測 digest が変わっていても「一致を確認」を先に判定し、それ以外で変わる時だけ無効にする。試験 T6.2m（変わり一致 → 一致を確認）・T6.2n（変わり不一致・観測不能 → invalidated）・T6.2o（開いた形で変わった → invalidated、値は比べない）・T6.2p（複数出典で、値が一致する出典のほかに wrong_target・invalid・conflict・unobservable の出典がある → invalidated、一致を確認と示さない）"
+    },
+    {
+      "id": "AC1.3.5",
+      "status": "OK",
+      "target": "BR1.5 BR3.4 BR5.1 BR5.3 BR8.2"
+    },
+    {
+      "id": "AC2.2.1",
+      "status": "OK",
+      "target": "U2 の寄与: 案内の並び（BR7.1）と理由コードを読むだけの規則（BR7.6）。外の条件: 対象と版を識別して双方向に追跡できる証拠の照合は u1-ci-record-admission"
+    },
+    {
+      "id": "AC2.2.2",
+      "status": "OK",
+      "target": "BR1.3 BR7.5 BR7.6"
+    },
+    {
+      "id": "AC2.2.3",
+      "status": "OK",
+      "target": "BR1.3 BR3.4 BR8.2"
+    },
+    {
+      "id": "AC2.2.4",
+      "status": "OK",
+      "target": "BR1.2 BR7.3 BR9.1。Owner の決定 120 による読み: 「実物だけを変えた入力が不一致になる」は閉じた形の項目（T8.3）に限り、開いた形の項目は値も digest も持たないので検出せず、「比べられず観測できず」と示す（T8.3o・T6.4o。BR8.3 の末尾）。ただし開いた形でも固定の分類（有効・invalid_format・secret_like）の変化は観測の事実に入り、digest が変わる（F02。T8.3p）"
+    },
+    {
+      "id": "AC2.2.5",
+      "status": "OK",
+      "target": "BR7.1 BR7.2 BR7.5 BR9.4"
+    },
+    {
+      "id": "AC3.2.1",
+      "status": "Deferred",
+      "target": "u3-native-operation-control・u4-trusted-ci-verification・u5-safe-versioned-distribution の Code Generation 以降で実コード差分と実行結果・監査・統合を確かめる。U2 は確認表示の寄与（BR7.7 BR9.4）に限る"
+    },
+    {
+      "id": "AC3.2.2",
+      "status": "OK",
+      "target": "BR3.1 BR4.2 BR7.7"
+    },
+    {
+      "id": "AC3.2.3",
+      "status": "Deferred",
+      "target": "u2-working-state-dialogue の Code Generation / Build and Test で TDD・正例/負例・実分母 100%・適用 SEC-T を実測し、独立監査と権限を確認する。functional-spec の試験設計は未実行"
+    },
+    {
+      "id": "AC3.2.4",
+      "status": "OK",
+      "target": "BR1.2 BR9.2 BR9.4"
+    },
+    {
+      "id": "AC3.2.5",
+      "status": "Deferred",
+      "target": "U2 の寄与（設定の継続利用を再観測で確かめる部分と完了範囲の限定）: BR6.4 BR9.4。後の単位へ持ち越し（履歴・体制の継続利用の部分）: 保存した履歴を使う部分は u3-native-operation-control が主、u5-safe-versioned-distribution が実適用側（AC3.1.3 と同じ）、実追加は u6-guided-recheck-increment、AUN 全体受入は u7-aun-rollout-verification。理由 = Q2 を A にしたため U2 は履歴を保存しない"
+    },
+    {
+      "id": "AC3.1.3",
+      "status": "Deferred",
+      "target": "後の単位へ持ち越し（AC3.1.3 は U2 の割当 AC ではないが、Owner の条件で行を置く）: 対話をまたぐ回答の保存と中断後の再開は、story map の割当（US3.1 = u3-native-operation-control・u5-safe-versioned-distribution）に従い u3-native-operation-control が主、u5-safe-versioned-distribution が実適用側で扱う。理由 = Q2 を A（その対話の間だけ）にしたため U2 は回答を永続化しない（BR6.1 BR6.5）。U2 は回答と観測 digest の結びつけ規則（BR6.2）と ConfigurationDraft の形を渡す。Owner の条件により記録（要約確認）"
+    }
+  ],
+  "reverse": [
+    {
+      "id": "BR6.5",
+      "status": "N/A",
+      "target": "Owner の条件（要約確認）と Q2 = A 由来。U2 の AC に直接対応しない持ち越しの記録（AC3.1.3 の行を参照）"
+    },
+    {
+      "id": "BR7.4",
+      "status": "N/A",
+      "target": "社内規則 authority-and-waiting R2（人待ちは 1 回通知して停止）と NFR6 由来。U2 の割当 AC に直接対応しない"
+    },
+    {
+      "id": "BR8.1",
+      "status": "N/A",
+      "target": "契約 C02（選択は開始の許可でも公開の Owner 決定でもない）由来。U2 の割当 AC に直接対応しない（AC3.3.5 は U6）"
+    },
+    {
+      "id": "BR8.4",
+      "status": "N/A",
+      "target": "社内標準 S7（外部効果は冪等）と契約 C02 由来。U2 は効果を出さない。U2 の割当 AC に直接対応しない"
+    },
+    {
+      "id": "BR8.5",
+      "status": "N/A",
+      "target": "契約 C02（既存の受渡し形 answers:object・guidance:string）に合わせる変換。設計監査 1 回目の F04 の是正。U2 の割当 AC に直接対応しない"
+    }
+  ]
+}

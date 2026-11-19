@@ -1,0 +1,264 @@
+{
+  "stage": "nfr-design",
+  "note": "決定 116・120 と対象の結びを足した後、さらに見直し回 1（NOT-READY）の直しの後の要約確認（Looks correct、arc が決定 95 により入力）のもとで保存。設計監査 2 回目の F02 の反映（開いた形でも固定の分類 withheld を観測の事実に入れる。arc の読みで Owner に確認中。試験 T8.3p・T3.4p。T3.4p は機能設計の試験一覧に無い新しい試験で、NFR2.6 とこの追跡表に置く。「検出しない」範囲は同じ分類・presence・lengthBucket・matchGroup・出典・対象の結び・原因のままの中身だけの変化）を含む。",
+  "unit": "u2-working-state-dialogue",
+  "upstream_ids": [
+    "NFR1.1",
+    "NFR1.1a",
+    "NFR1.1b",
+    "NFR1.2",
+    "NFR2.1",
+    "NFR2.2",
+    "NFR2.3",
+    "NFR2.4",
+    "NFR2.5",
+    "NFR2.6",
+    "NFR2.6a",
+    "NFR3.1",
+    "NFR3.2",
+    "NFR4.1",
+    "NFR4.2",
+    "NFR4.3",
+    "NFR5.1",
+    "NFR5.1a",
+    "NFR5.2",
+    "NFR6.1",
+    "NFR6.1a",
+    "NFR6.1b",
+    "NFR6.1c",
+    "NFR6.2",
+    "NFR7",
+    "NFR8.1",
+    "NFR8.1a",
+    "NFR8.2",
+    "NFR9.1",
+    "NFR9.2",
+    "NFR10.1",
+    "NFR10.2"
+  ],
+  "coverage": [
+    {
+      "id": "NFR1.1",
+      "status": "OK",
+      "target": "observability-design OB5（網羅率の記録は LC7 が試験の中で作る。分母は Infrastructure Design で確定、未確定の間は成功に数えない）、logical-components LC7"
+    },
+    {
+      "id": "NFR1.1a",
+      "status": "OK",
+      "target": "performance-design PF3（未計測の値を適合と示さない）"
+    },
+    {
+      "id": "NFR1.1b",
+      "status": "OK",
+      "target": "observability-design OB5（機械可読な記録。申告値は証拠にしない）、logical-components LC7"
+    },
+    {
+      "id": "NFR1.2",
+      "status": "OK",
+      "target": "observability-design OB5（43 規則の正例・負例と AC 由来の入力）"
+    },
+    {
+      "id": "NFR2.1",
+      "status": "OK",
+      "target": "security-design SC1・SC1a（読取り専用。書ける資格情報を渡さない。権限拒否は観測不能。子 process は固定の名前・shell なし・環境変数は許可名だけ。cwd の選択は Owner の判断を置き場の設計で伺う）"
+    },
+    {
+      "id": "NFR2.2",
+      "status": "OK",
+      "target": "security-design SC2（秘密らしい入力は値も digest も持たず写さない。観測した値にも同じ判定 = Owner の決定 116。valueType ごとの許される形式・rejectionReason の固定分類・keep-absent は機能設計で確定済み、aidlc_settings の要素の形は A-08）、logical-components LC2・LC3（判定の関数は末端の 1 か所）"
+    },
+    {
+      "id": "NFR2.6",
+      "status": "OK",
+      "target": "security-design SC2（開いた形の観測値は保持・digest・表示をしない。presence・lengthBucket・matchGroup・出典だけ。U2 が保証しないこと = 中身だけの変化の未検出と回答の「比べられず観測できず」。Owner の決定 120。固定の分類 withheld は arc の読み・Owner に確認中。試験 T8.3p・T3.4p）、reliability-design RL2、observability-design OB2・OB5、logical-components LC2・LC5"
+    },
+    {
+      "id": "NFR2.6a",
+      "status": "OK",
+      "target": "security-design SC2（判定で救わず持たない設計。判定の関数は 1 か所で LC2 と LC5 が呼ぶ。許される形式の表の持ち主は 1 つ。例外の文面に生の値を載せない。試験 T3.4p）、logical-components LC2・LC3・Dependency Direction・Structural Checks"
+    },
+    {
+      "id": "NFR2.3",
+      "status": "OK",
+      "target": "security-design SC3（許可を作らない・命令にしない）"
+    },
+    {
+      "id": "NFR2.4",
+      "status": "OK",
+      "target": "security-design SC6（公開の範囲。架空 fixture）"
+    },
+    {
+      "id": "NFR2.5",
+      "status": "OK",
+      "target": "security-design SC6（新しい依存を足さない。脆弱性確認と Owner の判断）"
+    },
+    {
+      "id": "NFR3.1",
+      "status": "OK",
+      "target": "security-design SC4（入力の検証と escape。LC5・LC6）"
+    },
+    {
+      "id": "NFR3.2",
+      "status": "OK",
+      "target": "security-design SC1a・SC5（path は根の内側だけ。解決 → LC2 が判定 → 許した実体だけ読む。子 process は group ごと止める）、logical-components LC1・LC2"
+    },
+    {
+      "id": "NFR4.1",
+      "status": "OK",
+      "target": "reliability-design RL1（変化した入力を完全な観測にしない。前後の digest の比較は LC2。二重送信は 1 件、keep-absent は (itemKey, selectedCandidateRef) で 1 件）"
+    },
+    {
+      "id": "NFR4.2",
+      "status": "OK",
+      "target": "reliability-design RL2（古い観測・回答を使わない。閉じた形で値が回答と一致し全出典が同じ値なら一致を確認を先に判定し（T6.2m）、それ以外で、観測の事実から再計算した観測 digest が変われば無効化（T6.2n・T6.2o・T6.2p）。閉じた形は値の digest の変化まで検出し、開いた形の中身だけの変化は U2 が保証しないこと。固定の分類の変化は検出する = 試験 T8.3p。対象の結びが unspecified の単位は観測不能）"
+    },
+    {
+      "id": "NFR4.3",
+      "status": "OK",
+      "target": "scalability-design SC-B（対話どうしで可変の状態を共有しない）"
+    },
+    {
+      "id": "NFR5.1",
+      "status": "OK",
+      "target": "reliability-design RL3（核は時刻・乱数・UUID を取らない。同じ入力で同じ結果）"
+    },
+    {
+      "id": "NFR5.1a",
+      "status": "OK",
+      "target": "reliability-design RL3（時計を読むのは LC1 だけ。構造の試験で検出）"
+    },
+    {
+      "id": "NFR5.2",
+      "status": "OK",
+      "target": "observability-design OB3（理由コードは U1 を読むだけ。観測の参照と時刻を添える）"
+    },
+    {
+      "id": "NFR6.1",
+      "status": "OK",
+      "target": "performance-design PF1（予算は共通の profile を読むだけ。U2 は数値を持たない。LC1 は枠で止めて測った値を返し、超過の分類は LC2）、PF4（開いた形の一致比較は追加の読取りを作らず予算に新しい消費を足さない）"
+    },
+    {
+      "id": "NFR6.1a",
+      "status": "OK",
+      "target": "performance-design PF2（超過は超えた単位だけ観測不能。読めた出典は保つ。子を止められない・確かめられない時は観測不能）、scalability-design SC-A"
+    },
+    {
+      "id": "NFR6.1b",
+      "status": "OK",
+      "target": "scalability-design SC-A（入力の大きさに有限の上限。出力は読みながら打ち切り、超えた分を保持しない。無言で切り捨てない）"
+    },
+    {
+      "id": "NFR6.1c",
+      "status": "OK",
+      "target": "scalability-design SC-C（項目が増えても同じ規則。項目一覧に valueType・targetBinding・requiredForConfirmed を書く。書かれていない targetBinding は named、requiredForConfirmed は必須。開いた形の値は保持量が項目数に比例しない）"
+    },
+    {
+      "id": "NFR6.2",
+      "status": "OK",
+      "target": "reliability-design RL4（人待ちは 1 回で止まる。自動再試行 0）"
+    },
+    {
+      "id": "NFR7",
+      "status": "N/A",
+      "target": "reliability-design RL5（非適用。外部への効果が 0 であることを構造の試験で確かめる）"
+    },
+    {
+      "id": "NFR8.1",
+      "status": "OK",
+      "target": "observability-design OB4（版の識別。読めない時は確認できず）"
+    },
+    {
+      "id": "NFR8.1a",
+      "status": "OK",
+      "target": "reliability-design RL6（確認した版を具体的に書く。manifest だけで全環境を保証しない）"
+    },
+    {
+      "id": "NFR8.2",
+      "status": "OK",
+      "target": "reliability-design RL6（契約の形を変えない。未知の major は拒否）"
+    },
+    {
+      "id": "NFR9.1",
+      "status": "OK",
+      "target": "observability-design OB1（案内の形。平文・順序・同じ意味）"
+    },
+    {
+      "id": "NFR9.2",
+      "status": "OK",
+      "target": "observability-design OB2（A 不足・B 観測不能の区別。回答済み・未適用。答えられない項目は fix-source・install-or-upgrade-tool、必須の出典の不足は confirmed にしない。開いた形の回答は「比べられず観測できず」、対象を名指さない出典は観測不能 malformed）"
+    },
+    {
+      "id": "NFR10.1",
+      "status": "OK",
+      "target": "observability-design OB6（ESM・Node 22・実行時 npm 依存なし・構造の検査）"
+    },
+    {
+      "id": "NFR10.2",
+      "status": "OK",
+      "target": "observability-design OB5（失敗・skip・未実行を成功にしない）"
+    }
+  ],
+  "functional_design_fixes_reflected": [
+    {
+      "id": "FD-GAP-1",
+      "statement": "答えられない項目の不足・食い違いは fix-source・install-or-upgrade-tool（機能設計 BR3.2・BR4.1。見直し済み）",
+      "reflected_in": "observability-design OB2"
+    },
+    {
+      "id": "FD-GAP-2",
+      "statement": "valueType ごとの許される形式と rejectionReason の固定分類（機能設計 BR5.1。aidlc_settings の要素の形は A-08）",
+      "reflected_in": "security-design SC2"
+    },
+    {
+      "id": "FD-GAP-3",
+      "statement": "選択は GuidanceSelection と Answer の両方に保ち、keep-absent は selectedCandidateRef だけを持つ（機能設計 BR3.2・BR5.4）",
+      "reflected_in": "security-design SC2, reliability-design RL1"
+    }
+  ],
+  "decisions_reflected": [
+    {
+      "id": "OD-116",
+      "statement": "閉じた形の観測値は形式に合い秘密らしくない時だけ示す。秘密らしい・形式に合わない観測値は項目・出典・固定の分類と fix-source だけ（iyasaka-arc#49 の 6962989955、本文 SHA-256 3986367dcee537139c1065e71d9db339cd085e10f8fbf4f5cf1d7c771e5f3a6a）",
+      "reflected_in": "security-design SC2、logical-components LC2・LC3、observability-design OB2"
+    },
+    {
+      "id": "OD-120",
+      "statement": "開いた形（string・list）の観測値は保持・digest・表示をしない。presence・lengthBucket・matchGroup・出典だけ。U2 が保証しないこと = 開いた形の中身だけの変化の未検出（iyasaka-arc#49 の 6963254137、本文 SHA-256 c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4）",
+      "reflected_in": "security-design SC2、reliability-design RL2、performance-design PF4、observability-design OB2、logical-components LC2・LC5、scalability-design SC-C"
+    },
+    {
+      "id": "BR1.1-target-binding",
+      "statement": "targetBinding（by-location / named。書かれていなければ named）と targetMatch（matches / differs / unspecified）。unspecified は観測不能 malformed",
+      "reflected_in": "security-design SC5、logical-components LC2・LC3、reliability-design RL2、scalability-design SC-C"
+    }
+  ],
+  "carried_minors_from_nfr_requirements_review_1": [
+    {
+      "id": "M-NR-1",
+      "statement": "nfr-requirements の NFR2.2 の括弧書き（分類が secret_like のみ）が古い。機能設計 BR5.2 の集合に合わせる。設計側は security-design SC2 で BR5.2 の集合に従っている",
+      "state": "carried（Code Generation の前に nfr-requirements の記録を直す。設計の内容は変わらない）"
+    },
+    {
+      "id": "M-NR-2",
+      "statement": "nfr-requirements の performance の matchGroup の段落に ID と合否が無い。設計側は PF4 に合否を置いた",
+      "state": "carried（要件側の記録は ID を付けるか NFR6.1a の補足にする）"
+    }
+  ],
+  "reopen_changes": [
+    {
+      "id": "LC-GAP-1",
+      "statement": "BR1.1・BR1.4・BR1.5・BR1.6 の判定は LC2。LC1 は生の事実だけを返す",
+      "reflected_in": "logical-components LC1・LC2、performance-design PF1、reliability-design RL1、security-design SC5"
+    },
+    {
+      "id": "LC-GAP-2",
+      "statement": "BR3.4 は file の破損（malformed）が LC2、値の不正（invalid）が LC3",
+      "reflected_in": "logical-components LC2・LC3、performance-design PF2"
+    },
+    {
+      "id": "SC-GAP-1",
+      "statement": "子 process は自分の process group で起動し、枠を超えたら group ごと止める。出力は読みながら打ち切る。止められない・確かめられない時は観測不能",
+      "reflected_in": "security-design SC1a、scalability-design SC-A、reliability-design RL1、logical-components LC1"
+    }
+  ]
+}
