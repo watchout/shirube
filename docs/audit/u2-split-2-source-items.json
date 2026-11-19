@@ -1,0 +1,32 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "対象は AI-DLC の単位 u2-working-state-dialogue（取り組み 261105-shirube-lifecycle-qualit）の実装を分けた PR の 2 つ目（観測の取り出し）。元の PR #112（head f44e07a854f50accca82496ef5e343336df81209）は独立監査の 1 回目が BLOCK（返却 https://github.com/watchout/shirube/pull/112#issuecomment-7003011777 ）で、Owner の決定 128（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6995507985 、本文 SHA-256 2d8b71069b96f83f9700aaf604fa8f3e6f8b858540421ed98fd404a5ec0e570a）により直さず再提出もしない。分割の案は https://github.com/watchout/shirube/pull/112#issuecomment-7003112987 、arc の承認は https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-7003360503 （本文 SHA-256 9681fd7b6147aa3e1542024099a7e60aa205701b7c3a3829e3c9a033912e4ebb）。この PR は PR 1（#114、head 3d053dbe8e16faf6f1edadd860a32deb46f4e57e）の上に積む。範囲は PR 1 の head から依頼の head まで。製品の code は scripts/working-state/ の source-extract・workflow-caller・workflow-lines の 3 file と index.mjs の 1 行、試験は tests/working-state-source-extract.test.mjs・working-state-workflow-caller.test.mjs・working-state-value-reasons.test.mjs の 3 file、本項目集合。#112 の BLOCK のうち F01（観測した事実が job の呼び出しでない行から確定になる）がこの PR で直る。F02（値の一致が回答を別の対象へ結び直す）が直る file はこの PR に含まれず、後の PR で直す。含まれない file の合格を主張しない。U2S2-xx は本項目集合の識別子であり、新しい社内規格・工程・権限ではない。全項目必須。リスクは R3。監査の PASS は Owner の許可や統合の認可の代わりにならず、R3 の統合の前に対象 head への Owner の公開決定を確認する。差し戻しは KY の表で決め、指摘ごとに対象外かどうか・起きやすさの根拠・困る大きさ・攻める側に要る最小の権限を書く。観測できなかったもの（Linux の runner、Node 22 以外）は成功と読まない。",
+  "items": [
+    {
+      "id": "U2S2-01",
+      "criterion": "範囲と差分の形が宣言と一致する。(a) PR 1 の head（3d053dbe…）から依頼の head への git diff --name-only の file が、製品の code 4（source-extract・workflow-caller・workflow-lines・index.mjs の 1 行）、試験 3、本項目集合に分かれ、PR 本文の json sds-pr の changed_paths と一致する。製品の code と試験の変更行が 2,000 行以下で、PR 本文の数と check.py の実測が一致する。(b) package.json・lockfile・.github/**・.shirube/**・configs/**・契約 .v2・DB の構造・knip.jsonc に変更が無く、新しい依存が 0。(c) index.mjs の追加は source-extract の再 export 1 行だけで、workflow-* の部品は再 export されない。(d) F02 が直る file（回答・照合の部品）が差分に無いことを file 名で確かめ、「直した」「合格」と読める記述が無い。",
+      "basis": "決定 127・128・129・131・135、arc の分割の承認、aidlc-only §1 の PR の大きさ、team.md の PR 本文の決まり、engineering-standards S3・S8"
+    },
+    {
+      "id": "U2S2-02",
+      "criterion": "F01 の是正: 呼び出し workflow の取り出し（workflow-caller.mjs・workflow-lines.mjs）が、jobs 直下の job 直下の uses だけを値にする。(a) env・with・steps の中の uses、引用符つきの複数行の文字列の中の uses の行、comment の中の呼び出し、2 つ目の document の jobs、複数行の値の続き行が、sds_commit を確定にしない（#112 の返却の 2 つの再現を含む）。(b) 決められない形（block scalar・flow の複数行・anchor・alias・tag・引用符つきの uses・複雑な key・tab の字下げ・制御文字・重複した key や job や jobs・uses と steps の両方）が absent でなく malformed（観測できず側）になる。(c) 数えた呼び出しの数と、comment を除いた行の中の名前の出現数が食い違うなら malformed になる（読み落とした呼び出しを absent と読まない）。(d) 実物の kit/sds-gate-caller.yml の形で、誤って malformed にならず、改行が CRLF でも同じ値を返す。(e) 別々の commit を指す 2 つの呼び出しは malformed。(f) 外部の YAML library を使わず、時刻・乱数・環境変数・file・子 process・network を使わない（S4）。同じ不正値の組（2 つの入力が同じ不正な値で一致する形）や、構造の外（block scalar・引用符の中・注釈）に同じ文字列を置いた入力でも、騙されない。",
+      "basis": "#112 の返却 F01、決定 128、functional-design の BR（観測の解釈）、project.md の学び（構造を持つ入力を 1 行ずつの文字の照合で読む所は構造の外に同じ文字列を置いた負例で確かめる）、engineering-standards S5・S8、KY の表"
+    },
+    {
+      "id": "U2S2-03",
+      "criterion": "source-extract の ほかの取り出しが失敗側に倒れる。(a) aidlc_version は、単一の行だけを値にし、空・複数行・制御文字を含む値は malformed。(b) tool-version は、出力に版の文字列がちょうど 1 つあるときだけ版を返し、2 つ以上・0・非文字・制御文字（改行と tab は空白として扱った後の残り）を含む出力は null（観測できず）。(c) 取り出しの関数が現在時刻・乱数・環境を取らず、同じ入力で同じ出力になる。(d) 観測できなかった・読めなかった入力が成功（確定）に数えられる経路が無い。",
+      "basis": "functional-design の観測の解釈、engineering-standards S4・S5・S8、決定 128"
+    },
+    {
+      "id": "U2S2-04",
+      "criterion": "試験と網羅率が、この PR の head 単独で成り立つ。(a) 依存を入れた環境でこの head の npm test が全部通る（作者の実測 1,375 件）。後の PR の部品の試験・fixture を読んで通る試験が無い。(b) scripts/working-state/*.mjs の行の網羅率が 100%（作者の実測 10 file 全部 LH=LF）で、除外する行が無い。値は試験中の Node の lcov から読んだもの。PR 1 の head 単独では value-exposure.mjs（214/262）と catalog.mjs（63/65）が 100% でなかった事実が PR 本文に開示され、この PR で埋まったことが実測で示されている。(c) TDD の記録（Red/Green）が命令・出力の SHA-256・対象の commit を持つ。(d) 守りを 1 つ外す変異 17 件がすべて試験で落ちる（変異の一覧と結果が PR 本文にあり、監査席が一部を再現できる）。(e) hygiene（lint:structural・lint:guard・jscpd・coverage・lines）が成功し、knip の出力が PR 1 の head と同じ（この PR で増えていない）。未観測（Node 22・Linux の runner）を成功と書いていない。",
+      "basis": "nfr-requirements の NFR1・NFR10、team.md Testing Posture、project.md の学び、engineering-standards S5・S8"
+    },
+    {
+      "id": "U2S2-05",
+      "criterion": "守る物に触れず、公開の差分が清潔で、R3 の条件がそろう。(a) .github/**・必須の検査・branch protection・.shirube/**・契約 .v2・DB の構造と権限・資格情報・本番・料金に変更が無い。(b) 公開の差分に audit/・.aidlc-engine/・作業場の絶対 path・席や model の名前・秘密らしい値（fixture の乱数の連なりが gitleaks に拾われない形）・他 repo の非公開の記録の写しが無い。fixture は架空のデータだけ。(c) risk:R3 の label が 1 つ、json sds-pr が 1 ブロックで changed_paths が差分と一致する。Owner の対象 head の承認を取ったと読める記述が無い。(d) 分割の根拠の引用が公開の URL と本文 SHA-256 を伴う。",
+      "basis": "protected-surface-owner-gate R1・R2、team.md、project.md Forbidden、authority-and-waiting R1、aidlc-only §2"
+    }
+  ]
+}
