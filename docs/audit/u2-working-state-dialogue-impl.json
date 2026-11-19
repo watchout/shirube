@@ -5,7 +5,7 @@
   "items": [
     {
       "id": "U2WI-01",
-      "criterion": "範囲と差分の形が宣言と一致する。(a) `git diff --name-only f2d509b2ad4043cee0f9b4a2aaf84b5c3ae123ae <依頼の head>` の file を、製品の code（`scripts/working-state/` の 27 file）、試験（`tests/working-state-*` の 79 file。`tests/u2/` は base に既にあり差分に無い）、`knip.jsonc` の 1 行、設計監査の項目集合 `docs/audit/u2-working-state-dialogue-design.json`、この項目集合、単位の AI-DLC の記録の 5 種に分け、PR 本文の `json sds-pr` の宣言（変えた物・変えない物・risk ラベル）と突き合わせる。製品の code と試験の変更行（足した行と消した行の和。lockfile と AI-DLC の記録は数えない）が 2,000 行以下か、作者が依頼の前に行数を数えて PR 本文に書いたか、PR の前検査の結果が実物と一致するかを見る。上限を超えるなら Owner の PR ごとの許しが公開されているか。(b) 触っていない物が差分に無い: `package.json`、lockfile、`.github/**`、`.shirube/**`、`configs/**`、契約 `.v2`、DB の構造。新しい依存は 0 で、実行時の npm 依存を足していない。(c) 試験 file は 1 つ 300 行以下、関数 50 行・複雑さ 10、新規 file 300 行の既存の技術検査を通し、例外コメントに説明がある。差分に無い物を触ったと書く、または触った物を書かない記載があれば指摘する。",
+      "criterion": "範囲と差分の形が宣言と一致する。(a) `git diff --name-only f2d509b2ad4043cee0f9b4a2aaf84b5c3ae123ae <依頼の head>` の file を、製品の code（`scripts/working-state/` の 27 file）、試験（`tests/working-state-*` の 81 file。`tests/u2/` は base に既にあり差分に無い）、`knip.jsonc` の 1 行、設計監査の項目集合 `docs/audit/u2-working-state-dialogue-design.json`、この項目集合、単位の AI-DLC の記録の 5 種に分け、PR 本文の `json sds-pr` の宣言（変えた物・変えない物・risk ラベル）と突き合わせる。製品の code と試験の変更行（足した行と消した行の和。lockfile と AI-DLC の記録は数えない）が 2,000 行以下か、作者が依頼の前に行数を数えて PR 本文に書いたか、PR の前検査の結果が実物と一致するかを見る。上限を超えるなら Owner の PR ごとの許しが公開されているか。(b) 触っていない物が差分に無い: `package.json`、lockfile、`.github/**`、`.shirube/**`、`configs/**`、契約 `.v2`、DB の構造。新しい依存は 0 で、実行時の npm 依存を足していない。(c) 試験 file は 1 つ 300 行以下、関数 50 行・複雑さ 10、新規 file 300 行の既存の技術検査を通し、例外コメントに説明がある。差分に無い物を触ったと書く、または触った物を書かない記載があれば指摘する。",
       "basis": "設計監査の項目 U2WS-01・U2WS-08、`code-summary.md` の範囲の節、NFR の範囲・置き場の要件、team.md の PR の大きさ（決定 127・129）、protected-surface-owner-gate R1、engineering-standards S3・S8"
     },
     {
@@ -35,7 +35,7 @@
     },
     {
       "id": "U2WI-07",
-      "criterion": "code-summary.md の訂正の節が code と一致し、設計の水準を変えていない。(a) arc の表の訂正（入力の欄の表・出口の行列・数え方の訂正）が、実物の表・試験・export の数え直しと一致する。(b) answerId の限りと持ち越しの記載が、実装が受ける形と断る形に一致する（U2WI-05 (d) と同じ事実を、別の言い方で書いていない）。(c) 5 回目の見直しの前の仕上げで足した記録（再測定・A.4 の記載・`sed -i` と読み取り専用の script の開示・設定の列挙の表の更新）が、実物の file・SHA・件数と一致し、成功の申告になっていない。(d) 訂正は記録の修正であって、設計の水準（要件・受入条件・BR・NFR・security-design の約束）を下げる・緩める・外す変更を含まない。設計が約束した水準そのものが code や記録で緩んでいれば、訂正でなく設計の乖離として指摘する。(e) 記載の数（行数・件数・SHA）を、実物から数え直して一致を確かめる。",
+      "criterion": "code-summary.md の訂正の節が code と一致し、設計の水準を変えていない。(a) arc の表の訂正（入力の欄の表・出口の行列・数え方の訂正）が、実物の表・試験・export の数え直しと一致する。(b) answerId の限りと持ち越しの記載が、実装が受ける形と断る形に一致する（U2WI-05 (d) と同じ事実を、別の言い方で書いていない）。(c) 5 回目の見直しの前の仕上げで足した記録（再測定・A.4 の記載・`sed -i` と読み取り専用の script の開示・設定の列挙の表の更新）が、実物の file・SHA・件数と一致し、成功の申告になっていない。(d) 訂正は記録の修正であって、設計の水準（要件・受入条件・BR・NFR・security-design の約束）を下げる・緩める・外す変更を含まない。設計が約束した水準そのものが code や記録で緩んでいれば、訂正でなく設計の乖離として指摘する。(e) 記載の数（行数・件数・SHA）を、実物から数え直して一致を確かめる。(f) `code-summary.md` の「Step 15 の直し（N1・N2・N3・小文字の bearer）」の節が、実物の差分（`source-extract.mjs`・`read-file.mjs`・新しい試験 2 file と変えた試験）・行数・SHA・件数と一致し、直しの前後の数（11034 行など）を実物から数え直して一致を確かめる。直しは設計の水準（BR・NFR・security-design の約束）を下げない。",
       "basis": "`code-summary.md`（SHA-256 8e18f3aff9f57634438d28ede791aa452897a2b8c94ee146692a6f56c302eb39）の訂正の節と限り 10、authority-and-waiting R3（設計と実装を黙って食い違わせない）、設計監査の項目 U2WS-08、arc の追加の指定"
     },
     {
