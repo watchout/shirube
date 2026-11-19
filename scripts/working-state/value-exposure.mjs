@@ -56,7 +56,9 @@ const FREE_WORDS = (text) => text.split(/\s/u).filter((word) => !isReadablePath(
 const PAIR_WORDS = (text) => text.split("=").filter((word) => !isReadableName(word));
 // 参照（<項目>|<出典>|<位置>|<時刻>、<項目>@<出典>:<位置>）は区切りで分けた部品を別々の語として調べる。部品の分け方はここ 1 か所が持つ。
 // 参照・案内の文に出る項目名（項目名の形で、読める名前）は連なりに数えない（項目名の門 ITEM_WORDS と同じ判定。長い正当な項目名が参照・案内に出るため）。
-export const ITEM_NAME_RE = /^[a-z][a-z0-9_]{0,63}$/;
+// 項目名の規則（小文字の英字で始まり、小文字・数字・_ の 1〜64 文字）。長さの上限はここ 1 か所が持ち、項目名の門（isItemKeyText）も同じ上限を使う（G-7）。
+const ITEM_NAME_MAX = 64;
+export const ITEM_NAME_RE = new RegExp(`^[a-z][a-z0-9_]{0,${ITEM_NAME_MAX - 1}}$`);
 const isItemShaped = (word) => ITEM_NAME_RE.test(word) && isReadableName(word);
 const REF_WORDS = (text) => text.split(/[|@:\s]/u).filter((word) => !isReadablePath(word) && !isItemShaped(word));
 // 形そのものが 40 文字の連なり（commit-oid）。形に合った全体は連なりに数えない（意図した限界: 40 桁の 16 進は何でも通る）。
@@ -168,8 +170,8 @@ const ANSWER_WORDS = (text) => (SETTING_PAIR_RE.test(text) ? PAIR_WORDS(text) : 
 const isAnswerText = (text) => typeof text === "string" && !exposesText("answer", text, ANSWER_WORDS);
 export const isAnswerValue = (value) => typeof value === "boolean" || isAnswerText(value) || (Array.isArray(value) && listCopy(value).every(isAnswerText) && Object.keys(value).length === value.length);
 
-// 項目名として受けてよい文字列か（空でなく、(a)〜(d) の形を持たず、読める名前でない 20 文字以上の連なりを持たない）。項目名は name の種類で (e) を当てる（決定 95）。
-export const isItemKeyText = (value) => value !== "" && !exposesText("name", value, ITEM_WORDS);
+// 項目名として受けてよい文字列か（空でなく、項目名の規則の長さ（64 文字）以内で、(a)〜(d) の形を持たず、読める名前でない 20 文字以上の連なりを持たない）。項目名は name の種類で (e) を当てる（決定 95）。
+export const isItemKeyText = (value) => typeof value === "string" && value !== "" && value.length <= ITEM_NAME_MAX && !exposesText("name", value, ITEM_WORDS);
 
 const DEEP_MAX = 8;
 const KNOWN_PROTOTYPES = new Set([Object.prototype, null, Array.prototype, Map.prototype, Set.prototype]);
