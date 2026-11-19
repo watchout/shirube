@@ -66,6 +66,18 @@ test("T8.5+ 再読: 選択の案内の文（guidance.text）の getter が、確
   }
 });
 
+// Proxy: 自分の欄の descriptor は「値」と答え（getter でないので含む側の検査を通る）、読む時だけ値を変える。写し（structuredClone）は Proxy を断る。
+const lyingProxy = (target, key, ok, okReads) => new Proxy(target, { get: (object, name, receiver) => (name === key ? flipping(ok, okReads)() : Reflect.get(object, name, receiver)) });
+test("T8.5+ 再読: 選択の案内を Proxy にしても（descriptor は値、読む時だけ別の値）、wire に届かない（写しが Proxy を断る）", () => {
+  const selection = createdSelection(builtDraft({ observedItems: conflictObserved().items }));
+  for (const okReads of READS) {
+    const guidance = lyingProxy({ ...selection.guidance }, "text", "結論と次の操作を平文で示す案内の文", okReads);
+    const result = ws.selectionToC02Wire({ ...selection, guidance });
+    noLeak(result, `proxy text okReads=${okReads}`);
+    assert.equal(result.status, "refused", `okReads=${okReads}`);
+  }
+});
+
 test("T8.5+ 再読: 選択の識別・参照の getter も同じ（selectionId・draftRef・candidateRef・targetRef・observationRef）", () => {
   const selection = createdSelection(builtDraft({ observedItems: conflictObserved().items }));
   for (const key of ["selectionId", "draftRef", "candidateRef", "targetRef", "observationRef"]) {

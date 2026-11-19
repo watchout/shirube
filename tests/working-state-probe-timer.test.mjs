@@ -83,6 +83,26 @@ test("T2.2 止めた後の待ちの差し替え: settle = { tries, ms } の回�
   });
 });
 
+test("T2.2 止めた後の待ちの差し替え: 確かめの間の間隔は渡した ms（下限だけを見る。負荷で長くなっても通る）", async () => {
+  await inBox(async (b) => {
+    b.exe(b.outside, "aidlc", LOOP(b));
+    const spy = spawnSpy();
+    const timer = manualTimer();
+    const stubborn = (pid, signal) => (signal === 0 ? process.kill(-pid, 0) : undefined);
+    try {
+      const pending = probe("aidlc", b, { ...limited({ timeoutMs: 50 }), spawn: spy.spawn, setTimer: timer.setTimer, killGroup: stubborn, settle: { tries: 3, ms: 60 } });
+      assert.equal(await appears(b.flag("pid")), true);
+      const fired = performance.now();
+      timer.timers[0].fn();
+      const fact = await pending;
+      assert.equal(fact.stop.confirmed, false);
+      assert.equal(performance.now() - fired >= 3 * 60 - 15, true, "間隔が渡した ms より短い（3 回 × 60ms の待ちが足りない）");
+    } finally {
+      reap(spy.pids);
+    }
+  });
+});
+
 test("T2.2 差し替えが無い時は今のまま: 消えたかの確かめは 20 回 + 最後の 1 回、間隔は 10ms（合計で 200ms 近く待つ）。本物の setTimeout で枠が来る", async () => {
   await inBox(async (b) => {
     b.exe(b.outside, "aidlc", LOOP(b));

@@ -49,3 +49,13 @@ test("C5+ C02 の wire: 観測の参照の列・回答の列は配列だけ（ev
   assert.equal(ws.draftToC02Wire({ ...BASE, answers: { filter: () => [] } }).status, "refused");
   assert.equal(JSON.stringify(ws.draftToC02Wire({ ...BASE, observationRefs: Object.assign(new Set([LEAK]), { every: () => true }) })).includes(LEAK), false);
 });
+
+// 入力を 1 回写す（structuredClone）と、関数を持つ入れ物は写す時に断られる。写しの後も every・filter を持つ入れ物（型付き配列）は、配列の確かめだけが断る。
+test("C5b+ C02 の wire: 型付き配列（every・filter を持ち、写しの後も残る）は、空でも配列でないので断る。配列なら通る", () => {
+  assert.equal(ws.draftToC02Wire({ ...BASE, observationRefs: [] }).status, "converted");
+  assert.equal(ws.draftToC02Wire({ ...BASE, observationRefs: new Uint8Array(0) }).status, "refused");
+  assert.equal(ws.draftToC02Wire({ ...BASE, answers: [] }).status, "converted");
+  assert.equal(ws.draftToC02Wire({ ...BASE, answers: new Uint8Array(0) }).status, "refused");
+  assert.equal(ws.draftToC02Wire({ ...BASE, missingItems: new Uint8Array(0) }).status, "refused");
+  assert.equal(ws.draftToC02Wire({ ...BASE, conflicts: new Uint8Array(0) }).status, "refused");
+});
