@@ -49,17 +49,19 @@ const ANSWER_FIELDS = [["answerId", "C", "isReadableAnswer（isRefId）"], ["ite
 const patched = (key, value) => [cloneWith(PRIOR, [key], value)];
 const OBSERVED = observeWith();
 const BASE_RECONCILED = json(ws.reconcileAnswers([PRIOR], OBSERVED.items, CATALOG));
+// 読めない件は、その 1 件だけが位置で示す invalidated の回答になる（値・項目名・識別は写さない）。
+const IS_POSITIONED = (r) => json(r) === json([{ answerId: "answer-position-0", itemKey: "answer-position-0", state: "invalidated" }]);
 
 const answerRows = ANSWER_FIELDS.flatMap(([key, cls, check]) => [
   row(`RA.answers.${key}`, `answers[].${key}`, cls, check, getIn(PRIOR, [key]), (v) => on({ answerId: "ans-2" }, { answers: patched(key, v) }), (r) => recorded(r) && json(r.answers[0]) === json(PRIOR), (r) => unreadable(r) && r.answers.length === 0),
-  { id: `RC.answers.${key}`, entry: "reconcileAnswers", field: `answers[].${key}`, cls, check, legit: getIn(PRIOR, [key]), run: (v) => ws.reconcileAnswers(patched(key, v), OBSERVED.items, CATALOG), ok: (r) => json(r) === BASE_RECONCILED, refused: (r) => r.length === 0 },
+  { id: `RC.answers.${key}`, entry: "reconcileAnswers", field: `answers[].${key}`, cls, check, legit: getIn(PRIOR, [key]), run: (v) => ws.reconcileAnswers(patched(key, v), OBSERVED.items, CATALOG), ok: (r) => json(r) === BASE_RECONCILED, refused: IS_POSITIONED },
 ]);
 const extraKey = (v) => (v === "kind" ? [cloneWith(PRIOR, ["kind"], PRIOR.kind)] : [{ ...PRIOR, [v]: 1 }]);
 const listRows = [
   row("RA.answers.extra", "answers[]（知らない欄の名前）", "A", "isReadableAnswer（ANSWER_KEYS）", "kind", (v) => on({ answerId: "ans-2" }, { answers: extraKey(v) }), recorded, (r) => unreadable(r) && r.answers.length === 0),
   row("RA.answers.entry", "answers[]（object でない件）", "B", "isReadableAnswer（object だけ）", PRIOR, (v) => on({ answerId: "ans-2" }, { answers: [v] }), recorded, (r) => unreadable(r) && r.answers.length === 0),
-  { id: "RC.answers.extra", entry: "reconcileAnswers", field: "answers[]（知らない欄の名前）", cls: "A", check: "isReadableAnswer（ANSWER_KEYS）", legit: "kind", run: (v) => ws.reconcileAnswers(extraKey(v), OBSERVED.items, CATALOG), ok: (r) => json(r) === BASE_RECONCILED, refused: (r) => r.length === 0 },
-  { id: "RC.answers.entry", entry: "reconcileAnswers", field: "answers[]（object でない件）", cls: "B", check: "isReadableAnswer（object だけ）", legit: PRIOR, run: (v) => ws.reconcileAnswers([v], OBSERVED.items, CATALOG), ok: (r) => json(r) === BASE_RECONCILED, refused: (r) => r.length === 0 },
+  { id: "RC.answers.extra", entry: "reconcileAnswers", field: "answers[]（知らない欄の名前）", cls: "A", check: "isReadableAnswer（ANSWER_KEYS）", legit: "kind", run: (v) => ws.reconcileAnswers(extraKey(v), OBSERVED.items, CATALOG), ok: (r) => json(r) === BASE_RECONCILED, refused: IS_POSITIONED },
+  { id: "RC.answers.entry", entry: "reconcileAnswers", field: "answers[]（object でない件）", cls: "B", check: "isReadableAnswer（object だけ）", legit: PRIOR, run: (v) => ws.reconcileAnswers([v], OBSERVED.items, CATALOG), ok: (r) => json(r) === BASE_RECONCILED, refused: IS_POSITIONED },
   { id: "RC.catalog", entry: "reconcileAnswers", field: "catalog[].itemKey", cls: "C", check: "entryIn（比べるだけ）", legit: "aidlc_settings", run: (v) => ws.reconcileAnswers([PRIOR], OBSERVED.items, [...CATALOG, { ...NOTE_ITEM, itemKey: v }]), ok: (r) => json(r) === BASE_RECONCILED, refused: (r) => json(r) === BASE_RECONCILED },
 ];
 
