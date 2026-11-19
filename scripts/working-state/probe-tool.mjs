@@ -60,12 +60,14 @@ export async function probeToolFact(request, depsIn) {
   const deps = withDefaults(depsIn);
   const started = deps.clock.monotonic();
   const profile = await readProfile(deps);
-  const head = { sourceKind: "tool_probe", locator: request?.tool, observedAt: deps.clock.instant().toISOString() };
+  // 呼出側の入力は 1 回だけ読む（getter は読むたびに別の値を返せる）。locator は固定の集合の名前だけ（集合の外の名前・object は写さない、F4）。
+  const asked = { tool: request?.tool, root: request?.root };
+  const head = { sourceKind: "tool_probe", locator: TOOLS.has(asked.tool) ? asked.tool : undefined, observedAt: deps.clock.instant().toISOString() };
   const counted = (dropped) => ({ count: dropped.length, kinds: [...dropped] });
   if (profile === null) {
     const { bytesRead, requests, dropped, ...rest } = notRun("not_started");
     return { ...head, ...rest, budget: null, budgetProfile: null, measured: { elapsedMs: 0, bytesRead, requests }, dropped: counted(dropped) };
   }
-  const { bytesRead, requests, dropped, ...rest } = await launch(request ?? {}, deps, profile);
+  const { bytesRead, requests, dropped, ...rest } = await launch(asked, deps, profile);
   return { ...head, ...rest, budget: { ...profile.budget }, budgetProfile: { version: profile.version }, measured: { elapsedMs: elapsedSince(deps, started), bytesRead, requests }, dropped: counted(dropped) };
 }
