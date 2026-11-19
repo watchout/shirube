@@ -10,8 +10,8 @@ const JWT_LOWER = "aaaaaaaaaaaa.bbbbbbbbbbbb.cccc"; // 小文字だけの JWT �
 const WORDS_BEARER = "Bearer abcdefghijklmnop";
 const cls = (value) => ws.classifyValue("string", value);
 
-test("X1+ 門の種類: 未知の種類・文字列でない物は秘密らしい（失敗側）。回答・名前は (e) を当て、識別・構造体は当てない", () => {
-  assert.deepEqual([...ws.GATE_CLASSES], ["answer", "name", "ref", "structure"]);
+test("X1+ 門の種類: 未知の種類・文字列でない物は秘密らしい（失敗側）。回答・名前は (e) を当て、構造体は当てない", () => {
+  assert.deepEqual([...ws.GATE_CLASSES], ["answer", "name", "structure"]);
   for (const bad of ["bogus", "", undefined, null, 1]) assert.equal(ws.exposesText(bad, "harmless"), true, String(bad));
   for (const bad of [5, null, undefined, {}, ["x"]]) assert.equal(ws.exposesText("answer", bad), true, String(bad));
   for (const gateClass of ["answer", "name"]) {
@@ -19,7 +19,7 @@ test("X1+ 門の種類: 未知の種類・文字列でない物は秘密らし�
     assert.equal(ws.exposesText(gateClass, MIXED40), true, gateClass);
     assert.equal(ws.exposesText(gateClass, TOKEN), true, gateClass);
   }
-  for (const gateClass of ["ref", "structure"]) {
+  for (const gateClass of ["structure"]) {
     assert.equal(ws.exposesText(gateClass, MIXED40), false, gateClass);
     assert.equal(ws.exposesText(gateClass, TOKEN), true, gateClass);
     assert.equal(ws.exposesText(gateClass, JWT_LOWER), true, gateClass);
@@ -82,8 +82,8 @@ test("X6+ 性能: 長い連なりの (d) の判定は文字列の長さの二乗
   assert.ok(performance.now() - started < 1500, "長い連なりの判定が遅い");
 });
 
-test("X8+ (e) を当てない種類（識別・構造体）も (a)〜(d) は生の全体に当てる: 読める path の例外が先に語を外す形（区切りの直後・括弧の中・query の値）でも断る", () => {
-  for (const gateClass of ["ref", "structure"]) {
+test("X8+ (e) を当てない種類（構造体）も (a)〜(d) は生の全体に当てる: 読める path の例外が先に語を外す形（区切りの直後・括弧の中・query の値）でも断る", () => {
+  for (const gateClass of ["structure"]) {
     for (const column of ["a", "b", "c", "d"]) {
       for (const form of variants(SHAPES[column])) assert.equal(ws.exposesText(gateClass, form), true, `${gateClass} ${column} ${form}`);
     }

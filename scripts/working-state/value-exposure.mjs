@@ -138,11 +138,10 @@ export const hasSecretShape = (text) => typeof text !== "string" || KEY_HEADER_R
 
 // 唯一の門。外から来る文字列は全部ここを通る。種類ごとに (e) を当てるか決める（理由は種類ごとにここ 1 か所）:
 //   answer = 回答・観測した値、name = 位置・対象の名前・表示する参照（どちらも (e) を当てる）、
-//   ref = 呼出側が渡す識別・参照・項目名・符号（正当な長い名前・UUID があるので (e) を当てない）、
-//   structure = 手で作った構造体の中の文字列と key（同じ理由で (e) を当てない）。
+//   structure = 手で作った構造体の中の文字列と key（正当な長い名前・UUID があるので (e) を当てない）。
 // 順: (1) 未知の種類・文字列でない物（hasSecretShape が持つ）は秘密らしい（失敗側）、(2) 生の文字列全体に (a)〜(d)、(3) (e) を当てる種類だけ、読める名前・形の説明（wordsOf）を
 // 通した語ごとに 20 文字以上の連なりを調べる。例外 (3) は (2) を飛ばさない。
-const GATE_RUN = new Map([["answer", true], ["name", true], ["ref", false], ["structure", false]]);
+const GATE_RUN = new Map([["answer", true], ["name", true], ["structure", false]]);
 export const GATE_CLASSES = Object.freeze([...GATE_RUN.keys()]);
 export function exposesText(gateClass, text, wordsOf = FREE_WORDS) {
   const applyRun = GATE_RUN.get(gateClass);
