@@ -12,3 +12,5 @@ export * from "./observed-unit.mjs";
 export * from "./read-check.mjs";
 export * from "./source-extract.mjs";
 export * from "./value-exposure.mjs";
+export { probeToolFact } from "./probe-tool.mjs";
+export { CHUNK_BYTES, loadBudgetProfile, readFileFact, readResolvedFile, resolveFile } from "./read-file.mjs";

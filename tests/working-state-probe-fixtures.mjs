@@ -1,0 +1,115 @@
+// U2 観測の読取り（LC1。子 process）の試験が共有する入力の作り方。実際の一時 dir（試験が作って片付ける）と、架空の実行ファイル（sh の script）。
+// 実在する道具（node の実体・aidlc）は実行しない。名前空間で受けるので、未実装の間も import では落ちず、呼んだ試験だけが失敗する（架空の値だけ）。
+import { spawn as realSpawn } from "node:child_process";
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import fsPromises from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { clockOf, profileOf } from "./working-state-read-file-fixtures.mjs";
+
+export const lcProbe = await import("../scripts/working-state/probe-tool.mjs").catch(() => ({}));
+export { clockOf, profileOf };
+
+// 一時 dir（base の下に root = 対象の根、outside = 根の外、other = 根の外の別の dir）。macOS の /var → /private/var を解いた実体で作る。
+export function box() {
+  const base = realpathSync(mkdtempSync(path.join(os.tmpdir(), "ws-probe-")));
+  const dir = (...parts) => {
+    const made = path.join(base, ...parts);
+    mkdirSync(made, { recursive: true });
+    return made;
+  };
+  const root = dir("root");
+  const outside = dir("outside");
+  const other = dir("other");
+  return {
+    base, root, outside, other, dir,
+    flag: (name) => path.join(base, `flag-${name}`),
+    ran: (name) => existsSync(path.join(base, `flag-${name}`)),
+    // 架空の実行ファイル（sh の script）。body は sh の組込みだけで書く（子の PATH は絞られている）。
+    exe(where, name, body, mode = 0o755) {
+      const file = path.join(where, name);
+      mkdirSync(path.dirname(file), { recursive: true });
+      writeFileSync(file, `#!/bin/sh\n${body}\n`);
+      chmodSync(file, mode);
+      return file;
+    },
+    // 中身をそのまま書く実行ファイル（先頭の行の指定が壊れた物を作る時に使う）。
+    raw(where, name, text, mode = 0o755) {
+      const file = path.join(where, name);
+      mkdirSync(path.dirname(file), { recursive: true });
+      writeFileSync(file, text);
+      chmodSync(file, mode);
+      return file;
+    },
+    cleanup: () => rmSync(base, { recursive: true, force: true }),
+  };
+}
+
+// 動いたことを印（flag の file）で残し、版を 1 行出す body。
+export const marking = (b, name, text = "aidlc 2.11.1") => `echo ran > "${b.flag(name)}"\necho "${text}"`;
+
+// 作業中の dir を変えて run を流し、必ず戻す（相対・空の PATH の欄の負例だけで使う）。
+export async function inCwd(dir, run) {
+  const before = process.cwd();
+  process.chdir(dir);
+  try {
+    return await run();
+  } finally {
+    process.chdir(before);
+  }
+}
+
+export async function inBox(run) {
+  const made = box();
+  try {
+    return await run(made);
+  } finally {
+    made.cleanup();
+  }
+}
+
+export const sampleEnv = (b, over = {}) => ({ PATH: b.outside, HOME: "/home/sample-user", LANG: "C", LC_ALL: "C", ...over });
+
+// 道具を 1 回確かめる。既定: 根 = b.root、PATH = b.outside だけ、profile = 既定の予算。
+export const probe = (tool, b, over = {}, root = b.root) =>
+  lcProbe.probeToolFact({ tool, root }, { clock: clockOf(1), loadProfile: async () => profileOf(), env: sampleEnv(b), execPath: path.join(b.other, "node-sample"), ...over });
+
+// 起動の呼び出しを記録して、本物の spawn へ渡す。
+export function spawnSpy() {
+  const calls = [];
+  const pids = [];
+  // 呼び出しの時点の写しを残す（Node は coverage の実行の時、渡した env の object へ NODE_V8_COVERAGE を足すので、本物の spawn へ渡す前に写す）。
+  const snapshot = ([file, args, options]) => [file, args, { ...options, env: { ...options?.env } }];
+  return { calls, pids, spawn: (...args) => { calls.push(snapshot(args)); const child = realSpawn(...args); pids.push(child.pid); return child; } };
+}
+
+export const fsWith = (over) => ({ ...fsPromises, ...over });
+
+// 枠の時計を「子が動き出した印の file ができてから」数え始める形にする（負荷で子の起動が遅れても、動き出す前に枠が来ない。S4）。
+// 戻り値は runChild の setTimer の形（枠の関数と ms を受け、取り消す関数を返す）。印の file ができなければ、枠は来ない（試験が失敗側で終わる）。
+export const windowAfterStart = (file) => (fn, ms) => {
+  const state = { cancelled: false, timer: null };
+  (async () => {
+    for (let tries = 0; tries < 6000 && !state.cancelled && !existsSync(file); tries += 1) await new Promise((resolve) => setTimeout(resolve, 5));
+    if (!state.cancelled && existsSync(file)) state.timer = setTimeout(fn, ms);
+  })();
+  return () => {
+    state.cancelled = true;
+    clearTimeout(state.timer);
+  };
+};
+// 止めた後に消えたかを確かめる回数・間隔（既定の 20 回・10ms の 50 倍の余裕）。負荷で消えるのが遅れても、成功にしない側へ倒れない。
+export const SETTLED = Object.freeze({ tries: 1000, ms: 10 });
+
+// 子 process が終わっている（生きていない）ことを、短く待って確かめる。
+export async function isGone(pid) {
+  for (let tries = 0; tries < 100; tries += 1) {
+    try {
+      process.kill(pid, 0);
+    } catch (error) {
+      return error?.code === "ESRCH";
+    }
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  return false;
+}
