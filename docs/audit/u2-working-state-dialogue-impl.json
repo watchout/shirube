@@ -1,0 +1,47 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "対象は AI-DLC の単位 u2-working-state-dialogue（取り組み 261105-shirube-lifecycle-qualit）の実装の PR。範囲は base f2d509b2ad4043cee0f9b4a2aaf84b5c3ae123ae から、監査の依頼が名指す head まで。依頼の head の製品の code は commit b64144d7877a9ddad6f60ded0fa04f4a97712270 と同じで、その上には記録（単位の AI-DLC の記録と本項目集合）だけを足している。設計は別の PR で独立の設計監査を通した物で、この監査は実装が承認済みの設計・計画・試験の手順・code-summary.md（SHA-256 8e18f3aff9f57634438d28ede791aa452897a2b8c94ee146692a6f56c302eb39）と一致するかを照らす。リスクは R3。監査の PASS は Owner の許可や統合の認可の代わりにならず、統合は作者以外の suite-lead が、R3 の統合の前に対象 head への Owner の公開決定を確認して行う。以下の U2WI-xx は本項目集合の識別子であり、識別子は本項目集合のもので新しい社内規格・工程・権限ではない。全 8 項目必須。差し戻しは「起きやすさ × 困る大きさ」の表（KY）で決め、指摘ごとに対象外かどうか・起きやすさの根拠・困る大きさ・攻める側に要る最小の権限を書く。観測できなかったもの（Linux の runner、Node 22、実機の観測、変異の独立の再現）は成功と読まない。旧道筋・門の判定4・5・退役した独自工程・PR の規模と自前の code の予算は、工程や完了の条件として再採用しない。",
+  "items": [
+    {
+      "id": "U2WI-01",
+      "criterion": "範囲と差分の形が宣言と一致する。(a) `git diff --name-only f2d509b2ad4043cee0f9b4a2aaf84b5c3ae123ae <依頼の head>` の file を、製品の code（`scripts/working-state/` の 27 file）、試験（`tests/working-state-*` と `tests/u2/`）、`knip.jsonc` の 1 行、設計監査の項目集合 `docs/audit/u2-working-state-dialogue-design.json`、この項目集合、単位の AI-DLC の記録の 5 種に分け、PR 本文の `json sds-pr` の宣言（変えた物・変えない物・risk ラベル）と突き合わせる。製品の code と試験の変更行（足した行と消した行の和。lockfile と AI-DLC の記録は数えない）が 2,000 行以下か、作者が依頼の前に行数を数えて PR 本文に書いたか、PR の前検査の結果が実物と一致するかを見る。上限を超えるなら Owner の PR ごとの許しが公開されているか。(b) 触っていない物が差分に無い: `package.json`、lockfile、`.github/**`、`.shirube/**`、`configs/**`、契約 `.v2`、DB の構造。新しい依存は 0 で、実行時の npm 依存を足していない。(c) 試験 file は 1 つ 300 行以下、関数 50 行・複雑さ 10、新規 file 300 行の既存の技術検査を通し、例外コメントに説明がある。差分に無い物を触ったと書く、または触った物を書かない記載があれば指摘する。",
+      "basis": "設計監査の項目 U2WS-01・U2WS-08、`code-summary.md` の範囲の節、NFR の範囲・置き場の要件、team.md の PR の大きさ（決定 127・129）、protected-surface-owner-gate R1、engineering-standards S3・S8"
+    },
+    {
+      "id": "U2WI-02",
+      "criterion": "秘密らしい値の判定の唯一の門 `exposesText`（`scripts/working-state/value-exposure.mjs`）が、免除の分岐（読める名前・設定の組・参照の部品分け・短い値）より先に、外から来る文字列の全文に当たる。(a) 呼出側が渡す欄の全部を `scripts/working-state/` の公開の export から数え直し、公開の関数 81 個のうち入口を持つ 67 個の 495 行（A 243・B 94・C 158）の「入口の全部の欄 × 確かめ方」の表と一致するか確かめる。入口の無い 14 個は、入口が無い理由が実物で言える。表の行に無い欄、または表にあるが実物に無い欄があれば指摘する。(b) 判定の形 BR5.2 の (a)〜(e) と、出口の行列（M1+〜M19+ の 19 × 5 列 = 95 の cell）が、返り値・draft・案内・C02 の wire・例外の文面に 64 文字の乱数らしい連なりが写らないことを実際に試している。(c) 守り（門の呼び出し・免除より先の順）を 1 つ外すと落ちる負例が各欄・各出口にある。外しても落ちない欄があれば、その欄の門は試験で支えられていない。(d) 正例（秘密でない普通の文字列）が誤って落ちない。免除を足す変更が、免除の内容と門の位置の両方を試験で固定している。",
+      "basis": "設計監査の項目 U2WS-03・U2WS-04、`code-summary.md` の入力の欄の表・出口の行列の節、security-design の秘密の扱い、決定 116・120・122、project.md の学び（秘密らしい値の判定は免除より先に唯一の門に当てる。入口の全部の欄 × 確かめ方の表と、守りを外すと落ちる負例をそろえる）、engineering-standards S3・S5"
+    },
+    {
+      "id": "U2WI-03",
+      "criterion": "観測の事実と digest が S5 に従う。(a) 観測側の値は、観測した事実（file の bytes・子 process の出力・発見した位置）だけから計算し、宣言された値・期待値・設定を写していない。中身を変えた入力で digest が変わり不一致になる負例が試験にある。(b) 結果は「一致」「不一致」「観測できず」の 3 値で、観測できない（読めない・壊れている・期限や予算を使い切った・対象が違う・古い）を成功に読み替える経路が無い。観測の問い合わせには期限と総予算が宣言され、使い切ると「観測できず」になる。(c) 値を外へ出してはならない観測（withheld）は、値を持たずに事実だけを返し、決定 116・120・122 の扱いと一致する。withheld の値が digest・案内・draft・例外の文面に漏れない。(d) 意味の核（`observation-facts.mjs`・`item-state.mjs`・`canonical.mjs` など）は現在時刻・乱数・識別子を自分で取らず、呼出側が渡す（S4）。`Date.now`・`new Date()` の引数なし・`Math.random`・`randomUUID` が核に現れない。(e) 同じ入力で同じ出力になり、2 回流した結果が byte で一致する。",
+      "basis": "設計監査の項目 U2WS-02・U2WS-06、`code-summary.md` の観測の節、NFR の観測の要件、決定 116・120・122、engineering-standards S4・S5・S8"
+    },
+    {
+      "id": "U2WI-04",
+      "criterion": "子 process の起動（`probe-run.mjs`・`probe-tool.mjs`・`probe-path.mjs`）が security-design の 1〜6 の条件を実物で満たす。起動する command の決め方（固定した道具・path の確かめ・shell を通さない引数の配列）、環境変数の絞り、作業の dir、標準入出力の上限、期限と打ち切り（時刻と待ちは呼出側が渡し、核は時計を読まない = S4）、打ち切りの後の後始末の 6 つについて、条件ごとに (i) 実装の行、(ii) 破ると落ちる負例、(iii) 負例が実際に子 process の起動の経路を通ることを確かめる。期限を使い切る・出力が上限を超える・起動できない・path が不正・道具が無い、のどれも成功と記録されず「観測できず」になる。T2.2 の試験が実時計に依存する点（`windowAfterStart`・`SETTLED`）は、依存の範囲と、負荷が高い時に落ちて再実行で通る形になっていないかを、記録された実測と照らす。観測できなかった環境（Linux の runner、Node 22）での動きを、通ると読んでいないか。",
+      "basis": "設計監査の項目 U2WS-05・U2WS-06、決定 106・111、security-design の 1〜6、`code-summary.md` の子 process の節と A.4 の記載、engineering-standards S4・S5・S8、KY の表（子 process を起動する面は外から届く入力を持つので対象外にしない）"
+    },
+    {
+      "id": "U2WI-05",
+      "criterion": "回答・draft・選択が、対象に結ばれ、古い回答が無効になる。(a) 問い・回答・draft・選択のそれぞれが、対象（単位・段・問いの識別子・回答の識別子 answerId・その時の観測の digest）に結ばれ、別の対象に付け替えても受理されない（対象違い・別の単位・別の問いの負例が試験にある）。(b) 観測が変わった後の古い回答・古い draft・古い選択は無効になり、有効なものとして扱われない。無効の理由が案内に出る。(c) 空欄の回答を作る側の判断で埋めず、draft は Owner の答えとして記録されない。回答が欠ける・読めない・複数ある・順が違う、のどれも成功に読まれない。(d) answerId の形（entities.md の `Ref` に文字集合・長さ・区切りの定義が無い点）は、今の実装で何を受け何を断るかが code-summary の限りと持ち越しの記載のとおりで、実装が記載より広く受けて通すことが無い。(e) 同じ不正な値の組（2 つの入力が同じ不正な値で一致）でも一致と読まれない。",
+      "basis": "設計監査の項目 U2WS-03・U2WS-04、`code-summary.md` の回答・draft・選択の節と answerId の持ち越し、project.md の学び（型の指摘は同じ不正値の組で調べる）、team.md Mandated（問いの答えは Owner の言葉）、engineering-standards S5"
+    },
+    {
+      "id": "U2WI-06",
+      "criterion": "TDD の Red/Green の記録、行の網羅率、変異の測定が、観測した事実だけで書かれ、正直である。(a) Red（失敗の確認）と Green（通る確認）の記録が、実際に流した命令・出力の SHA-256・対象の commit を持ち、別の PR や過去の版の記録を今回の合格の根拠にしていない。Red を取っていない手順があれば、取っていないと書いてある。(b) 行の網羅率 100% が、手で書き写さず、試験の中で子 process に Node の lcov を流して解析した記録（`working-state-coverage/1`、LC7）から出る。依存を入れた環境で既存の試験が全部通る（b64144d で 1066 件）ことを確かめてから値を読み、除外する行があれば範囲の内容の SHA-256 で名指して理由が PR にある。分母が 0 や未計測を 100% と読まない。(c) 変異の測定は、636 定義（id は 635 で、`FS-copy-blocking` が重複し両方 killed）のうち 607 が killed、29 が survive でその全部が `expectSurvive`、bad-find 0 という記載が、結果の file（result-b5-full.json の SHA-256 `9c32e7e3028ade5961fe22afdb8e04e20718367a88513aa788d1df498b886155`）と一致する。(d) 次の限りを成功と読まず、限りとして書いてある: 変異の独立の再現は未（作者自身の 1 本の通し）、基準の試験数が 1052 と 1057 で混在（最初の run は 1052、再測と新しい run は 1057。LC7 の網羅率の試験は変異の基準から除く）、タイミング試験だけで殺す 9 件（F4-asked-reread・F4-locator-open・F4-tools-add・S4-cancel-removed・S4-default-tries・S4-settimer-ignored・S4-settle-ignored・S4-settle-ms-fixed・S4-settle-tries-short）、負荷が高い時の挙動は記録の範囲のみ。survive の 29 件が expectSurvive である理由が 1 件ずつ言える。",
+      "basis": "設計監査の項目 U2WS-07・U2WS-08、`code-summary.md` の TDD の記録・網羅率・変異の測定の節、NFR1・NFR10、team.md Testing Posture（行の網羅率の記録は観測した値を機械が読める形で残す）、project.md の学び（網羅率から除く行は範囲の内容の SHA-256 で名指す。網羅率の実測は依存を入れた環境で）、engineering-standards S5・S8"
+    },
+    {
+      "id": "U2WI-07",
+      "criterion": "code-summary.md の訂正の節が code と一致し、設計の水準を変えていない。(a) arc の表の訂正（入力の欄の表・出口の行列・数え方の訂正）が、実物の表・試験・export の数え直しと一致する。(b) answerId の限りと持ち越しの記載が、実装が受ける形と断る形に一致する（U2WI-05 (d) と同じ事実を、別の言い方で書いていない）。(c) 5 回目の見直しの前の仕上げで足した記録（再測定・A.4 の記載・`sed -i` と読み取り専用の script の開示・設定の列挙の表の更新）が、実物の file・SHA・件数と一致し、成功の申告になっていない。(d) 訂正は記録の修正であって、設計の水準（要件・受入条件・BR・NFR・security-design の約束）を下げる・緩める・外す変更を含まない。設計が約束した水準そのものが code や記録で緩んでいれば、訂正でなく設計の乖離として指摘する。(e) 記載の数（行数・件数・SHA）を、実物から数え直して一致を確かめる。",
+      "basis": "`code-summary.md`（SHA-256 8e18f3aff9f57634438d28ede791aa452897a2b8c94ee146692a6f56c302eb39）の訂正の節と限り 10、authority-and-waiting R3（設計と実装を黙って食い違わせない）、設計監査の項目 U2WS-08、arc の追加の指定"
+    },
+    {
+      "id": "U2WI-08",
+      "criterion": "守る物に触れず、公開の差分が清潔で、R3 の統合の条件がそろう。(a) workflow（`.github/**`）・必須の検査・branch protection・`.shirube/**` の pin と profile・契約 `.v2`・DB の構造と権限・資格情報・本番・料金のどれも、差分に変更が無い（U2WI-01 (b) の確認を、守る物の一覧に当てて再度確かめる）。(b) 公開の差分に `audit/`、`.aidlc-engine/`、作業場の絶対 path、席・model の名前、秘密と秘密らしい値（fixture の乱数の連なりは gitleaks に拾われない形か）、他 repo の非公開の記録の写しが無い。fixture と出力は架空のデータだけである。(c) R3 の統合の条件: `risk:R3` の label が 1 つ、`json sds-pr` が 1 ブロック、独立監査の PASS と作者の受領（機械の受領と作者の記録を混同しない）、必須の検査（sds-gate・CI）が対象 head で通る、作者以外の suite-lead の統合、統合の前に対象 head への Owner の公開決定がある。監査の PASS は Owner の許可や統合の認可の代わりにならない。(d) 監査の依頼の後に head を変えていない（変えたら依頼と結果を取り直す）。(e) 単位の記録（設計・計画・試験・追跡表・承認記録）が PR に含まれ、追跡表の検査と upstream-coverage が通る形で、観測できなかった環境（Linux の runner、Node 22、実機の観測、変異の独立の再現）を成功と書いていない。",
+      "basis": "protected-surface-owner-gate R1・R2、team.md の PR 本文・統合・監査の分担、project.md Forbidden（PR に audit/・.aidlc-engine/ を含めない、保護対象を段の承認だけで変更しない）、engineering-standards S8・S9、aidlc-only 2（R3・R4 は統合の前に Owner の exact-head）"
+    }
+  ]
+}
