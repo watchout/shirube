@@ -1,0 +1,3 @@
+# gitleaks の誤検出 2 件（U2 PR #112 の履歴の commit。Owner の決定 140 https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-7001875259 。profile の exceptions と対）
+486561714e7c2280b0e498656c3a52f365654e40:tests/working-state-unit-fields.test.mjs:generic-api-key:13
+5036cdd0958b0ab136806964fe18a4e58cfd92f3:aidlc/spaces/default/intents/261105-shirube-lifecycle-qualit/construction/u2-working-state-dialogue/code-generation/code-summary.md:generic-api-key:715
