@@ -30,11 +30,15 @@ const isStale = (answer, facts, catalog, observedItems) =>
 
 // 有効な回答のうち、結びの先の項目の観測 digest が変わったものを invalidated にする（BR6.2。順は (1) 一致を確認を先に、(2) それ以外で無効）。
 // catalog（項目の定義）が無い・項目が見つからない時は (1) を成立させず従来の (2)（一致と読み替えない側）。ほかの回答はそのまま。
-// 回答の列は呼出側が渡す（手で作れる）ので、1 件でも門を通らない（isReadableAnswer）なら、どの件も写さず空の列を返す（呼出側は自分の列を持ち続ける）。
+// 回答の列は呼出側が渡す（手で作れる）ので、門（isReadableAnswer）を通らない件は、その 1 件だけを位置で示す invalidated の回答に置き換え、列を返す
+// （ほかの件は変えない）。置き換えた件は、通らなかった値・項目名・識別・欄の名前を写さず、answerId と itemKey は位置の名前（項目名の形に合わない）だけ。
+// 新しい状態・理由の符号は作らない。入口（receiveAnswer・buildDraft）は先に全件を門に通すので、置き換えはここを直接呼ぶ時だけ起きる。
+const unreadableAt = (position) => ({ answerId: `answer-position-${position}`, itemKey: `answer-position-${position}`, state: "invalidated" });
+
 export function reconcileAnswers(answers, observedItems, catalog) {
-  if (!answers.every((answer) => isReadableAnswer(answer, catalog))) return deepFreeze([]);
   const facts = factsOf(observedItems);
-  return deepFreeze(answers.map((answer) => (isStale(answer, facts, catalog, observedItems) ? { ...answer, state: "invalidated" } : answer)));
+  const settle = (answer) => (isStale(answer, facts, catalog, observedItems) ? { ...answer, state: "invalidated" } : answer);
+  return deepFreeze(answers.map((answer, position) => (isReadableAnswer(answer, catalog) ? settle(answer) : unreadableAt(position))));
 }
 
 // 入力の欄を 1 回だけ読む。object でない・読むと例外を起こす入力は null（保持しない）。
