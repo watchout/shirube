@@ -15,7 +15,7 @@ U2 の信頼性の設計（Owner の決定 120 の開いた形の限りを含む
 
 ## RL2 古い物を新しい物として使わない（NFR4.2）
 
-- 回答は回答時点の項目の観測 digest と結ぶ（boundObservationDigest、1 件）。再観測で digest が変われば invalidated にし、BR3.1 で項目を再評価して不足・食い違いへ戻す（BR6.2）。他の回答は保持する。
+- 回答は回答時点の項目の観測 digest と結ぶ（boundObservationDigest、1 件）。判定の順は機能設計 BR6.2・BR6.3 のとおり。(1) 閉じた形で、再観測した値の digest が回答の値の digest と一致し、かつ全出典が値を持ち回答と同じ値（wrong_target・invalid・conflict・unobservable の出典が無い）なら、観測 digest が変わっていても「一致を確認」を先に判定し、無効にしない（T6.2m）。(2) それ以外で再観測の digest が boundObservationDigest と違えば invalidated にし、BR3.1 で項目を再評価して不足・食い違いへ戻す（BR6.2。値が不一致・観測不能 = T6.2n、開いた形は値を比べず無効 = T6.2o、別の出典が変わった・食い違う新しい出典 = T6.2p）。他の回答は保持する。
 - **検出できる範囲と U2 が保証しないこと（NFR4.2、Owner の決定 120）。** 観測の事実は {availability・targetMatch・presence・valueDigest（閉じた形だけ）・lengthBucket と matchGroup（開いた形で withheld が無い時だけ）・withheld（閉じた形・開いた形の両方。固定の分類。F02。arc の読み・Owner に確認中）・unobservableCause} で、単位 (targetRef, itemKey, sourceRef) の辞書順の正規の JSON の SHA-256 が項目と draft の観測 digest になる。閉じた形（version・commit-oid・boolean）は値の digest の変化まで検出する。開いた形（string・list）は値も digest も持たないので、presence・lengthBucket・matchGroup・出典・対象の結び・原因と固定の分類（withheld。有効 ↔ invalid_format ↔ secret_like）の変化までを検出し（T8.3p）、**中身だけの変化（同じ分類・presence・長さの区分・一致の番号・出典・対象の結び・原因のままの変化）は検出しない**。開いた形の回答は「回答済み」のままで、実物との一致を確認済みと示さず「比べられず観測できず」と示す（BR6.3・BR6.4）。実物の読み直しは実適用側（U3・U5）の持ち物。この限りを成功に読み替えない（S5・S8）。
 - 対象の結び: targetMatch = unspecified（named なのに出典が対象を名指さない）の単位は観測不能（malformed）で、回答の結び先にも確認済みにもしない。differs は wrong_target。
 - 同じ観測の単位 (targetRef, itemKey, sourceRef) の観測が複数届いたら、observedAt が最も新しい結果だけを使う。同じ項目の別の出典は捨てない。遅れて届いた古い観測・古い回答は使わず、黙って上書きしない（BR9.1・BR5.4）。

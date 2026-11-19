@@ -170,12 +170,21 @@ FD-GAP-1〜3・FD-GAP-4（Q5 = A）・LC-GAP-1・LC-GAP-2・SC-GAP-1 は、段�
 - 試験の足し: T8.3p（分類だけの変化で observationDigest が変わり、古い draft・選択・回答が無効になる。どの出力にも値が出ない）と T3.4p（withheld の不変条件。lengthBucket・matchGroup を持たない、番号づけに入らない、判定できない・例外・未知の型は secret_like、例外を起こす架空の入力でも出力に値が出ない）を、CI の関門の表・監視の設計・追跡表・試験の手順に足す。
 - NFR 設計の見直し（回 1、READY）で持ち越した Minor 2 件の扱い: (1) 読む直前の同一性の等値の確認だけは機構として LC1 が行い、結果は事実として返し、観測不能にする判定は LC2 が持つ（LC1 の「分類・比較・判定をしない」の例外を 1 行書き、構造の試験はこの例外を除く形にする）。(2) profile が読めない時の観測不能の原因は、既存の UnobservableCause の集合から 1 つ（malformed）を使い、新しい原因は作らない（NFR5.2）。置き場の設計の仕様に書く。
 
+開き直しの変更（作る段で見つけた機能設計の BR6.2 と BR6.3 の順の直しの反映。この直しだけ。arc が Owner の決定 95 により指示。新しい問いは立てない）:
+
+- 観測が変わった時は、閉じた形で値が回答と一致し全出典が値を持ち回答と同じ値なら「一致を確認」を先に判定し、それ以外で観測 digest が変われば回答と古い draft を無効にする（機能設計 BR6.2・BR6.3、reliability-design RL2）。試験は T6.2m・T6.2n・T6.2o・T6.2p。
+- この段では、CI の関門の表（cicd-pipeline）と監視の設計（monitoring-design）の負例の一覧に T6.2m〜T6.2p を足し、追跡表の NFR4.2 の行にも書く。置き場・依存の向き・予算・数値・持ち越しの Minor は変えない。
+
 Does this all look correct before I generate the artifact?
 
 - Looks correct
 - Request changes
 
 [Answer]: Looks correct
+
+（今回の回答は arc が Owner の決定 95 により入力: https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758 。Owner の言葉ではない。CI の関門の表と監視の設計の負例の一覧に T6.2m〜T6.2p を足し、追跡表の NFR4.2 の行に書き、ほかを変えない範囲。）
+
+（今回の確認は、BR6.2・BR6.3 の順の直しの反映を足した要約に対するもの。前の確認 Looks correct は arc が Owner の決定 95 により入力した記録で Owner の言葉ではなく、この直しを足す前の要約に対するもの。）
 
 （F02 の反映に対する確認。arc が Owner の決定 95（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758）により入力した。Owner の言葉ではない。「開いた形の固定の分類」は引き続き arc の読み・Owner に確認中（arc の項目 122）として記録して進める。）
 

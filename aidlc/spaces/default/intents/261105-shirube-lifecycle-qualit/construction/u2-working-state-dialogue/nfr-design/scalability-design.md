@@ -2,7 +2,7 @@
 
 ## Sources and Scope
 
-U2 の規模の設計。入力: [scalability-requirements](../nfr-requirements/scalability-requirements.md)（NFR6.1b・NFR4.3・NFR6.1c）、[rules](../functional-design/rules.md)（BR1.4・BR3.1・BR5.1・BR9.1）、[logical-components](logical-components.md)。要約確認は [questions](nfr-design-questions.md) の Looks correct（決定 116・120 と対象の結びを足した後、さらに見直し回 1 の直しの後に取り直し済み）。本書は設計であり、負荷の測定結果ではない。
+U2 の規模の設計（機能設計の BR6.2・BR6.3 の判定の順の直しは、この文書に影響しない。影響は reliability-design RL2・logical-components LC5 のみ）。入力: [scalability-requirements](../nfr-requirements/scalability-requirements.md)（NFR6.1b・NFR4.3・NFR6.1c）、[rules](../functional-design/rules.md)（BR1.4・BR3.1・BR5.1・BR9.1）、[logical-components](logical-components.md)。要約確認は [questions](nfr-design-questions.md) の Looks correct（決定 116・120 と対象の結びを足した後、さらに見直し回 1 の直しの後に取り直し済み）。本書は設計であり、負荷の測定結果ではない。
 
 U2 は 1 つの対話が 1 つの対象を読む、有限の 1 回ずつの処理で、常駐・並列の自動実行・保存を持たない。利用規模の根拠が無いので、負荷の予測・scaling の契機・容量の数値は置かない。
 

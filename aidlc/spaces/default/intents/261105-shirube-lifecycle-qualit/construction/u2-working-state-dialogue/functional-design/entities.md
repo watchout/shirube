@@ -87,7 +87,7 @@ entities:
       valueDigest: {type: Sha256, presence: only-when-closed-form-and-value-retained, note: 閉じた形で値を保持した時だけ。値を保持しない分類の時と、開いた形の項目では持たない（Owner の決定 120）}
       lengthBucket: {enum: [empty, short, medium, long], presence: only-when-open-form-and-presence-value-and-not-withheld}
       matchGroup: {type: int, presence: only-when-open-form-and-presence-value-and-not-withheld, note: 出典どうしの一致を値なしで表す番号（ObservedItem.matchGroup と同じ）。単一の出典の項目は常に 1}
-      withheld: {enum: [invalid_format, secret_like], presence: only-when-observed-and-value-not-retained, note: 値を保持しない時の固定の分類（Owner の決定 116）。閉じた形・開いた形の両方に付く（F02）。入力から作らない。分類（有効・invalid_format・secret_like）の変化は観測の事実の変化になり、観測 digest が変わって古い回答と draft が無効になる（BR6.2・BR8.3）。同じ分類の中で値だけが変わる変化は事実に入らない（閉じた形は値を使わない項目なので draft の意味は変わらず、開いた形は決定 120 の限界。U2 は検出を保証せず「比べられず観測できず」と示す）}
+      withheld: {enum: [invalid_format, secret_like], presence: only-when-observed-and-value-not-retained, note: 値を保持しない時の固定の分類（Owner の決定 116）。閉じた形・開いた形の両方に付く（F02）。入力から作らない。分類（有効・invalid_format・secret_like）の変化は観測の事実の変化になり、観測 digest が変わる。変わった時は BR6.2 の判定の順で、閉じた形の値が回答と一致し、かつ全出典が値を持ち回答と同じ値（wrong_target・invalid・conflict・unobservable の出典が無い）なら「一致を確認」を先に判定し、それ以外の時に古い回答と draft が無効になる（BR6.2・BR8.3）。同じ分類の中で値だけが変わる変化は事実に入らない（閉じた形は値を使わない項目なので draft の意味は変わらず、開いた形は決定 120 の限界。U2 は検出を保証せず「比べられず観測できず」と示す）}
       unobservableCause: {type: UnobservableCause, presence: only-when-unavailable}
   ItemCatalogEntry:
     owner: DialogueExperience

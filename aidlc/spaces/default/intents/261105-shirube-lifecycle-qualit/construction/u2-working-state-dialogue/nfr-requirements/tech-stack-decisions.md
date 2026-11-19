@@ -2,7 +2,7 @@
 
 ## Sources and Scope
 
-U2 の技術選択。入力: [functional-spec](../functional-design/functional-spec.md)、[rules](../functional-design/rules.md)、[requirements](../../../inception/requirements-analysis/requirements.md)（NFR1・NFR8・NFR10）、[contract-summary](../../../inception/contract-design/contract-summary.md)。[questions](nfr-requirements-questions.md) の要約確認 Looks correct。新しい選択は行わず、既存の採択を維持する。
+U2 の技術選択（機能設計の BR6.2・BR6.3 の判定の順の直しは、この文書の選択に影響しない。影響は NFR4.2 のみ）。入力: [functional-spec](../functional-design/functional-spec.md)、[rules](../functional-design/rules.md)、[requirements](../../../inception/requirements-analysis/requirements.md)（NFR1・NFR8・NFR10）、[contract-summary](../../../inception/contract-design/contract-summary.md)。[questions](nfr-requirements-questions.md) の要約確認 Looks correct。新しい選択は行わず、既存の採択を維持する。
 
 ## Decisions
 

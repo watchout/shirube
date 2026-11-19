@@ -260,17 +260,17 @@ rules:
     applies_to: [Answer, DraftItem]
     trigger: reobserved
     logic: >
-      項目の観測 digest は、その項目の全出典の観測の事実（BR8.3 で定める。参照名からは作らない）を単位の辞書順に並べた正規の JSON の SHA-256。回答は、回答した時点の項目の観測 digest を boundObservationDigest（1 件）に持つ。IF 再観測で項目の観測 digest が boundObservationDigest と異なる THEN state = invalidated とし、項目を BR3.1 で再評価して missing / conflict 等に戻し、利用者に示す。他の回答は保持する。この無効化が検出する「中身の変化」は、閉じた形の項目では値の digest の変化、開いた形（valueForm = open）の項目では presence・lengthBucket・matchGroup・出典・対象の結び・原因と、固定の分類（withheld = 有効・invalid_format・secret_like。BR3.4、F02）の変化までで、開いた形の中身だけの変化（同じ分類の中で、長さの区分も一致の番号も同じ）は検出しない（観測値を保持も digest もしないため。Owner の決定 120（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137 、本文 SHA-256 `c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4`）から必ず出る範囲。U2 が保証しないこと）。開いた形の回答は「回答済み」のままで、実物との一致は確認済みと示さない（BR6.3・BR6.4）。
+      項目の観測 digest は、その項目の全出典の観測の事実（BR8.3 で定める。参照名からは作らない）を単位の辞書順に並べた正規の JSON の SHA-256。回答は、回答した時点の項目の観測 digest を boundObservationDigest（1 件）に持つ。判定の順（作る段で見つけた BR6.2 と BR6.3 の順の食い違いの直し。arc が Owner の決定 95（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758 ）により答えた読みで、Owner の言葉ではない）: (1) 閉じた形（valueForm = closed）の項目で、再観測した値の valueDigest が、回答の値を同じ normalization にかけた digest と一致し、かつ項目の全出典の BR3.1 の評価が wrong_target・invalid・conflict・unobservable のどれでもない（全出典が値を持ち、回答と同じ値である）時は、観測 digest の変化の有無によらず「一致を確認」（BR6.3・BR6.4）を先に判定し、invalidated にしない。別の出典が wrong_target・invalid・conflict・unobservable に変わった、または食い違う新しい出典が現れた時は (1) に入らず、(2) のとおり無効にする（一致を確認と示さない。T6.2p）。(2) それ以外で、IF 再観測で項目の観測 digest が boundObservationDigest と異なる THEN state = invalidated とし、項目を BR3.1 で再評価して missing / conflict 等に戻し、利用者に示す（値が読めて回答と食い違う時、観測できなくなった時を含む）。他の回答は保持する。開いた形は値を比べないので (1) に入らず、(2) のとおり。この無効化が検出する「中身の変化」は、閉じた形の項目では値の digest の変化、開いた形（valueForm = open）の項目では presence・lengthBucket・matchGroup・出典・対象の結び・原因と、固定の分類（withheld = 有効・invalid_format・secret_like。BR3.4、F02）の変化までで、開いた形の中身だけの変化（同じ分類の中で、長さの区分も一致の番号も同じ）は検出しない（観測値を保持も digest もしないため。Owner の決定 120（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137 、本文 SHA-256 `c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4`）から必ず出る範囲。U2 が保証しないこと）。開いた形の回答は「回答済み」のままで、実物との一致は確認済みと示さない（BR6.3・BR6.4）。
     violation: invalidated
     source: [FR2.4, NFR4, AC1.3.2, AC1.3.4]
-    tests: [T6.2+, T6.2-]
+    tests: [T6.2+, T6.2-, T6.2m, T6.2n, T6.2o, T6.2p]
   - id: BR6.3
     statement: 回答した・再観測で一致した・適用した、を区別し、答えただけで設定完了と示さない。
     category: policy
     applies_to: [Answer, GuidanceMessage]
     trigger: status-shown
     logic: >
-      IF 回答があるだけ THEN 「回答済み・未適用」と示す。IF 再観測で実際の設定が回答と一致 THEN 「一致を確認」と示す（閉じた形の項目だけ。開いた形は BR6.4 のとおり比べられず、「一致を確認」と示さない）。適用の実行と結果は U5 の持ち物で、U2 は適用済みを主張しない。保持に失敗した・確認後に設定が変わった場合は完了としない。
+      IF 回答があるだけ THEN 「回答済み・未適用」と示す。IF 再観測で実際の設定が回答と一致 THEN 「一致を確認」と示す（閉じた形の項目だけ。開いた形は BR6.4 のとおり比べられず、「一致を確認」と示さない）。この判定は BR6.2 の判定の順の (1) で、観測 digest が回答に結んだ値から変わっていても、項目の全出典が値を持ち回答と一致する時（wrong_target・invalid・conflict・unobservable の出典が 1 つも無い時）は、回答を無効にせず先に行う（設定が適用されると観測 digest は必ず変わるため）。一致しない時、または他の出典がそれらの状態になった時だけ BR6.2 の (2) で無効にする（T6.2p）。適用の実行と結果は U5 の持ち物で、U2 は適用済みを主張しない。保持に失敗した・確認後に設定が変わった場合は完了としない。
     violation: 未完了として示す
     source: [FR2.4, AC1.3.4]
     tests: [T6.3+, T6.3-]

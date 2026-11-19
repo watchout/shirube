@@ -68,7 +68,7 @@
     {
       "id": "AC1.3.4",
       "status": "OK",
-      "target": "BR1.6 BR5.4 BR6.1 BR6.2 BR6.3 BR6.4 BR8.3。Owner の決定 120（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137 、本文 SHA-256 `c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4`）による読み: 無効化・一致の確認は閉じた形の項目に限る。開いた形（string・list）の中身だけの変化は U2 が検出せず、開いた形の回答は BR6.4 で「比べられず観測できず」と示す（T6.4o）。実物の確かめは U3・U5 が行う前提。承認済みの要件の段は開き直さず、読みとして記録する（arc が Owner の決定 95 により入力。Owner の言葉ではない）"
+      "target": "BR1.6 BR5.4 BR6.1 BR6.2 BR6.3 BR6.4 BR8.3。Owner の決定 120（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137 、本文 SHA-256 `c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4`）による読み: 無効化・一致の確認は閉じた形の項目に限る。開いた形（string・list）の中身だけの変化は U2 が検出せず、開いた形の回答は BR6.4 で「比べられず観測できず」と示す（T6.4o）。実物の確かめは U3・U5 が行う前提。承認済みの要件の段は開き直さず、読みとして記録する（arc が Owner の決定 95 により入力。Owner の言葉ではない）。作る段で見つけた BR6.2 と BR6.3 の順の直し（arc が決定 95 により入力。https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758 ）: 閉じた形で再観測した値の digest が回答の値の digest と一致し、かつ項目の全出典が値を持ち回答と同じ値である時は、観測 digest が変わっていても「一致を確認」を先に判定し、それ以外で変わる時だけ無効にする。試験 T6.2m（変わり一致 → 一致を確認）・T6.2n（変わり不一致・観測不能 → invalidated）・T6.2o（開いた形で変わった → invalidated、値は比べない）・T6.2p（複数出典で、値が一致する出典のほかに wrong_target・invalid・conflict・unobservable の出典がある → invalidated、一致を確認と示さない）"
     },
     {
       "id": "AC1.3.5",

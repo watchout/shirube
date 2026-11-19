@@ -2,7 +2,7 @@
 
 ## Sources and Scope
 
-U2（実物に基づく導入状態・設定・規格の対話）の性能の要件。入力: [functional-spec](../functional-design/functional-spec.md)、[rules](../functional-design/rules.md)、[requirements](../../../inception/requirements-analysis/requirements.md)、[contract-summary](../../../inception/contract-design/contract-summary.md)。確認済みの問いは [questions](nfr-requirements-questions.md)（新規の問い 0 件、要約確認 Looks correct）。本書は要求であり、測定・試験済みの結果ではない。
+U2（実物に基づく導入状態・設定・規格の対話）の性能の要件（機能設計の BR6.2・BR6.3 の判定の順の直しは、この文書の要件に影響しない。影響は NFR4.2 のみ）。入力: [functional-spec](../functional-design/functional-spec.md)、[rules](../functional-design/rules.md)、[requirements](../../../inception/requirements-analysis/requirements.md)、[contract-summary](../../../inception/contract-design/contract-summary.md)。確認済みの問いは [questions](nfr-requirements-questions.md)（新規の問い 0 件、要約確認 Looks correct）。本書は要求であり、測定・試験済みの結果ではない。
 
 U2 は常駐サービスではなく、対話の中で実対象を 1 回ずつ読む。要件に根拠のある応答時間・スループット・稼働率の目標が無いため、根拠のない p95・RPS・同時利用数は置かない。
 

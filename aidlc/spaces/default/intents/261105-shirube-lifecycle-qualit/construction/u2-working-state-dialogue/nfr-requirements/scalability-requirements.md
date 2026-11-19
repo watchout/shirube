@@ -2,7 +2,7 @@
 
 ## Sources and Scope
 
-U2 の規模に関する要件。入力: [functional-spec](../functional-design/functional-spec.md)、[rules](../functional-design/rules.md)、[requirements](../../../inception/requirements-analysis/requirements.md)、[contract-summary](../../../inception/contract-design/contract-summary.md)。[questions](nfr-requirements-questions.md) の要約確認 Looks correct。
+U2 の規模に関する要件（機能設計の BR6.2・BR6.3 の判定の順の直しは、この文書の要件に影響しない。影響は NFR4.2 のみ）。入力: [functional-spec](../functional-design/functional-spec.md)、[rules](../functional-design/rules.md)、[requirements](../../../inception/requirements-analysis/requirements.md)、[contract-summary](../../../inception/contract-design/contract-summary.md)。[questions](nfr-requirements-questions.md) の要約確認 Looks correct。
 
 U2 は 1 つの対話が 1 つの対象を読む、有限の一回ずつの処理で、常駐サービス・並列の自動実行・保存を持たない。要件に利用規模の根拠が無いため、負荷の予測・scaling の契機・容量計画の数値は置かない。
 

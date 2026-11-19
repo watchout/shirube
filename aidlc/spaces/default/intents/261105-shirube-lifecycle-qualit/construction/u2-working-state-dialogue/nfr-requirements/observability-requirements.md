@@ -2,7 +2,7 @@
 
 ## Sources and Scope
 
-U2 の可観測性（利用者・監査が状態を判断できること）の要件。入力: [functional-spec](../functional-design/functional-spec.md)、[rules](../functional-design/rules.md)（BR6.3・BR7.1〜BR7.7・BR9.4）、[requirements](../../../inception/requirements-analysis/requirements.md)（NFR1・NFR9）、[contract-summary](../../../inception/contract-design/contract-summary.md)。[questions](nfr-requirements-questions.md) の要約確認 Looks correct。
+U2 の可観測性（利用者・監査が状態を判断できること）の要件（機能設計の BR6.2・BR6.3 の判定の順の直しは、この文書の要件に影響しない。影響は NFR4.2 のみ。「一致を確認」は閉じた形で全出典が回答と同じ値の時だけ示す）。入力: [functional-spec](../functional-design/functional-spec.md)、[rules](../functional-design/rules.md)（BR6.3・BR7.1〜BR7.7・BR9.4）、[requirements](../../../inception/requirements-analysis/requirements.md)（NFR1・NFR9）、[contract-summary](../../../inception/contract-design/contract-summary.md)。[questions](nfr-requirements-questions.md) の要約確認 Looks correct。
 
 常駐の監視・alert・dashboard・分散 tracing は持たない（U2 は一回ずつの対話の処理）。ここでの「可観測」は、案内の文・観測の参照・機械可読な記録で、利用者と独立の監査が判断できることを指す。
 

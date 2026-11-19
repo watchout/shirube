@@ -2,7 +2,7 @@
 
 ## Sources and Scope
 
-U2 の性能の設計。入力: [performance-requirements](../nfr-requirements/performance-requirements.md)（NFR6.1・NFR6.1a・NFR1.1a）、[rules](../functional-design/rules.md)（BR1.4・BR1.6）、[logical-components](logical-components.md)。要約確認は [questions](nfr-design-questions.md) の Looks correct（決定 116・120 と対象の結びを足した後、さらに見直し回 1 の直しの後に取り直し済み）。本書は設計であり、処理時間・CPU・memory の測定結果ではない。
+U2 の性能の設計（機能設計の BR6.2・BR6.3 の判定の順の直しは、この文書に影響しない。影響は reliability-design RL2・logical-components LC5 のみ）。入力: [performance-requirements](../nfr-requirements/performance-requirements.md)（NFR6.1・NFR6.1a・NFR1.1a）、[rules](../functional-design/rules.md)（BR1.4・BR1.6）、[logical-components](logical-components.md)。要約確認は [questions](nfr-design-questions.md) の Looks correct（決定 116・120 と対象の結びを足した後、さらに見直し回 1 の直しの後に取り直し済み）。本書は設計であり、処理時間・CPU・memory の測定結果ではない。
 
 U2 は常駐せず、対話の中で実対象を 1 回ずつ読む。根拠のある p95・RPS・同時利用数・稼働率が要件に無いので、設計も数値を作らない。ここで決めるのは「止まる条件」であり、速さの保証ではない。
 

@@ -2,7 +2,7 @@
 
 ## Sources and Scope
 
-U2 の可観測性の設計。入力: [observability-requirements](../nfr-requirements/observability-requirements.md)（NFR9.1・NFR9.2・NFR5.2・NFR1.1b・NFR10.2・NFR8.1）、[tech-stack-decisions](../nfr-requirements/tech-stack-decisions.md)（NFR1.1・NFR1.2・NFR10.1）、[rules](../functional-design/rules.md)（BR2.3・BR6.3・BR7.1〜BR7.7・BR9.4）、[logical-components](logical-components.md)。要約確認は [questions](nfr-design-questions.md) の Looks correct（決定 116・120 と対象の結びを足した後、さらに見直し回 1 の直しの後に取り直し済み）。本書は設計であり、実行結果ではない。
+U2 の可観測性の設計（機能設計の BR6.2・BR6.3 の判定の順の直しは、この文書の設計に影響しない。影響は reliability-design RL2・logical-components LC5 のみ。「一致を確認」と示すのは閉じた形で全出典が回答と同じ値の時だけ）。入力: [observability-requirements](../nfr-requirements/observability-requirements.md)（NFR9.1・NFR9.2・NFR5.2・NFR1.1b・NFR10.2・NFR8.1）、[tech-stack-decisions](../nfr-requirements/tech-stack-decisions.md)（NFR1.1・NFR1.2・NFR10.1）、[rules](../functional-design/rules.md)（BR2.3・BR6.3・BR7.1〜BR7.7・BR9.4）、[logical-components](logical-components.md)。要約確認は [questions](nfr-design-questions.md) の Looks correct（決定 116・120 と対象の結びを足した後、さらに見直し回 1 の直しの後に取り直し済み）。本書は設計であり、実行結果ではない。
 
 常駐の監視・alert・dashboard・分散 tracing は持たない。ここでの「可観測」は、案内の文・観測の参照・機械可読な記録で、利用者と独立の監査が状態を判断できることを指す。
 

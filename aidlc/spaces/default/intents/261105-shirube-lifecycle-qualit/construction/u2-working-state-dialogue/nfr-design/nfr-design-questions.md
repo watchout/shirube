@@ -42,6 +42,7 @@ None。仮定: 予算の数値は共通の profile の現在値を使う（U2 �
 - NFR 要件の見直し（回 1）の Minor 2 件（NFR2.2 の古い括弧書き、matchGroup の一文に ID が無い）は、設計側では SC2 と PF4 で直し、要件側の記録の直しは持ち越す（traceability.json に記録）。
 - 設計監査 2 回目の F02 の反映（arc が Owner の決定 95 により指示）: 開いた形（string・list）でも、LC2 が生の値を LC3 の判定の関数へ 1 回だけ通し、固定の分類（invalid_format / secret_like。判定できない時は secret_like）だけを観測の事実（withheld）に残して生の値は同じ呼び出しの中で捨てる。分類があるとき lengthBucket・matchGroup は持たず、一致の採番に入らない。分類（有効・invalid_format・secret_like）の変化は観測 digest を変え、古い回答・draft を無効にする。「検出しない」範囲は、同じ分類・presence・lengthBucket・matchGroup・出典・対象の結び・原因のままで中身だけが変わる変化と定義する。この読みは arc の読みで Owner の言葉ではなく、arc が Owner に確認中（arc の項目 122）。security-design（SC2）・reliability-design（RL2）・logical-components・observability-design・performance-design・scalability-design に反映し、試験の負例は T8.3p と T3.4p（withheld の不変条件。機能設計の試験一覧に無い新しい試験として、NFR2.6 と traceability に置く）。NFR 要件の見直し（回 2）の Minor（T3.4p の置き場・「検出しない」の範囲の定義・「arc の読み」の添え）は、設計側（この段の文書と traceability）で定義・明記し、要件側の記録の直しは持ち越す（NFR 要件の段は見直し済みで凍結されている）。
 - NFR 設計の見直し（回 1、NOT-READY）の直し: (1) logical-components の LC2・LC5 を F02 に揃える（LC5 の無効化が検出する範囲に固定の分類の変化を入れ、「検出しない」は security-design SC2・reliability-design RL2 と同じ定義。LC2 は開いた形の生の値を判定の関数へ 1 回だけ通して分類だけを残し、withheld があれば lengthBucket・matchGroup を持たない。「arc の読み・Owner に確認中」の注記を置く）。(2) 予算の値は LC1 が profile から渡す物だけで、呼出側から LC2 へ渡す経路は無い。profile が読めない時は読取りを始めず観測不能（既定の予算で代用しない）。(3) 判定した実体と読む実体の同一性を LC1 が読む時に再確認し、違えば読まず観測不能（SC5）。(4) 許される形式の表は判定の関数が持つ 1 つの値で、LC3・LC5 は複製しない。BR5.2 の持ち主はその関数だけ。判定の関数の名前は仮で、依存の図では LC3 内の末端。(5) 例外・診断・試験の失敗出力に開いた形の生の値を載せない。LC1 の戻り値を診断・記録・表示へ流す経路を作らない。(6) 試験 T8.3p・T3.4p を OB5 の負例の一覧と追跡表の NFR2.6・NFR2.6a・NFR4.2 に足す。
+- 開き直しの変更（作る段で見つけた機能設計の BR6.2 と BR6.3 の順の直しの反映。この直しだけ）: 観測が変わった時は、閉じた形で再観測した値の digest が回答の digest と一致し、かつ全出典が値を持ち回答と同じ値（wrong_target・invalid・conflict・unobservable の出典が無い）なら「一致を確認」を先に判定し（T6.2m）、それ以外で観測 digest が変わっていれば回答と古い draft を無効にする（T6.2n・開いた形は値を比べず無効、T6.2o・複数の出典で別の出典が変わった時も無効、T6.2p）。NFR 要件の NFR4.2 は同じ形に直し済みで、見直しは READY。この段では、NFR4.2 を引く reliability-design の無効化の判定（RL2 など）と LC5 の判定の順、およびそれを列挙する trace の 1 文だけを直す。ほかの設計・数値・予算・持ち越しの Minor は変えない。
 - 生成するのは NFR 設計の 6 文書（performance・security・scalability・reliability・observability・logical-components）と traceability だけ。コード・試験・fixture・CI・外部投稿・他単位には着手しない。
 
 Does this all look correct before I generate the artifact?
@@ -51,8 +52,10 @@ Does this all look correct before I generate the artifact?
 
 [Answer]: Looks correct
 
-（arc が Owner の決定 95 により入力: https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758 。Owner の言葉ではない。「開いた形の固定の分類」は引き続き arc の読み・Owner に確認中（arc の項目 122）として記録して進める。）
+（今回の回答は arc が Owner の決定 95 により入力: https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758 。Owner の言葉ではない。RL2・LC5 の判定の順と trace の 1 文だけを機能設計の直しに合わせ、ほかを変えない範囲。）
 
-（前の確認 Looks correct は、Owner の決定 95 により arc が入力した記録で（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758 。Owner の言葉ではない）、NFR 設計の見直し回 1 の NOT-READY の直しを足す前の要約に対するもの。確認を取り直す。「開いた形の固定の分類」は引き続き arc の読み・Owner に確認中（arc の項目 122）。）
+（前の確認 Looks correct（arc が Owner の決定 95 により入力: https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758 。Owner の言葉ではない）は、BR6.2・BR6.3 の順の直しを足す前の要約に対するもの。確認を取り直す。）
+
+（前の前の確認 Looks correct は、Owner の決定 95 により arc が入力した記録で（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6934340758 。Owner の言葉ではない）、NFR 設計の見直し回 1 の NOT-READY の直しを足す前の要約に対するもの。確認を取り直す。「開いた形の固定の分類」は引き続き arc の読み・Owner に確認中（arc の項目 122）。）
 
 （その前の確認 Looks correct は、Owner の決定 95 により arc が入力した記録で、決定 116・120 と対象の結びを足す前の要約に対するもの。上の「開き直しの変更（Owner の決定 116・120 と対象の結び…）」「U2 が保証しないこと」「NFR 要件の見直しの Minor」の 3 項目を足したので、確認を取り直す。入力は arc が Owner の決定 95 により行い、Owner の言葉ではない。子 process の cwd はセキュリティの設計なので、置き場の設計で選択肢を整理して Owner に伺う。）

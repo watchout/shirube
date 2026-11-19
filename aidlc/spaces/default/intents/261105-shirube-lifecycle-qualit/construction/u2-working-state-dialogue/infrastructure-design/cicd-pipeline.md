@@ -28,7 +28,7 @@ U2 は配備する物を持たない。「配送」は、1 単位 = 1 PR で統�
 | 規則ごとの正例・負例、AC 由来の入力の差 | `npm test`（`tests/working-state-*.test.mjs`） | NFR1.2 |
 | 核の構造（`Date`・乱数・UUID・環境変数・file・子 process・network が無い、理由コードの定義が無い、import に循環が無い） | 同上の構造の試験 | NFR5.1・NFR5.1a・NFR5.2、BR8.4 |
 | 子の起動の負例（同名の実行ファイル・環境変数・出力の枠・shell の特殊文字・cwd が OS の根） | 同上 | NFR2.1・NFR3.2・NFR6.1a、Q4 = A、Q7 = A |
-| 観測値の取り扱いの負例（T1.1u・T3.2o・T3.4o・T5.2o・T6.4o・T8.3o・T8.3p・T3.4p、秘密らしい・形式に合わない架空の観測値、開いた形の値が保持・digest・表示に現れない、開いた形の分類だけの変化で digest が変わり古い回答・draft が無効になる、withheld の不変条件と例外でも値が出ない、中身だけの変化を検出と扱わない、対象を名指さない出典は観測不能、判定の関数が LC2・LC5 で同じ 1 つ） | 同上 | NFR2.2・NFR2.6・NFR2.6a・NFR4.2・NFR6.1（PF4）、Owner の決定 116・120 |
+| 観測値の取り扱いの負例（T1.1u・T3.2o・T3.4o・T5.2o・T6.4o・T8.3o・T8.3p・T3.4p・T6.2m・T6.2n・T6.2o・T6.2p〔BR6.2・BR6.3 の判定の順: 閉じた形で値が一致し全出典が同じ値なら一致を確認を先に判定、それ以外で観測が変われば無効〕、秘密らしい・形式に合わない架空の観測値、開いた形の値が保持・digest・表示に現れない、開いた形の分類だけの変化で digest が変わり古い回答・draft が無効になる、withheld の不変条件と例外でも値が出ない、中身だけの変化を検出と扱わない、対象を名指さない出典は観測不能、判定の関数が LC2・LC5 で同じ 1 つ） | 同上 | NFR2.2・NFR2.6・NFR2.6a・NFR4.2・NFR6.1（PF4）、Owner の決定 116・120 |
 | 開いた形の生の値の経路（LC1 の返り値が診断・記録・案内へ流れる経路が無い、判定の関数が何も import しない、比較のための追加の読取り・子の起動が無い） | 同上の構造の試験 | NFR2.6・NFR6.1（PF4） |
 | 行の網羅率 100%（LC7） | 試験の中で子 process に Node の lcov | NFR1.1・NFR1.1b |
 | 構造・重複・guard・依存方向・未使用 | CI の `hygiene` job（`lint:structural`・`lint:guard`・`hygiene:jscpd`・`hygiene:coverage`・dependency-cruiser・knip）。knip は `--production` で、production の entry を `knip.jsonc` に 1 件足す（Q6 = A、同じ PR。infrastructure-specification の「knip の production の entry」）。足す前後の knip の実行結果を PR 本文に書く | NFR10.1 |

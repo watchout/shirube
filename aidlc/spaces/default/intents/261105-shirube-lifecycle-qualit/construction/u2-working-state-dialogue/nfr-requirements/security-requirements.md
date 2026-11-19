@@ -2,7 +2,7 @@
 
 ## Sources and Scope
 
-U2 のセキュリティ要件。入力: [functional-spec](../functional-design/functional-spec.md)、[rules](../functional-design/rules.md)（BR1.5・BR2.1・BR5.1〜BR5.2・BR8.1〜BR8.4・BR9.3）、[requirements](../../../inception/requirements-analysis/requirements.md)（NFR2・NFR3）、[contract-summary](../../../inception/contract-design/contract-summary.md)。[questions](nfr-requirements-questions.md) の要約確認 Looks correct。本書は要求であり、適用 SEC-T の実測・独立監査の合格は含まない。
+U2 のセキュリティ要件（機能設計の BR6.2・BR6.3 の判定の順の直しは、この文書の要件に影響しない。影響は NFR4.2 のみ。「一致を確認」を先に判定する条件は全出典が回答と同じ値の時に限り、秘密らしい出典（withheld = secret_like）や食い違う出典がある時は先に判定しない）。入力: [functional-spec](../functional-design/functional-spec.md)、[rules](../functional-design/rules.md)（BR1.5・BR2.1・BR5.1〜BR5.2・BR8.1〜BR8.4・BR9.3）、[requirements](../../../inception/requirements-analysis/requirements.md)（NFR2・NFR3）、[contract-summary](../../../inception/contract-design/contract-summary.md)。[questions](nfr-requirements-questions.md) の要約確認 Looks correct。本書は要求であり、適用 SEC-T の実測・独立監査の合格は含まない。
 
 認証・認可の新しい仕組みは作らない。U2 は対象の読み取りと案内だけを行い、開始・適用・公開の決定を作らない。
 

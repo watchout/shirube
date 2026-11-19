@@ -9,7 +9,7 @@
     {"id": "NFR1", "status": "OK", "target": "NFR1.1 (主の要件と合否は tech-stack-decisions。分母は置き場の設計で確定。補助: observability NFR1.1b・performance NFR1.1a), NFR1.2 (tech-stack-decisions)"},
     {"id": "NFR2", "status": "OK", "target": "NFR2.1, NFR2.2, NFR2.3, NFR2.4, NFR2.5, NFR2.6 (security-requirements。NFR2.6 は開いた形の観測値と U2 が保証しないこと = Owner の決定 120。開いた形の固定の分類を観測の事実に入れる F02 の直しは arc の読みで Owner に確認中、T8.3p・T3.4p。FD-GAP-2 は直し済み)"},
     {"id": "NFR3", "status": "OK", "target": "NFR3.1, NFR3.2 (security-requirements)"},
-    {"id": "NFR4", "status": "OK", "target": "NFR4.1, NFR4.2 (reliability-requirements), NFR4.3 (scalability-requirements)。保存・再開・バックアップは U2 に無く、AC3.1.3 と AC3.2.5 の履歴の部分の持ち越し先 U3・U5 が担う"},
+    {"id": "NFR4", "status": "OK", "target": "NFR4.1, NFR4.2 (reliability-requirements。NFR4.2 は機能設計 BR6.2・BR6.3 の判定の順の直しに合わせた: 一致を確認を先に判定し、それ以外で無効にする。T6.2m〜T6.2p), NFR4.3 (scalability-requirements)。保存・再開・バックアップは U2 に無く、AC3.1.3 と AC3.2.5 の履歴の部分の持ち越し先 U3・U5 が担う"},
     {"id": "NFR5", "status": "OK", "target": "NFR5.1 (reliability-requirements), NFR5.1a (tech-stack-decisions), NFR5.2 (observability-requirements)"},
     {"id": "NFR6", "status": "OK", "target": "NFR6.1, NFR6.1a (performance-requirements), NFR6.1b, NFR6.1c (scalability-requirements), NFR6.2 (reliability-requirements)"},
     {"id": "NFR7", "status": "N/A", "target": "U2 は副作用の無い読取りと案内だけで外部への効果を出さない（BR8.4）。読取りに冪等キーは不要。効果のある開始・適用は u3-native-operation-control と u5-safe-versioned-distribution が同一キー・照会・競合拒否を担う。回答の二重送信の抑止は NFR4.1"},

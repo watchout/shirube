@@ -109,7 +109,7 @@
     {
       "id": "NFR4.2",
       "status": "N/A",
-      "target": "古い観測・回答を使わない、は code の設計（reliability-design RL2）で、置き場・基盤の項目を持たない。試験は cicd-pipeline の関門 2・3 が実行する"
+      "target": "古い観測・回答を使わない、は code の設計（reliability-design RL2。閉じた形で値が一致し全出典が同じ値なら一致を確認を先に判定、それ以外で観測が変われば無効）で、置き場・基盤の項目を持たない。試験 T6.2m・T6.2n・T6.2o・T6.2p は cicd-pipeline の関門 2・3 が実行する"
     },
     {
       "id": "NFR4.3",

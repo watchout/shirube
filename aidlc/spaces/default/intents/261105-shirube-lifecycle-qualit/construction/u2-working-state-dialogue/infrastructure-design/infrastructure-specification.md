@@ -8,6 +8,8 @@
 - 実物の観測は、`~/Developer/shirube` の clone の `origin/main`。最初の観測は head `7fa98d1`、この直しで読み直した head は `f2d509b`（差分は U5 の file だけ。`knip.jsonc` の entry・`package.json` の `test` の glob・CI の `test`・`hygiene` の job・`.shirube/sds-pin.json` は変わらず、`scripts/working-state/`・`tests/working-state-*` はまだ無い）。作業場の木と共有の CodeKB は現状の根拠にしていない。観測した事実は questions の「実物の観測」の表にある。本書は設計であり、実装・測定・試験の結果ではない。
 - 追加の入力: Owner の決定 116（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6962989955 、本文 SHA-256 `3986367dcee537139c1065e71d9db339cd085e10f8fbf4f5cf1d7c771e5f3a6a`）・120（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6963254137 、本文 SHA-256 `c7b7d6ddfdc77770d380bd885b5761b4205df13bb20f962300b51bbc610519d4`）と対象の結び（targetBinding）を反映した NFR 設計の直し。
 
+機能設計の BR6.2・BR6.3 の判定の順の直し（一致を確認を先に判定し、それ以外で観測が変われば無効。T6.2m〜T6.2p）は、この文書の置き場・仕様に影響しない。試験の一覧への足しは [cicd-pipeline](cicd-pipeline.md)・[monitoring-design](monitoring-design.md)・追跡表の NFR4.2 に書く。
+
 U2 は常駐の service ではなく、対象を 1 回ずつ読んで案内を返す Node の module 群である。クラウドの資源・網・DB・queue・secret の保管場所は作らない。この段で決めるのは、置き場・試験の分母・子 process の起動の条件・A-07 の突き合わせの結果だけである。
 
 ## Deployment

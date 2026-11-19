@@ -2,7 +2,7 @@
 
 ## Sources and Scope
 
-U2 の安全の設計。入力: [security-requirements](../nfr-requirements/security-requirements.md)（NFR2.1〜NFR2.6、NFR3.1、NFR3.2）、[tech-stack-decisions](../nfr-requirements/tech-stack-decisions.md)（NFR2.6a）、[rules](../functional-design/rules.md)（BR1.1・BR1.4・BR1.5・BR1.6・BR2.1・BR2.2・BR5.1・BR5.2・BR8.1〜BR8.4・BR9.3）、[logical-components](logical-components.md)。要約確認は [questions](nfr-design-questions.md) の Looks correct（決定 116・120 と対象の結びを足した後、さらに見直し回 1 の直しの後に取り直し済み）。本書は設計で、適用 SEC-T の実測・独立監査の合格は含まない。
+U2 の安全の設計（機能設計の BR6.2・BR6.3 の判定の順の直しは、この文書の設計に影響しない。影響は reliability-design RL2・logical-components LC5 のみ。「一致を確認」を先に判定するのは全出典が回答と同じ値の時だけで、withheld・wrong_target・invalid・conflict・unobservable の出典がある時は先に判定しない）。入力: [security-requirements](../nfr-requirements/security-requirements.md)（NFR2.1〜NFR2.6、NFR3.1、NFR3.2）、[tech-stack-decisions](../nfr-requirements/tech-stack-decisions.md)（NFR2.6a）、[rules](../functional-design/rules.md)（BR1.1・BR1.4・BR1.5・BR1.6・BR2.1・BR2.2・BR5.1・BR5.2・BR8.1〜BR8.4・BR9.3）、[logical-components](logical-components.md)。要約確認は [questions](nfr-design-questions.md) の Looks correct（決定 116・120 と対象の結びを足した後、さらに見直し回 1 の直しの後に取り直し済み）。本書は設計で、適用 SEC-T の実測・独立監査の合格は含まない。
 
 認証・認可の新しい仕組み、暗号、secret の保管場所は作らない。U2 は対象の読取りと案内だけを行い、開始・適用・公開の決定を作らない。
 
