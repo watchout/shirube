@@ -78,6 +78,14 @@ test("N2- 普通の file でない実体（dir）も open せず、観測でき�
   });
 });
 
+test("N2- 解決の後に普通の file でない実体へ置き換わっても（同じ同一性で isFile が偽）、読まず access は failed（読む直前の確認は残る）", async () => {
+  const handle = { stat: async () => ({ dev: 1n, ino: 2n, isFile: () => false }), close: async () => {}, read: async () => assert.fail("読まない") };
+  const fs = { open: async () => handle };
+  const resolved = { resolution: "resolved", realPath: "/x/y", rootRealPath: "/x", fileId: "1:2" };
+  const fact = await lc1.readResolvedFile({ sourceKind: "aidlc_settings", locator: LOCATOR }, resolved, depsOf({ fs }));
+  assert.deepEqual([fact.identity, fact.access, fact.content], ["same", "failed", undefined]);
+});
+
 test("N2+ 普通の file は今までどおり resolved になり、読める", async () => {
   await withDir(async (dir) => {
     dir.put(LOCATOR, "{}");

@@ -98,13 +98,13 @@ test("T1.5- 判定した実体と読む実体が違えば、読まず identity �
   }
 }));
 
-test("T1.5+ 判定した実体と同じ実体なら identity は same。dir など普通の file でない実体は読まず、access は failed（核が fetch_failed にする）", () => withDir(async (dir) => {
+test("T1.5+ 判定した実体と同じ実体なら identity は same。dir など普通の file でない実体は解決の段で resolved にせず読まず、access は failed（核が fetch_failed にする）", () => withDir(async (dir) => {
   dir.put(PIN_LOCATOR, PIN_TEXT);
   const same = await lc1.readResolvedFile(request(dir), await lc1.resolveFile(request(dir), depsOf()), depsOf());
   assert.deepEqual([same.identity, same.access], ["same", "ok"]);
   mkdirSync(path.join(dir.root, "adir"));
   const asDir = await readThrough(dir, "adir");
-  assert.deepEqual([asDir.identity, asDir.access, asDir.content], ["same", "failed", undefined]);
+  assert.deepEqual([asDir.identity, asDir.access, asDir.content], ["not_checked", "failed", undefined]);
   assert.equal(causeOf(asDir).cause, "fetch_failed");
 }));
 
