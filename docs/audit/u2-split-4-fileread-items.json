@@ -1,0 +1,32 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "対象は AI-DLC の単位 u2-working-state-dialogue（取り組み 261105-shirube-lifecycle-qualit）の実装を分けた PR の 4 つ目（file の読みと子 process の確かめ）。元の PR #112（head f44e07a854f50accca82496ef5e343336df81209）は独立監査の 1 回目が BLOCK（返却 https://github.com/watchout/shirube/pull/112#issuecomment-7003011777 ）で、Owner の決定 128（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6995507985 、本文 SHA-256 2d8b71069b96f83f9700aaf604fa8f3e6f8b858540421ed98fd404a5ec0e570a）により直さず再提出もしない。分割の案は https://github.com/watchout/shirube/pull/112#issuecomment-7003112987 、arc の承認は https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-7003360503 （本文 SHA-256 9681fd7b6147aa3e1542024099a7e60aa205701b7c3a3829e3c9a033912e4ebb）。この PR は PR 3（#116）の上に積む（PR 1 = #114、PR 2 = #115）。範囲は PR 3 の head から依頼の head まで。製品の code は scripts/working-state/ の read-file・probe-tool・probe-run・probe-path の 4 file と index.mjs の再 export 2 行、試験は tests/working-state-* の file の読み・子 process の試験 7 file と集約 file の試験 1 file、fixture 2 file、本項目集合。4 部品のコードは #112 の head と同じ内容で、この PR で直していない。#112 の BLOCK の F02 が直る file（回答・照合の部品）は含まれない。含まれない file の合格を主張しない。U2S4-xx は本項目集合の識別子であり、新しい社内規格・工程・権限ではない。全項目必須。リスクは R3（子 process を起動する部品を含む）。監査の PASS は Owner の許可や統合の認可の代わりにならず、R3 の統合の前に対象 head への Owner の公開決定を確認する。差し戻しは KY の表で決め、指摘ごとに対象外かどうか・起きやすさの根拠・困る大きさ・攻める側に要る最小の権限を書く。観測できなかったもの（Linux の runner、Node 22 以外）は成功と読まない。",
+  "items": [
+    {
+      "id": "U2S4-01",
+      "criterion": "範囲と差分の形が宣言と一致する。(a) PR 3 の head から依頼の head への git diff --name-only の file が、製品の code 5（4 部品 + index.mjs）、試験 8、fixture 2、本項目集合に分かれ、PR 本文の json sds-pr の changed_paths と一致する。製品の code と試験の変更行が 2,000 行以下で、PR 本文の数と check.py の実測が一致する。(b) package.json・lockfile・.github/**・.shirube/**・configs/**・契約 .v2・DB の構造・knip.jsonc に変更が無く、新しい依存が 0（node の組込みだけ）。(c) 4 部品のコードは #112 の head の内容と同じ。(d) F02 が直る file が差分に無い。",
+      "basis": "決定 127・128・129・131・135、arc の分割の承認、aidlc-only §1 の PR の大きさ、team.md の PR 本文の決まり"
+    },
+    {
+      "id": "U2S4-02",
+      "criterion": "file の読取り（read-file）が、根の内側の通常の file だけを、予算の中で、読んだ中身から事実にする。(a) 根の外・symlink の脱出・循環・同じ実体でない（解決後の実体の比較）・付随ファイル・特殊 file（fifo など）・巨大 file を読んだ中身として使わず、失敗側（観測できず）に倒す。「対象の根の外」の判定は symlink を解決した後の実体で行う。(b) 読む前後の digest が違えば changed_during_read とし、読んだ中身を使わない。(c) 時間・読んだ大きさ・回数の予算は宣言の値と等しい間は通り、超えたら timed_out / budget_exceeded。予算の profile が読めない時は既定の予算で代用しない。(d) 時刻・乱数・環境変数を自分で取らず、時計は呼出側が渡す（S4。REAL_CLOCK は adapter 側）。(e) 読めない・権限不足・変わった・予算超過を成功に数えない。同じ不正値の組・名前の変形（大文字小文字・Unicode・空白・長い名前）でも失敗側。",
+      "basis": "functional-design の LC1・BR（読取り）、infrastructure-design の根の外の判定、engineering-standards S4・S5・S8、KY の表"
+    },
+    {
+      "id": "U2S4-03",
+      "criterion": "子 process の確かめ（probe-tool・probe-run・probe-path）が、道具の版を観測しても、秘密・環境・副作用を持ち込まない。(a) 子 process は固定の引数・固定の環境（呼出側の環境変数を継がない）・時間と出力の上限つきで起動し、起動できない・時間切れ・出力超過・終了コードが 0 でない・出力の形が不正のどれも成功に数えない（観測できず側）。(b) 時間切れ・出力超過では子 process の群を止める（killGroupOf）。止められない時も成功にしない。(c) 道具の場所の探索（PATH の分割・locateTool）が、相対 path・空の要素・symlink・実行権限が無い file・探索の途中で変わった file を道具として受けず、同一性（identityOf）が探索の前後で一致する時だけ使う。(d) 環境の PATH を宣言値のまま証拠にしない（S5）。(e) 子 process の出力は version の文字列を取り出す関数（PR 2 の extractToolVersion）だけが読み、制御文字を含む出力は null。",
+      "basis": "functional-design の LC1・BR（道具の版の確かめ）、nfr-design のプロセス起動の守り、engineering-standards S4・S5・S8・S9、決定 116"
+    },
+    {
+      "id": "U2S4-04",
+      "criterion": "集約 file と試験・網羅率。(a) index.mjs は file の読みの公開の記号（CHUNK_BYTES・loadBudgetProfile・probeToolFact・readFileFact・readResolvedFile・resolveFile）だけを名前で再 export し、内部の受け渡しの記号（REAL_CLOCK・identityOf・killGroupOf・locateTool・readProfile・runChild）を出さない。集約 file の試験が、内側の部品（observation-fields・workflow-caller・workflow-lines）を公開の記号に数えない。(b) 依存を入れた環境でこの head の npm test が全部通る（作者の実測 1,529 件）。(c) scripts/working-state/*.mjs の行の網羅率が 20 file 全部 100%（作者の実測。この PR の head 単独。値は試験中の Node の lcov から読んだもの）で、除外する行が無い。(d) TDD の記録: 4 部品のコードと試験は #112 の作る段で Red → Green を経たもので、この PR で作り直していない。この PR で変えたのは集約 file の試験の 1 箇所だけで、実際に流した命令・出力の SHA-256 つきで正直に書かれている。(e) hygiene・knip の結果が実測で書かれ、未実施は未実施と書いてある。子 process の試験が Linux の runner で通るかは未観測として書いてある。",
+      "basis": "nfr-requirements の NFR1・NFR10、team.md Testing Posture、engineering-standards S5・S8"
+    },
+    {
+      "id": "U2S4-05",
+      "criterion": "守る物に触れず、公開の差分が清潔で、R3 の条件がそろう。(a) .github/**・必須の検査・branch protection・.shirube/**・契約 .v2・DB の構造と権限・資格情報・本番・料金に変更が無い。(b) 公開の差分に audit/・.aidlc-engine/・作業場の絶対 path・席や model の名前・秘密らしい値・他 repo の非公開の記録の写しが無く、fixture は架空のデータだけ。試験が作る一時 file・fifo が試験の後に片付く。(c) risk:R3 の label が 1 つ、json sds-pr が 1 ブロックで changed_paths が差分と一致する。Owner の対象 head の承認を取ったと読める記述が無い。(d) 分割の根拠の引用が公開の URL と本文 SHA-256 を伴う。",
+      "basis": "protected-surface-owner-gate R1・R2、team.md、project.md Forbidden、authority-and-waiting R1、aidlc-only §2"
+    }
+  ]
+}
