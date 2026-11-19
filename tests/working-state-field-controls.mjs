@@ -3,23 +3,22 @@
 // ここは、その行の ok と refused を結果の値そのもの（固定の語・真偽・数・固定の digest・項目の状態の並び・観測の項目の全体）に置き換える。
 // 行のデータ（working-state-field-rows-*.mjs）は変えず、fieldTest が行の id でこの表を引いて上書きする。
 import { createHash } from "node:crypto";
-import * as ws from "../scripts/working-state/index.mjs";
-import { CATALOG, observeWith } from "./working-state-answer-fixtures.mjs";
-import { conflictObserved } from "./working-state-draft-fixtures.mjs";
 import { LEAK } from "./working-state-field-fixtures.mjs"; // 循環の import。LEAK は試験が走る時（全部の読み込みが済んだ後）にだけ読む。
 
 const json = (value) => JSON.stringify(value);
 const NAMED_GUIDANCE_KEYS = ["blocking", "causes", "conclusion", "nextAction", "observationRefs", "reasons", "targetRef", "text", "unconfirmed"].join();
 const namedOnly = (r) => r !== null && typeof r === "object" && Object.keys(r).sort().join() === NAMED_GUIDANCE_KEYS;
-const BASE_EVALUATED = json(ws.evaluateItems(CATALOG, conflictObserved().items));
-const BASE_OBSERVED = json(observeWith().items);
+const sha256Of = (text) => createHash("sha256").update(text).digest("hex");
+// 基準の値は、試験する守りの入っている実装から作らず、固定の SHA-256 の literal にする（実装から作ると、守りを外した変異は基準も一緒に動き、一致してしまう）。
+// 項目の評価の結果の全体（conflictObserved の項目を evaluateItems に通した JSON）と、観測の項目の全体（observeWith() の items の JSON）。
+const BASE_EVALUATED_SHA = "1746ccd4ca0703a6b4b54465d604d32a08461767be12eb76488a6551e1d8bae4";
+const BASE_OBSERVED_SHA = "cc2e16737544034f40a86900b503cd4c1039559e167226e76ef84337fbc1e481";
 const same = (expected) => (r) => r === expected;
 const sameBoth = (ok, refused = ok) => ({ ok, refused });
 const exactly = (legit, leaked) => ({ ok: same(legit), refused: same(leaked) });
-const baseEvaluated = (r) => json(r) === BASE_EVALUATED;
-const baseObserved = (r) => json(r.items) === BASE_OBSERVED;
+const baseEvaluated = (r) => sha256Of(json(r)) === BASE_EVALUATED_SHA;
+const baseObserved = (r) => sha256Of(json(r.items)) === BASE_OBSERVED_SHA;
 const digestIs = (expected) => (r) => r === expected;
-const sha256Of = (text) => createHash("sha256").update(text).digest("hex");
 const HEX64 = /^[0-9a-f]{64}$/;
 
 const answerStatus = (leaked) => exactly("not_comparable", leaked);
