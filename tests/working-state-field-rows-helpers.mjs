@@ -28,7 +28,7 @@ const statusRows = answerFields.map((key) => wordsOf("answerStatusOf", `answer.$
 const matchRows = [
   ...["kind", "valueDigest"].map((key) => bool("closedMatches", `answer.${key}`, "A", "真偽だけ返す", ANSWER[key], (v) => ws.closedMatches({ ...ANSWER, [key]: v }, CATALOG[0], ITEMS))),
   bool("closedMatches", "entry.valueType", "A", "valueFormOf", "commit-oid", (v) => ws.closedMatches(ANSWER, { ...CATALOG[0], valueType: v }, ITEMS)),
-  bool("closedMatchesItem", "item.state", "A", "比べるだけ", "confirmed", (v) => ws.closedMatchesItem(ANSWER, { ...EVALUATED[0], state: v })),
+  bool("closedMatchesItem", "item.state", "A", "比べるだけ", "confirmed", (v) => ws.closedMatchesItem(ANSWER, { state: v, confirmedValue: "hello" })),
   bool("closedMatchesItem", "item.confirmedValue", "C", "digestOf の比べだけ", "x", (v) => ws.closedMatchesItem(ANSWER, { state: "confirmed", confirmedValue: v })),
 ];
 const staleRows = [

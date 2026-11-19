@@ -3,6 +3,7 @@
 // 外側が固定の形（断る・読めなかった単位・既定の扱い）で返ることを、正しい値の対照とともに確かめる。行のデータは試験の file と分け、表の生成から読めるようにする。
 import assert from "node:assert/strict";
 import test from "node:test";
+import { CONTROLS } from "./working-state-field-controls.mjs";
 
 // 架空の 64 文字。大小文字・数字が混ざり、読める単語に分けられない（門の (e) に当たる）。16 進だけの形・小文字だけの形は別に持つ。
 export const LEAK = "Zk3Qw9XvL1m7Rt5Yp2Nb8Hd4Gs6Jf0Ca9Bv7Cx5DPq4Lm8Xc2Rt6vB1nZ3hY9kF5";
@@ -38,7 +39,8 @@ export const json = (value) => JSON.stringify(value);
 
 // 1 行 = 1 つの試験。row: { id, entry, field, cls, check, legit, run(value), ok(result), refused(result), leak? }。
 // 正しい値の対照（legit）が ok を満たす（守りが何でも断る形でないこと）、leak が写らない、外側が refused を満たす、の 3 つを確かめる。
-export function fieldTest(row) {
+export function fieldTest(planned) {
+  const row = { ...planned, ...CONTROLS.get(planned.id) }; // 結果の値そのものを決める行は、対照の表（working-state-field-controls.mjs）が ok・refused を置き換える
   assert.ok(["A", "B", "C"].includes(row.cls), row.id);
   const leak = row.leak ?? LEAK;
   const verb = { A: "閉じた一覧の外", B: "固定の形の外", C: "門を通らない値" }[row.cls];
