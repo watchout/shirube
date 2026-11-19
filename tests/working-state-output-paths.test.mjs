@@ -185,6 +185,19 @@ test("O14+ draft の回答の入口（手で作った回答の列）: 回答の�
   }
 });
 
+test("O14b+ draft の回答の入口: 項目一覧に無い項目の回答（値のあるもの）は draft の入口が断り、draft・案内・wire のどこにも残らない。同じ回答でも項目一覧にあれば受ける", () => {
+  const answer = { answerId: "ans-1", itemKey: "note_text", kind: "value", value: "hello", state: "answered", answeredAt: "2026-11-18T09:00:00+09:00" };
+  assert.equal(buildDraft({ catalog: ws.INITIAL_CATALOG, answers: [answer] }).reason, "invalid_input"); // 初期の項目一覧に note_text は無い
+  assert.equal(buildDraft({ catalog: CATALOG, answers: [answer] }).status, "built"); // note_text のある項目一覧なら同じ回答を受ける
+  for (const itemKey of ["nothere_item", "x".repeat(65)]) {
+    const result = buildDraft({ catalog: CATALOG, answers: [{ ...answer, itemKey }] });
+    assert.deepEqual([result.status, result.draft, result.reason], ["refused", null, "invalid_input"], itemKey);
+  }
+  const secretValue = buildDraft({ catalog: CATALOG, answers: [{ ...answer, itemKey: "nothere_item", value: SECRET }] });
+  assert.equal(secretValue.reason, "invalid_input");
+  assert.equal(absent(SECRET, secretValue), true);
+});
+
 test("O15+ 選択の入口（手で作った案内の構造体）: 案内のどの欄でも既知の token の接頭辞で始まる語を含むなら、選択にしない。通常の案内は受ける", () => {
   const draft = builtDraft({ observedItems: conflictObserved().items });
   assert.equal(createSelection(draft).status, "created");
