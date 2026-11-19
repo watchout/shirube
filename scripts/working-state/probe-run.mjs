@@ -7,9 +7,13 @@ import { spawn } from "node:child_process";
 // group へ信号を送る（POSIX。負の pid = group）。信号 0 は居るかの確認だけ。
 export const killGroupOf = (pid, signal) => process.kill(-pid, signal);
 
-// 止めたあとに group が消えるのを待つ回数と間隔（実装の定数）。
-const SETTLE_TRIES = 20;
-const SETTLE_MS = 10;
+// 止めたあとに group が消えるのを待つ回数と間隔の既定（実装の定数）。試験は deps.settle で差し替えられる（負荷で揺れる待ちを、時計に頼らない形にするため。S4）。
+const SETTLE = Object.freeze({ tries: 20, ms: 10 });
+// 枠の時計の既定（本物の setTimeout）。戻り値は取り消す関数。試験は deps.setTimer で差し替えられる（枠の時計を試験が預かれる）。
+const realTimer = (fn, ms) => {
+  const timer = setTimeout(fn, ms);
+  return () => clearTimeout(timer);
+};
 const UNLAUNCHED = Object.freeze({ launch: "cannot_start", exitCode: null, output: undefined, stop: null, bytesRead: 0 });
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -24,15 +28,15 @@ function groupGone(pid, killGroup) {
 
 // group を止め、残っていないことを確かめる。止める呼び出しの成否は読まず（macOS は終わって回収前の子だけの group に EPERM を返す）、
 // 消えたことの観測だけで確かめる。消えない（止める呼び出しが効かない・権限がない）時は false。
-async function stopGroup(pid, killGroup) {
+async function stopGroup(pid, killGroup, settle) {
   try {
     killGroup(pid, "SIGKILL");
   } catch {
     // 成否では確かめない。下で group が消えたことを観測する。
   }
-  for (let tries = 0; tries < SETTLE_TRIES; tries += 1) {
+  for (let tries = 0; tries < settle.tries; tries += 1) {
     if (groupGone(pid, killGroup)) return true;
-    await sleep(SETTLE_MS);
+    await sleep(settle.ms);
   }
   return groupGone(pid, killGroup);
 }
@@ -47,12 +51,13 @@ function take(state, chunk, maxBytes, halt) {
   else state.chunks.push(chunk);
 }
 
-// 子を 1 回起動して結果の事実を返す。command = { file, args, env, cwd }、limits = { timeoutMs, maxBytes }、deps = { spawn, killGroup }。
+// 子を 1 回起動して結果の事実を返す。command = { file, args, env, cwd }、limits = { timeoutMs, maxBytes }、deps = { spawn, killGroup, setTimer?, settle? }
+// （setTimer・settle は省けて、省けば本物の setTimeout と SETTLE の既定）。
 export function runChild(command, limits, deps = { spawn, killGroup: killGroupOf }) {
   return new Promise((resolve) => {
-    const state = { chunks: [], total: 0, stopped: false, timer: null };
+    const state = { chunks: [], total: 0, stopped: false, cancelTimer: () => {} };
     const finish = (result) => {
-      clearTimeout(state.timer);
+      state.cancelTimer();
       resolve(result);
     };
     let child = null;
@@ -65,10 +70,10 @@ export function runChild(command, limits, deps = { spawn, killGroup: killGroupOf
     const halt = async (reason) => {
       if (state.stopped) return;
       state.stopped = true;
-      const confirmed = await stopGroup(child.pid, deps.killGroup);
+      const confirmed = await stopGroup(child.pid, deps.killGroup, deps.settle ?? SETTLE);
       finish({ launch: "ok", exitCode: null, output: undefined, stop: { reason, confirmed }, bytesRead: Math.min(state.total, limits.maxBytes + 1) });
     };
-    state.timer = setTimeout(() => halt("timeout"), limits.timeoutMs);
+    state.cancelTimer = (deps.setTimer ?? realTimer)(() => halt("timeout"), limits.timeoutMs);
     child.on("error", () => finish(UNLAUNCHED));
     child.stdout.on("data", (chunk) => take(state, chunk, limits.maxBytes, halt));
     child.on("close", (code) => {
