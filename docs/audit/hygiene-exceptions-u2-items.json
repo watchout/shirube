@@ -1,0 +1,37 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@dd48581d988bc284e3ebf574f8ba76c170bb8ca5/docs/sds/audit-method.md#3",
+  "scope": "U2 の PR #112 のための 3 つの例外の PR（R3、必須検査の設定）の監査: .gitleaksignore（新規。fingerprint 2 行）、.shirube/hygiene-profile.md（exceptions に 1 件、large_file_allow に 1 path、limits.pr_added_lines 10000 → 11500、散文の 2 行）、本項目集合の file docs/audit/hygiene-exceptions-u2-items.json。根拠は Owner の決定 140（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-7001875259 、本文 SHA-256 0e89c8c4eb4bcc3440a1008857fafb4d0728697f4a31d8fe1db7a5406cb59413）と、#112 の大きさの例外の決定 128（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6995507985 、本文 SHA-256 2d8b71069b96f83f9700aaf604fa8f3e6f8b858540421ed98fd404a5ec0e570a）。#112 自体の実装監査はこの PR の範囲外。全 6 項目必須。",
+  "items": [
+    {
+      "id": "EX-1",
+      "criterion": "範囲: 変更 path が .gitleaksignore・.shirube/hygiene-profile.md・docs/audit/hygiene-exceptions-u2-items.json の 3 つだけ。.github/**（workflow）・必須検査の一覧・branch protection・scripts/**・tests/**・kit/**・package.json・ほかの limits・DB の構造・資格情報・本番・料金・契約 .v2・新しい依存を変えていない。PR 本文の sds-pr block の risk_class が R3 で changed_paths が diff と一致し、決定 140 の URL と本文 SHA-256 が引かれている。",
+      "basis": "Owner の決定 140、protected-surface-owner-gate、PR 本文"
+    },
+    {
+      "id": "EX-2",
+      "criterion": "gitleaks の例外は fingerprint の 2 行だけ: .gitleaksignore の有効な行が 2 行（commit:file:rule:line の形、commit は 40 桁）で、path 全体・rule 全体・commit 全体を外す行が無い。2 行は #112 の履歴（branch adf-lead/u2-working-state-design-20261117 の head 763be90f）に実在し、gitleaks 8.30.1 を .gitleaksignore なしで f2d509b2..763be90f に当てると指摘がちょうどこの 2 件になり、この .gitleaksignore を当てると 0 件になる（監査席が自分で再現する。値は出さない）。profile の exceptions の 1 件が kind gitleaks-config・path .gitleaksignore・issue が決定 140 の URL・review_by 2026-12-19（期限あり）で、secret-suppressions と AB-18 b の判定が通る。",
+      "basis": "決定 140、hygiene.yml の gitleaks の段、secret-suppressions.mjs、AB-18 b"
+    },
+    {
+      "id": "EX-3",
+      "criterion": "大きい file の許可は 1 path だけ: large_file_allow がちょうど 1 要素で、glob を含まない exact の path（261105-shirube-lifecycle-qualit/construction/u2-working-state-dialogue/code-generation/code-summary.md）。ほかの file の許可・large_file_bytes の値（102400）・lockfile の built-in の扱いを変えていない。許可の理由と決定 140 の URL が profile の散文にある。",
+      "basis": "決定 140、large-files.mjs の profile.large_file_allow"
+    },
+    {
+      "id": "EX-4",
+      "criterion": "pr-size の予算の引き上げは 1 つの値だけ: limits.pr_added_lines が 10000 から 11500 になり、pr_changed_files・new_file_lines・baseline_max_entries・large_file_bytes・own-code の値・function/complexity を変えていない。引き上げが #112 の間だけで、#112 の統合の直後に 10000 へ戻す PR を出す約束が profile の散文と PR 本文にある。11500 の理由（見込み約 11,100 に、記録の更新で数が増える幅）が書かれ、検査の閾値を同じ PR で別の物へ緩めていない。",
+      "basis": "決定 140・決定 128、pr-size.mjs"
+    },
+    {
+      "id": "EX-5",
+      "criterion": "fail closed と記録: この PR の変更が、ほかの file・ほかの検査を通りやすくしない（許可は exact の path と 2 つの fingerprint だけ）。期限（review_by）を過ぎた exceptions は検査が失敗にする既存の挙動が保たれている。PR 本文の deviation_ledger に採った判断と採らなかった代替が 1 行ずつあり、手元の実測と未実施・観測していない物が分けて書かれ、CI の結果を申告で済ませていない。公開 repo に model 名・秘密・他 repo の非公開記録が無い。",
+      "basis": "S5・S8、hygiene-profile の規則"
+    },
+    {
+      "id": "EX-6",
+      "criterion": "CI: 対象 head で test・hygiene が success。sds-gate は、R3 の audit の欄（request・request_sha256・review）が返却の前に空であるための失敗だけで、ほかの理由の失敗が無い（返却と受領の後に PR 本文へ audit の欄を書いて通すのは作者の仕事で、この項目の対象はそれまでの失敗の理由が audit の欄の欠落だけであること）。",
+      "basis": "sds-gate の判定、kit/skills/sds-audit/SKILL.md §3"
+    }
+  ]
+}
