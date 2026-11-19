@@ -1,0 +1,32 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "対象は AI-DLC の単位 u2-working-state-dialogue（取り組み 261105-shirube-lifecycle-qualit）の実装を分けた PR の 3 つ目（観測の解釈・観測の事実・項目の状態）。元の PR #112（head f44e07a854f50accca82496ef5e343336df81209）は独立監査の 1 回目が BLOCK（返却 https://github.com/watchout/shirube/pull/112#issuecomment-7003011777 ）で、Owner の決定 128（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6995507985 、本文 SHA-256 2d8b71069b96f83f9700aaf604fa8f3e6f8b858540421ed98fd404a5ec0e570a）により直さず再提出もしない。分割の案は https://github.com/watchout/shirube/pull/112#issuecomment-7003112987 、arc の承認は https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-7003360503 （本文 SHA-256 9681fd7b6147aa3e1542024099a7e60aa205701b7c3a3829e3c9a033912e4ebb）。この PR は PR 2（#115）の上に積む（PR 1 = #114）。範囲は PR 2 の head から依頼の head まで。製品の code は scripts/working-state/ の observation・observation-fields・observed-unit・observation-facts・item-state・read-check の 6 file と index.mjs の再 export 5 行、試験は tests/working-state-* の 7 file（observation-facts・observation-latest・observation-read・observation-stale・observation-tool・observation-values・item-state）、本項目集合。#112 の BLOCK の F01 は PR 2 で直り、F02（値の一致が回答を別の対象へ結び直す）が直る file（回答・照合の部品）はこの PR に含まれない。含まれない file の合格を主張しない。file の読み・子 process の確かめ（read-file・probe-*）もこの PR に含まれず、観測の解釈は読んだ結果を入力として受ける。U2S3-xx は本項目集合の識別子であり、新しい社内規格・工程・権限ではない。全項目必須。リスクは R3。監査の PASS は Owner の許可や統合の認可の代わりにならず、R3 の統合の前に対象 head への Owner の公開決定を確認する。差し戻しは KY の表で決め、指摘ごとに対象外かどうか・起きやすさの根拠・困る大きさ・攻める側に要る最小の権限を書く。観測できなかったもの（Linux の runner、Node 22 以外）は成功と読まない。",
+  "items": [
+    {
+      "id": "U2S3-01",
+      "criterion": "範囲と差分の形が宣言と一致する。(a) PR 2 の head から依頼の head への git diff --name-only の file が、製品の code 7（6 部品 + index.mjs の再 export）、試験 7、本項目集合に分かれ、PR 本文の json sds-pr の changed_paths と一致する。製品の code と試験の変更行が 2,000 行以下で、PR 本文の数と check.py の実測が一致する。(b) package.json・lockfile・.github/**・.shirube/**・configs/**・契約 .v2・DB の構造・knip.jsonc に変更が無く、新しい依存が 0。(c) 6 部品のコードは #112 の head の内容と同じで、この PR で直していない（試験の fixture の直しを除く）。(d) F02 が直る file（回答・照合の部品）と、file の読み・子 process の部品が差分に無い。",
+      "basis": "決定 127・128・129・131・135、arc の分割の承認、aidlc-only §1 の PR の大きさ、team.md の PR 本文の決まり"
+    },
+    {
+      "id": "U2S3-02",
+      "criterion": "観測の解釈（observation・observation-fields・observed-unit・read-check）が、読んだ事実だけから再計算し、宣言値を証拠にしない。(a) 宣言・cache・既定値・期待値の欄を読取りの事実に足しても観測が変わらず、読んだ中身を変えると変わる（S5）。(b) 3 値（一致・不一致・観測できず）を持ち、読めない・変わった・権限不足・予算超過・根の外・付随ファイルは観測できず（原因つき）で、presence・値を持たず、成功にも未導入にもならない。(c) 未導入（absent）の確定は、親が読めて無いと分かる時だけ。404 だけ・権限拒否・取得失敗・未知の結果は未導入にしない。(d) 破損した出典は、それに依存する項目だけを malformed にし、他の項目は使い続ける。(e) 時刻・乱数・環境変数・file・子 process・network を使わず（S4）、同じ入力で同じ出力（2 回実行でバイト一致、読取りの並びを変えても同じ）。(f) 開いた形の項目は値も digest も観測に持たない（決定 116・120・122）。",
+      "basis": "functional-design の観測の解釈 BR、決定 116・120・122、engineering-standards S4・S5・S8、KY の表"
+    },
+    {
+      "id": "U2S3-03",
+      "criterion": "観測の事実と古さの判定（observation-facts・observed-unit）。(a) 事実は観測の単位ごとに 1 件で、決まった並び（単位の辞書順）。閉じた形は valueDigest、開いた形は presence・lengthBucket・matchGroup・固定の分類だけで、値が事実に入らない。参照名・時刻・予算の使用量から作らない（S5）。(b) 読めない単位は値を写さず観測できずの事実にする。単位の欄が getter で例外を起こす・型が違う単位は読めない側（失敗側）。(c) 古さの判定 isObservationStale は、結びが文字列でない・欄が無い・観測が読めない・例外が起きる入力を古い側に倒し、一致と読み替えない。(d) 項目ごとの観測 digest は、その項目の事実だけから作り、別の項目の変化で変わらない。(e) 守りを 1 つ外す変異が試験で落ちる（PR 本文の一覧。typeof の検査を外す変異 1 件は、後ろの比較だけで同じ結果になる同値の変異として開示されている）。",
+      "basis": "functional-design の BR6.2・BR8.3、決定 116・120・122、engineering-standards S5・S8"
+    },
+    {
+      "id": "U2S3-04",
+      "criterion": "項目の状態（item-state）。(a) confirmed は閉じた形の有効な値だけを confirmedValue に持ち、開いた形は値を持たない。回答の欄は作らず、回答の部品を import しない。(b) 時刻の違う 2 出典の食い違い（sds_pin と workflow_caller）は conflict で全出典を示し、揃っていれば confirmed。(c) 読めない出典・道具の版が足りない項目は unobservable で、確定にならない。(d) 未知の項目は無視せず名前だけを unknownItemKeys に示し、項目は一覧の順で 1 つずつ。(e) 入力を書き換えず、同じ入力は同じ出力で、結果は凍結される。(f) 呼び出し workflow の fixture は F01 で厳しくなった実物の形（callerText）になっており、緩い形に戻していない。",
+      "basis": "functional-design の BR3、engineering-standards S3・S4・S5、project.md の学び（出典が requiredForConfirmed で明示されていない時は必須）"
+    },
+    {
+      "id": "U2S3-05",
+      "criterion": "試験・網羅率・公開の差分。(a) 依存を入れた環境でこの head の npm test が全部通る（作者の実測 1,462 件）。後の PR の部品・fixture を読んで通る試験が無く、skip も無い。(b) scripts/working-state/*.mjs の行の網羅率が 16 file 全部 100%（作者の実測）で、除外する行が無い。この PR の head 単独で測った値（PR 2 以降の分割の前提）。値は試験中の Node の lcov から読んだもの。(c) TDD の記録: この PR の部品のコードは #112 で Red → Green を経たもので、この PR で作り直していない。この PR で新しく書いた試験（observation-stale）と fixture の直しの Red/Green の扱いが、実際に流した命令・出力の SHA-256 つきで正直に書かれている（Red を取っていない手順は取っていないと書いてある）。(d) hygiene と knip の結果が実測で書かれ、未実施は未実施と書いてある。(e) 守る物（.github/**・必須の検査・.shirube/**・契約 .v2・DB・資格情報・本番・料金）に変更が無く、公開の差分に audit/・.aidlc-engine/・作業場の絶対 path・席や model の名前・秘密らしい値・他 repo の非公開の記録が無い。risk:R3 の label が 1 つ、json sds-pr が 1 ブロックで changed_paths が差分と一致する。Owner の対象 head の承認を取ったと読める記述が無い。分割の根拠の引用が公開の URL と本文 SHA-256 を伴う。",
+      "basis": "nfr-requirements の NFR1・NFR10、team.md Testing Posture、protected-surface-owner-gate R1・R2、project.md Forbidden、engineering-standards S5・S8"
+    }
+  ]
+}
