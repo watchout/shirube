@@ -10,7 +10,8 @@ import { valueFormOf } from "./value-exposure.mjs";
 
 const isObject = (value) => typeof value === "object" && value !== null;
 
-// 評価済みの項目（LC3 の項目状態）が回答と一致するか。比べられない・読めない入力は false（一致と読み替えない）。
+// 評価済みの項目（LC3 の項目状態）が回答と一致するか。読めない入力（answer・item が無い・object でない）は TypeError で、見える失敗（隠さない。一致とは読み替えない）。
+// 同じ形: answerStatusOf()（引数なし）・unitFits(entry, null)・itemObservationDigestOf("k", null)。例外を false にして隠すのは、下の closedMatches（外へ出る入口）だけ。
 export function closedMatchesItem(answer, item) {
   if (item.state === "missing") return answer.kind === "keep-absent";
   return item.state === "confirmed" && answer.kind === "value" && digestOf(item.confirmedValue) === answer.valueDigest;
