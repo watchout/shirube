@@ -1,12 +1,12 @@
 // U2 LC1 子 process の起動の条件 1・4・5・6 と子の止め方（SC1a・SC-GAP-1）。環境変数は 4 つだけ・shell を通さない・標準入力を閉じる・cwd は OS の根・
 // 自分の process group で起動し、枠（時間・出力）を超えたら孫を含めて group ごと止める。出力は読みながら数えて上限で打ち切る。止めたか確かめられなければ成功にしない。
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import fsPromises from "node:fs/promises";
 import path from "node:path";
 import test from "node:test";
 import * as ws from "../scripts/working-state/index.mjs";
-import { fsWith, inBox, isGone, marking, probe, profileOf, sampleEnv, spawnSpy } from "./working-state-probe-fixtures.mjs";
+import { SETTLED, fsWith, inBox, isGone, marking, probe, profileOf, sampleEnv, spawnSpy, windowAfterStart } from "./working-state-probe-fixtures.mjs";
 
 const cause = (fact) => ws.interpretProbe(fact);
 const pidOf = (b, name) => Number(readFileSync(b.flag(name), "utf8").trim());
@@ -20,8 +20,8 @@ function reap(pids) {
     }
   }
 }
-// 子の起動（sh の読み込み）が遅い手元でも、印を書く前に枠が来ないだけの枠。
-const SLOW_MS = 1000;
+// 枠（時間）の長さ。枠の時計は子が動き出した印の file ができてから数える（windowAfterStart）ので、起動が遅くても印の前に枠は来ない。
+const WINDOW_MS = 200;
 const limited =(over) => ({ loadProfile: async () => profileOf(over) });
 const OS_ROOT = path.parse(process.cwd()).root;
 
@@ -112,7 +112,7 @@ test("T2.2 出力の枠: 上限ちょうどは通る。上限を 1 バイト超�
     const fits = await probe("aidlc", b, limited({ maxBytesPerResponse: 10 }));
     assert.deepEqual([fits.launch, fits.output, fits.stop, fits.measured.bytesRead], ["ok", "123456789\n", null, 10]);
     b.exe(b.outside, "aidlc", 'echo "1234567890"');
-    const over = await probe("aidlc", b, limited({ maxBytesPerResponse: 10 }));
+    const over = await probe("aidlc", b, { ...limited({ maxBytesPerResponse: 10 }), settle: SETTLED });
     assert.deepEqual([over.stop, over.output, over.measured.bytesRead], [{ reason: "output_limit", confirmed: true }, undefined, 11]);
     assert.deepEqual(cause(over), { status: "unavailable", cause: "budget_exceeded" });
   });
@@ -121,7 +121,7 @@ test("T2.2 出力の枠: 上限ちょうどは通る。上限を 1 バイト超�
 test("T2.2 出力の枠: 出し続ける子は上限で打ち切り、子（group）ごと止める。数えるのは読みながら（読み終えを待たない）", async () => {
   await inBox(async (b) => {
     b.exe(b.outside, "aidlc", `echo $$ > "${b.flag("pid")}"\nwhile :; do echo xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx; done`);
-    const fact = await probe("aidlc", b, limited({ maxBytesPerResponse: 100 }));
+    const fact = await probe("aidlc", b, { ...limited({ maxBytesPerResponse: 100 }), settle: SETTLED });
     assert.deepEqual([fact.stop, fact.output, fact.measured.bytesRead], [{ reason: "output_limit", confirmed: true }, undefined, 101]);
     assert.equal(await isGone(pidOf(b, "pid")), true);
   });
@@ -130,7 +130,7 @@ test("T2.2 出力の枠: 出し続ける子は上限で打ち切り、子（grou
 test("T2.2 時間の枠: 応答しない子は枠で止め、timed_out（成功にしない）。止めたあとに子は生きていない", async () => {
   await inBox(async (b) => {
     b.exe(b.outside, "aidlc", `echo $$ > "${b.flag("pid")}"\nwhile :; do :; done`);
-    const fact = await probe("aidlc", b, limited({ timeoutMs: SLOW_MS }));
+    const fact = await probe("aidlc", b, { ...limited({ timeoutMs: WINDOW_MS }), setTimer: windowAfterStart(b.flag("pid")), settle: SETTLED });
     assert.deepEqual([fact.launch, fact.stop, fact.output, fact.exitCode], ["ok", { reason: "timeout", confirmed: true }, undefined, null]);
     assert.deepEqual(cause(fact), { status: "unavailable", cause: "timed_out" });
     assert.equal(await isGone(pidOf(b, "pid")), true);
@@ -140,7 +140,7 @@ test("T2.2 時間の枠: 応答しない子は枠で止め、timed_out（成功�
 test("T2.2 孫を作る子が枠を超えたら、孫も group ごと止まる（子だけを止めて孫を残さない）", async () => {
   await inBox(async (b) => {
     b.exe(b.outside, "aidlc", `( while :; do :; done ) &\necho $! > "${b.flag("grandchild")}"\necho $$ > "${b.flag("pid")}"\nwhile :; do :; done`);
-    const fact = await probe("aidlc", b, limited({ timeoutMs: SLOW_MS }));
+    const fact = await probe("aidlc", b, { ...limited({ timeoutMs: WINDOW_MS }), setTimer: windowAfterStart(b.flag("pid")), settle: SETTLED });
     assert.deepEqual(fact.stop, { reason: "timeout", confirmed: true });
     assert.deepEqual([await isGone(pidOf(b, "pid")), await isGone(pidOf(b, "grandchild"))], [true, true]);
   });
@@ -153,9 +153,10 @@ test("T2.2 止めたか確かめられない（group がまだ残る・止める
     const stubborn = (pid, signal) => { attempts.push(signal); if (signal === 0) return process.kill(-pid, 0); return undefined; };
     const failing = (pid, signal) => { if (signal === 0) return process.kill(-pid, 0); throw Object.assign(new Error("not permitted"), { code: "EPERM" }); };
     for (const killGroup of [stubborn, failing]) {
+      rmSync(b.flag("pid"), { force: true }); // 枠の時計は、この回の子が印を書いてから数える
       const spy = spawnSpy();
       try {
-        const fact = await probe("aidlc", b, { ...limited({ timeoutMs: SLOW_MS }), killGroup, spawn: spy.spawn });
+        const fact = await probe("aidlc", b, { ...limited({ timeoutMs: WINDOW_MS }), setTimer: windowAfterStart(b.flag("pid")), settle: { tries: 3, ms: 1 }, killGroup, spawn: spy.spawn });
         assert.deepEqual([fact.stop.reason, fact.stop.confirmed, fact.output], ["timeout", false, undefined]);
         assert.equal(cause(fact).status, "unavailable");
       } finally {

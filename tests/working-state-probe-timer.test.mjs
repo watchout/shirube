@@ -1,7 +1,7 @@
 // U2 LC1 子の止め方の部品の差し替え（S4。負荷で揺れる試験を、時計に頼らない形にするための入口）: 枠の時計（setTimer）と、止めた後に消えるのを待つ回数・間隔（settle）は、
 // 呼出側（試験）が渡せる。渡さない時は本物の setTimeout と今の定数（20 回・10ms）のまま、挙動は変わらない。
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
 import test from "node:test";
 import { inBox, probe, profileOf, spawnSpy } from "./working-state-probe-fixtures.mjs";
 
@@ -78,7 +78,7 @@ test("T2.2 止めた後の待ちの差し替え: settle = { tries, ms } の回�
         reap(spy.pids);
         await new Promise((resolve) => setTimeout(resolve, 30));
       }
-      await import("node:fs").then(({ rmSync }) => rmSync(b.flag("pid"), { force: true }));
+      rmSync(b.flag("pid"), { force: true });
     }
   });
 });

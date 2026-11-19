@@ -85,6 +85,22 @@ export function spawnSpy() {
 
 export const fsWith = (over) => ({ ...fsPromises, ...over });
 
+// 枠の時計を「子が動き出した印の file ができてから」数え始める形にする（負荷で子の起動が遅れても、動き出す前に枠が来ない。S4）。
+// 戻り値は runChild の setTimer の形（枠の関数と ms を受け、取り消す関数を返す）。印の file ができなければ、枠は来ない（試験が失敗側で終わる）。
+export const windowAfterStart = (file) => (fn, ms) => {
+  const state = { cancelled: false, timer: null };
+  (async () => {
+    for (let tries = 0; tries < 6000 && !state.cancelled && !existsSync(file); tries += 1) await new Promise((resolve) => setTimeout(resolve, 5));
+    if (!state.cancelled && existsSync(file)) state.timer = setTimeout(fn, ms);
+  })();
+  return () => {
+    state.cancelled = true;
+    clearTimeout(state.timer);
+  };
+};
+// 止めた後に消えたかを確かめる回数・間隔（既定の 20 回・10ms の 50 倍の余裕）。負荷で消えるのが遅れても、成功にしない側へ倒れない。
+export const SETTLED = Object.freeze({ tries: 1000, ms: 10 });
+
 // 子 process が終わっている（生きていない）ことを、短く待って確かめる。
 export async function isGone(pid) {
   for (let tries = 0; tries < 100; tries += 1) {
