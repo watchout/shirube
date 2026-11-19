@@ -77,6 +77,8 @@ export async function resolveFile({ root, locator }, depsIn) {
     try {
       const realPath = await deps.fs.realpath(absolute);
       const stat = await deps.fs.stat(realPath, { bigint: true });
+      // 普通の file でない実体（FIFO・dir など）は開かない。書き手のいない FIFO の open は戻らず、時間の枠が効かない。観測できず（S5）。
+      if (!stat.isFile()) return { resolution: "failed", rootRealPath };
       return { resolution: "resolved", realPath, rootRealPath, fileId: idOf(stat) };
     } catch (error) {
       return { ...(await unresolvedFacts(deps, error, absolute, rootRealPath)), rootRealPath };
