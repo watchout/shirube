@@ -1,13 +1,15 @@
 // 呼び出し workflow の text を、構造を読むために 1 行ずつに分け、1 行の形を分類する部品（LC2 の内側の純粋な関数）。
-// 読むのは固定した小さな形だけ（block 形の key: value と - の列）。決められない形（block scalar・flow の複数行・anchor・alias・tag・
-// 引用符の閉じない文字列・複雑な key）は null を返し、呼び出し側が malformed（観測できず側）にする。YAML の外部 library は使わない。
+// 読むのは固定した小さな形だけ（block 形の key: value と - の列、同じ行で閉じる引用符の文字列、同じ行で閉じる [ ] の列と空の {}）。
+// 決められない形（block scalar・flow の複数行・括弧の種類の取り違え・{ } の中身・anchor・alias・tag・引用符の閉じない文字列・
+// 複雑な key・値の中の `: `・値の先頭の `- `）は null を返し、呼び出し側が malformed（観測できず側）にする。YAML の外部 library は使わない。
 // 時刻・乱数・環境変数・file・子 process・network を使わない（S4）。
 
 const MARKER_RE = /^(?:---|\.\.\.)(?:\s|$)/u;
 const SEPARATOR_RE = /:(?:\s|$)/u;
-const BAD_START = new Set([..."&*!|>{}[]%@`?"]);
-const FLOW_OPEN = new Set(["[", "{"]);
-const FLOW_CLOSE = new Set(["]", "}"]);
+const BAD_START = new Set([..."&*!|>{}[]%@`?,"]);
+const FLOW_MAX_DEPTH = 8; // [ ] の入れ子の深さの上限（実装で決めた数値。超えれば決められない形）。
+// flow の列の plain な要素: 先頭は記号でなく、中に [ ] { } , を含まない。
+const FLOW_PLAIN_RE = /^[^\s[\]{},:#&*!|>%@`'"?-][^[\]{},]*/u;
 const CLOSED = Object.freeze({ kind: "closed", value: "" });
 const EMPTY = Object.freeze({ kind: "empty", value: "" });
 
@@ -32,35 +34,61 @@ function quotedEnd(text) {
   return -1;
 }
 
-// 先頭が [ か { の flow が同じ行で閉じる位置（次の位置）。閉じなければ -1。
-function flowEnd(text) {
-  let depth = 0;
-  for (let i = 0; i < text.length; i += 1) {
-    const char = text[i];
-    if (char === '"' || char === "'") {
-      const end = quotedEnd(text.slice(i));
-      if (end < 0) return -1;
-      i += end - 1;
-    } else if (FLOW_OPEN.has(char)) depth += 1;
-    else if (FLOW_CLOSE.has(char)) {
-      depth -= 1;
-      if (depth <= 0) return depth === 0 ? i + 1 : -1;
-    }
+const skipSpaces = (text, from) => {
+  let i = from;
+  while (text[i] === " ") i += 1;
+  return i;
+};
+
+// flow の列の要素 1 つの終わり（次の位置）。入れ子の列・引用符の文字・plain な文字だけ。決められなければ -1。
+function flowItemEnd(text, start, depth) {
+  const char = text[start];
+  if (char === "[") return flowSeqEnd(text, start, depth + 1);
+  if (char === '"' || char === "'") {
+    const end = quotedEnd(text.slice(start));
+    return end < 0 ? -1 : start + end;
   }
-  return -1;
+  const match = FLOW_PLAIN_RE.exec(text.slice(start));
+  if (match === null) return -1;
+  const word = match[0].trimEnd();
+  return SEPARATOR_RE.test(word) || /\s#/u.test(word) ? -1 : start + word.length;
 }
+
+// text[start] が [ の列の終わり（次の位置）。要素は , で区切り、空の要素・閉じない・括弧の種類の取り違えは -1。
+function flowSeqEnd(text, start, depth) {
+  if (depth > FLOW_MAX_DEPTH) return -1;
+  let i = skipSpaces(text, start + 1);
+  if (text[i] === "]") return i + 1;
+  for (;;) {
+    const end = flowItemEnd(text, i, depth);
+    if (end < 0) return -1;
+    i = skipSpaces(text, end);
+    if (text[i] === "]") return i + 1;
+    if (text[i] !== ",") return -1;
+    i = skipSpaces(text, i + 1);
+  }
+}
+
+// 先頭が flow（[ ] の列か空の {}）で、同じ行で正しく閉じる位置（次の位置）。{ } の中身は読まない。閉じなければ -1。
+const flowEnd = (text) => (text.startsWith("{}") ? 2 : text[0] === "[" ? flowSeqEnd(text, 0, 1) : -1);
 
 const closedUntil = (text, end) => (end >= 0 && endsClean(text.slice(end)) ? CLOSED : null);
 
-// key の後ろ（または列の項目の中身）の値の形: empty（子が続きうる）| closed（同じ行で閉じた引用符・flow）| plain（行末の comment を除いた文字）。決められなければ null。
+// 引用符・flow で始まらない値の形: plain（行末の comment を除いた文字）| 決められない形（記号で始まる・先頭の `- `・中に `: `）は null。
+function classifyPlain(text) {
+  if (BAD_START.has(text[0]) || text === "-" || text.startsWith("- ")) return null;
+  const value = text.replace(/\s+#.*$/u, "").trimEnd();
+  return SEPARATOR_RE.test(value) ? null : { kind: "plain", value };
+}
+
+// key の後ろ（または列の項目の中身）の値の形: empty（子が続きうる）| closed（同じ行で閉じた引用符・flow）| plain。決められなければ null。
 function classifyValue(raw) {
   const text = raw.trimStart();
   if (text === "" || text.startsWith("#")) return EMPTY;
   const first = text[0];
   if (first === '"' || first === "'") return closedUntil(text, quotedEnd(text));
-  if (FLOW_OPEN.has(first)) return closedUntil(text, flowEnd(text));
-  if (BAD_START.has(first)) return null;
-  return { kind: "plain", value: text.replace(/\s+#.*$/u, "").trimEnd() };
+  if (first === "[" || first === "{") return closedUntil(text, flowEnd(text));
+  return classifyPlain(text);
 }
 
 // 先頭の "- " を全部外す。外した幅も返す（列の項目の中の key の列の位置）。
@@ -95,15 +123,33 @@ export function classifyBody(body) {
   return shape === null ? null : { item: offset > 0, offset, ...shape };
 }
 
-// 1 行を { indent, body } か、飛ばす行（空行・comment の行）か、null（tab の字下げ・制御文字）にする。
+// 1 行を { indent, body } か、飛ばす行（"blank" = 空行・"comment" = comment の行）か、null（tab の字下げ・制御文字）にする。
 function splitLine(raw) {
   const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
   if (hasControlChar(line.replaceAll("\t", " "))) return null;
   const body = line.replace(/^ +/u, "");
   const indent = line.length - body.length;
   if (body.startsWith("\t")) return null;
-  return body.trim() === "" || body.startsWith("#") ? "skip" : { indent, body };
+  if (body.trim() === "") return "blank";
+  return body.startsWith("#") ? "comment" : { indent, body };
 }
+
+// 内容のある行に、直前に comment の行があったか（afterComment）を付ける。comment の行は plain な値の続きを終わらせる。
+function annotate(split) {
+  const lines = [];
+  let afterComment = false;
+  for (const entry of split) {
+    if (entry === "comment") afterComment = true;
+    else if (entry !== "blank") {
+      lines.push({ ...entry, afterComment });
+      afterComment = false;
+    }
+  }
+  return lines;
+}
+
+// plain な値の続き行として読める中身か（`: `・行末の comment・列の項目の `- ` を含まない）。決められなければ false。
+export const isPlainContinuation = (body) => !SEPARATOR_RE.test(body) && !/\s#/u.test(body) && body !== "-" && !body.startsWith("- ");
 
 // 先頭の --- 1 つだけを許し、2 つ目以降の document・directive は読まない。
 function dropFirstMarker(lines) {
@@ -118,6 +164,6 @@ export function readContentLines(text) {
   if (typeof text !== "string") return null;
   const split = text.split("\n").map(splitLine);
   if (split.includes(null)) return null;
-  const lines = dropFirstMarker(split.filter((line) => line !== "skip"));
+  const lines = dropFirstMarker(annotate(split));
   return lines.some(isForbiddenTopLine) ? null : lines;
 }

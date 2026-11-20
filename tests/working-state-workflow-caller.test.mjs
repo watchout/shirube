@@ -105,7 +105,8 @@ test("F01- 重複・字下げの不一致・列の位置の不正は malformed�
   assert.deepEqual(read(`${job(uses(OID_A))}\n  gate:\n${uses(OID_A)}`), MALFORMED);
   assert.deepEqual(read(`${job(uses(OID_A))}\njobs:\n  other:\n    runs-on: x`), MALFORMED);
   assert.deepEqual(read(job(uses(OID_A), `   runs-on: x`)), MALFORMED);
-  assert.deepEqual(read(job("    steps:", "    - uses: actions/checkout@" + OID_B)), MALFORMED);
+  assert.deepEqual(read(job("    steps:", "    - uses: actions/checkout@" + OID_B)), ABSENT); // steps の列を key と同じ字下げに置くのは正しい YAML（呼び出しは無い）
+  assert.deepEqual(read(job(uses(OID_A), "    steps:", "    - run: echo hi")), MALFORMED);
   assert.deepEqual(read(`jobs:\n  - gate\n`), MALFORMED);
   assert.deepEqual(read(` name: x\n${job(uses(OID_A))}`), MALFORMED);
   assert.deepEqual(read(`- a\n- b`), MALFORMED);
