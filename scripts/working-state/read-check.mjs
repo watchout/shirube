@@ -29,18 +29,20 @@ const COMPANION_RE = /(?:^|\/)(?:\.DS_Store|\._[^/]*|Thumbs\.db|desktop\.ini|\.#
 
 const isRelativeInside = (locator) => typeof locator === "string" && locator !== "" && !locator.startsWith("/") && !locator.split("/").includes("..");
 
-// 実体の path が根の下の 1 つの実体か（根そのもの・根の外・根の名前を前に持つ別の名前は外）。両方とも絶対の path であること。
-function isUnderRoot(realPath, root) {
+// 実体の path が根の下か（両方とも絶対の path であること。根の名前を前に持つ別の名前は外）。atRoot = 根そのものを内とするか。
+function isInsideRoot(realPath, root, atRoot) {
   if (typeof realPath !== "string" || typeof root !== "string" || !path.posix.isAbsolute(realPath) || !path.posix.isAbsolute(root)) return false;
   const relative = path.posix.relative(root, realPath);
-  return relative !== "" && relative !== ".." && !relative.startsWith("../") && !path.posix.isAbsolute(relative);
+  if (relative === "") return atRoot;
+  return relative !== ".." && !relative.startsWith("../") && !path.posix.isAbsolute(relative);
 }
 
-// 根の内外（BR1.5）。実体の確認は、読めた時（access = ok）だけ要る。循環・同じ実体でない・確認できないは外。
+// 根の内外（BR1.5）。読めた時は実体が根の下の同じ実体であること。無かった時は、いちばん近い存在する祖先（symlink を解決した後）が根の中か根そのものであること（根の外へ向く symlink の先の「無い」を内の未導入にしない）。
 function boundaryCause(read) {
   if (!isRelativeInside(read.locator) || COMPANION_RE.test(read.locator) || read.resolution === "loop") return "out_of_boundary";
+  if (read.access === "absent") return read.parentReadable === true && !isInsideRoot(read.parentRealPath, read.rootRealPath, true) ? "out_of_boundary" : null;
   if (read.access !== "ok") return null;
-  const inside = read.resolution === "resolved" && read.identity === "same" && isUnderRoot(read.realPath, read.rootRealPath);
+  const inside = read.resolution === "resolved" && read.identity === "same" && isInsideRoot(read.realPath, read.rootRealPath, false);
   return inside ? null : "out_of_boundary";
 }
 

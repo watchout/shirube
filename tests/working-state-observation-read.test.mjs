@@ -125,7 +125,7 @@ test("T1.6+ 前後の digest が違う・digest が無い・読んだ中身が�
 });
 
 test("T2.1+ 未導入の確定は親が読めて無いと分かる時だけ: absent は presence = absent（値を持たない）", () => {
-  const result = observe({ reads: swap(fileRead("sds_pin", undefined, { access: "absent", parentReadable: true })) });
+  const result = observe({ reads: swap(fileRead("sds_pin", undefined, { access: "absent", parentReadable: true, parentRealPath: ROOT })) });
   for (const key of pinItems) {
     const item = unit(result, key, "sds_pin");
     assert.deepEqual([availabilityOf(item), item.presence, item.targetMatch], ["observed", "absent", "matches"], key);
@@ -137,7 +137,7 @@ test("T2.1- 404 だけ（親が確認できない）・権限拒否・取得失�
   const absent = (over) => pinResult({ access: "absent", content: undefined, digestBefore: undefined, digestAfter: undefined, ...over });
   assertPin(absent({ parentReadable: false }), "not_found_unconfirmed");
   assertPin(absent({ parentReadable: undefined }), "not_found_unconfirmed");
-  assertPin(absent({ parentReadable: "yes" }), "not_found_unconfirmed");
+  assertPin(absent({ parentReadable: "yes", parentRealPath: ROOT }), "not_found_unconfirmed");
   assertPin(pinResult({ access: "denied", parentReadable: true }), "permission_denied");
   assertPin(pinResult({ access: "unknown" }), "fetch_failed");
   assertPin(pinResult({ access: undefined }), "fetch_failed");

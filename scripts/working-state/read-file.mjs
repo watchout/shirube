@@ -44,15 +44,18 @@ export async function readProfile(deps) {
 
 const idOf = (stat) => `${stat.dev}:${stat.ino}`;
 
-// 根の下で、いちばん近い存在する祖先を読めるか（親が読めて無いと分かるための事実）。
-async function parentReadable(deps, absolute, root) {
+// いちばん近い存在する祖先の実 path と、読めるか（親が読めて無いと分かるための事実）。実 path は symlink を解決した後の実体で、根の内外の判定（LC2）に渡す。
+// つながっていない symlink の祖先は存在する名前（lstat はできる）なので、その先を見ずに「読めない」にする。
+async function nearestParent(deps, absolute, root) {
   let directory = path.dirname(absolute);
   for (;;) {
     try {
-      await deps.fs.access(directory, constants.R_OK | constants.X_OK);
-      return true;
+      const real = await deps.fs.realpath(directory);
+      await deps.fs.access(real, constants.R_OK | constants.X_OK);
+      return { parentReadable: true, parentRealPath: real };
     } catch (error) {
-      if (error?.code !== "ENOENT" || directory === root || directory === path.dirname(directory)) return false;
+      const climb = error?.code === "ENOENT" && directory !== root && directory !== path.dirname(directory) && !(await deps.fs.lstat(directory).then(() => true, () => false));
+      if (!climb) return { parentReadable: false };
     }
     directory = path.dirname(directory);
   }
@@ -64,7 +67,7 @@ async function unresolvedFacts(deps, error, absolute, root) {
   if (DENIED.has(error?.code)) return { resolution: "denied" };
   if (error?.code !== "ENOENT") return { resolution: "failed" };
   const dangling = await deps.fs.lstat(absolute).then(() => true, () => false);
-  return dangling ? { resolution: "failed" } : { resolution: "absent", parentReadable: await parentReadable(deps, absolute, root) };
+  return dangling ? { resolution: "failed" } : { resolution: "absent", ...(await nearestParent(deps, absolute, root)) };
 }
 
 // 第 1 段: 実体の解決。実 path・同一性（fileId）・根との位置関係の事実だけを返す。file は開かない。
@@ -140,11 +143,12 @@ async function closeQuietly(handle) {
 
 async function readEntity(resolved, limits, deps) {
   if (resolved?.resolution !== "resolved") {
-    return { identity: "not_checked", access: ACCESS_OF_RESOLUTION.get(resolved?.resolution) ?? "failed", parentReadable: resolved?.parentReadable, bytesRead: 0, requests: 0 };
+    return { identity: "not_checked", access: ACCESS_OF_RESOLUTION.get(resolved?.resolution) ?? "failed", parentReadable: resolved?.parentReadable, parentRealPath: resolved?.parentRealPath, bytesRead: 0, requests: 0 };
   }
   let handle = null;
   try {
-    handle = await deps.fs.open(resolved.realPath, constants.O_RDONLY | constants.O_NOFOLLOW);
+    // O_NONBLOCK: 判定の後に FIFO へ差し替えられても、書き手を待たずに開けて（fstat の普通の file の確認で読まずに止まる）、時間の枠が効く。
+    handle = await deps.fs.open(resolved.realPath, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
     return await readOpened(handle, resolved, limits);
   } catch (error) {
     return failedEntity(error);

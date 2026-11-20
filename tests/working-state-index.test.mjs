@@ -8,8 +8,8 @@ import * as ws from "../scripts/working-state/index.mjs";
 const DIR = new URL("../scripts/working-state/", import.meta.url);
 const LC1_FILES = new Set(["read-file.mjs", "probe-path.mjs", "probe-run.mjs", "probe-tool.mjs"]);
 // 内側の部品: observation.mjs の中だけで使う observation-fields（外から呼ぶ入口は observeAll）と、source-extract の中だけで使う
-// 呼び出し workflow の取り出し（workflow-caller・workflow-lines。外から呼ぶ入口は parseSourceContent・pickItem）。公開の記号ではない。
-const INTERNAL_FILES = new Set(["observation-fields.mjs", "workflow-caller.mjs", "workflow-lines.mjs"]);
+// 呼び出し workflow の取り出し（workflow-caller・workflow-lines・workflow-tree。外から呼ぶ入口は parseSourceContent・pickItem）。公開の記号ではない。
+const INTERNAL_FILES = new Set(["observation-fields.mjs", "workflow-caller.mjs", "workflow-lines.mjs", "workflow-tree.mjs"]);
 const LC1_PUBLIC = ["CHUNK_BYTES", "loadBudgetProfile", "probeToolFact", "readFileFact", "readResolvedFile", "resolveFile"];
 const LC1_INTERNAL = ["REAL_CLOCK", "identityOf", "killGroupOf", "locateTool", "readProfile", "runChild"];
 
@@ -19,7 +19,7 @@ test("T11.1 核・LC6 の file が export する記号は、全部、集約 file
   const names = readdirSync(DIR).filter((name) => name !== "index.mjs" && !LC1_FILES.has(name) && !INTERNAL_FILES.has(name));
   assert.equal(names.length > 0, true);
   assert.equal("interpretItem" in ws, false);
-  for (const symbol of ["readCallerRefs", "readContentLines", "classifyBody"]) assert.equal(symbol in ws, false, symbol);
+  for (const symbol of ["readCallerRefs", "readContentLines", "classifyBody", "readWorkflowTree"]) assert.equal(symbol in ws, false, symbol);
   for (const name of names) {
     const module = await import(new URL(name, DIR));
     for (const [symbol, value] of Object.entries(module)) assert.equal(ws[symbol], value, `${name}:${symbol}`);
