@@ -5,6 +5,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import * as ws from "../scripts/working-state/index.mjs";
+import { readContentLines } from "../scripts/working-state/workflow-lines.mjs";
 
 const OID = "0123456789abcdef".repeat(2) + "01234567";
 const NAME = "watchout/shirube/.github/workflows/sds-gate.yml";
@@ -46,6 +47,9 @@ const SHAPES = [
   ["flow-mismatched-closer", wf(["on: [workflow_dispatch}"]), "no"],
   ["flow-mismatched-opener", wf(["on: {workflow_dispatch]"]), "no"],
   ["flow-unclosed", wf(["on: [a, b"]), "no"],
+  ["flow-closer-inside-then-more", wf(["on: [a}, b]"]), "no"],
+  ["flow-missing-comma", wf(["on: [a [b]]"]), "no"],
+  ["flow-quoted-without-comma", wf(['on: ["a" "b"]']), "no"],
   ["flow-multiline", wf(["on: [a,", "  b]"]), "no"],
   ["flow-empty-element", wf(["on: [a,, b]"]), "no"],
   ["flow-trailing-garbage", wf(["on: [a] b"]), "no"],
@@ -80,6 +84,14 @@ const SHAPES = [
   ["unclosed-quote", wf(['name: "a']), "no"],
   ["quote-then-garbage", wf(['name: "a" b']), "no"],
   ["nested-sequence-item", wf(["name: a"], "    needs:", "      - - a"), "no"],
+  ["nested-sequence-item-key", wf(["name: a"], "    needs:", "      - - k: v"), "no"],
+  ["item-misaligned-after-block", wf(["name: a"], "    needs:", "      -", "          k: 1", "        - b"), "no"],
+  ["key-anchor", wf(["&a k: v"]), "no"],
+  ["key-tag", wf(["!!str k: v"]), "no"],
+  ["key-flow", wf(["[a]: v"]), "no"],
+  ["key-alias", wf(["*a : v"]), "no"],
+  ["key-empty", wf([": v"]), "no"],
+  ["key-with-comment", wf(["a #c: v"]), "no"],
   ["scalar-block-under-key", wf(["name: a"], "    needs:", "      text"), "no"],
   ["scalar-root", "just text", "no"],
   ["sequence-root", "- a\n- b", "no"],
@@ -106,4 +118,11 @@ test("YAML の形の表: 受ける形は rejected の形と 1 つの違い（重
   assert.deepEqual(read(wf(["on: [a, b}"])), MALFORMED);
   assert.deepEqual(read(wf(["name: a", "name: a"])), MALFORMED);
   assert.equal(SHAPES.filter(([, , expect]) => expect === "no").length > SHAPES.filter(([, , expect]) => expect === "ok").length, true);
+});
+
+test("行の読み: tab の字下げ・制御文字・文字でない入力は、行の列にせず null（観測できず側）にする", () => {
+  assert.equal(readContentLines("a: 1\n\tb: 2"), null);
+  assert.equal(readContentLines("a: 1\n  b\u0001: 2"), null);
+  assert.equal(readContentLines(undefined), null);
+  assert.deepEqual(readContentLines("a: 1\n\n# c\nb: 2").map((line) => line.body), ["a: 1", "b: 2"]);
 });

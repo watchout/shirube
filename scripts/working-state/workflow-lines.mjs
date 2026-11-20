@@ -91,22 +91,10 @@ function classifyValue(raw) {
   return classifyPlain(text);
 }
 
-// 先頭の "- " を全部外す。外した幅も返す（列の項目の中の key の列の位置）。
-function stripItems(body) {
-  let rest = body;
-  let offset = 0;
-  while (rest === "-" || rest.startsWith("- ")) {
-    const next = rest.slice(1).trimStart();
-    offset += rest.length - next.length;
-    rest = next;
-  }
-  return { rest, offset };
-}
-
 const withKey = (key, value) => (value === null ? null : { key, ...value });
 
-// "- " を外した後の中身の分類。key が無ければ文字だけの行・項目。
-function classifyRest(rest) {
+// 1 行（字下げを除いた中身。列の項目の `- ` は呼び出し側が外す）の分類: { key, kind, value } | null（決められない形）。key が無ければ文字だけの行・項目。
+export function classifyBody(rest) {
   if (rest === "") return { key: null, ...EMPTY };
   if (rest[0] === '"' || rest[0] === "'") return withKey(null, closedUntil(rest, quotedEnd(rest)));
   const separator = SEPARATOR_RE.exec(rest);
@@ -114,13 +102,6 @@ function classifyRest(rest) {
   const key = rest.slice(0, separator.index).trimEnd();
   const keyOk = key !== "" && !BAD_START.has(key[0]) && !/\s#/u.test(key);
   return keyOk ? withKey(key, classifyValue(rest.slice(separator.index + 1))) : null;
-}
-
-// 1 行（字下げを除いた中身）の分類: { item, offset, key, kind, value } | null（決められない形）。
-export function classifyBody(body) {
-  const { rest, offset } = stripItems(body);
-  const shape = classifyRest(rest);
-  return shape === null ? null : { item: offset > 0, offset, ...shape };
 }
 
 // 1 行を { indent, body } か、飛ばす行（"blank" = 空行・"comment" = comment の行）か、null（tab の字下げ・制御文字）にする。

@@ -7,9 +7,9 @@ import { classifyBody, isPlainContinuation, readContentLines } from "./workflow-
 const MAX_DEPTH = 64; // block の入れ子の深さの上限（実装で決めた数値。再帰が尽きる前に決められない形として止める）。
 const NULL_NODE = Object.freeze({ type: "null" });
 
-class Undecidable extends Error {}
+// 決められない形は例外で外へ出し、readWorkflowTree が null（失敗側）にする。
 const reject = () => {
-  throw new Undecidable("undecidable");
+  throw new Error("undecidable");
 };
 
 const isItem = (body) => body === "-" || body.startsWith("- ");
@@ -53,11 +53,10 @@ function parseMapping(cur, indent) {
   return { type: "map", entries };
 }
 
-// 列の項目 1 つ。`- ` の後ろが key なら、その字下げの位置の map、文字だけなら 1 行の文字、空なら子の block。nested の `- - ` は読まない。
+// 列の項目 1 つ。`- ` の後ろが key なら、その字下げの位置の map、文字だけなら 1 行の文字、空なら子の block。nested の `- - ` は、中身が列の項目の行・`-` だけの行として決められず拒まれる。
 function parseItem(cur, indent) {
   const rest = peek(cur).body.slice(1);
   const body = rest.trimStart();
-  if (isItem(body)) reject();
   cur.pos += 1;
   if (body === "") return peek(cur) !== undefined && peek(cur).indent > indent ? parseBlock(cur, peek(cur).indent) : NULL_NODE;
   const inner = indent + 1 + rest.length - body.length;
@@ -97,10 +96,8 @@ export function readWorkflowTree(text) {
   const cur = { lines: [...lines], pos: 0, depth: 0 };
   try {
     if (cur.lines[0].indent !== 0 || isItem(cur.lines[0].body)) reject();
-    const root = parseBlock(cur, 0);
-    return cur.pos === cur.lines.length ? root : null;
-  } catch (error) {
-    if (error instanceof Undecidable) return null;
-    throw error;
+    return parseBlock(cur, 0); // root の map は字下げ 0 以上の行を最後まで読むので、読み残しは出ない（出れば reject が先に働く）。
+  } catch {
+    return null; // 決められない形だけでなく、想定外の失敗も観測できず側（成功に読み替えない）。
   }
 }
