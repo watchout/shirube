@@ -10,7 +10,7 @@ This page is the one place where this repository declares what the hygiene check
   `gitleaks:allow` in the guard's code, tests and docs hides no finding (gitleaks reports none under
   `--ignore-gitleaks-allow`), so no exception is needed; an exception is required only when a real finding is suppressed.
 - large files: `package-lock.json` (lockfile, built-in exemption) and one U2 record, `aidlc/spaces/default/intents/261105-shirube-lifecycle-qualit/construction/u2-working-state-dialogue/code-generation/code-summary.md` (578,202 bytes when this was written; the AI-DLC code-summary of unit u2-working-state-dialogue, a record that is read as one file; Owner decision 140, https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-7001875259). Nothing else is allowed over 100KB.
-- pr size: `pr_added_lines` is raised from 10000 to 11500 for U2 PR #112 only (expected about 11,100 added lines of product code and tests; Owner decision 128 allows that PR over the 2,000-line cap; Owner decision 140, https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-7001875259). It goes back to 10000 in the next change after #112 is merged.
+- pr size: `pr_added_lines` is back at 10000 (it was 11500 only for the closed U2 PR #112; Owner decision 140, https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-7001875259, item 4). #112 was closed unmerged when U2 development paused (Owner decision https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-7026768954).
 - mode: blocking from the first PR (this repository has no report-only period).
 - limits that are internal budgets, not upstream recommendations: new file 300 lines, function 50 lines, complexity 10. The PR (+10,000 lines / 200 files) and own-code (20,000 lines) values are not budgets: they only stop a change that took in a large number of files by mistake (the PR-size and own-code budgets were retired, iyasaka-arc#49 comment 6646126384, item 6).
 - own-code budget: raised once, from 2,300 to 4,000 lines, for the whole of the first complete version (S1). Basis, the S1-wide estimate (PR #66 comment 6378598176): 1,938 in use + 1,200–1,900 added by U1–U5 (U1 570–760, U2–U5 630–1,140; U6 and U7 live in other repositories, 0 here) = 3,138–3,838 at the end, about 160 lines of margin. The Owner set the value (iyasaka-arc#49 6379138360, under 6357471211 item 2); work that would pass a Unit's upper estimate stops and goes back to arc. No other limit is loosened in the same change. Size counts leave out AI-DLC records (`aidlc/` Markdown, JSON and text) and Markdown under `docs/` (iyasaka-arc#49 6354019047): records, not code. The budget was retired in iyasaka-arc#49 comment 6646126384, item 6; the present 20000 is a stop for mistaken bulk, not a budget.
@@ -33,7 +33,7 @@ This page is the one place where this repository declares what the hygiene check
   ],
   "limits": {
     "new_file_lines": 300,
-    "pr_added_lines": 11500,
+    "pr_added_lines": 10000,
     "pr_changed_files": 200,
     "large_file_bytes": 102400,
     "baseline_max_entries": 0,
