@@ -92,11 +92,11 @@ test("T3.2+ 値の比べは項目の normalization の規則（大文字の comm
 
 test("T3.2o 開いた形の食い違いは matchGroup の違いだけを根拠にし、値・digest・表示値を示さない。選ばせず fix-source の対象（candidates は出典・presence・lengthBucket・matchGroup だけ）", () => {
   const entry = ws.findItem("protected_paths");
-  const open = (group) => mk("protected_paths", "sds_pin", `.shirube/p${group}.json`, { targetMatch: "matches", presence: "value", lengthBucket: "short", matchGroup: group });
-  const same = ws.evaluateItem({ ...entry, sources: [{ kind: "sds_pin", requiredForConfirmed: true, targetBinding: "by-location" }] }, [open(1), open(1)]);
+  const open = (group, at) => mk("protected_paths", "sds_pin", `.shirube/p${at}.json`, { targetMatch: "matches", presence: "value", lengthBucket: "short", matchGroup: group });
+  const same = ws.evaluateItem({ ...entry, sources: [{ kind: "sds_pin", requiredForConfirmed: true, targetBinding: "by-location" }] }, [open(1, 1), open(1, 2)]);
   assert.equal(same.state, "confirmed");
   assert.equal("confirmedValue" in same, false);
-  const differ = ws.evaluateItem({ ...entry, sources: [{ kind: "sds_pin", requiredForConfirmed: true, targetBinding: "by-location" }] }, [open(1), open(2)]);
+  const differ = ws.evaluateItem({ ...entry, sources: [{ kind: "sds_pin", requiredForConfirmed: true, targetBinding: "by-location" }] }, [open(1, 1), open(2, 2)]);
   assert.equal(differ.state, "conflict");
   assert.deepEqual(differ.candidates.map((c) => [c.presence, c.lengthBucket, c.matchGroup]), [["value", "short", 1], ["value", "short", 2]]);
   for (const key of ["valueDigest", "displayValue", "value"]) assert.equal(differ.candidates.some((c) => key in c), false, key);
