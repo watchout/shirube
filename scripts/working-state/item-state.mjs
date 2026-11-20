@@ -4,7 +4,7 @@
 // 不正・秘密らしい観測値の出典は、項目・出典・固定の分類だけ。時刻・乱数・環境変数・file を使わない（S4）。
 import { deepFreeze } from "./canonical.mjs";
 import { isReadableCatalogItem, isRequiredSource, positionKeyOf } from "./catalog.mjs";
-import { readableUnitsOf, unitFits } from "./observed-unit.mjs";
+import { readableUnitsOf, sharesOneTarget, unitFits } from "./observed-unit.mjs";
 import { valueFormOf } from "./value-exposure.mjs";
 
 const unitKey = (unit) => `${unit.sourceRef.sourceKind}\u0000${unit.sourceRef.locator}`;
@@ -76,8 +76,12 @@ const causeOf = (result) => result.unit?.unobservableCause ?? (result.unit === n
 // 読めない項目の代わり（観測できず・malformed）。項目名は項目一覧の中の位置の印（項目名の形に当たらない catalog-position-N）で、入力を写さない。
 const unreadableItem = (position) => ({ itemKey: positionKeyOf(position), state: "unobservable", unobservableCauses: ["malformed"], observationRefs: [] });
 
+// 単位が複数の対象にまたがる評価は、どの項目も確認しない（観測できず・malformed。別の対象の出典を必須の証拠にしない）。
+const mixedItem = (entry) => ({ itemKey: entry.itemKey, state: "unobservable", unobservableCauses: ["malformed"], observationRefs: [] });
+
 function stateOfItem(entry, units, position) {
   if (!isReadableCatalogItem(entry)) return deepFreeze(unreadableItem(position));
+  if (!sharesOneTarget(units)) return deepFreeze(mixedItem(entry));
   const { known, results } = resultsOf(entry, units);
   const form = valueFormOf(entry.valueType);
   const groups = groupsOf(results);

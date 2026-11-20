@@ -218,12 +218,12 @@ rules:
     applies_to: [Answer, GuidanceMessage, ObservedItem, DraftItem]
     trigger: answer-received | value-observed
     logic: >
-      秘密らしさの判定の最小の集合（どれか 1 つに当たれば秘密らしい）: (a) 秘密鍵・証明書の見出し行（`-----BEGIN ... PRIVATE KEY-----` の形）、(b) 既知の token の接頭辞（`ghp_`・`gho_`・`ghu_`・`ghs_`・`ghr_`・`github_pat_`・`AKIA`・`sk-`・`xoxb-`・`xoxp-`）で始まる語、(c) `Bearer ` に続く長い語、(d) 3 つの部分を `.` でつないだ JWT の形、(e) 空白を含まない 20 文字以上の英数字・記号（`+/_-=`）の連なりで、その項目の許される形式（valueType・normalization）に当たらないもの。
+      秘密らしさの判定の最小の集合（どれか 1 つに当たれば秘密らしい）: (a) 秘密鍵・証明書の見出し行（`-----BEGIN ... PRIVATE KEY-----` の形）、(b) 既知の token の接頭辞（`ghp_`・`gho_`・`ghu_`・`ghs_`・`ghr_`・`github_pat_`・`AKIA`・`sk-`・`xoxb-`・`xoxp-`）で始まる語、(c) `Bearer ` に続く長い語（scheme の大小文字は区別しない。`bearer`・`BEARER` も同じ。HTTP の認証 scheme は大小文字を区別しない = RFC 9110 §11.1。#114 の独立の実装監査 1 回目の指摘）、(d) 3 つの部分を `.` でつないだ JWT の形、(e) 空白を含まない 20 文字以上の英数字・記号（`+/_-=`）の連なりで、その項目の許される形式（valueType・normalization）に当たらないもの。
       判定が確実でない時の既定は fail closed: 項目の許される形式に当たらない文字列の回答は保持せず rejected とする（秘密を見逃して保持するより、拒否して参照名を求める方を選ぶ）。
       IF 秘密らしい THEN rejected とし、値を保持・表示・記録しない。rejected の回答は value も valueDigest も持たない（digest は推測の足場になる）。rejectionReason・案内・ログ・試験の出力に入力の値の一部も写さない（理由は入力から作らない固定の分類 secret_like だけ）。案内は「その設定が有るか」と「参照名」だけを求める。公開される成果物・出力・ログへの転記は 0。fixture・例は架空の値だけ。観測した値（file の内容・道具の出力）にも同じ集合と fail closed を当てる（Owner の決定 116（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-6962989955 、本文 SHA-256 `3986367dcee537139c1065e71d9db339cd085e10f8fbf4f5cf1d7c771e5f3a6a`、arc が中継））: 秘密らしい、または許される形式に当たらない観測値は、値・valueDigest・候補・案内文を作らず、項目・出典・固定の分類（secret_like / invalid_format）と「出典を直す」次の操作だけを示す。未加工の道具の出力は保持せず、形式に合う版の識別だけを取り出す。取り出せなければ観測値なしの invalid_format とする。観測の事実（BR8.3）には、値を保持しない出典の分類だけが入り、値の digest は入らない。開いた形（string・list）の観測値は、秘密らしさを形式では判定できないので、秘密らしくなくても保持・digest・表示をしない（Owner の決定 120）。回答のうち開いた形の項目の値は、この節の (a)〜(e) の選別と fail closed を通った時だけ受け、案内・ログ・試験の出力へは写さない（presence と長さの区分だけ）。
     violation: rejected（値も digest も理由への写しも残さない）
     source: [FR2.3, NFR2, AC1.3.3]
-    tests: [T5.2+, T5.2-, T5.2o]
+    tests: [T5.2+, T5.2-, T5.2o, T5.2r]
   - id: BR5.3
     statement: 回答ごとに独立に扱う。1 件の不正が他の回答を失わせない。
     category: policy
