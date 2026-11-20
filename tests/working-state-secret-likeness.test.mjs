@@ -102,6 +102,35 @@ test("T5.2- (c) Bearer の後ろの語の境界: 16 文字から、15 文字ま�
   is("secret_like", "list", ["Bearer " + filler(16, "q")]);
 });
 
+test("T5.2r (c) Bearer の scheme の大小文字は区別しない（RFC 9110 §11.1）。全部の門で同じく秘密らしい側に倒れる", () => {
+  const { carriesSecretShape, exposesText, GATE_CLASSES, hasSecretShape, isAnswerValue, isGuidanceText, isItemKeyText, isRefName } = workingState;
+  for (const scheme of ["Bearer", "bearer", "bEaReR", "BEARER"]) {
+    const value = `${scheme} ${filler(16, "q")}`;
+    const short = `${scheme} ${filler(15, "q")}`;
+    is("secret_like", "string", value);
+    is("secret_like", "list", [value]);
+    is("invalid_format", "string", short);
+    assert.equal(hasSecretShape(value), true, scheme);
+    assert.equal(hasSecretShape(short), false, scheme);
+    for (const gateClass of GATE_CLASSES) assert.equal(exposesText(gateClass, value), true, `${gateClass} ${scheme}`);
+    assert.equal(isRefName(value), false, scheme);
+    assert.equal(isGuidanceText(`確認: ${value}`), false, scheme);
+    assert.equal(isAnswerValue(value), false, scheme);
+    assert.equal(isAnswerValue([value]), false, scheme);
+    assert.equal(isItemKeyText(value), false, scheme);
+    assert.equal(carriesSecretShape({ nested: [value] }), true, scheme);
+    assert.equal(carriesSecretShape({ nested: [short] }), false, scheme);
+  }
+  // scheme と語の間の区切り: 空白の種類・個数に依らず当たる（\s+）。区切りでない零幅の文字は当たらないが、値は形式にも合わない（valid にならない）。
+  for (const gap of [" ", "  ", "\t", "\n", "\u00a0", "\u3000", " \t "]) {
+    is("secret_like", "string", `bEaReR${gap}${filler(16, "q")}`);
+    assert.equal(hasSecretShape(`Authorization: BEARER${gap}${filler(16, "q")}`), true);
+  }
+  assert.notEqual(cls("string", `Bearer\u200b${filler(16, "q")}`), "valid");
+  // 直前が英数字なら語の一部（別の語の末尾）で、従来どおり当てない。大小文字の緩めが境界を広げない。
+  is("invalid_format", "string", `xbearer ${filler(16, "q")}`);
+});
+
 test("T5.2- (d) JWT の形の境界: 3 つの部分で、先の 2 つが 10 文字以上（実装で決めた数値 = 10）", () => {
   is("secret_like", "string", [filler(10, "a"), filler(10, "b"), "c"].join("."));
   is("secret_like", "string", [filler(10, "a"), filler(10, "b"), ""].join("."));

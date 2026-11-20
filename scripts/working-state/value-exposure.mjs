@@ -23,12 +23,12 @@ const BEARER_WORD_MIN = 16; // (c) `Bearer ` に続く語の長さ。
 const JWT_PART_MIN = 10; // (d) JWT の形の先の 2 つの部分の長さ。3 つ目は空でもよい（署名の無い形）。
 // (a) 秘密鍵・証明書の見出し行。(b) 既知の token の接頭辞で始まる語。(c) Bearer + 長い語。(d) 3 つの部分を . でつないだ形。(e) 長い連なり。
 // 語の中のどこに埋まっていても当てる（区切り・引用符・括弧・URL の利用者情報・設定の対の = の後ろ・別の語の末尾の . の後ろ）。
-// (b) は直前が英数字でない所（先頭を含む）か %XX（URL の符号化した区切り）の直後にある接頭辞、(c) は直前が英数字でない所の Bearer、(d) は直前が名前の文字でない所から始まる 3 つの部分
+// (b) は直前が英数字でない所（先頭を含む）か %XX（URL の符号化した区切り）の直後にある接頭辞、(c) は直前が英数字でない所の Bearer（大小文字を区別しない）、(d) は直前が名前の文字でない所から始まる 3 つの部分
 // （後ろにも名前の文字・. が続かない。直前の条件は当たる・当たらないを変えず、長い連なりで各位置から数え直す二乗の時間を防ぐ性能の守り）、(e) は語の中の 20 文字以上の連なり。
 const KEY_HEADER_RE = /-----BEGIN [A-Z0-9 ]*(?:PRIVATE KEY|CERTIFICATE)-----/;
 const TOKEN_PREFIXES = ["ghp_", "gho_", "ghu_", "ghs_", "ghr_", "github_pat_", "AKIA", "sk-", "xoxb-", "xoxp-"];
 const TOKEN_PREFIX_RE = new RegExp(`(?:(?<![A-Za-z0-9])|(?<=%[0-9A-Fa-f]{2}))(?:${TOKEN_PREFIXES.join("|")})`);
-const BEARER_RE = new RegExp(`(?<![A-Za-z0-9])Bearer\\s+\\S{${BEARER_WORD_MIN},}`);
+const BEARER_RE = new RegExp(`(?<![A-Za-z0-9])Bearer\\s+\\S{${BEARER_WORD_MIN},}`, "i"); // scheme の大小文字は区別しない（RFC 9110 §11.1）。
 const JWT_RE = new RegExp(`(?<![A-Za-z0-9_-])[A-Za-z0-9_-]{${JWT_PART_MIN},}\\.[A-Za-z0-9_-]{${JWT_PART_MIN},}\\.[A-Za-z0-9_-]*(?![A-Za-z0-9_.-])`);
 const RUN_RE = new RegExp(`[A-Za-z0-9+/_=-]{${SECRET_RUN_MIN},}`);
 
