@@ -1,0 +1,32 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@3e0879b2da01236c0ae5e1122e3c225359b4b095/docs/sds/audit-method.md#3",
+  "scope": "watchout/shirube の最後の 1 本の PR（R3、門そのもの）の独立監査。変更は 3 file: docs/sds/audit-method.md（手順書の文を社の決まり版 24 に合わせる。2 か所）、.shirube/hygiene-profile.md（limits.pr_added_lines 11500 → 10000 と散文の 1 行）、本項目集合 docs/audit/audit-method-v24-items.json。根拠は Owner の決定 178（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-7025915007 、本文 SHA-256 acffcc6d293420e2c6f39eefd498bfdce9b25c1f9acba23892f9b8d0ea5e5500）、pr_added_lines を戻す Owner の決定 140 の 4（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-7001875259 、本文 SHA-256 0e89c8c4eb4bcc3440a1008857fafb4d0728697f4a31d8fe1db7a5406cb59413）、Shirube の新しい開発を休止する Owner の決定（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-7026768954 、本文 SHA-256 d5ed27575aecb9549f0f0e7d9474ace8c5cac52776b95765dca43495a808b8b9）。checker・workflow・必須の検査の一覧・branch protection・scripts・tests は変えない。以下の AM-xx は本項目集合の識別子であり、新しい社内規格・工程・権限ではない。全 5 項目必須。監査の PASS は Owner の許可や統合の認可の代わりにならない。",
+  "items": [
+    {
+      "id": "AM-1",
+      "criterion": "範囲: 変更 path が docs/sds/audit-method.md・.shirube/hygiene-profile.md・docs/audit/audit-method-v24-items.json の 3 つだけ。.github/**（workflow）・scripts/**・tests/**・kit/**・package.json・必須検査の一覧・branch protection・DB の構造・資格情報・本番・料金・契約 .v2・新しい依存を変えていない。PR 本文の sds-pr block の risk_class が R3 で changed_paths が diff と一致し、決定 178・140 の URL と本文 SHA-256 が引かれている。",
+      "basis": "決定 178・140、protected-surface-owner-gate、PR 本文"
+    },
+    {
+      "id": "AM-2",
+      "criterion": "版 24 への合わせ方が決定 178 と合う: audit-method.md が、(a) 既定の軽い門の差し戻しを KY の表の「致命×全部」「重大×低以上」だけにし、中・軽は記録と後で直す票にする、(b) 構造の守り 6 つを破る指摘をどの門でも致命にする、(c) 重い門の対象の一覧を写さず決定 178 を参照する、(d) 依頼に「この 1 回で、見つけた指摘を全部まとめて」を入れ、2 回目以降は差分と影響する項目だけにする、(e) §2 の 4 の「軸を問わず BLOCK」を重い門の読みにする、を書いている。決定 178 の URL と本文 SHA-256 が正しい。決定 178 に無い緩めを足していない。",
+      "basis": "決定 178、社の決まり aidlc-only.md §2「監査の門（版 24）」"
+    },
+    {
+      "id": "AM-3",
+      "criterion": "重い門を弱めない: 重い門の差し戻しの範囲（KY の全部）、監査の回数の上限（§2 の 6）、Owner の exact-head が要る物（お金・本番・本物の情報・鍵・守りを外す時と重い門の PR）、作者≠監査≠統合、固定 checker と受領の検査の記述が、この変更の前より緩くなっていない。§2 の 6 など既存の文との矛盾（5 回まで自動と、3 回目に CTO へ上げる文の関係）が、どちらの門に当たるかを読み違えない形で書かれている。",
+      "basis": "決定 178 の「重い門の回数の上限も今のまま」、audit-method.md §2・§4"
+    },
+    {
+      "id": "AM-4",
+      "criterion": "pr_added_lines の戻し: .shirube/hygiene-profile.md の limits.pr_added_lines が 11500 から 10000 になり、pr_changed_files・new_file_lines・baseline_max_entries・large_file_bytes・own_code_lines・large_file_allow・exceptions・mode を変えていない（変えたのは 1 つの値と散文の 1 行だけ）。第一の json block が構文として読め scripts/hygiene/lib.mjs の検証を通る。決定 140 の 4（#112 の後に 10000 へ戻す）と合い、検査の閾値を別の物へ緩めていない。",
+      "basis": "決定 140、pr-size.mjs、lib.mjs"
+    },
+    {
+      "id": "AM-5",
+      "criterion": "fail closed と記録: この PR の変更が、ほかの file・ほかの検査を通りやすくしない。PR 本文の deviation_ledger に採った判断と採らなかった代替が 1 行ずつあり、手元の実測と未実施・観測していない物が分けて書かれ、CI の結果を申告で済ませていない。対象 head で test・hygiene が success、sds-gate は R3 の audit の欄が返却の前に空であるための失敗だけ。公開 repo に model 名・秘密・他 repo の非公開記録が無い。",
+      "basis": "S5・S8、sds-gate の判定"
+    }
+  ]
+}
