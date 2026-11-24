@@ -1,4 +1,4 @@
-// CI-COST-REDUCE: the pattern a repository's ci.yml follows, checked by machine. The file is read into a structure by the YAML subset reader, and a
+// CI-COST-REDUCE: the pattern a repository's ci.yml follows, checked by machine. The file is read into a structure by the strict YAML reader, and a
 // file the reader refuses is a FAIL (P7), never a pass. Each rule has a positive fixture and a negative one that breaks only that rule.
 import { test } from "node:test";
 import assert from "node:assert/strict";

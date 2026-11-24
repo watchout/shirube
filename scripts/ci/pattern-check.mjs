@@ -1,6 +1,6 @@
 // The CI-cost pattern for a repository's ci.yml, checked by machine (CI-COST-REDUCE). Read-only, fail closed. The file is read ONCE, by the
-// reader in yaml-subset.mjs, into a structure; every rule below judges that structure, never the text. A file the reader refuses (outside its
-// small YAML subset, broken, no jobs, a job with no steps) is a FAIL (P7), never a pass. It judges the file only; it runs nothing.
+// reader in yaml-read.mjs (the public `yaml` library under strict settings), into a structure; every rule below judges that structure, never the text. A file the
+// reader refuses (outside its strict settings, broken, no jobs, a job with no steps) is a FAIL (P7), never a pass. It judges the file only; it runs nothing.
 //   P1 a pull request's older run is cancelled and a push to main is not   P2 a job that installs dependencies caches them      (P1, P2: record only, never FAIL)
 //   P3 the required check names stay                                       P4 a required job is never skipped (no job-level if on it or, however far, on a job it needs)
 // The rules ACCEPT a small table of known-good forms (P1 groups, P6 guard and pin) and read widely when they look for what they must flag (P2 installs):
@@ -9,7 +9,7 @@
 //   P7 the file is readable and has jobs, and every job has steps or a reusable workflow
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { parseYaml, YamlError } from "./yaml-subset.mjs";
+import { parseYaml, YamlError } from "./yaml-read.mjs";
 
 // P1 and P2 are RECORD rules (CTO ruling for shirube#121): they appear in findings with level "record" and never turn the verdict to FAIL. P3..P7 block.
 const RECORD_ONLY = new Set(["P1", "P2"]);
@@ -180,7 +180,7 @@ export function checkPattern(text, { required } = {}) {
   let doc;
   try { doc = parseYaml(text); } catch (error) {
     if (!(error instanceof YamlError)) throw error;
-    return fail([finding("P7", `the file is outside the YAML subset this check reads (${error.message})`)]);
+    return fail([finding("P7", `the file is not read under the strict YAML settings of this check (${error.message})`)]);
   }
   const { jobs, problem } = readJobs(doc);
   if (problem) return fail([finding("P7", problem)]);
