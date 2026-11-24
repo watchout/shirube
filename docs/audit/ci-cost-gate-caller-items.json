@@ -1,0 +1,32 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@f029aae5/docs/sds/audit-method.md#3",
+  "scope": "watchout/shirube の CI-COST-REDUCE の 1 本目の PR（重い門: workflow と門の検査の呼び出し側）の独立監査。門の検査 sds-gate を、門に関係のある comment の時だけ流す直し。変更は kit/sds-gate-caller.yml と .github/workflows/sds-gate-self.yml の `if:` と job の名前、その `if:` を書く scripts/sds/gate-marks.mjs（新）、試験 tests/sds-gate-caller-trigger.test.mjs、自己用の caller の SHA-256 を持つ .shirube/sds-pin.json、手順書 docs/sds/distribution.md の 1 文、本項目集合。判定の中身は 1 つも変えない。根拠は Owner の決定 OD-COMPANY-CI-REDUCE-ALL-EXCESS-20261124-001（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-7124878927 、本文 SHA-256 941f82244dd39456435e468b388b869ae950fd4b0a2b201123d83beac9e6641c）と CTO の決め（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-7124863123 、本文 SHA-256 059d610154b40d5ba472839cd0a9e14815e8c8acf2942f83c53928e9fd86bc4d）。以下の CG-xx は本項目集合の識別子であり、新しい社内規格・工程・権限ではない。全 5 項目必須。監査の PASS は Owner の許可や統合の認可の代わりにならない（Owner の exact-head は別に要る）。",
+  "items": [
+    {
+      "id": "CG-1",
+      "criterion": "範囲: 変更 path が .github/workflows/sds-gate-self.yml・kit/sds-gate-caller.yml・.shirube/sds-pin.json（自己用の caller の SHA-256 の 1 値だけ）・scripts/sds/gate-marks.mjs・tests/sds-gate-caller-trigger.test.mjs・docs/sds/distribution.md（1 文）・本項目集合の 7 つだけ。再利用の .github/workflows/sds-gate.yml、固定 checker（scripts/hygiene/audit-admission.mjs の SHA-256 0fdf596fb024b335c1cc6eb5b0d68ebbe1e16da410c94fc74f79a5985e83c38d）、scripts/sds/gate.mjs と plan-binding.mjs、両 caller の on の types・permissions・uses・with、pin の sds_commit・mode・protected_paths、必須の検査の一覧・branch protection、新しい依存を変えていない。PR 本文の sds-pr block の risk_class が R4 で changed_paths が diff と一致する。",
+      "basis": "PR 本文、diff、protected-surface-owner-gate"
+    },
+    {
+      "id": "CG-2",
+      "criterion": "判定の中身を変えない（致命の確かめ）: 新しい `if:` が、gate の判定を変えうる実行を落とさない。次は必ず実行される: (a) pull_request_target の全 types、(b) 印（sds-audit-request/1・sds-audit-review/1・shirube-v3:control-handoff）を本文に持つ comment の作成と削除、編集後に印を持つ・編集前に印を持つ編集、(c) PR 本文が `#issuecomment-<id>` で名指しする comment の編集と削除（印の有無を問わない）、(d) 本文が空・欠落、編集で前の本文が読めない時（fail closed）。落とすのは、印が無く PR 本文も名指ししない comment の作成・編集・削除だけ。gate.mjs が読む comment（依頼・返却・承認・計画）が、すべて印を持つか PR 本文か依頼から URL で結ばれていることを、gate.mjs と plan-binding.mjs を読んで確かめる。落ちる反例（判定が変わるのに実行されない組み合わせ）を探して書く。",
+      "basis": "scripts/sds/gate.mjs、plan-binding.mjs、tests/sds-gate-caller-trigger.test.mjs T1・T4〜T6・T13"
+    },
+    {
+      "id": "CG-3",
+      "criterion": "skip の後も前の判定が残る・名前が衝突しない: caller に run: が無く、skip された実行は commit status `sds-gate` を書かない・書き換えない（status を書くのは再利用 workflow の 1 か所だけ）。caller の job の名前が `sds-gate` ではなく（skip された job が残す check run の名前が必須の検査と同じにならない）、workflow 全体の concurrency が無い（skip された実行が走っている判定を止めない）。1 PR 1 実行の group は再利用 workflow の job にある。負例（印の無い comment の後も前の failure が success にならない）が試験にあり PASS。必須の検査の名前と数は変えていない。",
+      "basis": "kit/sds-gate-caller.yml、sds-gate-self.yml、sds-gate.yml、tests T7・T10・T11"
+    },
+    {
+      "id": "CG-4",
+      "criterion": "印の一覧は 1 か所: 印は検査器（audit-admission.mjs・plan-binding.mjs）の文字列から gate-marks.mjs が読み、両 caller の `if:` は gate-marks.mjs が書く物と一致する（`--check`、試験 T9・T12）。検査器から印が消える・綴りが変わると throw し、callers の食い違いは DRIFT（exit 1）、使い方の誤りは ERROR（exit 2）で、読めないものを成功にしない。新しい script は網羅率 100%、実行時の npm 依存なし、固定 checker に触れていない。",
+      "basis": "scripts/sds/gate-marks.mjs、tests T1・T9・T12、S3・S8"
+    },
+    {
+      "id": "CG-5",
+      "criterion": "記録と未観測: PR 本文の deviation_ledger に採った判断と採らなかった代替が 1 行ずつあり、手元の実測と未実施・観測していない物が分けて書かれている。GitHub 自身が `github.event.changes.body.from`・`github.event.issue.body`・`format()` を期待どおり評価するかは未観測で、試験の評価器は GitHub そのものではないと書いてある（consumer での観測は後）。CI の結果を申告で済ませていない。対象 head で test・hygiene が success、sds-gate は R4 の audit の欄が返却の前に空であるための失敗だけ。公開 repo に model 名・秘密・他 repo の非公開記録が無い。",
+      "basis": "S5・S8、sds-gate の判定、PR 本文"
+    }
+  ]
+}
