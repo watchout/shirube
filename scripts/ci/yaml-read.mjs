@@ -1,6 +1,6 @@
 // CI-COST-REDUCE: the one place a workflow's YAML is read (behind pattern-check.mjs). It reads with the public `yaml` library (pinned below, locked in
 // package-lock.json) under strict settings, and STOPS (throws YamlError) on anything the settings do not allow, so a file it cannot read is never read as "fine":
-//   YAML 1.2 core schema, a duplicate key is an error, no merge key, no anchor or alias or tag or directive, exactly one document, every error AND every
+//   YAML 1.2 core schema, a duplicate key is an error, no merge key, no anchor or alias or tag, no line that starts with % (a directive, anywhere), exactly one document, every error AND every
 //   warning of the library stops, a character outside the readable list stops, and a library that cannot be loaded (or is not the pinned version) stops.
 // The structure it returns holds maps, lists, strings and null only (a number or a boolean becomes the text it was written as), so the rules read one kind of value.
 export class YamlError extends Error {
@@ -89,12 +89,14 @@ function convert(ctx, node, depth, outerFlow) {
   return ctx.lib.isScalar(node) ? convertScalar(ctx, node, outerFlow) : convertCollection(ctx, node, depth, outerFlow);
 }
 
-// the text itself: CRLF is LF, it always ends with one line break (the library lets an unclosed quote at the very end pass), and no character outside the list
+// the text itself: CRLF is LF, it always ends with one line break (the library lets an unclosed quote at the very end pass), no character outside the list, and no line
+// that starts with % (the library drops an unfinished directive after the document, so the whole raw text is looked at, not the document it returns)
 function readableText(text) {
   if (typeof text !== "string") throw new YamlError("not text");
   const lines = `${text.replace(/\r\n/g, "\n").replace(/\n$/, "")}\n`;
   if (OUTSIDE_LIST.test(lines)) throw new YamlError("a character outside the list of readable characters");
   if (/^[ -]*\t/m.test(lines)) throw new YamlError("a tab in the indent or right after a list marker");
+  if (/^%/m.test(lines)) throw new YamlError("a line that starts with % (a directive, before, after or inside the document) is not read");
   return lines;
 }
 

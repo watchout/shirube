@@ -50,6 +50,10 @@ const REFUSED = [
   ["a document of comments only", "# a\n# b\n", /found 0/],
   ["a YAML directive", "%YAML 1.2\n---\na: 1\n", /directive/],
   ["a TAG directive", "%TAG !e! tag:example.com,2000:\n---\na: 1\n", /directive/],
+  ["a directive that is only a default-tag redeclaration, before the document (round 5)", "%TAG !! tag:yaml.org,2002:\n---\na: 1\n", /directive/],
+  ["an unfinished directive after the document, which the library drops (round 5)", "a: 1\n%TAG !a! tag:example.org,2000:app/\n", /directive/],
+  ["an unfinished directive after the document, with no final line break (round 5)", "a: 1\n%TAG !! tag:yaml.org,2002:", /directive/],
+  ["a directive right after a document end marker", "a: 1\n...\n%YAML 1.2\n", /directive/],
   ["a document that is only a marker", "---\n", /not a mapping or a list/],
   ["a scalar document", "just text\n", /not a mapping or a list/],
   ["a comment inside a key (round 4)", "name # comment: ci\n", /not a mapping or a list/],
@@ -138,6 +142,14 @@ test("Y6 a library that cannot be used stops the read: not loadable, not the pin
   assert.throws(() => parseYaml("a: 1\n", empty), /the document is empty/);
 });
 
+test("Y6b a directive that reaches the library's answer still stops the read (the library's own view of directives, a second line of defence)", async () => {
+  const withDirective = (directives) => ({ ...FAKE_DOC({ kind: "unknown" }), directives });
+  for (const directives of [{ yaml: { explicit: true }, tags: { "!!": "tag:yaml.org,2002:" } }, { yaml: { explicit: false }, tags: { "!!": "tag:yaml.org,2002:", "!a!": "tag:example.org,2000:" } }]) {
+    const opened = await openLibrary(async () => ({ lib: { ...GOOD, parseAllDocuments: () => [withDirective(directives)] }, version: PINNED_VERSION }));
+    assert.throws(() => parseYaml("a: 1\n", opened), /a directive is not read/);
+  }
+});
+
 test("Y7 the dependency is pinned: one exact version in package.json, the lockfile and the installed copy, with its integrity and no install script", () => {
   const INTEGRITY = "sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==";
   assert.equal(read("package.json").devDependencies.yaml, PINNED_VERSION);
@@ -148,7 +160,10 @@ test("Y7 the dependency is pinned: one exact version in package.json, the lockfi
   assert.equal(entry.integrity, INTEGRITY);
   assert.match(entry.resolved, /^https:\/\/registry\.npmjs\.org\/yaml\/-\/yaml-2\.9\.1\.tgz$/);
   assert.equal(entry.hasInstallScript, undefined);
-  assert.equal(entry.dependencies, undefined);
+  // (iii) no new package: yaml brings none of its own (no dependency of any kind), and it was already in the tree as a dependency of other packages
+  for (const kind of ["dependencies", "optionalDependencies", "peerDependencies"]) assert.equal(entry[kind], undefined, kind);
+  const parents = Object.entries(lock.packages).filter(([name, other]) => name !== "" && other.dependencies?.yaml !== undefined).map(([name]) => name);
+  assert.ok(parents.length >= 1, "yaml must already be a dependency of another package in the lockfile");
   const installed = read("node_modules/yaml/package.json");
   assert.equal(installed.version, PINNED_VERSION);
   for (const hook of ["preinstall", "install", "postinstall", "prepare"]) assert.equal(installed.scripts?.[hook], undefined, hook);
