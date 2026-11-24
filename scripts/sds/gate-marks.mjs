@@ -20,9 +20,11 @@ export function readMarks(root) {
 }
 
 // A comment is worth a run when its body, or for an edit the body before the edit, carries a mark, or when the PR body names
-// it by URL (the gate reads a comment the PR body points to, marked or not). An empty or missing body, and an edit whose payload
-// has no previous body, run: an unreadable comment is judged, never skipped. A comment id that is the start of a longer named id
-// also matches; that only adds a run.
+// it by URL (the gate reads a comment the PR body points to, marked or not). The gate reads the PR body's JSON with JSON.parse, so
+// a reference may be spelled with \uXXXX escapes the raw text never shows; any such escape in the PR body runs every edit and
+// deletion (JSON writes every escaped letter or digit that way, so a body with no \u spells its references as they are read; the
+// term only adds runs). An empty or missing body, and an edit whose payload has no previous body, run: an unreadable comment is
+// judged, never skipped. A comment id that is the start of a longer named id also matches; that only adds a run.
 export function renderIf(marks) {
   const has = (path) => marks.map((mark) => `contains(${path}, '${mark}')`);
   const terms = [
@@ -31,6 +33,7 @@ export function renderIf(marks) {
     "(github.event.action == 'edited' && !github.event.changes.body.from)",
     ...has("github.event.changes.body.from"),
     "contains(github.event.issue.body, format('#issuecomment-{0}', github.event.comment.id))",
+    "contains(github.event.issue.body, '\\u')",
   ];
   return [
     "    if: ${{ github.event_name == 'pull_request_target' || (github.event.issue.pull_request && (",

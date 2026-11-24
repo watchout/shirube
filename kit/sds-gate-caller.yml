@@ -32,7 +32,8 @@ jobs:
       contains(github.event.changes.body.from, 'sds-audit-request/1') ||
       contains(github.event.changes.body.from, 'sds-audit-review/1') ||
       contains(github.event.changes.body.from, 'shirube-v3:control-handoff') ||
-      contains(github.event.issue.body, format('#issuecomment-{0}', github.event.comment.id)))) }}
+      contains(github.event.issue.body, format('#issuecomment-{0}', github.event.comment.id)) ||
+      contains(github.event.issue.body, '\u'))) }}
     uses: watchout/shirube/.github/workflows/sds-gate.yml@<SHIRUBE_COMMIT>
     with:
       pr: ${{ github.event.pull_request.number || github.event.issue.number }}

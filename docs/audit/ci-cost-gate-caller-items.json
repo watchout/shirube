@@ -10,7 +10,7 @@
     },
     {
       "id": "CG-2",
-      "criterion": "判定の中身を変えない（致命の確かめ）: 新しい `if:` が、gate の判定を変えうる実行を落とさない。次は必ず実行される: (a) pull_request_target の全 types、(b) 印（sds-audit-request/1・sds-audit-review/1・shirube-v3:control-handoff）を本文に持つ comment の作成と削除、編集後に印を持つ・編集前に印を持つ編集、(c) PR 本文が `#issuecomment-<id>` で名指しする comment の編集と削除（印の有無を問わない）、(d) 本文が空・欠落、編集で前の本文が読めない時（fail closed）。落とすのは、印が無く PR 本文も名指ししない comment の作成・編集・削除だけ。gate.mjs が読む comment（依頼・返却・承認・計画）が、すべて印を持つか PR 本文か依頼から URL で結ばれていることを、gate.mjs と plan-binding.mjs を読んで確かめる。落ちる反例（判定が変わるのに実行されない組み合わせ）を探して書く。",
+      "criterion": "判定の中身を変えない（致命の確かめ）: 新しい `if:` が、gate の判定を変えうる実行を落とさない。次は必ず実行される: (a) pull_request_target の全 types、(b) 印（sds-audit-request/1・sds-audit-review/1・shirube-v3:control-handoff）を本文に持つ comment の作成と削除、編集後に印を持つ・編集前に印を持つ編集、(c) PR 本文が `#issuecomment-<id>` で名指しする comment の編集と削除（印の有無を問わない。gate は PR 本文の JSON を JSON.parse で読むので、参照が `\\uXXXX` の escape で書かれ生の文字列に現れない場合も、本文に `\\u` があれば実行する。監査 1 回目の F01）、(d) 本文が空・欠落、編集で前の本文が読めない時（fail closed）。落とすのは、印が無く PR 本文も名指ししない comment の作成・編集・削除だけ。gate.mjs が読む comment（依頼・返却・承認・計画）が、すべて印を持つか PR 本文か依頼から URL で結ばれていることを、gate.mjs と plan-binding.mjs を読んで確かめる。落ちる反例（判定が変わるのに実行されない組み合わせ）を探して書く。",
       "basis": "scripts/sds/gate.mjs、plan-binding.mjs、tests/sds-gate-caller-trigger.test.mjs T1・T4〜T6・T13"
     },
     {

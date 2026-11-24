@@ -214,3 +214,29 @@ test("T13 a comment the PR body names by URL re-judges when it is edited or dele
   }
   assert.equal(run(comment("created", "plain talk", named, 4243)), false);
 });
+
+// F01 (audit 1): the gate reads the PR body's `json sds-pr` block with JSON.parse, so a reference whose characters are written as
+// \uXXXX escapes names a comment the raw text never spells. The `if:` must run for every comment the PARSED reference names.
+const jsonString = (text, hide) => `"${[...text].map((ch) => (hide(ch) ? `\\u${ch.charCodeAt(0).toString(16).padStart(4, "0")}` : ch)).join("")}"`;
+const prBodyNaming = (ref, hide) => `plan:\n\`\`\`json sds-pr\n{"schema":"sds-pr/1","delivery_plan_binding":{"comment_ref":${jsonString(ref, hide)}}}\n\`\`\`\n`;
+const parsedCommentId = (body) => Number(/#issuecomment-(\d+)$/.exec(JSON.parse(body.match(/^```json sds-pr\n([\s\S]*?)\n```/m)[1]).delivery_plan_binding.comment_ref)[1]);
+
+test("T14 negative (F01): a reference the PR body writes with JSON \\u escapes still re-judges an edit or a deletion of the comment it names", () => {
+  const ref = "https://github.com/watchout/shirube/pull/7#issuecomment-4242";
+  const hides = {
+    "the #": (ch) => ch === "#",
+    "the word issuecomment": (ch) => /[a-z]/.test(ch),
+    "the digits": (ch) => /\d/.test(ch),
+    "everything": () => true,
+  };
+  for (const [what, hide] of Object.entries(hides)) {
+    const body = prBodyNaming(ref, hide);
+    const issue = { pull_request: { url: "x" }, body };
+    assert.equal(parsedCommentId(body), 4242, `${what}: the gate's own reading names comment 4242`);
+    assert.ok(!body.includes("#issuecomment-4242"), `${what}: the raw text no longer spells the reference`);
+    assert.equal(run(edited("plain talk", "plain before", issue, 4242)), true, `edit, ${what}`);
+    assert.equal(run(comment("deleted", "plain talk", issue, 4242)), true, `deletion, ${what}`);
+  }
+  const plain = { pull_request: { url: "x" }, body: "no reference and no escape here" };
+  assert.equal(run(edited("plain talk", "plain before", plain, 4242)), false, "a body with no reference and no escape still lets an unmarked edit pass");
+});

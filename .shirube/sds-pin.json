@@ -3,7 +3,7 @@
   "sds_commit": "4d314163f783b40c42ab5d0816cb2ebd48b5e2cd",
   "kit_version": "0.1.0",
   "files": {
-    ".github/workflows/sds-gate-self.yml": "cd36bb249167d5e4c411fa81caefa8a0ef82bddbdfd2870bfbde7468c4c671b1"
+    ".github/workflows/sds-gate-self.yml": "8cb6d60ec2a012f488592d42c815b7ae5ea273ee1b7a4aa3a20b6d8ac326434a"
   },
   "instructions": [],
   "protected_paths": [".github/workflows/**", ".shirube/**", "CODEOWNERS", ".github/CODEOWNERS", "docs/CODEOWNERS", ".claude/settings.json", ".aidlc-version", "aidlc.settings.json"],
