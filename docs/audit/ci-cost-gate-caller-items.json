@@ -5,7 +5,7 @@
   "items": [
     {
       "id": "CG-1",
-      "criterion": "範囲: 変更 path が .github/workflows/sds-gate-self.yml・kit/sds-gate-caller.yml・.shirube/sds-pin.json（自己用の caller の SHA-256 の 1 値だけ）・scripts/sds/gate-marks.mjs・tests/sds-gate-caller-trigger.test.mjs・docs/sds/distribution.md（1 文）・本項目集合の 7 つだけ。再利用の .github/workflows/sds-gate.yml、固定 checker（scripts/hygiene/audit-admission.mjs の SHA-256 0fdf596fb024b335c1cc6eb5b0d68ebbe1e16da410c94fc74f79a5985e83c38d）、scripts/sds/gate.mjs と plan-binding.mjs、両 caller の on の types・permissions・uses・with、pin の sds_commit・mode・protected_paths、必須の検査の一覧・branch protection、新しい依存を変えていない。PR 本文の sds-pr block の risk_class が R4 で changed_paths が diff と一致する。",
+      "criterion": "範囲: 変更 path が .github/workflows/sds-gate-self.yml・kit/sds-gate-caller.yml・.shirube/sds-pin.json（自己用の caller の SHA-256 の 1 値だけ）・scripts/sds/gate-marks.mjs・tests/sds-gate-caller-trigger.test.mjs・docs/sds/distribution.md（1 文）・本項目集合の 7 つだけ。再利用の .github/workflows/sds-gate.yml、固定 checker（pin の sds_commit 4d314163 の scripts/hygiene/audit-admission.mjs、SHA-256 0fdf596fb024b335c1cc6eb5b0d68ebbe1e16da410c94fc74f79a5985e83c38d。main の同名 file は SHA-256 4cc4438e7079dba6070c3690f0cea89e99c61019768c880893927a32b859bed0 で、この PR は触らない）、scripts/sds/gate.mjs と plan-binding.mjs、両 caller の on の types・permissions・uses・with、pin の sds_commit・mode・protected_paths、必須の検査の一覧・branch protection、新しい依存を変えていない。PR 本文の sds-pr block の risk_class が R4 で changed_paths が diff と一致する。",
       "basis": "PR 本文、diff、protected-surface-owner-gate"
     },
     {
