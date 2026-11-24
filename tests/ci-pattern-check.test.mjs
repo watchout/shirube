@@ -106,3 +106,15 @@ test("P8 the command: PASS exits 0, FAIL exits 1, a misuse exits 2", () => {
     }
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+test("P9 the file is read as YAML reads it: wording that sits only in a comment (whole line or end of line) counts for nothing", () => {
+  const withP1 = (value) => GOOD.replace("cancel-in-progress: ${{ github.event_name == 'pull_request' }}", `cancel-in-progress: ${value}`);
+  assert.deepEqual(ids(withP1("false # pull_request")), ["P1"], "end-of-line comment names pull_request");
+  assert.deepEqual(ids(withP1("true # only for pull_request")), ["P1"], "cancels main too, with a comment that says otherwise");
+  assert.deepEqual(ids(withP1("${{ github.event_name == 'pull_request' }} # cancels only a pull request")), [], "a real value with a comment still passes");
+  assert.deepEqual(ids(GOOD.replace("          cache: npm\n", "          # cache: npm\n")), ["P2"], "a commented cache line");
+  assert.deepEqual(ids(GOOD.replace("  hygiene:\n", "  # hygiene:\n  other:\n")), ["P3"], "a commented job header");
+  assert.deepEqual(ids(GOOD.replace("      - if: steps.scope.outputs.scope == 'code'\n        run: npm test\n", "      # - if: steps.scope.outputs.scope == 'code'\n      - run: npm test\n")), ["P6"], "a commented guard");
+  assert.deepEqual(ids(GOOD.replace("runs-on: ubuntu-latest", "runs-on: ubuntu-latest # not a # comment inside quotes: \"a # b\"")), [], "a # inside quotes is text, and a trailing comment after it is cut");
+  assert.deepEqual(ids(GOOD.replace("node-version: \"22\"", "node-version: \"22 # not a comment\"")), [], "a quoted # does not cut the line");
+});

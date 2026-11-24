@@ -9,6 +9,18 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const finding = (id, message) => ({ id, message });
+// YAML reads "#" as a comment only at the start of a line or after whitespace, and never inside a quoted scalar. Wording that sits only in a
+// comment must count for nothing, so every rule reads the lines with comments cut. (A quote that opens and never closes cuts nothing.)
+export function uncomment(line) {
+  let quote = "";
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (quote) quote = ch === quote ? "" : quote;
+    else if (ch === "\"" || ch === "'") quote = ch;
+    else if (ch === "#" && (i === 0 || /\s/.test(line[i - 1]))) return line.slice(0, i).trimEnd();
+  }
+  return line;
+}
 const unquote = (value) => value.trim().replace(/^(["'])(.*)\1$/, "$2");
 
 // jobs: id, displayed name (name: when present, else the id), job-level if, and the step chunks (a step starts with "- " under steps:).
@@ -70,7 +82,7 @@ export function checkPattern(text, { required } = {}) {
   const fail = (findings) => ({ verdict: findings.length ? "FAIL" : "PASS", findings });
   if (typeof text !== "string" || text.trim() === "") return fail([finding("P7", "the file is empty or unreadable")]);
   if (!Array.isArray(required) || required.length === 0 || !required.every((name) => typeof name === "string" && name !== "")) return fail([finding("P7", "give the required check names (--required a,b)")]);
-  const lines = text.split("\n");
+  const lines = text.split("\n").map(uncomment);
   const jobs = parseJobs(lines);
   const bad = jobs.filter((job) => !job.reusable && !job.steps);
   if (jobs.length === 0 || bad.length) return fail([finding("P7", jobs.length === 0 ? "no jobs were found" : `job ${bad[0].id} has neither steps nor a reusable workflow`)]);
