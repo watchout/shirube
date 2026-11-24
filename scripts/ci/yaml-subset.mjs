@@ -2,12 +2,13 @@
 // the subset THROWS a YamlError, so a caller that cannot read a file never reads it as "fine" (fail closed). It runs nothing and has no dependency.
 //   read:    block mappings and lists (a list may sit at its key's indent), plain / 'single' / "double" scalars (every scalar is a string),
 //            | and > block scalars (clip and strip chomping, no indentation indicator), one-line flow [..] and {..}, # comments (line start or after a space), one leading ---.
-//   refused: tabs in the indent, anchors / aliases / tags / directives, the merge key, duplicate keys, a quoted or flow value over several lines,
+//   refused: tabs in the indent, anchors / aliases / tags / directives, the merge key (block or flow), duplicate keys, a quoted or flow value over several lines,
+//            a comment inside a flow collection, a plain scalar that starts with a flow indicator (] } ,),
 //            a plain scalar that holds ": ", a second document, a line the reader cannot place by its indent.
 export class YamlError extends Error {}
 function fail(n, why) { throw new YamlError(`line ${n}: ${why}`); }
 
-const BAD_START = /^[&*!%@`?]/; // an anchor, an alias, a tag, a directive, a reserved indicator, a complex key
+const BAD_START = /^[&*!%@`?,\]}]/; // an anchor, an alias, a tag, a directive, a reserved indicator, a complex key, a flow indicator that cannot start a plain scalar
 const isSeqItem = (text) => text === "-" || text.startsWith("- ");
 const indentOf = (raw) => raw.length - raw.trimStart().length;
 
@@ -84,6 +85,7 @@ class Flow { // one-line flow collections: [a, b] and {k: v}
     while (this.i < this.t.length && !",]}[{".includes(this.t[this.i]) && !(this.t[this.i] === ":" && [undefined, " "].includes(this.t[this.i + 1]))) this.i++;
     const value = this.t.slice(start, this.i).trim();
     if (value === "" || BAD_START.test(value)) fail(this.n, "an empty or unsupported flow item");
+    if (/(^|\s)#/.test(value)) fail(this.n, "a comment inside a flow collection (it would end the collection early)");
     if (value.includes(":")) fail(this.n, "a colon inside a plain flow item (quote it)");
     return value;
   }
@@ -113,6 +115,7 @@ class Flow { // one-line flow collections: [a, b] and {k: v}
       this.skip();
       if (typeof key !== "string" || this.t[this.i] !== ":") fail(this.n, "a flow mapping needs plain `key: value` pairs");
       this.i++;
+      if (key === "<<") fail(this.n, "the merge key is outside the subset");
       if (key in out) fail(this.n, `duplicate key ${JSON.stringify(key)}`);
       out[key] = this.value();
       this.skip();

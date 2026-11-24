@@ -2,7 +2,9 @@
 // reader in yaml-subset.mjs, into a structure; every rule below judges that structure, never the text. A file the reader refuses (outside its
 // small YAML subset, broken, no jobs, a job with no steps) is a FAIL (P7), never a pass. It judges the file only; it runs nothing.
 //   P1 a pull request's older run is cancelled and a push to main is not   P2 a job that installs dependencies caches them
-//   P3 the required check names stay                                       P4 a required job is never skipped (no job-level if, none via needs)
+//   P3 the required check names stay                                       P4 a required job is never skipped (no job-level if on it or, however far, on a job it needs)
+// The rules ACCEPT a small table of known-good forms (P1 groups, P6 guard and pin) and read widely when they look for what they must flag (P2 installs):
+// a form outside the table is a finding, never a pass.
 //   P5 the workflow runs for a pull request and has no paths filter        P6 ci-scope is pinned to a commit and guards a step by its code answer
 //   P7 the file is readable and has jobs, and every job has steps or a reusable workflow
 import { readFileSync } from "node:fs";
@@ -13,8 +15,10 @@ const finding = (id, message) => ({ id, message });
 const isMap = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 const str = (value) => (typeof value === "string" ? value : "");
 
+const validNeeds = (needs) => typeof needs === "string" || (Array.isArray(needs) && needs.every((need) => typeof need === "string"));
 function jobShape(id, job) {
   if (!isMap(job)) return `job ${id} is not a mapping`;
+  if ("needs" in job && !validNeeds(job.needs)) return `job ${id}: needs must be a job name or a list of job names`;
   if (str(job.uses) !== "") return "steps" in job ? `job ${id} has both uses and steps` : null;
   if (!Array.isArray(job.steps) || job.steps.length === 0) return `job ${id} has neither a reusable workflow nor a non-empty list of steps`;
   const bad = job.steps.findIndex((step) => !isMap(step) || (str(step.run) === "" && str(step.uses) === ""));
@@ -31,17 +35,34 @@ function readJobs(doc) {
   return { jobs };
 }
 
-// P1: the cancel condition is exactly "this is a pull request" and the group names the pull request or branch (a group shared by every run would
-// cancel unrelated runs). A job may carry its own concurrency only with that same condition or false.
+// P1: the cancel condition is exactly "this is a pull request" and the group is one of a small table of forms that give a pull request its own group
+// and every other run (a push to main) a group of its own, so only a pull request's older run is cancelled. The group is literal text and ${{ }}
+// expressions; every expression must be in the table and at least one must be a run-owning one. A job may carry its own concurrency only with the same
+// condition or false.
 const CANCEL = /^\$\{\{\s*github\.event_name\s*==\s*'pull_request'\s*\}\}$/;
-const GROUP_NAMES_REF = /github\.(?:ref|ref_name|head_ref|event\.pull_request\.number|event\.number)\b/;
+const OWNING = new Set([
+  "github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id)",
+  "github.head_ref || github.run_id",
+  "github.event.pull_request.number || github.run_id",
+]);
+const DECOR = new Set(["github.workflow"]);
+function groupFinding(group) {
+  const exprs = [...group.matchAll(/\$\{\{([\s\S]*?)\}\}/g)].map((m) => m[1].trim().replace(/\s+/g, " "));
+  const literal = group.replace(/\$\{\{[\s\S]*?\}\}/g, "");
+  const known = exprs.every((expr) => OWNING.has(expr) || DECOR.has(expr));
+  if (known && !literal.includes("${{") && !literal.includes("}}") && exprs.some((expr) => OWNING.has(expr))) return null;
+  return finding("P1", "the concurrency group must be literal text plus expressions from the table in docs/sds/ci-cost-pattern.md (a pull request's own group, and a group of its own for every other run)");
+}
 function p1(doc, jobs) {
   const top = doc.concurrency;
   const out = [];
   if (!isMap(top)) out.push(finding("P1", "the workflow needs a concurrency map with a group and cancel-in-progress"));
   else {
     if (str(top.group) === "") out.push(finding("P1", "the concurrency group is missing"));
-    else if (!GROUP_NAMES_REF.test(top.group)) out.push(finding("P1", "the concurrency group must name the pull request or the branch (github.ref, github.head_ref, the pull request number)"));
+    else {
+      const bad = groupFinding(top.group);
+      if (bad) out.push(bad);
+    }
     if (!CANCEL.test(str(top["cancel-in-progress"]))) out.push(finding("P1", "cancel-in-progress must be exactly ${{ github.event_name == 'pull_request' }} (true only for a pull request, never for a push to main)"));
   }
   for (const { id, job } of jobs) {
@@ -51,9 +72,21 @@ function p1(doc, jobs) {
   return out;
 }
 
-// P2: a job that installs dependencies must cache them: an actions/cache step, or else every setup-node step in it caches (and one exists). Only the run value is read (a shell comment is not an install).
-const INSTALL = /\b(?:npm (?:ci|install)|bun install|pnpm install|yarn install)\b/;
-const installs = (step) => INSTALL.test(str(step.run).split("\n").filter((line) => !line.trim().startsWith("#")).join("\n"));
+// P2: a job that installs dependencies must cache them: an actions/cache step, or else every setup-node step in it caches (and one exists). Only the
+// run value is read, and read widely (a wrong "yes" only asks for a cache): each command (cut at newline ; & |) is split into words, and it is an install
+// when a package manager's name is followed by ci, install, i or add anywhere after it (any spacing, quotes, options), or yarn has only options. A shell comment
+// line is not an install. An install hidden in a script the file only calls is not seen.
+const MANAGERS = new Set(["npm", "pnpm", "yarn", "bun"]);
+const VERBS = new Set(["ci", "install", "i", "add"]);
+function installCommand(command) {
+  const words = command.split(/[\s()'"`]+/).filter((word) => word !== "");
+  const at = words.findIndex((word) => MANAGERS.has(word.split("/").at(-1)));
+  if (at < 0) return false;
+  const rest = words.slice(at + 1);
+  const bareYarn = words[at].endsWith("yarn") && rest.every((word) => word.startsWith("-")); // yarn alone, or with only options, installs
+  return bareYarn || rest.some((word) => VERBS.has(word));
+}
+const installs = (step) => str(step.run).split("\n").filter((line) => !line.trim().startsWith("#")).join("\n").split(/[;&|\n]+/).some(installCommand);
 const setupCaches = (step) => /^actions\/setup-(?:node|python|java|go|dotnet)@/.test(str(step.uses)) && isMap(step.with) && !["", "false"].includes(str(step.with.cache));
 const actionCaches = (step) => /^actions\/cache(?:\/restore)?@/.test(str(step.uses));
 function p2(jobs) {
@@ -69,17 +102,29 @@ function p2(jobs) {
 const named = (shown, name) => shown === name || shown.startsWith(`${name} (`);
 const p3 = (jobs, required) => required.filter((name) => !jobs.some(({ shown }) => named(shown, name))).map((name) => finding("P3", `no job shows the required check name ${JSON.stringify(name)}`));
 
-// P4: a required job has no job-level if, and does not need a job that has one (a skipped job skips what needs it).
+// P4: a required job has no job-level if, and does not need (however far back) a job that has one: a skipped job skips every job that needs it.
 function needsOf(job) {
   if (typeof job.needs === "string") return [job.needs];
-  return Array.isArray(job.needs) ? job.needs.filter((need) => typeof need === "string") : [];
+  return Array.isArray(job.needs) ? job.needs : [];
 }
 function p4(jobs, required) {
-  const skippable = new Set(jobs.filter(({ job }) => "if" in job).map(({ id }) => id));
-  return jobs.filter(({ shown }) => required.some((name) => named(shown, name))).flatMap(({ id, job }) => [
-    ...("if" in job ? [finding("P4", `job ${id} is required and has a job-level if`)] : []),
-    ...needsOf(job).filter((need) => skippable.has(need)).map((need) => finding("P4", `job ${id} is required and needs ${need}, which has a job-level if`)),
-  ]);
+  const byId = new Map(jobs.map((entry) => [entry.id, entry]));
+  const skippedBy = (id, seen) => { // the job (this one or one it needs, at any depth) whose if can skip `id`, or null
+    if (seen.has(id) || !byId.has(id)) return null;
+    seen.add(id);
+    const { job } = byId.get(id);
+    if ("if" in job) return id;
+    for (const need of needsOf(job)) {
+      const found = skippedBy(need, seen);
+      if (found) return found;
+    }
+    return null;
+  };
+  return jobs.filter(({ shown }) => required.some((name) => named(shown, name))).flatMap(({ id, job }) => {
+    if ("if" in job) return [finding("P4", `job ${id} is required and has a job-level if`)];
+    const found = skippedBy(id, new Set());
+    return found ? [finding("P4", `job ${id} is required and is skipped when ${found} is skipped (a job-level if, reached through needs)`)] : [];
+  });
 }
 
 // P5: the workflow must run for a pull request, and no trigger may carry a paths filter (a required check would stay pending).

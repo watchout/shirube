@@ -126,7 +126,9 @@ test("P1 x concurrency (F-06): the group names the run's own pull request or bra
   one(cancel("${{ github.event_name == 'pull_request' }}"));
   one(GOOD.replace(/  group: .*\n/, "  group: ci\n"), "P1", "a group every run shares");
   one(GOOD.replace(/  group: .*\n/, ""), "P1", "no group");
-  one(GOOD.replace(/  group: .*\n/, "  group: ${{ github.head_ref }}\n"));
+  const group = (value) => GOOD.replace(/  group: .*\n/, `  group: ${value}\n`);
+  for (const form of ["${{ github.head_ref || github.run_id }}", "ci-${{ github.event.pull_request.number || github.run_id }}", "${{ github.workflow }}-${{ github.head_ref || github.run_id }}", "x-${{   github.head_ref   ||   github.run_id   }}-y"]) one(group(form), `an allowed group: ${form}`);
+  for (const form of ["${{ github.head_ref }}", "${{ github.ref }}", "ci-github.ref", "${{ 'github.ref' }}", "${{ github.ref && 'ci' }}", "${{ github.workflow }}", "${{ github.head_ref || github.run_id }}-${{ github.sha }}", "${{ github.head_ref || github.run_id", "${{ github.head_ref || github.run_id }}}}", "${{ github.event.number || github.run_id }}"]) one(group(form), "P1", `a group outside the table: ${form}`);
   one(GOOD.replace("concurrency:\n", "concurrency: ci\n").replace(/  group: .*\n  cancel-in-progress: .*\n/, ""), "P1", "a scalar concurrency has no cancel condition");
   one(GOOD.replace("    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4", "    runs-on: ubuntu-latest\n    concurrency:\n      group: x\n      cancel-in-progress: true\n    steps:\n      - uses: actions/checkout@v4"), "P1", "a job's own concurrency that cancels main too");
   one(GOOD.replace("    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4", "    runs-on: ubuntu-latest\n    concurrency:\n      group: x\n      cancel-in-progress: false\n    steps:\n      - uses: actions/checkout@v4"));
@@ -143,11 +145,21 @@ test("P2 x run and uses (F-07): an install anywhere in a run (a multi-line block
   one(GOOD.replace("          cache: npm\n", "          cache: npm\n      - uses: actions/setup-node@v4\n        with: {node-version: '24'}\n"), "P2", "a second setup-node without a cache, in a flow mapping");
   one(noCache.replace("      - run: npm ci\n", "      - uses: actions/cache@v4\n        with:\n          path: ~/.npm\n          key: npm-${{ hashFiles('package-lock.json') }}\n      - run: npm ci\n"));
   one(noCache.replace("      - run: npm ci\n", "      - run: npm ci\n      - run: npm ci\n"), "P2");
+  for (const command of ["npm  ci", "npm\\tci", "npm --ignore-scripts ci", "npm i", "npm install --no-audit", "yarn", "yarn --frozen-lockfile", "yarn install", "pnpm  add x", "bun i", "sh -c \"npm ci\"", "corepack pnpm install", "cd app && npm ci", "./node_modules/.bin/../../bin/npm ci"]) {
+    one(noCache.replace("run: npm ci", `run: ${command.includes("\\t") ? JSON.stringify(command.replace("\\t", "\t")) : command}`), "P2", `an install the check must see: ${command}`);
+  }
+  for (const command of ["npm test", "npm run build", "yarn test", "echo hello", "node scripts/x.mjs"]) one(noCache.replace("run: npm ci", `run: ${command}`), `not an install: ${command}`);
 });
 
 test("P4 x needs and if (F-06): a required job is skipped by its own if, or by a job it needs that has one", () => {
   one(GOOD.replace("  hygiene:\n", "  gate:\n    if: ${{ github.event_name == 'push' }}\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo\n  hygiene:\n    needs: gate\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo\n").replace("    uses: ./.github/workflows/hygiene.yml\n", ""), "P4");
   one(GOOD.replace("  hygiene:\n", "  hygiene:\n    needs: [test]\n"), "needs a job that has no if is fine");
+  const chain = (needs) => GOOD.replace("  hygiene:\n", `  gate:\n    if: \${{ github.event_name == 'push' }}\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo\n  bridge:\n    needs: gate\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo\n  hygiene:\n    needs: ${needs}\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo\n`).replace("    uses: ./.github/workflows/hygiene.yml\n", "");
+  one(chain("bridge"), "P4", "gate (if) -> bridge -> required: skipped through two steps");
+  one(chain("[test, bridge]"), "P4", "the same through a list");
+  one(chain("test"), "a chain the required job is not on");
+  one(GOOD.replace("  test:\n", "  test:\n    needs: hygiene\n").replace("  hygiene:\n", "  hygiene:\n    needs: test\n"), "a needs cycle with no if ends (and GitHub refuses the file)");
+  one(GOOD.replace("  hygiene:\n", "  hygiene:\n    needs: ghost\n"), "a name that is no job is not judged here");
   one(GOOD.replace("  test:\n", "  test:\n    if: ${{ always() }}\n").replace("  hygiene:\n", "  hygiene:\n    needs: test\n"), "P4", "a string needs, and the job it needs has an if");
 });
 
@@ -196,6 +208,11 @@ test("P7 x steps (F-05): a shape the reader does not know, a broken file, or a j
   p7(GOOD.replace("permissions: {}\n", "permissions: {}\n\tbad: 1\n"));
   p7(GOOD.replace("  hygiene:\n", "  hygiene: not-a-map\n").replace("    uses: ./.github/workflows/hygiene.yml\n", ""));
   p7(GOOD.replace("    runs-on: ubuntu-latest\n", "    runs-on: ubuntu-latest\n    runs-on: macos-latest\n"));
+  p7(GOOD.replace("  hygiene:\n", "  hygiene:\n    needs: {test: 1}\n"));
+  p7(GOOD.replace("  hygiene:\n", "  hygiene:\n    needs: [[test]]\n"));
+  p7(GOOD.replace("name: ci\n", "name: ]invalid\n"));
+  p7(GOOD.replace("on:\n  pull_request:\n  push:\n    branches: [main]\n", "on: {pull_request: null # comment}\n"));
+  p7(GOOD.replace("  test:\n", "  test: {<<: {if: false}, runs-on: ubuntu-latest, steps: [{run: npm test}]}\n  other:\n"));
 });
 
 test("P9 the file is read as YAML reads it: wording that sits only in a comment (whole line or end of line) counts for nothing", () => {
