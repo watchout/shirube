@@ -4,7 +4,10 @@
 # pull_request_target: this definition is read from the default branch, so a PR cannot rewrite the check that judges it.
 # The gate never checks out or runs the PR's code; it only reads the GitHub API (ARC, iyasaka-arc#57 6051365638).
 # A skipped job (its if: is false) does not change the commit status sds-gate; the required check is that commit status, not this job's check run.
-# The job runs on a PR comment only when the comment is created with an audit or plan mark in its body (or an empty body), or is edited or deleted.
+# The job runs on a PR comment only when the comment, or for an edit the body before the edit, carries an audit or plan mark, or the body is empty or missing.
+# The `if:` is written by scripts/sds/gate-marks.mjs from the checker's own marks (`--print`; `--check` fails on a drift).
+# The job is named gate-call, never sds-gate: a skipped job leaves a check run named after the job, and that name must not be the required one.
+# There is no workflow-level concurrency: a skipped run would still cancel a judgment in flight. The one-run-per-PR group is on the reusable job.
 name: sds-gate
 on:
   pull_request_target:
@@ -19,13 +22,18 @@ permissions:
   checks: read
   statuses: write
 jobs:
-  sds-gate:
+  gate-call:
     if: ${{ github.event_name == 'pull_request_target' || (github.event.issue.pull_request && (
-      github.event.action != 'created' ||
       !github.event.comment.body ||
       contains(github.event.comment.body, 'sds-audit-request/1') ||
       contains(github.event.comment.body, 'sds-audit-review/1') ||
-      contains(github.event.comment.body, 'shirube-v3:control-handoff'))) }}
+      contains(github.event.comment.body, 'shirube-v3:control-handoff') ||
+      (github.event.action == 'edited' && !github.event.changes.body.from) ||
+      contains(github.event.changes.body.from, 'sds-audit-request/1') ||
+      contains(github.event.changes.body.from, 'sds-audit-review/1') ||
+      contains(github.event.changes.body.from, 'shirube-v3:control-handoff') ||
+      contains(github.event.issue.body, format('#issuecomment-{0}', github.event.comment.id)) ||
+      contains(github.event.issue.body, '\u'))) }}
     uses: watchout/shirube/.github/workflows/sds-gate.yml@<SHIRUBE_COMMIT>
     with:
       pr: ${{ github.event.pull_request.number || github.event.issue.number }}

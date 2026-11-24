@@ -1,6 +1,11 @@
 import test from "node:test";
 import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { readMarks, renderIf, checkCallers } from "../scripts/sds/gate-marks.mjs";
 
 // U2: the kit caller runs the gate on PR comments only when the comment can change a judgment.
 // The caller is read as a string (like tests/sds-gate.test.mjs). The evaluator below is a copy of the
@@ -16,11 +21,9 @@ function ifExpr(text) {
 }
 const EXPR = ifExpr(caller);
 
-// Marks: taken from the scripts the gate uses, not copied here (S3).
-const admission = read("scripts/hygiene/audit-admission.mjs");
-const requestMark = admission.match(/r\.schema === "(sds-audit-request\/1)"/)?.[1];
-const reviewMark = admission.match(/record\.schema === "(sds-audit-review\/1)"/)?.[1];
-const planMark = read("scripts/sds/plan-binding.mjs").match(/(shirube-v3:control-handoff)\(\?:/)?.[1];
+// Marks: the one place is scripts/sds/gate-marks.mjs, which reads them out of the checker's own sources (S3).
+const [requestMark, reviewMark, planMark] = readMarks(new URL("..", import.meta.url).pathname);
+const SELF = read(".github/workflows/sds-gate-self.yml");
 
 // Evaluator for the `if:` language only: contains, ==, !=, !, &&, ||, parentheses, 'strings', github.* paths.
 // A missing or null property is the empty string; `!` is true for empty / null / missing, false otherwise.
@@ -37,6 +40,12 @@ function evaluate(src, ctx) {
     if (t === "(") { const v = or(); take(")"); return v; }
     if (t === "!") return !truthy(primary());
     if (t?.startsWith("'")) return t.slice(1, -1);
+    if (t === "format") {
+      take("("); const template = or(); const args = [];
+      while (tokens[i] === ",") { i++; args.push(or()); }
+      take(")");
+      return text(template).replace(/\{(\d+)\}/g, (_, n) => text(args[n]));
+    }
     if (t === "contains") {
       take("("); const a = or(); take(","); const b = or(); take(")");
       return text(a).toLowerCase().includes(text(b).toLowerCase());
@@ -55,16 +64,18 @@ function evaluate(src, ctx) {
   assert.equal(i, tokens.length, `trailing tokens in: ${src}`);
   return truthy(result);
 }
-const comment = (action, body, issue = { pull_request: { url: "x" } }) => ({
-  github: { event_name: "issue_comment", event: { action, issue, comment: body === undefined ? {} : { body } } },
+const comment = (action, body, issue = { pull_request: { url: "x" } }, id = 1) => ({
+  github: { event_name: "issue_comment", event: { action, issue, comment: body === undefined ? { id } : { id, body } } },
 });
 const prTarget = (action) => ({ github: { event_name: "pull_request_target", event: { action, pull_request: { number: 7 } } } });
 const run = (ctx, src = EXPR) => evaluate(src, ctx);
 
-test("T1 the marks in `if:` are exactly the marks the gate's scripts use", () => {
-  const used = [...EXPR.matchAll(/contains\(github\.event\.comment\.body, '([^']+)'\)/g)].map((m) => m[1]);
-  assert.deepEqual([...used].sort(), [requestMark, reviewMark, planMark].sort());
-  assert.equal(new Set(used).size, used.length, "each mark appears once");
+test("T1 the marks in `if:` are exactly the marks the checker uses, for the body and for the body before an edit", () => {
+  for (const path of ["comment.body", "changes.body.from"]) {
+    const used = [...EXPR.matchAll(new RegExp(`contains\\(github\\.event\\.${path.replace(/\./g, "\\.")}, '([^']+)'\\)`, "g"))].map((m) => m[1]);
+    assert.deepEqual([...used].sort(), [requestMark, reviewMark, planMark].sort(), path);
+    assert.equal(new Set(used).size, used.length, "each mark appears once");
+  }
 });
 
 test("T2 the gate still reads PR labels, so labeled / unlabeled stay as triggers", () => {
@@ -104,12 +115,19 @@ test("T5 a created comment with a mark runs; an empty, missing or null body runs
   assert.equal(run(comment("created", ""), without), false, "without the clause an empty body would not run");
 });
 
-test("T6 edits and deletions run without looking at the body", () => {
-  for (const a of ["edited", "deleted"]) {
-    assert.equal(run(comment(a, "plain talk")), true, a);
-    assert.equal(run(comment(a, undefined)), true, `${a} no body`);
-  }
-  assert.ok(!/github\.event\.changes/.test(EXPR));
+const edited = (now, before, issue = { pull_request: { url: "x" } }, id = 1) => ({ github: { event_name: "issue_comment", event: { action: "edited", issue, comment: { id, body: now }, changes: before === undefined ? {} : { body: { from: before } } } } });
+
+test("T6 an edit or deletion runs only when the comment, or the body before the edit, carries a mark; a missing body or missing previous body runs", () => {
+  assert.equal(run(comment("edited", "plain talk")), true, "edit with no previous body in the payload fails closed");
+  assert.equal(run(edited("plain talk", "other talk")), false);
+  assert.equal(run(edited("plain talk", `was ${reviewMark}`)), true, "a mark removed by the edit re-judges");
+  assert.equal(run(edited(`now ${requestMark}`, "plain")), true, "a mark added by the edit re-judges");
+  assert.equal(run(edited("", "plain")), true);
+  assert.equal(run(edited(undefined, "plain")), true);
+  assert.equal(run(comment("deleted", "plain talk")), false);
+  assert.equal(run(comment("deleted", `x ${planMark}`)), true, "a deleted marked comment re-judges the same head");
+  assert.equal(run(comment("deleted", undefined)), true, "a deleted comment with no body fails closed");
+  assert.equal(run(comment("created", `x ${planMark}`, { pull_request: { url: "x" } })), true);
 });
 
 test("T7 no failure hiding, no comment text in run/with, and unreadable expressions throw", () => {
@@ -132,4 +150,93 @@ test("T8 removing the added clause restores the old condition; the skip note is 
   const header = caller.split("\nname: sds-gate\n")[0].split("\n");
   assert.equal(header.filter((l) => /skipped job/i.test(l) && /commit status/i.test(l)).length, 1);
   assert.ok(header.every((l) => l.startsWith("# ")), "the notes are comment lines");
+});
+
+test("T9 both callers carry the `if:` that gate-marks.mjs writes; a hand edit or a stale list fails the check", () => {
+  const root = new URL("..", import.meta.url).pathname;
+  assert.deepEqual(checkCallers(root, ["kit/sds-gate-caller.yml", ".github/workflows/sds-gate-self.yml"]).map((r) => r.ok), [true, true]);
+  assert.match(renderIf(readMarks(root)), /^ {4}if: \$\{\{ github\.event_name == 'pull_request_target'/);
+  assert.equal(checkCallers(root, ["kit/sds-gate-caller.yml"], () => "# nothing\n")[0].ok, false);
+  const dir = mkdtempSync(join(tmpdir(), "marks-"));
+  try {
+    for (const [path, body] of [["scripts/hygiene/audit-admission.mjs", `r.schema === "sds-audit-request/1"; record.schema === "sds-audit-review/1"`], ["scripts/sds/plan-binding.mjs", "no mark here"]]) {
+      mkdirSync(join(dir, path, ".."), { recursive: true });
+      writeFileSync(join(dir, path), body);
+    }
+    assert.throws(() => readMarks(dir), /gate mark not found in scripts\/sds\/plan-binding\.mjs/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("T10 the self caller narrows the same way, and the job's check run is never named like the required check", () => {
+  for (const text of [caller, SELF]) {
+    assert.equal(ifExpr(text), EXPR);
+    const jobId = text.split("\njobs:\n")[1].match(/^ {2}([\w-]+):/m)[1];
+    assert.notEqual(jobId, "sds-gate", "a skipped caller job leaves a check run named after the job");
+    assert.ok(!/^concurrency:/m.test(text), "a workflow-level group would let a skipped run cancel a judgment in flight");
+  }
+  const reusable = read(".github/workflows/sds-gate.yml");
+  assert.match(reusable, /\n {4}concurrency:\n {6}group: sds-gate-\$\{\{ github\.repository \}\}-\$\{\{ inputs\.pr \}\}\n {6}cancel-in-progress: true\n/);
+  assert.match(reusable, /-f context=sds-gate /);
+});
+
+test("T11 negative: after a comment without a mark the earlier verdict stays; only a marked event or an edit of a marked comment replaces it", () => {
+  const verdicts = {};
+  const apply = (ctx, head, verdict) => { if (run(ctx)) verdicts[head] = verdict; };
+  apply(prTarget("synchronize"), "h1", "failure");
+  for (const ctx of [comment("created", "author receipt: accepted"), comment("created", "thanks"), comment("deleted", "plain"), edited("still plain", "plain")]) apply(ctx, "h1", "success");
+  assert.equal(verdicts.h1, "failure", "no unmarked comment can turn a failure into a success");
+  apply(edited("plain", `${reviewMark} was here`), "h1", "success");
+  assert.equal(verdicts.h1, "success", "removing a marked body re-judges the head");
+});
+
+test("T12 the command prints the `if:`, passes on the two callers, reports DRIFT on a stale one and ERROR on a misuse", () => {
+  const cli = (...args) => spawnSync(process.execPath, ["scripts/sds/gate-marks.mjs", ...args], { cwd: new URL("..", import.meta.url).pathname, encoding: "utf8" });
+  const printed = cli("--print");
+  assert.equal([printed.status, printed.stdout.trimEnd()].join(), [0, renderIf(readMarks(new URL("..", import.meta.url).pathname))].join());
+  const ok = cli("--check", "kit/sds-gate-caller.yml", ".github/workflows/sds-gate-self.yml");
+  assert.equal([ok.status, JSON.parse(ok.stdout).verdict].join(), "0,PASS");
+  const drift = cli("--check", "kit/sds-gate-caller.yml", "package.json");
+  assert.equal([drift.status, JSON.parse(drift.stdout).verdict].join(), "1,DRIFT");
+  for (const args of [[], ["--check"], ["--unknown"], ["--check", "no/such/file.yml"]]) {
+    const bad = cli(...args);
+    assert.equal([bad.status, JSON.parse(bad.stdout).verdict].join(), "2,ERROR", args.join(" "));
+  }
+});
+
+test("T13 a comment the PR body names by URL re-judges when it is edited or deleted, marked or not; one it does not name does not", () => {
+  const pr = (body) => ({ pull_request: { url: "x" }, body });
+  const named = pr("audit: https://github.com/watchout/shirube/pull/7#issuecomment-4242 and the plan");
+  const event = { edited: (issue, id) => edited("plain talk", "plain before", issue, id), deleted: (issue, id) => comment("deleted", "plain talk", issue, id) };
+  for (const [action, make] of Object.entries(event)) {
+    assert.equal(run(make(named, 4242)), true, `${action} a named comment`);
+    assert.equal(run(make(named, 4243)), false, `${action} an unnamed comment`);
+    assert.equal(run(make(pr(undefined), 4242)), false, `${action} with no PR body`);
+  }
+  assert.equal(run(comment("created", "plain talk", named, 4243)), false);
+});
+
+// F01 (audit 1): the gate reads the PR body's `json sds-pr` block with JSON.parse, so a reference whose characters are written as
+// \uXXXX escapes names a comment the raw text never spells. The `if:` must run for every comment the PARSED reference names.
+const jsonString = (text, hide) => `"${[...text].map((ch) => (hide(ch) ? `\\u${ch.charCodeAt(0).toString(16).padStart(4, "0")}` : ch)).join("")}"`;
+const prBodyNaming = (ref, hide) => `plan:\n\`\`\`json sds-pr\n{"schema":"sds-pr/1","delivery_plan_binding":{"comment_ref":${jsonString(ref, hide)}}}\n\`\`\`\n`;
+const parsedCommentId = (body) => Number(/#issuecomment-(\d+)$/.exec(JSON.parse(body.match(/^```json sds-pr\n([\s\S]*?)\n```/m)[1]).delivery_plan_binding.comment_ref)[1]);
+
+test("T14 negative (F01): a reference the PR body writes with JSON \\u escapes still re-judges an edit or a deletion of the comment it names", () => {
+  const ref = "https://github.com/watchout/shirube/pull/7#issuecomment-4242";
+  const hides = {
+    "the #": (ch) => ch === "#",
+    "the word issuecomment": (ch) => /[a-z]/.test(ch),
+    "the digits": (ch) => /\d/.test(ch),
+    "everything": () => true,
+  };
+  for (const [what, hide] of Object.entries(hides)) {
+    const body = prBodyNaming(ref, hide);
+    const issue = { pull_request: { url: "x" }, body };
+    assert.equal(parsedCommentId(body), 4242, `${what}: the gate's own reading names comment 4242`);
+    assert.ok(!body.includes("#issuecomment-4242"), `${what}: the raw text no longer spells the reference`);
+    assert.equal(run(edited("plain talk", "plain before", issue, 4242)), true, `edit, ${what}`);
+    assert.equal(run(comment("deleted", "plain talk", issue, 4242)), true, `deletion, ${what}`);
+  }
+  const plain = { pull_request: { url: "x" }, body: "no reference and no escape here" };
+  assert.equal(run(edited("plain talk", "plain before", plain, 4242)), false, "a body with no reference and no escape still lets an unmarked edit pass");
 });

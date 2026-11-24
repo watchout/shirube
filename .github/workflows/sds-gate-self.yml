@@ -1,5 +1,5 @@
 # shirube's own gate: the kit's caller (kit/sds-gate-caller.yml) written by hand, because the kit would overwrite the reusable workflow in this repository.
-# It runs the gate at the commit pinned in .shirube/sds-pin.json, report-only (iyasaka-arc#49 6377584568). pull_request_target: a PR cannot rewrite the check that judges it; the gate never runs the PR's code.
+# It runs the gate at the commit pinned in .shirube/sds-pin.json, report-only (iyasaka-arc#49 6377584568). The `if:` is the kit caller's (scripts/sds/gate-marks.mjs writes it); the job is gate-call so that a skipped run never leaves a check named sds-gate. pull_request_target: a PR cannot rewrite the check that judges it; the gate never runs the PR's code.
 name: sds-gate-self
 on:
   pull_request_target:
@@ -14,8 +14,18 @@ permissions:
   checks: read
   statuses: write
 jobs:
-  sds-gate:
-    if: ${{ github.event_name == 'pull_request_target' || github.event.issue.pull_request }}
+  gate-call:
+    if: ${{ github.event_name == 'pull_request_target' || (github.event.issue.pull_request && (
+      !github.event.comment.body ||
+      contains(github.event.comment.body, 'sds-audit-request/1') ||
+      contains(github.event.comment.body, 'sds-audit-review/1') ||
+      contains(github.event.comment.body, 'shirube-v3:control-handoff') ||
+      (github.event.action == 'edited' && !github.event.changes.body.from) ||
+      contains(github.event.changes.body.from, 'sds-audit-request/1') ||
+      contains(github.event.changes.body.from, 'sds-audit-review/1') ||
+      contains(github.event.changes.body.from, 'shirube-v3:control-handoff') ||
+      contains(github.event.issue.body, format('#issuecomment-{0}', github.event.comment.id)) ||
+      contains(github.event.issue.body, '\u'))) }}
     uses: watchout/shirube/.github/workflows/sds-gate.yml@4d314163f783b40c42ab5d0816cb2ebd48b5e2cd
     with:
       pr: ${{ github.event.pull_request.number || github.event.issue.number }}
