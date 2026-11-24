@@ -13,6 +13,9 @@ const READ = [
   ["a dash on its own line over a block", "a:\n  -\n    k: v\n  -\n    - x\n", { a: [{ k: "v" }, ["x"]] }],
   ["a list inside a list", "a:\n  - - x\n    - y\n  - - z\n", { a: [["x", "y"], ["z"]] }],
   ["a key with no value is null", "a:\nb: 1\n", { a: null, b: "1" }],
+  ["the null words are null, as a block value and as a flow item", "a: ~\nb: null\nc: [~, Null, NULL, x]\nd: {k: ~}\n", { a: null, b: null, c: [null, null, null, "x"], d: { k: null } }],
+  ["a dash followed by a safe character starts text, not a list", "a: -1\nb: [-x, a-b]\nc: {k: -y}\n", { a: "-1", b: ["-x", "a-b"], c: { k: "-y" } }],
+  ["a CRLF file reads like an LF file", "a: x\r\nb:\r\n  - y\r\n", { a: "x", b: ["y"] }],
   ["comments: a whole line, after a space, and none inside a word or quotes", "# top\na: 1 # note\nb: x#y\nc: \"p # q\" # r\nd: 'p # q'\n\n  # indented comment\ne: 2\n", { a: "1", b: "x#y", c: "p # q", d: "p # q", e: "2" }],
   ["single quotes: '' is a quote; double quotes: escapes", "a: 'it''s'\nb: \"t\\tn\\n\\\\ \\\" \\/\"\n", { a: "it's", b: "t\tn\n\\ \" /" }],
   ["a quoted key, and a key with a space before the colon of a quoted key", "\"if\": a\n'on' : b\n", { if: "a", on: "b" }],
@@ -61,7 +64,27 @@ const REFUSED = [
   ["a plain value that starts with a flow indicator", "a: ]invalid\n", /anchor, alias, tag/],
   ["a plain value that starts with a comma", "a: ,x\n", /anchor, alias, tag/],
   ["a comment inside a flow mapping (it would end the mapping early)", "on: {pull_request: null # comment}\n", /comment inside a flow/],
-  ["a comment inside a flow list", "a: [x, #c\n]\n", /comment inside a flow/],
+  ["a comment inside a flow list", "a: [x, #c\n]\n", /comment inside a flow|indicator/],
+  ["a flow item that is a block-scalar header", "a: {run: |}\n", /indicator/],
+  ["a null word as a key", "~: x\n", /key the reader does not support/],
+  ["a plain item that starts with a colon (a symbol to a parser)", "a: :x\n", /indicator/],
+  ["a flow item that starts with a question mark and no space (a complex key to a parser)", "a: [?x]\n", /indicator/],
+  ["a question mark inside a flow item", "a: [x?]\n", /question mark/],
+  ["a document marker that is not alone on its line", "--- a: x\n", /key the reader does not support/],
+  ["an indented document marker", " ---\na: x\n", /key: value/],
+  ["a tab right after a list marker", "- \tx\n", /tab/],
+  ["a tab right after the document marker", "---\ta: x\n", /tab/],
+  ["a no-break space", "a:\u00a0x\n", /character the reader does not support/],
+  ["a byte order mark", "\ufeffa: x\n", /character the reader does not support/],
+  ["a bare carriage return", "a: x\rb: y\n", /character the reader does not support/],
+  ["a flow item that is a folded-scalar header", "a: {run: >}\n", /indicator/],
+  ["a flow item that is a list marker", "a: {run: - foo}\n", /indicator/],
+  ["a flow list item that is a lone dash", "a: [-]\n", /indicator/],
+  ["a flow item that starts with a question mark and a space", "a: [? x]\n", /indicator/],
+  ["a plain block value that starts with a pipe in a word", "a: |x\n", /block scalar header/],
+  ["a plain block value that starts with a percent", "a: %x\n", /indicator/],
+  ["a plain block value that starts with an at sign", "a: @x\n", /indicator/],
+  ["a plain block value that starts with a backtick", "a: `x\n", /indicator/],
   ["the merge key inside a flow mapping", "a: {<<: {if: false}, x: 1}\n", /merge key/],
   ["a block scalar with keep chomping", "a: |+\n  x\n", /block scalar header/],
   ["a folded block with a more-indented line", "a: >\n  one\n    two\n", /more-indented/],
@@ -89,4 +112,35 @@ test("Y2 what is refused: each shape outside the subset throws a YamlError that 
 
 test("Y3 the error names the line, so a person can find the shape that was refused", () => {
   assert.throws(() => parseYaml("a: 1\nb: 2\nc: &x 3\n"), /^YamlError: line 3: |line 3:/);
+});
+
+// Machine-built negatives (CTO ruling for shirube#121): the reader accepts only the listed forms, so every form NOT on the list must be refused. Each seed
+// puts a character into the slot where a plain scalar starts (a block value, a flow item, a flow value, a list item, a key); the character is read only when
+// it is on the list below, which is written here independently of the reader.
+const SLOTS = [(x) => `a: ${x}\n`, (x) => `a: [${x}]\n`, (x) => `a: {k: ${x}}\n`, (x) => `- ${x}\n`, (x) => `${x}: v\n`];
+const SAFE_FIRST = /^[A-Za-z0-9_./$()+=;<\\^~]$/; // ~ followed by a letter is text; the null words are tested apart
+test("Y4 a plain scalar starts only with a listed character: every other first character is refused in every slot", () => {
+  for (let code = 0x20; code < 0x7f; code++) {
+    const ch = String.fromCharCode(code);
+    for (const slot of SLOTS) {
+      const text = slot(`${ch}x`);
+      if (SAFE_FIRST.test(ch)) assert.doesNotThrow(() => parseYaml(text), JSON.stringify(text));
+      else if (ch === "#" && [0, 3].includes(SLOTS.indexOf(slot))) assert.deepEqual(plain(parseYaml(text)), SLOTS.indexOf(slot) === 0 ? { a: null } : [null]); // after "a: " or "- ", # starts a comment
+      else if (ch !== "-" && ch !== " ") assert.throws(() => parseYaml(text), YamlError, JSON.stringify(text));
+    }
+  }
+  for (const slot of SLOTS) { // "-" starts text only before a safe character, never before a space or a flow indicator
+    assert.doesNotThrow(() => parseYaml(slot("-x")), "-x");
+    for (const tail of [" ", ",", "]", "}", "[", "{"]) if (!(tail === " " && [3, 4].includes(SLOTS.indexOf(slot)))) assert.throws(() => parseYaml(slot(`-${tail}x`)), YamlError, `-${tail}`);
+  }
+});
+
+test("Y5 a control character, a space that is not a plain space, or a lone surrogate is refused wherever it sits (a tab is text)", () => {
+  const OUTSIDE = [0, 1, 7, 8, 11, 12, 13, 14, 27, 31, 0x7f, 0x85, 0xa0, 0x1680, 0x2000, 0x200a, 0x200b, 0x2028, 0x2029, 0x202f, 0x205f, 0x3000, 0xfeff, 0xd800, 0xdfff].map((c) => String.fromCharCode(c));
+  const SEEDS = ["a: x\n", "a: [x, y]\n", "a:\n  - k: v\n", "a: |\n  t\n", "a: 'q'\n", "a: \"q\"\n", "a: x # c\n"];
+  for (const seed of SEEDS) for (let at = 0; at <= seed.length; at++) for (const ch of OUTSIDE) {
+    const text = seed.slice(0, at) + ch + seed.slice(at);
+    if (ch === "\r" && seed[at] === "\n" && at > 0) continue; // a CRLF line break is a line break (read like LF)
+    assert.throws(() => parseYaml(text), YamlError, JSON.stringify(text));
+  }
 });

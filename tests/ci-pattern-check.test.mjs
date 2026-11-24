@@ -95,9 +95,12 @@ test("P8 the command: PASS exits 0, FAIL exits 1, a misuse exits 2", () => {
   const run = (...args) => spawnSync(process.execPath, [resolve(import.meta.dirname, "../scripts/ci/pattern-check.mjs"), ...args], { encoding: "utf8" });
   try {
     writeFileSync(join(dir, "good.yml"), GOOD);
-    writeFileSync(join(dir, "bad.yml"), GOOD.replace("          cache: npm\n", ""));
+    writeFileSync(join(dir, "bad.yml"), GOOD.replace("  hygiene:\n", "  hygiene:\n    if: ${{ always() }}\n"));
+    writeFileSync(join(dir, "record.yml"), GOOD.replace("          cache: npm\n", ""));
     const ok = run(join(dir, "good.yml"), "--required", "test,hygiene");
     assert.equal([ok.status, JSON.parse(ok.stdout).verdict].join(), "0,PASS");
+    const record = run(join(dir, "record.yml"), "--required", "test,hygiene");
+    assert.equal([record.status, JSON.parse(record.stdout).verdict, JSON.parse(record.stdout).findings[0].level].join(), "0,PASS,record", "P2 is a record, not a stop");
     const bad = run(join(dir, "bad.yml"), "--required", "test,hygiene");
     assert.equal([bad.status, JSON.parse(bad.stdout).verdict].join(), "1,FAIL");
     for (const args of [[], [join(dir, "good.yml")], [join(dir, "nope.yml"), "--required", "test"], [join(dir, "good.yml"), "--required"]]) {
@@ -127,11 +130,12 @@ test("P1 x concurrency (F-06): the group names the run's own pull request or bra
   one(GOOD.replace(/  group: .*\n/, "  group: ci\n"), "P1", "a group every run shares");
   one(GOOD.replace(/  group: .*\n/, ""), "P1", "no group");
   const group = (value) => GOOD.replace(/  group: .*\n/, `  group: ${value}\n`);
-  for (const form of ["${{ github.head_ref || github.run_id }}", "ci-${{ github.event.pull_request.number || github.run_id }}", "${{ github.workflow }}-${{ github.head_ref || github.run_id }}", "x-${{   github.head_ref   ||   github.run_id   }}-y"]) one(group(form), `an allowed group: ${form}`);
-  for (const form of ["${{ github.head_ref }}", "${{ github.ref }}", "ci-github.ref", "${{ 'github.ref' }}", "${{ github.ref && 'ci' }}", "${{ github.workflow }}", "${{ github.head_ref || github.run_id }}-${{ github.sha }}", "${{ github.head_ref || github.run_id", "${{ github.head_ref || github.run_id }}}}", "${{ github.event.number || github.run_id }}"]) one(group(form), "P1", `a group outside the table: ${form}`);
+  for (const form of ["ci-${{ github.event.pull_request.number || github.run_id }}", "${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}", "x-${{   github.event.pull_request.number   ||   github.run_id   }}-y"]) one(group(form), `an allowed group: ${form}`);
+  for (const form of ["${{ github.head_ref }}", "${{ github.head_ref || github.run_id }}", "${{ github.ref }}", "ci-github.ref", "${{ 'github.ref' }}", "${{ github.ref && 'ci' }}", "${{ github.workflow }}", "${{ github.head_ref || github.run_id }}-${{ github.sha }}", "${{ github.head_ref || github.run_id", "${{ github.head_ref || github.run_id }}}}", "${{ github.event.number || github.run_id }}"]) one(group(form), "P1", `a group outside the table: ${form}`);
   one(GOOD.replace("concurrency:\n", "concurrency: ci\n").replace(/  group: .*\n  cancel-in-progress: .*\n/, ""), "P1", "a scalar concurrency has no cancel condition");
   one(GOOD.replace("    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4", "    runs-on: ubuntu-latest\n    concurrency:\n      group: x\n      cancel-in-progress: true\n    steps:\n      - uses: actions/checkout@v4"), "P1", "a job's own concurrency that cancels main too");
-  one(GOOD.replace("    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4", "    runs-on: ubuntu-latest\n    concurrency:\n      group: x\n      cancel-in-progress: false\n    steps:\n      - uses: actions/checkout@v4"));
+  one(GOOD.replace("    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4", "    runs-on: ubuntu-latest\n    concurrency:\n      group: x\n      cancel-in-progress: false\n    steps:\n      - uses: actions/checkout@v4"), "P1", "any job-level concurrency, even one that cancels nothing, shares its group");
+  one(GOOD.replace("    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4", "    runs-on: ubuntu-latest\n    concurrency: fixed-test\n    steps:\n      - uses: actions/checkout@v4"), "P1", "a scalar job-level concurrency is a shared group too");
 });
 
 test("P2 x run and uses (F-07): an install anywhere in a run (a multi-line block too) needs a cache; a comment or a false cache is not one", () => {
@@ -148,6 +152,10 @@ test("P2 x run and uses (F-07): an install anywhere in a run (a multi-line block
   for (const command of ["npm  ci", "npm\\tci", "npm --ignore-scripts ci", "npm i", "npm install --no-audit", "yarn", "yarn --frozen-lockfile", "yarn install", "pnpm  add x", "bun i", "sh -c \"npm ci\"", "corepack pnpm install", "cd app && npm ci", "./node_modules/.bin/../../bin/npm ci"]) {
     one(noCache.replace("run: npm ci", `run: ${command.includes("\\t") ? JSON.stringify(command.replace("\\t", "\t")) : command}`), "P2", `an install the check must see: ${command}`);
   }
+  for (const command of [String.raw`n"pm" ci`, String.raw`\npm ci`, String.raw`npm c\i`, "$PM ci", "${PM} install", "npm.cmd ci", "C:/tools/yarn.exe"]) {
+    one(noCache.replace("run: npm ci", `run: ${command}`), "P2", `an install the shell reads after quotes and escapes are removed: ${command}`);
+  }
+  one(noCache.replace("      - run: npm ci\n", "      - run: |\n          npm \\\n            ci\n"), "P2", "a backslash-newline joins the lines");
   for (const command of ["npm test", "npm run build", "yarn test", "echo hello", "node scripts/x.mjs"]) one(noCache.replace("run: npm ci", `run: ${command}`), `not an install: ${command}`);
 });
 

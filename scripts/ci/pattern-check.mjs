@@ -1,7 +1,7 @@
 // The CI-cost pattern for a repository's ci.yml, checked by machine (CI-COST-REDUCE). Read-only, fail closed. The file is read ONCE, by the
 // reader in yaml-subset.mjs, into a structure; every rule below judges that structure, never the text. A file the reader refuses (outside its
 // small YAML subset, broken, no jobs, a job with no steps) is a FAIL (P7), never a pass. It judges the file only; it runs nothing.
-//   P1 a pull request's older run is cancelled and a push to main is not   P2 a job that installs dependencies caches them
+//   P1 a pull request's older run is cancelled and a push to main is not   P2 a job that installs dependencies caches them      (P1, P2: record only, never FAIL)
 //   P3 the required check names stay                                       P4 a required job is never skipped (no job-level if on it or, however far, on a job it needs)
 // The rules ACCEPT a small table of known-good forms (P1 groups, P6 guard and pin) and read widely when they look for what they must flag (P2 installs):
 // a form outside the table is a finding, never a pass.
@@ -11,7 +11,9 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { parseYaml, YamlError } from "./yaml-subset.mjs";
 
-const finding = (id, message) => ({ id, message });
+// P1 and P2 are RECORD rules (CTO ruling for shirube#121): they appear in findings with level "record" and never turn the verdict to FAIL. P3..P7 block.
+const RECORD_ONLY = new Set(["P1", "P2"]);
+const finding = (id, message) => ({ id, message, level: RECORD_ONLY.has(id) ? "record" : "block" });
 const isMap = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
 const str = (value) => (typeof value === "string" ? value : "");
 
@@ -36,13 +38,13 @@ function readJobs(doc) {
 }
 
 // P1: the cancel condition is exactly "this is a pull request" and the group is one of a small table of forms that give a pull request its own group
-// and every other run (a push to main) a group of its own, so only a pull request's older run is cancelled. The group is literal text and ${{ }}
-// expressions; every expression must be in the table and at least one must be a run-owning one. A job may carry its own concurrency only with the same
-// condition or false.
+// (its number, which no other pull request shares) and every other run (a push to main) a group of its own, so only that pull request's older run is
+// cancelled. The branch name is not in the table: two forks can use the same branch name. The group is literal text and ${{ }} expressions; every
+// expression must be in the table and at least one must be a run-owning one. A job-level concurrency is outside the pattern (any job-level group
+// replaces the pending runs of every run that shares it).
 const CANCEL = /^\$\{\{\s*github\.event_name\s*==\s*'pull_request'\s*\}\}$/;
 const OWNING = new Set([
   "github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id)",
-  "github.head_ref || github.run_id",
   "github.event.pull_request.number || github.run_id",
 ]);
 const DECOR = new Set(["github.workflow"]);
@@ -66,27 +68,31 @@ function p1(doc, jobs) {
     if (!CANCEL.test(str(top["cancel-in-progress"]))) out.push(finding("P1", "cancel-in-progress must be exactly ${{ github.event_name == 'pull_request' }} (true only for a pull request, never for a push to main)"));
   }
   for (const { id, job } of jobs) {
-    const own = job.concurrency;
-    if (isMap(own) && !CANCEL.test(str(own["cancel-in-progress"])) && str(own["cancel-in-progress"]) !== "false") out.push(finding("P1", `job ${id}: its own concurrency cancels more than a pull request's older run`));
+    if ("concurrency" in job) out.push(finding("P1", `job ${id}: a job-level concurrency is outside the pattern (a group shared with other pull requests or with main replaces their pending runs); put it at the workflow`));
   }
   return out;
 }
 
 // P2: a job that installs dependencies must cache them: an actions/cache step, or else every setup-node step in it caches (and one exists). Only the
-// run value is read, and read widely (a wrong "yes" only asks for a cache): each command (cut at newline ; & |) is split into words, and it is an install
-// when a package manager's name is followed by ci, install, i or add anywhere after it (any spacing, quotes, options), or yarn has only options. A shell comment
-// line is not an install. An install hidden in a script the file only calls is not seen.
+// run value is read, and read widely (a wrong "yes" only asks for a cache). The declared shell subset: comment lines are dropped, a backslash-newline joins
+// lines, quotes and backslashes are removed (so n"pm" and npm c\i read as npm ci), the text is cut into commands at newline ; & | and into words at spaces,
+// parentheses, backticks and braces. A command is an install when a package manager's name (a path or a .cmd/.exe name too) is followed by ci, install, i
+// or add anywhere after it, or yarn has only options; a word that starts with $ (a variable or a substitution) may be a package manager and counts as one.
+// An install hidden in a script the file only calls is not seen.
 const MANAGERS = new Set(["npm", "pnpm", "yarn", "bun"]);
 const VERBS = new Set(["ci", "install", "i", "add"]);
+const baseName = (word) => word.split("/").at(-1).replace(/\.(?:cmd|exe|ps1)$/, "");
+const managerWord = (word) => word.startsWith("$") || MANAGERS.has(baseName(word));
 function installCommand(command) {
-  const words = command.split(/[\s()'"`]+/).filter((word) => word !== "");
-  const at = words.findIndex((word) => MANAGERS.has(word.split("/").at(-1)));
+  const words = command.split(/[\s()`{}]+/).filter((word) => word !== "");
+  const at = words.findIndex(managerWord);
   if (at < 0) return false;
   const rest = words.slice(at + 1);
-  const bareYarn = words[at].endsWith("yarn") && rest.every((word) => word.startsWith("-")); // yarn alone, or with only options, installs
+  const bareYarn = baseName(words[at]) === "yarn" && rest.every((word) => word.startsWith("-")); // yarn alone, or with only options, installs
   return bareYarn || rest.some((word) => VERBS.has(word));
 }
-const installs = (step) => str(step.run).split("\n").filter((line) => !line.trim().startsWith("#")).join("\n").split(/[;&|\n]+/).some(installCommand);
+const shellText = (run) => run.split("\n").filter((line) => !line.trim().startsWith("#")).join("\n").replace(/\\\n/g, "").replace(/["'\\]/g, "");
+const installs = (step) => shellText(str(step.run)).split(/[;&|\n]+/).some(installCommand);
 const setupCaches = (step) => /^actions\/setup-(?:node|python|java|go|dotnet)@/.test(str(step.uses)) && isMap(step.with) && !["", "false"].includes(str(step.with.cache));
 const actionCaches = (step) => /^actions\/cache(?:\/restore)?@/.test(str(step.uses));
 function p2(jobs) {
@@ -168,7 +174,7 @@ function scopeStep(jobId, steps, step, at) {
 const p6 = (jobs) => jobs.flatMap(({ id, steps }) => steps.flatMap((step, at) => (str(step.uses).includes("/.github/actions/ci-scope") ? scopeStep(id, steps, step, at) : [])));
 
 export function checkPattern(text, { required } = {}) {
-  const fail = (findings) => ({ verdict: findings.length ? "FAIL" : "PASS", findings });
+  const fail = (findings) => ({ verdict: findings.some(({ level }) => level === "block") ? "FAIL" : "PASS", findings });
   if (typeof text !== "string" || text.trim() === "") return fail([finding("P7", "the file is empty or unreadable")]);
   if (!Array.isArray(required) || required.length === 0 || !required.every((name) => typeof name === "string" && name !== "")) return fail([finding("P7", "give the required check names (--required a,b)")]);
   let doc;

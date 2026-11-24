@@ -3,12 +3,18 @@
 //   read:    block mappings and lists (a list may sit at its key's indent), plain / 'single' / "double" scalars (every scalar is a string),
 //            | and > block scalars (clip and strip chomping, no indentation indicator), one-line flow [..] and {..}, # comments (line start or after a space), one leading ---.
 //   refused: tabs in the indent, anchors / aliases / tags / directives, the merge key (block or flow), duplicate keys, a quoted or flow value over several lines,
-//            a comment inside a flow collection, a plain scalar that starts with a flow indicator (] } ,),
+//            a comment inside a flow collection, a plain scalar that starts with a YAML indicator (] } , | > - and the others; one rule, PLAIN_START),
 //            a plain scalar that holds ": ", a second document, a line the reader cannot place by its indent.
 export class YamlError extends Error {}
 function fail(n, why) { throw new YamlError(`line ${n}: ${why}`); }
 
-const BAD_START = /^[&*!%@`?,\]}]/; // an anchor, an alias, a tag, a directive, a reserved indicator, a complex key, a flow indicator that cannot start a plain scalar
+// The list of what a plain scalar may start with: any character that is not a YAML indicator, or "-" followed by a safe character ("-1", "-x"). "?" and ":" never
+// start one (a parser may read them as a complex key or a symbol), and the null words are not text (a plain ~ null Null NULL is refused as a key, read as null as a value).
+const PLAIN_START = /^(?!(?:---|\.\.\.)(?:\s|$))(?:[^-?:,[\]{}#&*!|>'"%@`\s]|-[^\s,[\]{}])/; // a document marker (--- or ...) is not text
+const NULL_WORD = /^(?:~|null|Null|NULL)$/;
+// Characters outside the list: control characters, whitespace other than the space (a no-break space, a BOM, a line or paragraph separator and the like; a tab is
+// allowed only as text), and a lone surrogate. A parser and this reader would trim or split around them differently.
+const OUTSIDE_LIST = /[\u0000-\u0008\u000b-\u001f\u007f-\u00a0\u1680\u180e\u2000-\u200b\u2028\u2029\u202f\u205f\u3000\ufeff\ufffe\uffff\ud800-\udfff]/u;
 const isSeqItem = (text) => text === "-" || text.startsWith("- ");
 const indentOf = (raw) => raw.length - raw.trimStart().length;
 
@@ -56,7 +62,7 @@ function quotedKey(text, n) {
   const m = /^\s*:(?:\s+(.*))?$/.exec(text.slice(q.end));
   return m ? { key: q.value, rest: (m[1] ?? "").trim() } : null;
 }
-const badKey = (key) => key === "" || BAD_START.test(key) || /^[|>#,\]}]/.test(key);
+const badKey = (key) => !PLAIN_START.test(key) || NULL_WORD.test(key);
 
 // "key: rest" -> { key, rest }; null when the text is not a key line (a plain item). A key is quoted or plain; a flow start is never a key.
 function splitKey(text, n) {
@@ -84,10 +90,10 @@ class Flow { // one-line flow collections: [a, b] and {k: v}
     const start = this.i;
     while (this.i < this.t.length && !",]}[{".includes(this.t[this.i]) && !(this.t[this.i] === ":" && [undefined, " "].includes(this.t[this.i + 1]))) this.i++;
     const value = this.t.slice(start, this.i).trim();
-    if (value === "" || BAD_START.test(value)) fail(this.n, "an empty or unsupported flow item");
+    if (!PLAIN_START.test(value)) fail(this.n, "an empty flow item, or one that starts with a YAML indicator (quote it)");
     if (/(^|\s)#/.test(value)) fail(this.n, "a comment inside a flow collection (it would end the collection early)");
-    if (value.includes(":")) fail(this.n, "a colon inside a plain flow item (quote it)");
-    return value;
+    if (value.includes(":") || value.includes("?")) fail(this.n, "a colon or a question mark inside a plain flow item (quote it)");
+    return NULL_WORD.test(value) ? null : value;
   }
   sep(close) {
     const ch = this.t[this.i];
@@ -172,10 +178,10 @@ function blockScalar(st, header, parentIndent, n) {
 }
 
 function plainScalar(text, n) {
-  if (BAD_START.test(text) || isSeqItem(text)) fail(n, "an anchor, alias, tag or list marker where a value was expected");
+  if (!PLAIN_START.test(text)) fail(n, "an anchor, alias, tag, list marker or other indicator where a plain value was expected (quote it)");
   const value = text.replace(/\s+#.*$/, "").trim();
   if (/:(?:\s|$)/.test(value)) fail(n, "a plain scalar that holds \": \" (quote it)");
-  return value;
+  return NULL_WORD.test(value) ? null : value;
 }
 function scalarValue(st, text, parentIndent, n) {
   if (text[0] === "|" || text[0] === ">") return blockScalar(st, text, parentIndent, n);
@@ -243,11 +249,14 @@ function parseNode(st) {
 
 export function parseYaml(text) {
   if (typeof text !== "string") throw new YamlError("the file is not text");
+  const bad = OUTSIDE_LIST.exec(text.replace(/\r\n/g, "\n"));
+  if (bad) fail(text.slice(0, bad.index).split("\n").length, `a character the reader does not support (U+${bad[0].codePointAt(0).toString(16).padStart(4, "0")}); a control character or a space other than " " is refused`);
   const rows = text.split("\n").map((line, k) => ({ n: k + 1, raw: line.replace(/\r$/, "") }));
-  const tab = rows.find(({ raw }) => /^ *\t/.test(raw));
-  if (tab) fail(tab.n, "a tab in the indentation");
+  const tab = rows.find(({ raw }) => /^[ -]*\t/.test(raw)); // a tab after only spaces and dashes: an indent, or the separator of a list marker or of ---
+  if (tab) fail(tab.n, "a tab in the indentation or right after a list marker");
   const st = { rows, i: 0 };
-  if (peek(st)?.text === "---") st.i++;
+  const first = peek(st);
+  if (first?.text === "---" && rows[first.n - 1].raw === "---") st.i++;
   const doc = parseNode(st);
   const extra = peek(st);
   if (extra) fail(extra.n, "unexpected content after the document");

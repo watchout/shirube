@@ -10,9 +10,9 @@
 |---|---|---|---|
 | 1 docs だけの PR は重い試験を飛ばす | `.github/actions/ci-scope/action.yml` と `scripts/ci/scope.mjs` | 自分の job の中の step として呼び、重い step に `if: steps.<id>.outputs.scope == 'code'` を付ける。docs の時に残す短い試験の一覧は repo が持つ | `tests/ci-scope.test.mjs`（空・読めない・奇妙な path・文書でない種類・実行 bit・symlink・git の記録の欠け・push は code） |
 | 2 門の検査は印のある comment だけ | `scripts/sds/gate-marks.mjs` と kit の呼び出し側（shirube#119 で入る） | kit の版上げで取り込む | `tests/sds-gate-caller-trigger.test.mjs`（`if:` が検査器の印と一致、前の判定が残る負例） |
-| 3 PR の古い試験の実行を次の push で取り消す | 各 `ci.yml` の `concurrency`（PR だけ取り消し、main は取り消さない） | `cancel-in-progress` を `pull_request` の時だけ true にする。門の判定は取り消さない（呼び出し側に置かない） | `scripts/ci/pattern-check.mjs` の P1（group は下の表の形だけ・取り消しの条件はちょうど PR だけ） |
+| 3 PR の古い試験の実行を次の push で取り消す | 各 `ci.yml` の `concurrency`（PR だけ取り消し、main は取り消さない） | `cancel-in-progress` を `pull_request` の時だけ true にする。門の判定は取り消さない（呼び出し側に置かない） | `scripts/ci/pattern-check.mjs` の P1（記録だけ。group は下の表の形だけ・取り消しの条件はちょうど PR だけ・job 自身の concurrency は表の外） |
 | 4 1 分未満の job をまとめる | 各 `ci.yml` | 必須の check の名前と権限を変えずにまとめられる物だけまとめる。まとめられない物は理由を記録に書く | 同 P3・P4（名前が残る・必須の job に job-level の `if:` を付けず、`needs` をどれだけ辿っても `if:` を持つ job に届かない） |
-| 5 準備の繰り返しをやめる | 各 `ci.yml` | `setup-node` の `cache:`。PostgreSQL などを毎回入れ直さず、固定した image を service container で使う | 同 P2（依存を入れる job は cache を持つ。install は語で広く拾う: 下の表） |
+| 5 準備の繰り返しをやめる | 各 `ci.yml` | `setup-node` の `cache:`。PostgreSQL などを毎回入れ直さず、固定した image を service container で使う | 同 P2（記録だけ。依存を入れる job は cache を持つ。install は引用符・backslash・行継続を外してから語で広く拾う: 下の表） |
 
 ## 使い方
 
@@ -25,9 +25,11 @@
 - docs と判定する条件は、全部の変更について 4 つがそろう時だけ: (1) 隠し path（どの段も `.` で始まる）でない、(2) 種類が文書（`md mdx txt rst adoc png jpg jpeg gif webp pdf`）、(3) 変更の前と後の git の mode が `100644`（追加と削除は無い側が `000000`。実行 bit・symlink・submodule・型の変更は code）、(4) 許可の glob に当たる。許可は `docs/**`・`aidlc/**`・ルートの `*.md`。許可は場所であって種類ではない: glob が当てても、文書でない種類（拡張子なし・svg・json・yaml・source・script・binary）は code。mode は `git diff --raw -z` で読み、読めない記録は code。
 - 名前の変更（rename）は元の path も数える（`--no-renames`）。code から docs へ動かした変更を docs にしない。
 - 型の検査は、YAML を `scripts/ci/yaml-subset.mjs`（狭い部分集合の読み手）で 1 回だけ構造にし、規則 P1〜P7 は構造だけを見る。部分集合の外・壊れた YAML・空の `steps` は P7（FAIL）。外部の YAML の依存は足していない。
+- P1・P2 は「記録だけ」: findings（`level: "record"`）に出すが verdict を FAIL にしない（CTO の裁定 https://github.com/watchout/shirube/pull/121#issuecomment-7128228425 ）。止める検査は P3〜P7 と読み手。理由: P1・P2 は費用を減らす努力の確かめで、抜けても費用が増えるだけで判定の中身は変わらない。
+- 読み手は「読めると決めた形の一覧」だけを受け、一覧に無い形は全部 YamlError（P7 で止まる）。plain scalar の最初の 1 字は一覧（指示子でない字、または `-` の後に安全な字）だけ、入力の字は一覧（制御文字・空白以外の空白・BOM・孤立 surrogate は拒む）だけ、`~`・`null` の語は key にできない（値では null）。
 - 検査は「許す形の表」に合う物だけを通し、表の外は findings（fail closed）。悪い形を探す方式にしない（言い換えで抜けるため）。表:
-  - P1 の group: 文字と `${{ }}` だけで、式は次の 4 つだけ（空白の数は問わない）。(a) `github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id)`、(b) `github.head_ref || github.run_id`、(c) `github.event.pull_request.number || github.run_id`（以上は PR ごとの group を作り、PR 以外の run は run ごとの group になる）、(d) `github.workflow`（飾りだけ。(a)〜(c) と一緒の時だけ可）。(a)〜(c) のどれかが 1 つ要る。
-  - P2 の install: run を `;` `&` `|` 改行で切った各命令を語に分け、`npm` `pnpm` `yarn` `bun` の後ろに `ci` `install` `i` `add` のどれかがある命令、または `yarn` だけ（option のみ）の命令。空白の数・option・引用符・`sh -c` の中でも拾う。多く拾う方が厳しい側。script の中に隠れた install は見ない。
+  - P1 の group: 文字と `${{ }}` だけで、式は次の 3 つだけ（空白の数は問わない）。(a) `github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('run-{0}', github.run_id)`、(b) `github.event.pull_request.number || github.run_id`（以上は PR の番号ごとの group を作り、PR 以外の run は run ごとの group になる）、(c) `github.workflow`（飾りだけ。(a)(b) と一緒の時だけ可）。(a)(b) のどれかが 1 つ要る。branch 名（`github.head_ref`）は表に無い（別の fork が同じ branch 名を使うと group が重なる）。job 自身の `concurrency` は表の外（group を共有すると他の run の待ちを置き換える）で、workflow の 1 か所に置く。
+  - P2 の install: run の comment 行を落とし、backslash+改行で行を継ぎ、引用符と backslash を外す（`n"pm" ci`・`npm c\i` は `npm ci`）。それを `;` `&` `|` 改行で命令に切り、語に分け、`npm` `pnpm` `yarn` `bun`（path・`.cmd`・`.exe` の名前も）の後ろに `ci` `install` `i` `add` のどれかがある命令、または `yarn` だけ（option のみ）の命令を install とする。`$` で始まる語（変数・展開）は package manager かもしれないので package manager として数える。多く拾う方が厳しい側。script の中に隠れた install は見ない。
   - P4: `needs` を辿り切った上流のどれかに job-level の `if:` があれば、必須の job は skip され得る。
 - 型は step で動く。job を足さない（1 job は 1 分に切り上げて課金されるため）。
 - shirube 自身は docs の絞りを使わない: test 約 40 秒・hygiene 約 13 秒でどちらも 1 分課金のため減る分がほぼ無く、33 の試験が docs を読む。
