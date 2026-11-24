@@ -3,6 +3,7 @@
 // cannot be used (Y6), and the pinned dependency (Y7).
 import { test } from "node:test";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { openLibrary, parseYaml, PINNED_VERSION, YamlError } from "../scripts/ci/yaml-read.mjs";
 
@@ -150,6 +151,28 @@ test("Y6b a directive that reaches the library's answer still stops the read (th
   }
 });
 
+// the one-line-per-package list (name, version, integrity; the root is not a package) in sorted order, hashed; a package added, removed or changed changes it
+const PACKAGE_SET_SHA256 = "494af06f70a5627f437400b024a9fef3e49036f821321a9e7b6ceeb7f9eed110"; // 220 packages, the set before yaml became a direct dependency
+const packageSetDigest = (lock) => {
+  const rows = Object.entries(lock.packages).filter(([name]) => name !== "").map(([name, entry]) => [name, entry.version, entry.integrity].join("\t")).sort();
+  return createHash("sha256").update(`${rows.join("\n")}\n`).digest("hex");
+};
+
+test("Y7b a lockfile with one package added (or one changed or removed) is not the fixed package set", () => {
+  const lock = read("package-lock.json");
+  assert.equal(Object.keys(lock.packages).length - 1, 220);
+  const added = structuredClone(lock);
+  added.packages["node_modules/is-number"] = { version: "7.0.0", resolved: "https://registry.npmjs.org/is-number/-/is-number-7.0.0.tgz", integrity: "sha512-x", dev: true };
+  assert.notEqual(packageSetDigest(added), PACKAGE_SET_SHA256);
+  const changed = structuredClone(lock);
+  changed.packages["node_modules/yaml"].integrity = "sha512-y";
+  assert.notEqual(packageSetDigest(changed), PACKAGE_SET_SHA256);
+  const removed = structuredClone(lock);
+  delete removed.packages["node_modules/yaml"];
+  assert.notEqual(packageSetDigest(removed), PACKAGE_SET_SHA256);
+  assert.notEqual(packageSetDigest({ packages: {} }), PACKAGE_SET_SHA256);
+});
+
 test("Y7 the dependency is pinned: one exact version in package.json, the lockfile and the installed copy, with its integrity and no install script", () => {
   const INTEGRITY = "sha512-3NxN8+78OdzbT7C/WjGsyfPAtJaN3FNDsWxv7Y7mcDsT/oOmgW8BpyQQFFBnvZE3j9Y2Sdz1ULFLezL7Eb2yFw==";
   assert.equal(read("package.json").devDependencies.yaml, PINNED_VERSION);
@@ -160,7 +183,9 @@ test("Y7 the dependency is pinned: one exact version in package.json, the lockfi
   assert.equal(entry.integrity, INTEGRITY);
   assert.match(entry.resolved, /^https:\/\/registry\.npmjs\.org\/yaml\/-\/yaml-2\.9\.1\.tgz$/);
   assert.equal(entry.hasInstallScript, undefined);
-  // (iii) no new package: yaml brings none of its own (no dependency of any kind), and it was already in the tree as a dependency of other packages
+  // (iii) no new package: the set of packages (name, version, integrity) is the one that was already there before yaml became a direct dependency (the digest is
+  // computed here from the observed lockfile and compared with the fixed value); yaml also brings none of its own and is already a dependency of other packages
+  assert.equal(packageSetDigest(lock), PACKAGE_SET_SHA256);
   for (const kind of ["dependencies", "optionalDependencies", "peerDependencies"]) assert.equal(entry[kind], undefined, kind);
   const parents = Object.entries(lock.packages).filter(([name, other]) => name !== "" && other.dependencies?.yaml !== undefined).map(([name]) => name);
   assert.ok(parents.length >= 1, "yaml must already be a dependency of another package in the lockfile");
