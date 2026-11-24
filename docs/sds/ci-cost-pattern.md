@@ -8,11 +8,11 @@
 
 | 削減 | 置き場（1 か所） | 利用側がすること | 機械の確かめ |
 |---|---|---|---|
-| 1 docs だけの PR は重い試験を飛ばす | `.github/actions/ci-scope/action.yml` と `scripts/ci/scope.mjs` | 自分の job の中の step として呼び、重い step に `if: steps.<id>.outputs.scope == 'code'` を付ける。docs の時に残す短い試験の一覧は repo が持つ | `tests/ci-scope.test.mjs`（空・読めない・奇妙な path・コードの path・push は code） |
+| 1 docs だけの PR は重い試験を飛ばす | `.github/actions/ci-scope/action.yml` と `scripts/ci/scope.mjs` | 自分の job の中の step として呼び、重い step に `if: steps.<id>.outputs.scope == 'code'` を付ける。docs の時に残す短い試験の一覧は repo が持つ | `tests/ci-scope.test.mjs`（空・読めない・奇妙な path・文書でない種類・実行 bit・symlink・git の記録の欠け・push は code） |
 | 2 門の検査は印のある comment だけ | `scripts/sds/gate-marks.mjs` と kit の呼び出し側（shirube#119 で入る） | kit の版上げで取り込む | `tests/sds-gate-caller-trigger.test.mjs`（`if:` が検査器の印と一致、前の判定が残る負例） |
-| 3 PR の古い試験の実行を次の push で取り消す | 各 `ci.yml` の `concurrency`（PR だけ取り消し、main は取り消さない） | `cancel-in-progress` を `pull_request` の時だけ true にする。門の判定は取り消さない（呼び出し側に置かない） | `scripts/ci/pattern-check.mjs` の P1 |
+| 3 PR の古い試験の実行を次の push で取り消す | 各 `ci.yml` の `concurrency`（PR だけ取り消し、main は取り消さない） | `cancel-in-progress` を `pull_request` の時だけ true にする。門の判定は取り消さない（呼び出し側に置かない） | `scripts/ci/pattern-check.mjs` の P1（group が PR か branch を名指す・取り消しの条件がちょうど PR だけ） |
 | 4 1 分未満の job をまとめる | 各 `ci.yml` | 必須の check の名前と権限を変えずにまとめられる物だけまとめる。まとめられない物は理由を記録に書く | 同 P3・P4（名前が残る・必須の job に job-level の `if:` を付けない） |
-| 5 準備の繰り返しをやめる | 各 `ci.yml` | `setup-node` の `cache:`。PostgreSQL などを毎回入れ直さず、固定した image を service container で使う | 同 P2（依存を入れる job は cache を持つ） |
+| 5 準備の繰り返しをやめる | 各 `ci.yml` | `setup-node` の `cache:`。PostgreSQL などを毎回入れ直さず、固定した image を service container で使う | 同 P2（依存を入れる job は cache を持つ。複数行の run の中の install も数える） |
 
 ## 使い方
 
@@ -22,8 +22,9 @@
 
 ## 判断（1 行ずつ）
 
-- docs と判定する条件は、全部の変更 path が許可の glob に当たり、かつコード・道具の file でない時だけ。許可は `docs/**`・`aidlc/**`・ルートの `*.md`。`.github/`・`.shirube/`・`.claude/`・`.codex/`・`package*.json`・lockfile・コードの拡張子は、glob が当てても code。
+- docs と判定する条件は、全部の変更について 4 つがそろう時だけ: (1) 隠し path（どの段も `.` で始まる）でない、(2) 種類が文書（`md mdx txt rst adoc png jpg jpeg gif webp pdf`）、(3) 変更の前と後の git の mode が `100644`（追加と削除は無い側が `000000`。実行 bit・symlink・submodule・型の変更は code）、(4) 許可の glob に当たる。許可は `docs/**`・`aidlc/**`・ルートの `*.md`。許可は場所であって種類ではない: glob が当てても、文書でない種類（拡張子なし・svg・json・yaml・source・script・binary）は code。mode は `git diff --raw -z` で読み、読めない記録は code。
 - 名前の変更（rename）は元の path も数える（`--no-renames`）。code から docs へ動かした変更を docs にしない。
+- 型の検査は、YAML を `scripts/ci/yaml-subset.mjs`（狭い部分集合の読み手）で 1 回だけ構造にし、規則 P1〜P7 は構造だけを見る。部分集合の外・壊れた YAML・空の `steps` は P7（FAIL）。外部の YAML の依存は足していない。
 - 型は step で動く。job を足さない（1 job は 1 分に切り上げて課金されるため）。
 - shirube 自身は docs の絞りを使わない: test 約 40 秒・hygiene 約 13 秒でどちらも 1 分課金のため減る分がほぼ無く、33 の試験が docs を読む。
 

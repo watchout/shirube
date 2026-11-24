@@ -4,16 +4,18 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { classify, DEFAULT_ALLOW, globToRegExp } from "../scripts/ci/scope.mjs";
+import { classify, DEFAULT_ALLOW, globToRegExp, parseRaw } from "../scripts/ci/scope.mjs";
 
 const root = resolve(import.meta.dirname, "..");
-const scope = (paths, allow = DEFAULT_ALLOW) => classify(paths, allow).scope;
+// An entry is a path with its git mode before and after (100644 = a plain file); a bare path is a plain file changed in place.
+const entries = (paths) => (Array.isArray(paths) ? paths.map((path) => ({ path, old: "100644", new: "100644" })) : paths);
+const scope = (paths, allow = DEFAULT_ALLOW) => classify(entries(paths), allow).scope;
 
 test("S1 only documents: every path is allowed and none is code", () => {
-  assert.equal(scope(["docs/sds/audit-method.md", "README.md", "aidlc/spaces/default/x.md", "docs/audit/items.json"]), "docs");
+  assert.equal(scope(["docs/sds/audit-method.md", "README.md", "aidlc/spaces/default/x.md", "docs/img/a.png"]), "docs");
 });
 
 test("S2 one code path makes the whole change code, wherever the documents are", () => {
@@ -32,7 +34,7 @@ test("S4 fail closed: nothing, an unreadable value, or a path no glob names is c
   assert.equal(scope([]), "code");
   assert.equal(scope(undefined), "code");
   assert.equal(scope(["docs/a.md"], []), "code");
-  assert.equal(classify(["docs/a.md"], undefined).scope, "code", "classify itself has no default allow list");
+  assert.equal(classify(entries(["docs/a.md"]), undefined).scope, "code", "classify itself has no default allow list");
   assert.equal(scope(["lib/notes.md"]), "code");
   assert.equal(scope([""]), "code");
   assert.equal(scope([42]), "code");
@@ -58,9 +60,33 @@ test("S7 globs: ** crosses directories, * stays inside one, and nothing else is 
 });
 
 test("S8 the reason names what decided the scope (the first code path, or the count of documents)", () => {
-  assert.match(classify(["docs/a.md", "src/x.mjs"], DEFAULT_ALLOW).reason, /src\/x\.mjs/);
-  assert.match(classify(["docs/a.md", "docs/b.md"], DEFAULT_ALLOW).reason, /2 document/);
-  assert.match(classify([], DEFAULT_ALLOW).reason, /no changed path/);
+  assert.match(classify(entries(["docs/a.md", "src/x.mjs"]), DEFAULT_ALLOW).reason, /src\/x\.mjs/);
+  assert.match(classify(entries(["docs/a.md", "docs/b.md"]), DEFAULT_ALLOW).reason, /2 document/);
+  assert.match(classify(entries([]), DEFAULT_ALLOW).reason, /no changed path/);
+});
+
+// Review F-02: the allow glob names a place, not a kind. A path is a document only when its KIND is one (an allowed extension).
+test("S2b a path under docs/ is code unless its kind is a document: source, scripts, binaries, manifests, data, svg, no extension", () => {
+  for (const path of ["docs/sample.c", "docs/plugin.php", "docs/run.ps1", "docs/app.wasm", "docs/package.dev.json", "docs/items.json", "docs/a.svg", "docs/LICENSE", "docs/a.md.sh", "docs/md", "docs/.hidden.md", "docs/.vuepress/a.md"]) {
+    assert.equal(scope([path]), "code", path);
+  }
+  for (const path of ["docs/a.md", "docs/a.MD", "docs/guide.mdx", "docs/n.txt", "docs/r.rst", "docs/i.adoc", "docs/a.png", "docs/p.JPG", "docs/p.jpeg", "docs/g.gif", "docs/w.webp", "docs/p.pdf"]) {
+    assert.equal(scope([path]), "docs", path);
+  }
+});
+
+// Review F-01: the diff's modes say whether a changed path is a plain file. Only 100644 (or the absent side of an add or a delete) is.
+test("S2c a mode other than a plain file, on either side, is code: executable, symlink, submodule, a type change, no side at all", () => {
+  const one = (old, now) => classify([{ path: "docs/a.md", old, new: now }], DEFAULT_ALLOW).scope;
+  assert.equal(one("100644", "100644"), "docs");
+  assert.equal(one("000000", "100644"), "docs", "a document added");
+  assert.equal(one("100644", "000000"), "docs", "a document deleted");
+  for (const [old, now] of [["100755", "100755"], ["100644", "100755"], ["100755", "100644"], ["120000", "120000"], ["100644", "120000"], ["120000", "100644"], ["000000", "160000"], ["000000", "100755"], ["000000", "000000"], ["100664", "100644"], [undefined, "100644"], ["100644", null]]) {
+    assert.equal(one(old, now), "code", `${old} -> ${now}`);
+  }
+  assert.equal(classify([null], DEFAULT_ALLOW).scope, "code");
+  assert.equal(classify([{ old: "100644", new: "100644" }], DEFAULT_ALLOW).scope, "code", "an entry with no path");
+  assert.match(classify([{ path: "docs/run.md", old: "100755", new: "100755" }], DEFAULT_ALLOW).reason, /not a plain regular file.*100755/);
 });
 
 // The command, against a real git history.
@@ -104,6 +130,48 @@ test("S9 the command: a documents-only pull request is docs, a code one is code,
     assert.equal(renamed.scope, "code", "the old path src/x.mjs is listed too (--no-renames)");
     assert.match(renamed.reason, /src\/x\.mjs/);
   } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+// Review F-01 against a real history: an executable bit and symlinks change no content the old name-only listing could show.
+test("S9b the command reads the real modes: an executable bit, a symlink added, retargeted or swapped for a file is code; a plain edit is docs", () => {
+  const { dir, shas } = repo([{ "docs/run.md": "echo hi\n", "docs/a.md": "a\n", "docs/b.md": "b\n" }]);
+  const commit = (message) => { git(dir, "commit", "-q", "-m", message); shas.push(git(dir, "rev-parse", "HEAD")); };
+  const run = (from, to) => verdict(cli(dir, ["--event", "pull_request", "--base", shas[from], "--head", shas[to]]));
+  try {
+    git(dir, "update-index", "--chmod=+x", "docs/run.md");
+    commit("exec bit");
+    symlinkSync("a.md", join(dir, "docs/cur.md"));
+    git(dir, "add", "docs/cur.md");
+    commit("symlink added");
+    git(dir, "rm", "-q", "-f", "docs/cur.md");
+    symlinkSync("b.md", join(dir, "docs/cur.md"));
+    git(dir, "add", "docs/cur.md");
+    commit("symlink retargeted");
+    git(dir, "rm", "-q", "-f", "docs/a.md");
+    symlinkSync("b.md", join(dir, "docs/a.md"));
+    git(dir, "add", "docs/a.md");
+    commit("file swapped for a symlink");
+    writeFileSync(join(dir, "docs/b.md"), "b2\n");
+    git(dir, "add", "docs/b.md");
+    commit("plain edit");
+    for (const [from, to, why] of [[0, 1, /docs\/run\.md.*100644 -> 100755/], [1, 2, /docs\/cur\.md.*000000 -> 120000/], [2, 3, /docs\/cur\.md.*120000 -> 120000/], [3, 4, /docs\/a\.md.*100644 -> 120000/]]) {
+      const r = run(from, to);
+      assert.equal(r.scope, "code", String(to));
+      assert.match(r.reason, why);
+    }
+    assert.equal(run(4, 5).scope, "docs", "a plain edit of a plain document");
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("S9c the raw diff reader takes whole records only: a cut record, an odd count, an unknown status or a malformed record throws (so the answer is code)", () => {
+  const rec = (meta, path) => `${meta}\0${path}\0`;
+  const sha = "a".repeat(40);
+  const ok = `:100644 100644 ${sha} ${sha} M`;
+  assert.deepEqual(parseRaw(rec(ok, "docs/a.md")), [{ path: "docs/a.md", old: "100644", new: "100644" }]);
+  assert.deepEqual(parseRaw(""), []);
+  for (const bad of [`${ok}\0docs/a.md`, `${ok}\0`, rec(`:100644 100644 ${sha} ${sha} R100`, "docs/a.md"), rec(`:100644 100644 ${sha} ${sha} C`, "docs/a.md"), rec("100644 100644 x y M", "docs/a.md"), rec(":10064 100644 a b M", "docs/a.md"), rec(`${ok} extra`, "docs/a.md")]) {
+    assert.throws(() => parseRaw(bad), /git diff --raw/, JSON.stringify(bad));
+  }
 });
 
 test("S10 the command fails closed: a push, an unknown event, a missing or unknown commit, no arguments", () => {
