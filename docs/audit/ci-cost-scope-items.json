@@ -1,0 +1,32 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "watchout/shirube@f029aae5/docs/sds/audit-method.md#3",
+  "scope": "watchout/shirube の CI-COST-REDUCE の 2 本目の PR（重い門: 新しい CI の部品 .github/actions/ci-scope が、取り込んだ repo の CI で動く）の独立監査。docs だけの PR で重い試験を飛ばす判定の部品（scripts/ci/scope.mjs と composite action）、ci.yml が型に合うかを確かめる検査（scripts/ci/pattern-check.mjs）、型の文書 docs/sds/ci-cost-pattern.md、knip の入口 1 つ、試験 2 file、本項目集合。判定の中身（コードを変える PR の全試験・main の後の試験・必須の check の名前と数・網羅率の床）は変えない。shirube 自身の ci.yml と workflow は変えない。根拠は Owner の決定 OD-COMPANY-CI-REDUCE-ALL-EXCESS-20261124-001（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-7124878927 、本文 SHA-256 941f82244dd39456435e468b388b869ae950fd4b0a2b201123d83beac9e6641c）と CTO の決め（https://github.com/watchout/iyasaka-arc/issues/49#issuecomment-7124863123 、本文 SHA-256 059d610154b40d5ba472839cd0a9e14815e8c8acf2942f83c53928e9fd86bc4d）。以下の CS-xx は本項目集合の識別子であり、新しい社内規格・工程・権限ではない。全 5 項目必須。監査の PASS は Owner の許可や統合の認可の代わりにならない（Owner の exact-head は別に要る）。",
+  "items": [
+    {
+      "id": "CS-1",
+      "criterion": "範囲: 変更 path が .github/actions/ci-scope/action.yml・scripts/ci/scope.mjs・scripts/ci/pattern-check.mjs・tests/ci-scope.test.mjs・tests/ci-pattern-check.test.mjs・docs/sds/ci-cost-pattern.md・knip.jsonc（entry に scripts/ci/*.mjs! を足す 1 か所だけ）・本項目集合の 8 つだけ。.github/workflows/**、.shirube/**、既存の scripts・tests、package.json・lockfile、必須の検査の一覧・branch protection、新しい依存を変えていない。PR 本文の sds-pr block の risk_class が R4 で changed_paths が diff と一致する。",
+      "basis": "PR 本文、diff、protected-surface-owner-gate"
+    },
+    {
+      "id": "CS-2",
+      "criterion": "docs の判定は証明できた時だけ（致命の確かめ）: classify が \"docs\" を返すのは、変更 path の全部が (a) 普通の相対 path（空・親・絶対・逆スラッシュ・制御文字・二重スラッシュでない）、(b) .github/ .shirube/ .claude/ .codex/ .husky/ ・先頭が . の path・package*.json・lockfile・CODEOWNERS・Makefile・コードの拡張子（mjs js ts py sh yml yaml toml sql ほか）・Dockerfile でない、(c) 許可の glob のどれかに当たる、の 3 つが全部そろう時だけ。空・読めない・push・手動実行・未知の event・不正な commit・git の失敗・許可の glob が不正は全部 code。rename は元の path も数える（--no-renames）。docs と判定されるのに、実際にはコードや設定を変える PR の反例（許可の glob の抜け道・拡張子の抜け・大文字小文字・symlink・.md の名を持つ実行可能物）を探して書く。",
+      "basis": "scripts/ci/scope.mjs、tests/ci-scope.test.mjs S1〜S11"
+    },
+    {
+      "id": "CS-3",
+      "criterion": "action は step で、入力は env を通る: composite action が job を足さず（1 job = 1 分課金の切り上げを増やさない）、入力（allow・event-name・base・head）を run のスクリプト文へ直接 ${{ }} で書かず env を通す（コマンド注入の面を作らない）。script の path は action 自身の path（github.action_path）から決め、利用側の file を読まない。出力は scope と reason の 2 つだけで、GITHUB_OUTPUT の値は 1 行（改行を除く）。continue-on-error・|| true・--if-present を使わない（S8）。pull_request の base と head は GitHub が与える commit で、利用者の任意の文字列は 40 桁の 16 進だけを通す。",
+      "basis": ".github/actions/ci-scope/action.yml、tests S11・S12、S8・S9"
+    },
+    {
+      "id": "CS-4",
+      "criterion": "型の検査は読めない物を成功にしない: pattern-check の P1〜P7 が、空・読めない・jobs の無い file・必須名の無指定・steps も reusable も持たない job を FAIL（P7）にし、規則ごとの負例（P1 取り消し無し/main も取り消す/何も取り消さない、P2 cache 無し、P3 名前の消失・rename、P4 必須の job の job-level if、P5 paths の絞り、P6 ci-scope の未固定・id 無し・guard 無し・docs で守る）が試験にあり PASS。行の網羅率が 100%。実際の ci.yml（shirube 自身は PASS、aun は P1・P2、onza は P1・P2・P4 の候補を出す）で空振りしない。PASS しても『この PR が必須の check の名前と数を変えていない』ことの代わりにならない点を、文書が書いている。",
+      "basis": "scripts/ci/pattern-check.mjs、tests/ci-pattern-check.test.mjs P0〜P8、docs/sds/ci-cost-pattern.md"
+    },
+    {
+      "id": "CS-5",
+      "criterion": "記録と未観測: PR 本文の deviation_ledger に採った判断と採らなかった代替が 1 行ずつあり（shirube 自身の ci.yml に docs の絞りを入れない判断を含む）、手元の実測と未実施・観測していない物が分けて書かれている。private repo の composite action を別の private repo から呼べるか・github.action_path の解決・GitHub 上の実行は未観測と書いてある。文書の表の 2 行目が #119 で入る file を指すことが書いてある。CI の結果を申告で済ませていない。対象 head で test・hygiene が success、sds-gate は R4 の audit の欄が返却の前に空であるための失敗だけ。公開 repo に model 名・秘密・他 repo の非公開記録が無い。",
+      "basis": "S5・S8、sds-gate の判定、PR 本文"
+    }
+  ]
+}

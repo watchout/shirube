@@ -1,0 +1,45 @@
+# ci-scope — a STEP (not a job, so no extra billed minute) that says whether a pull request changes documents only.
+# Call it from the repository's own job, after a checkout that has the base and head commits (fetch-depth: 0):
+#   - id: scope
+#     uses: watchout/shirube/.github/actions/ci-scope@<resolved commit sha>
+#   - if: steps.scope.outputs.scope == 'code'
+#     run: npm test            # the heavy part; the documents-only run keeps its own short list
+# The answer only chooses which steps inside the caller's job run. It never skips a job, so a required check keeps its name and
+# always reports. Fail closed: "docs" only when every changed path is proven a document (scripts/ci/scope.mjs); a push, a manual run,
+# an empty or unreadable diff and any code, tool or unnamed path answer "code". Inputs reach the script through env, never its text.
+name: ci-scope
+description: Says "docs" only when a pull request changes documents only, else "code".
+inputs:
+  allow:
+    description: newline-separated globs of the paths that are documents (** crosses directories, * stays in one)
+    default: |
+      docs/**
+      aidlc/**
+      *.md
+  event-name:
+    description: the triggering event; only pull_request can answer "docs"
+    default: ${{ github.event_name }}
+  base:
+    description: the pull request's base commit
+    default: ${{ github.event.pull_request.base.sha }}
+  head:
+    description: the pull request's head commit
+    default: ${{ github.event.pull_request.head.sha }}
+outputs:
+  scope:
+    description: docs or code
+    value: ${{ steps.scope.outputs.scope }}
+  reason:
+    description: what decided the scope, one line
+    value: ${{ steps.scope.outputs.reason }}
+runs:
+  using: composite
+  steps:
+    - id: scope
+      shell: bash
+      env:
+        CI_SCOPE_ALLOW: ${{ inputs.allow }}
+        CI_SCOPE_EVENT: ${{ inputs.event-name }}
+        CI_SCOPE_BASE: ${{ inputs.base }}
+        CI_SCOPE_HEAD: ${{ inputs.head }}
+      run: node "${{ github.action_path }}/../../../scripts/ci/scope.mjs" --event "$CI_SCOPE_EVENT" --base "$CI_SCOPE_BASE" --head "$CI_SCOPE_HEAD" --allow "$CI_SCOPE_ALLOW"
