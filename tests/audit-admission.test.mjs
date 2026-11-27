@@ -18,7 +18,7 @@ function fixture() {
   const record = { schema: "sds-audit-review/1", request_digest: hash(origin.body), reviewer: "checker", targets: [{ id: "s", head }], items, blocking_findings: [], verdict: "PASS" };
   const review = { issue_url: control, user: { login: "iyasaka-ai" }, updated_at: "2026-10-01T01:00:00Z", body: json(record) };
   // CI is observed through the Actions API only: the runs on the head, then each run's jobs from its latest attempt.
-  const runs = { list: { total_count: 1, workflow_runs: [{ id: 10, head_sha: head, run_attempt: 1 }] }, jobs: { total_count: 1, jobs: [{ id: 1, run_id: 10, run_attempt: 1, name: "test", head_sha: head, status: "completed", conclusion: "success", check_run_url: `${repoUrl}/check-runs/1`, html_url: "https://github.com/watchout/shirube/actions/runs/10/job/1" }] } };
+  const runs = { list: { total_count: 1, workflow_runs: [{ id: 10, head_sha: head, run_attempt: 1 }] }, jobs: { total_count: 1, jobs: [{ id: 1, run_id: 10, run_attempt: 1, name: "test", head_sha: head, status: "completed", conclusion: "success", check_run_url: `${repoUrl}/check-runs/1`, html_url: "https://github.com/watchout/shirube/actions/runs/10/job/1" }] }, more: {} };
   const workflow = { path: target.workflow, head_sha: head, event: "pull_request", status: "completed", conclusion: "success", repository: { full_name: target.repo }, pull_requests: [{ number: 21, url: `${repoUrl}/pulls/21`, head: { sha: head }, base: { sha: base, repo: { url: repoUrl } } }] };
   const proof = { job: { run_id: 10, head_sha: head, check_run_url: `${repoUrl}/check-runs/1` }, commit: { sha: merge, parents: [{ sha: base }, { sha: head }] }, log: `2026-10-01T00:00:00Z [command]/usr/bin/git log -1 --format=%H\n2026-10-01T00:00:01Z ${merge}\n` };
   const pr = { state: "open", head: { sha: head }, base: { sha: base } };
@@ -29,7 +29,8 @@ function fixture() {
     if (path.endsWith("/comments/2")) return review;
     if (path.endsWith("/pulls/21")) return pr;
     if (path.includes(`/actions/runs?head_sha=${head}&`)) return runs.list;
-    if (/\/actions\/runs\/\d+\/jobs\?filter=latest&/.test(path)) return runs.jobs;
+    const jobsOf = /\/actions\/runs\/(\d+)\/jobs\?filter=latest&/.exec(path);
+    if (jobsOf) return runs.more[jobsOf[1]] ?? runs.jobs;
     if (path.includes("/actions/runs/")) return workflow;
     if (path.endsWith("/logs")) return proof.log;
     if (path.includes("/actions/jobs/")) return proof.job;
@@ -97,6 +98,8 @@ for (const [name, mutate] of observedMutations) test(name, () => {
 });
 // The CI read (Actions API only, OD-COMPANY-AUDIT-ADMISSION-CI-READ-VIA-ACTIONS-20261128-001): each case is refused for the CI reason,
 // not by an unrelated crash, so a weakened read cannot hide behind another failure.
+// A second run on the same head (a CI re-take after the base moved): its one job is the newest with the name.
+const newerRun = (f, conclusion) => { f.runs.list.workflow_runs.push({ id: 12, head_sha: head, run_attempt: 1 }); f.runs.list.total_count = 2; f.runs.more[12] = { total_count: 1, jobs: [{ ...f.runs.jobs.jobs[0], id: 2, run_id: 12, conclusion, check_run_url: `${repoUrl}/check-runs/2`, html_url: "https://github.com/watchout/shirube/actions/runs/12/job/2" }] }; };
 const ciMutations = [
   ["new failing rerun overrides old green", (f) => { f.runs.list.workflow_runs[0].run_attempt = 2; f.runs.jobs.jobs[0] = { ...f.runs.jobs.jobs[0], run_attempt: 2, conclusion: "failure" }; }],
   ["only an old attempt is observed", (f) => { f.runs.list.workflow_runs[0].run_attempt = 2; }],
@@ -104,7 +107,10 @@ const ciMutations = [
   ["required name is not an Actions job", (f) => { f.runs.jobs.jobs[0].name = "other"; }],
   ["no job on the head", (f) => { f.runs.jobs = { total_count: 0, jobs: [] }; }],
   ["no workflow run on the head", (f) => { f.runs.list = { total_count: 0, workflow_runs: [] }; }],
-  ["same required name twice (push and pull_request runs)", (f) => { f.runs.list.workflow_runs.push({ id: 12, head_sha: head, run_attempt: 1 }); f.runs.list.total_count = 2; }],
+  ["a newer run fails after an older green", (f) => newerRun(f, "failure")],
+  ["a newer run is skipped after an older green", (f) => newerRun(f, "skipped")],
+  ["two jobs with the name in the newest run", (f) => { f.runs.jobs.jobs.push({ ...f.runs.jobs.jobs[0], id: 3, check_run_url: `${repoUrl}/check-runs/3` }); f.runs.jobs.total_count = 2; }],
+  ["unreadable run id on a job with the name", (f) => { f.runs.jobs.jobs[0].run_id = "10"; }],
   ["skipped job", (f) => { f.runs.jobs.jobs[0].conclusion = "skipped"; }],
   ["cancelled job", (f) => { f.runs.jobs.jobs[0].conclusion = "cancelled"; }],
   ["neutral job", (f) => { f.runs.jobs.jobs[0].conclusion = "neutral"; }],
@@ -123,6 +129,14 @@ for (const [name, mutate] of ciMutations) test(`CI read refused: ${name}`, () =>
   const f = fixture(); mutate(f);
   assert.throws(() => verifyAudit(f.args, f.api, f.now), { message: CI_REFUSAL });
   assert.throws(() => verifyAudit({ ...f.args, review: undefined, preflight: true }, f.api, f.now), { message: CI_REFUSAL });
+});
+test("CI read: the newest run decides; a newer green re-take passes over an older red, and it is the job that is bound and recorded", () => {
+  const f = fixture(); f.runs.jobs.jobs[0].conclusion = "failure"; newerRun(f, "success");
+  f.proof.job = { ...f.proof.job, run_id: 12, check_run_url: `${repoUrl}/check-runs/2` };
+  const r = verifyAudit(f.args, f.api, f.now);
+  assert.equal(r.verdict, "RECEIPT_ACCEPTED"); assert.equal(r.checks[0].runs[0].id, 2);
+  assert.equal(r.checks[0].runs[0].url, "https://github.com/watchout/shirube/actions/runs/12/job/2");
+  assert.ok(f.calls.includes("repos/watchout/shirube/actions/runs/12/jobs?filter=latest&per_page=100"));
 });
 test("API unavailable and edits during verification cannot pass", () => {
   const f = fixture(); assert.throws(() => verifyAudit(f.args, () => { throw new Error("403"); }, f.now));

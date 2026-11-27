@@ -148,12 +148,14 @@ function actionJobs(t, api) {
     return page.jobs.map((j) => ({ ...j, latest: j.run_id === w.id && j.run_attempt === w.run_attempt }));
   });
 }
-// A required name passes only when exactly one job on the head carries it (none, two or more, or a name that is not an Actions job is
-// "not observed"), from its run's latest attempt, and green. The result keeps the check run's id and the job's page, as the receipt did.
+// A required name is judged on the newest run that has it, as the check-runs read did (OD-COMPANY-AUDIT-ADMISSION-CI-READ-NEWEST-JOB-WINS-20261128-002:
+// a CI re-take after the base moved adds a second run on the same head). That run must hold exactly one job with the name (none, two in it,
+// or a name that is not an Actions job is "not observed"), from its latest attempt, and green; an older green never outvotes a newer red.
+// The result keeps the check run's id and the job's page, as the receipt did.
 function successfulJob(jobs, name, t) {
-  const hits = jobs.filter((j) => j.name === name);
-  need(hits.length === 1, `Required check not observed once: ${name}`);
-  const job = hits[0], prefix = `https://api.github.com/repos/${t.repo}/check-runs/`;
+  const hits = jobs.filter((j) => j.name === name), newest = Math.max(...hits.map((j) => j.run_id)), inNewest = hits.filter((j) => j.run_id === newest);
+  need(inNewest.length === 1, `Required check not observed once: ${name}`);
+  const job = inNewest[0], prefix = `https://api.github.com/repos/${t.repo}/check-runs/`;
   const id = job.check_run_url?.startsWith(prefix) && /^(\d+)$/.exec(job.check_run_url.slice(prefix.length));
   need(job.latest && ciGreen(job, t.head) && id, `Required check not successful: ${name}`);
   return { id: Number(id[1]), html_url: job.html_url, head_sha: job.head_sha, status: job.status, conclusion: job.conclusion };
