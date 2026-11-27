@@ -107,5 +107,5 @@ test("A4: the merge version's parents must be exactly [base, head] (no third par
 test("A5: with one declaration, intake asks GitHub exactly these questions in this order, and the declared commit only in its own repo", () => {
   const f = intake({ targets: [{ declare: [D0] }] }), P = `repos/${PR_REPO}`;
   f.preflight();
-  assert.deepEqual(f.calls, ["repos/watchout/shirube/issues/comments/1", `${P}/pulls/21`, `${P}/commits/${head}/check-runs?per_page=100`, `${P}/actions/runs/10`, `${P}/actions/jobs/${JOB}`, `${P}/actions/jobs/${JOB}/logs`, `${P}/git/commits/${merge}`, `repos/${COMMON}/git/commits/${D0.commit}`, `${P}/contents/items.json?ref=${head}`]);
+  assert.deepEqual(f.calls, ["repos/watchout/shirube/issues/comments/1", `${P}/pulls/21`, `${P}/actions/runs?head_sha=${head}&per_page=100`, `${P}/actions/runs/10/jobs?filter=latest&per_page=100`, `${P}/actions/runs/10`, `${P}/actions/jobs/${JOB}`, `${P}/actions/jobs/${JOB}/logs`, `${P}/git/commits/${merge}`, `repos/${COMMON}/git/commits/${D0.commit}`, `${P}/contents/items.json?ref=${head}`]);
 });

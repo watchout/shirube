@@ -17,7 +17,8 @@ function fixture() {
   const items = ["LC-01", "LC-02"].map((id) => ({ id, result: "PASS", reason: "Checked against the source", counterexample: "Removed condition would fail", evidence: [{ target: "s", path: "design.md", line: 2, quote: "Human confirmation required" }] }));
   const record = { schema: "sds-audit-review/1", request_digest: hash(origin.body), reviewer: "checker", targets: [{ id: "s", head }], items, blocking_findings: [], verdict: "PASS" };
   const review = { issue_url: control, user: { login: "iyasaka-ai" }, updated_at: "2026-10-01T01:00:00Z", body: json(record) };
-  const runs = { total_count: 1, check_runs: [{ id: 1, name: "test", app: { slug: "github-actions" }, head_sha: head, status: "completed", conclusion: "success", html_url: "https://github.com/watchout/shirube/actions/runs/10/job/1" }] };
+  // CI is observed through the Actions API only: the runs on the head, then each run's jobs from its latest attempt.
+  const runs = { list: { total_count: 1, workflow_runs: [{ id: 10, head_sha: head, run_attempt: 1 }] }, jobs: { total_count: 1, jobs: [{ id: 1, run_id: 10, run_attempt: 1, name: "test", head_sha: head, status: "completed", conclusion: "success", check_run_url: `${repoUrl}/check-runs/1`, html_url: "https://github.com/watchout/shirube/actions/runs/10/job/1" }] } };
   const workflow = { path: target.workflow, head_sha: head, event: "pull_request", status: "completed", conclusion: "success", repository: { full_name: target.repo }, pull_requests: [{ number: 21, url: `${repoUrl}/pulls/21`, head: { sha: head }, base: { sha: base, repo: { url: repoUrl } } }] };
   const proof = { job: { run_id: 10, head_sha: head, check_run_url: `${repoUrl}/check-runs/1` }, commit: { sha: merge, parents: [{ sha: base }, { sha: head }] }, log: `2026-10-01T00:00:00Z [command]/usr/bin/git log -1 --format=%H\n2026-10-01T00:00:01Z ${merge}\n` };
   const pr = { state: "open", head: { sha: head }, base: { sha: base } };
@@ -27,7 +28,8 @@ function fixture() {
     if (path.endsWith("/comments/1")) return origin;
     if (path.endsWith("/comments/2")) return review;
     if (path.endsWith("/pulls/21")) return pr;
-    if (path.includes("/check-runs?")) return runs;
+    if (path.includes(`/actions/runs?head_sha=${head}&`)) return runs.list;
+    if (/\/actions\/runs\/\d+\/jobs\?filter=latest&/.test(path)) return runs.jobs;
     if (path.includes("/actions/runs/")) return workflow;
     if (path.endsWith("/logs")) return proof.log;
     if (path.includes("/actions/jobs/")) return proof.job;
@@ -43,6 +45,7 @@ test("authenticated, complete receipt is accepted; preflight is not a semantic v
   const f = fixture();
   assert.equal(verifyAudit(f.args, f.api, f.now).verdict, "RECEIPT_ACCEPTED");
   assert.equal(f.calls.filter((x) => x.endsWith("/pulls/21")).length, 2);
+  assert.equal(f.calls.some((x) => x.includes("/check-runs")), false); // the seat token cannot call the Checks API
   const r = verifyAudit({ ...f.args, review: undefined, preflight: true }, f.api, f.now);
   assert.equal(r.verdict, "READY_FOR_REVIEW"); assert.equal(r.semantic_audit, "NOT_RUN");
 });
@@ -72,8 +75,6 @@ const observedMutations = [
   ["wrong control source", (f) => { f.review.issue_url += "7"; }],
   ["changed head", (f) => { f.pr.head.sha = base; }],
   ["changed base", (f) => { f.pr.base.sha = head; }],
-  ["new failing rerun overrides old green", (f) => f.runs.check_runs.push({ ...f.runs.check_runs[0], id: 2, conclusion: "failure" }) && (f.runs.total_count = 2)],
-  ["forged check name from other app", (f) => { f.runs.check_runs[0].app.slug = "other"; }],
   ["same check name in another workflow", (f) => { f.workflow.path = ".github/workflows/fake.yml"; }],
   ["workflow_dispatch instead of PR CI", (f) => { f.workflow.event = "workflow_dispatch"; }],
   ["workflow not finished", (f) => { f.workflow.status = "in_progress"; }],
@@ -85,7 +86,6 @@ const observedMutations = [
   ["no observed checkout commit", (f) => { f.proof.log = ""; }],
   ["ambiguous checkout commits", (f) => { f.proof.log += f.proof.log.replace(merge, head); }],
   ["metadata matches but actual tested base is stale", (f) => { f.proof.commit.parents[0].sha = "1".repeat(40); }],
-  ["partial API page", (f) => { f.runs.total_count = 101; }],
   ["edited request", (f) => { f.origin.body += " edited"; }],
   ["multiple records", (f) => { f.review.body += "\n" + f.review.body; }],
   ["duplicate JSON key", (f) => { f.review.body = f.review.body.replace('"blocking_findings":[]', '"blocking_findings":["defect"],"blocking_findings":[]'); }],
@@ -94,6 +94,35 @@ const observedMutations = [
 ];
 for (const [name, mutate] of observedMutations) test(name, () => {
   const f = fixture(); mutate(f); assert.throws(() => verifyAudit(f.args, f.api, f.now));
+});
+// The CI read (Actions API only, OD-COMPANY-AUDIT-ADMISSION-CI-READ-VIA-ACTIONS-20261128-001): each case is refused for the CI reason,
+// not by an unrelated crash, so a weakened read cannot hide behind another failure.
+const ciMutations = [
+  ["new failing rerun overrides old green", (f) => { f.runs.list.workflow_runs[0].run_attempt = 2; f.runs.jobs.jobs[0] = { ...f.runs.jobs.jobs[0], run_attempt: 2, conclusion: "failure" }; }],
+  ["only an old attempt is observed", (f) => { f.runs.list.workflow_runs[0].run_attempt = 2; }],
+  ["job read from another run", (f) => { f.runs.jobs.jobs[0].run_id = 11; }],
+  ["required name is not an Actions job", (f) => { f.runs.jobs.jobs[0].name = "other"; }],
+  ["no job on the head", (f) => { f.runs.jobs = { total_count: 0, jobs: [] }; }],
+  ["no workflow run on the head", (f) => { f.runs.list = { total_count: 0, workflow_runs: [] }; }],
+  ["same required name twice (push and pull_request runs)", (f) => { f.runs.list.workflow_runs.push({ id: 12, head_sha: head, run_attempt: 1 }); f.runs.list.total_count = 2; }],
+  ["skipped job", (f) => { f.runs.jobs.jobs[0].conclusion = "skipped"; }],
+  ["cancelled job", (f) => { f.runs.jobs.jobs[0].conclusion = "cancelled"; }],
+  ["neutral job", (f) => { f.runs.jobs.jobs[0].conclusion = "neutral"; }],
+  ["timed out job", (f) => { f.runs.jobs.jobs[0].conclusion = "timed_out"; }],
+  ["job still running", (f) => { f.runs.jobs.jobs[0].status = "in_progress"; f.runs.jobs.jobs[0].conclusion = null; }],
+  ["job on another sha", (f) => { f.runs.jobs.jobs[0].head_sha = base; }],
+  ["run listed for another sha", (f) => { f.runs.list.workflow_runs[0].head_sha = base; }],
+  ["job without a check run", (f) => { delete f.runs.jobs.jobs[0].check_run_url; }],
+  ["job's check run in another repository", (f) => { f.runs.jobs.jobs[0].check_run_url = "https://api.github.com/repos/watchout/other/check-runs/1"; }],
+  ["partial jobs page", (f) => { f.runs.jobs.total_count = 101; }],
+  ["unreadable runs page", (f) => { f.runs.list = { message: "Resource not accessible by personal access token" }; }],
+  ["partial API page", (f) => { f.runs.list.total_count = 101; }],
+];
+const CI_REFUSAL = /^(Required check not observed once: test|Required check not successful: test|Incomplete checks observation)$/;
+for (const [name, mutate] of ciMutations) test(`CI read refused: ${name}`, () => {
+  const f = fixture(); mutate(f);
+  assert.throws(() => verifyAudit(f.args, f.api, f.now), { message: CI_REFUSAL });
+  assert.throws(() => verifyAudit({ ...f.args, review: undefined, preflight: true }, f.api, f.now), { message: CI_REFUSAL });
 });
 test("API unavailable and edits during verification cannot pass", () => {
   const f = fixture(); assert.throws(() => verifyAudit(f.args, () => { throw new Error("403"); }, f.now));

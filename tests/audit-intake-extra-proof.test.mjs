@@ -131,8 +131,10 @@ test("NFR6.1: the same input gives the same output twice, for an acceptance and 
 test("NFR5.4: a request without declarations asks GitHub the same questions in the same order as before, and none about declarations", () => {
   const f = intake({ targets: [{ declare: undefined }] }), P = `repos/${PR_REPO}`;
   f.preflight();
-  assert.deepEqual(f.calls, ["repos/watchout/shirube/issues/comments/1", `${P}/pulls/21`, `${P}/commits/${head}/check-runs?per_page=100`, `${P}/actions/runs/10`, `${P}/actions/jobs/${JOB}`, `${P}/actions/jobs/${JOB}/logs`, `${P}/git/commits/${merge}`, `${P}/contents/items.json?ref=${head}`]);
-  const g = intake({ targets: [{ declare: undefined }] }); g.run(); assert.equal(g.calls.length, 19);
+  assert.deepEqual(f.calls, ["repos/watchout/shirube/issues/comments/1", `${P}/pulls/21`, `${P}/actions/runs?head_sha=${head}&per_page=100`, `${P}/actions/runs/10/jobs?filter=latest&per_page=100`, `${P}/actions/runs/10`, `${P}/actions/jobs/${JOB}`, `${P}/actions/jobs/${JOB}/logs`, `${P}/git/commits/${merge}`, `${P}/contents/items.json?ref=${head}`]);
+  // The CI read became two Actions questions (runs on the head, then the run's jobs) in place of the one check-runs question, and the
+  // receipt reads CI twice (first and final observation): 19 + 2 = 21 (OD-COMPANY-AUDIT-ADMISSION-CI-READ-VIA-ACTIONS-20261128-001).
+  const g = intake({ targets: [{ declare: undefined }] }); g.run(); assert.equal(g.calls.length, 21);
 });
 
 test("NFR2.2: a caller that does not confirm declarations (the CI-record path) gets the old one-checkout rule, so it fails closed", () => {

@@ -47,9 +47,16 @@ export function intake(spec = {}) {
     for (const [k, v] of w.commits) maps.commits.set(k, v);
   });
   const calls = [];
+  // The checker reads CI through the Actions API only; these two answers are made at call time from the same check-run data, so a
+  // test that changes `maps.runs` changes what the Actions reads show (run id from the job page, attempt 1, check run in the PR repo).
+  const asJobs = (head) => (maps.runs.get(head)?.check_runs ?? []).map((c) => ({ id: c.id, run_id: Number(/\/actions\/runs\/(\d+)\//.exec(c.html_url)?.[1]), run_attempt: 1, name: c.name, head_sha: c.head_sha, status: c.status, conclusion: c.conclusion, check_run_url: `${API}/check-runs/${c.id}`, html_url: c.html_url }));
+  const headOfRun = (id) => [...maps.runs.keys()].find((h) => asJobs(h).some((j) => j.run_id === id));
+  const runList = (head) => { const ids = [...new Set(asJobs(head).map((j) => j.run_id))]; return { total_count: ids.length, workflow_runs: ids.map((id) => ({ id, head_sha: head, run_attempt: 1 })) }; };
+  const jobPage = (id) => { const jobs = asJobs(headOfRun(id)).filter((j) => j.run_id === id); return { total_count: jobs.length, jobs }; };
   const table = [
     [/\/issues\/comments\/1$/, () => origin], [/\/issues\/comments\/2$/, () => review],
-    [/\/pulls\/(\d+)$/, (m) => maps.pulls.get(Number(m[1]))], [/\/commits\/([a-f0-9]{40})\/check-runs\?/, (m) => maps.runs.get(m[1])],
+    [/\/pulls\/(\d+)$/, (m) => maps.pulls.get(Number(m[1]))],
+    [/\/actions\/runs\?head_sha=([a-f0-9]{40})&per_page=100$/, (m) => runList(m[1])], [/\/actions\/runs\/(\d+)\/jobs\?filter=latest&per_page=100$/, (m) => jobPage(Number(m[1]))],
     [/\/actions\/runs\/(\d+)$/, (m) => maps.workflows.get(Number(m[1]))], [/\/actions\/jobs\/(\d+)\/logs$/, (m) => maps.logs.get(Number(m[1]))],
     [/\/actions\/jobs\/(\d+)$/, (m) => maps.jobs.get(Number(m[1]))], [/^repos\/([^/]+\/[^/]+)\/git\/commits\/([a-f0-9]{40})$/, (m) => maps.commits.get(key(m[1], m[2]))],
     [/\/contents\//, (_, p) => ({ type: "file", encoding: "base64", content: Buffer.from(p.includes("/items.json?") ? set : "# Design\nHuman confirmation required\n").toString("base64") })],
