@@ -138,6 +138,13 @@ test("CI read: the newest run decides; a newer green re-take passes over an olde
   assert.equal(r.checks[0].runs[0].url, "https://github.com/watchout/shirube/actions/runs/12/job/2");
   assert.ok(f.calls.includes("repos/watchout/shirube/actions/runs/12/jobs?filter=latest&per_page=100"));
 });
+test("CI read: an older run re-run later that fails does not outvote the newer green run (judged by run, not by when it was re-run)", () => {
+  const f = fixture(); newerRun(f, "success"); f.runs.list.workflow_runs[0].run_attempt = 2;
+  f.runs.jobs.jobs[0] = { ...f.runs.jobs.jobs[0], id: 9, run_attempt: 2, conclusion: "failure", check_run_url: `${repoUrl}/check-runs/9`, html_url: "https://github.com/watchout/shirube/actions/runs/10/job/9" };
+  f.proof.job = { ...f.proof.job, run_id: 12, check_run_url: `${repoUrl}/check-runs/2` };
+  const r = verifyAudit({ ...f.args, review: undefined, preflight: true }, f.api, f.now);
+  assert.equal(r.verdict, "READY_FOR_REVIEW"); assert.equal(r.checks[0].runs[0].id, 2);
+});
 test("API unavailable and edits during verification cannot pass", () => {
   const f = fixture(); assert.throws(() => verifyAudit(f.args, () => { throw new Error("403"); }, f.now));
   let reads = 0;
