@@ -76,6 +76,11 @@ async function auditCliWithoutCredentials() {
   const f = fullRepositoryFixture(), prefix = "repos/watchout/example", designHead = "d".repeat(40), merge = "e".repeat(40), responses = new Map();
   const routes = [`${prefix}/pulls/7`, `${prefix}/issues/comments/1`, `${prefix}/commits/${designHead}/check-runs?per_page=100`, `${prefix}/actions/runs/3`, `${prefix}/actions/jobs/4`, `${prefix}/actions/jobs/4/logs`, `${prefix}/git/commits/${merge}`];
   for (const route of routes) { const response = await f.transport(route, { method: "GET" }); responses.set(route, route.endsWith("/logs") ? await response.text() : await response.json()); }
+  // The checker reads CI through the Actions API only (OD-COMPANY-AUDIT-ADMISSION-CI-READ-VIA-ACTIONS-20261128-001); its two answers are
+  // made from the fixture's one check run, so the CLI sees the same CI as before (run 3, job 4, check run 5, attempt 1).
+  const check = responses.get(`${prefix}/commits/${designHead}/check-runs?per_page=100`).check_runs[0], [, runId, jobId] = /\/actions\/runs\/(\d+)\/job\/(\d+)$/.exec(check.html_url).map(Number);
+  responses.set(`${prefix}/actions/runs?head_sha=${designHead}&per_page=100`, { total_count: 1, workflow_runs: [{ id: runId, head_sha: designHead, run_attempt: 1 }] });
+  responses.set(`${prefix}/actions/runs/${runId}/jobs?filter=latest&per_page=100`, { total_count: 1, jobs: [{ id: jobId, run_id: runId, run_attempt: 1, name: check.name, head_sha: check.head_sha, status: check.status, conclusion: check.conclusion, check_run_url: `https://api.github.com/${prefix}/check-runs/${check.id}`, html_url: check.html_url }] });
   const moduleUrl = new URL("../scripts/hygiene/audit-admission.mjs", import.meta.url), modulePath = fileURLToPath(moduleUrl), sha = (b) => createHash("sha256").update(b).digest("hex");
   const comment = responses.get(`${prefix}/issues/comments/1`), request = JSON.parse(comment.body.match(/```json\n([\s\S]*?)\n```/)[1]);
   request.verifier_sha256 = sha(readFileSync(modulePath)); request.expires_at = "2999-01-01T00:00:00Z"; // the real CLI reads the wall clock; keep the synthetic request unexpired

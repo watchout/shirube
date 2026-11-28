@@ -100,10 +100,9 @@ function targetCheck(t, api, notes = []) {
   need(Array.isArray(t.checks), "Required checks must be explicit");
   if (t.checks.length === 0) return observed;
   need(unique(t.checks), "Duplicate check names");
-  const runs = api(`repos/${t.repo}/commits/${t.head}/check-runs?per_page=100`);
-  need(runs.total_count === runs.check_runs.length, "Incomplete checks observation");
+  const jobs = actionJobs(t, api);
   for (const name of t.checks) {
-    const run = successfulRun(runs.check_runs, name, t.head);
+    const run = successfulJob(jobs, name, t);
     const testedMerge = workflowCheck(run, t, api, seen);
     observed.push({ name, id: run.id, url: run.html_url, tested_merge: testedMerge });
   }
@@ -129,10 +128,37 @@ function existsIn(d, api) {
     return answer.sha === d.commit && parents?.every((s) => text(s, /^[a-f0-9]{40}$/)) ? parents : null;
   } catch { return null; }
 }
+// The one success rule for a required check (S3): on the requested head, finished, and success. Skipped, cancelled, neutral,
+// timed out and still running are not success.
+const ciGreen = (x, head) => x?.head_sha === head && x.status === "completed" && x.conclusion === "success";
 export function successfulRun(runs, name, head) {
   const run = runs.filter((x) => x.name === name && x.app?.slug === "github-actions").sort((a, b) => b.id - a.id)[0];
-  need(run?.head_sha === head && run.status === "completed" && run.conclusion === "success", `Required check not successful: ${name}`);
+  need(ciGreen(run, head), `Required check not successful: ${name}`);
   return run;
+}
+// CI is read through the Actions API only (OD-COMPANY-AUDIT-ADMISSION-CI-READ-VIA-ACTIONS-20261128-001: the seat token cannot call
+// the Checks API). Every workflow run on the head is listed, and each run's jobs from its latest attempt; a partial page is "not observed".
+function actionJobs(t, api) {
+  const complete = (page, key) => Number.isSafeInteger(page?.total_count) && Array.isArray(page[key]) && page.total_count === page[key].length;
+  const runs = api(`repos/${t.repo}/actions/runs?head_sha=${t.head}&per_page=100`);
+  need(complete(runs, "workflow_runs"), "Incomplete checks observation");
+  return runs.workflow_runs.flatMap((w) => {
+    const page = api(`repos/${t.repo}/actions/runs/${w.id}/jobs?filter=latest&per_page=100`);
+    need(w.head_sha === t.head && complete(page, "jobs"), "Incomplete checks observation");
+    return page.jobs.map((j) => ({ ...j, latest: j.run_id === w.id && j.run_attempt === w.run_attempt }));
+  });
+}
+// A required name is judged on the newest run that has it, as the check-runs read did (OD-COMPANY-AUDIT-ADMISSION-CI-READ-NEWEST-JOB-WINS-20261128-002:
+// a CI re-take after the base moved adds a second run on the same head). That run must hold exactly one job with the name (none, two in it,
+// or a name that is not an Actions job is "not observed"), from its latest attempt, and green; an older green never outvotes a newer red.
+// The result keeps the check run's id and the job's page, as the receipt did.
+function successfulJob(jobs, name, t) {
+  const hits = jobs.filter((j) => j.name === name), newest = Math.max(...hits.map((j) => j.run_id)), inNewest = hits.filter((j) => j.run_id === newest);
+  need(inNewest.length === 1, `Required check not observed once: ${name}`);
+  const job = inNewest[0], prefix = `https://api.github.com/repos/${t.repo}/check-runs/`;
+  const id = job.check_run_url?.startsWith(prefix) && /^(\d+)$/.exec(job.check_run_url.slice(prefix.length));
+  need(job.latest && ciGreen(job, t.head) && id, `Required check not successful: ${name}`);
+  return { id: Number(id[1]), html_url: job.html_url, head_sha: job.head_sha, status: job.status, conclusion: job.conclusion };
 }
 // `seen` is the caller's set of declared commits seen in job logs; a caller that passes none (and so cannot confirm the declaration) is judged by the one-checkout rule.
 export function workflowCheck(run, t, api, seen) {

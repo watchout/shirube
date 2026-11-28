@@ -1,0 +1,42 @@
+{
+  "schema": "sds-audit-items/1",
+  "method_ref": "docs/sds/audit-method.md#3",
+  "scope": "監査の受付の checker `scripts/hygiene/audit-admission.mjs` の CI の読み方を、Checks API（`commits/{head}/check-runs`）から Actions API（`actions/runs?head_sha=`・`actions/runs/{id}/jobs?filter=latest`）に替える変更の監査。根拠は Owner の決定 OD-COMPANY-AUDIT-ADMISSION-CI-READ-VIA-ACTIONS-20261128-001（iyasaka-arc#49 7228297665）と、その 1 点を改めた OD-COMPANY-AUDIT-ADMISSION-CI-READ-NEWEST-JOB-WINS-20261128-002（#49 7230014768。同じ名前の job が複数ある時は、いちばん新しい run の物で決める）。変えてよいのは CI の読み方だけで、判定の核（必須の検査の名前・成功の定義）は変えない。同じ名前は、いちばん新しい run で決める。前の道具と結果が違うのは、古い run を後から再実行した場面だけ（前の道具は再実行でできた新しい check run で決め、新しい道具は run の新しさで決める）と、新たに止める物（古い attempt・ページ欠け・読めない答え・いちばん新しい run の中の同じ名前の重なり）だけ（ADA-07）。以下の ADA-xx は本項目集合の識別子であり、新しい社内規格・工程・権限ではない。全 7 項目必須。リスクの区分は R3 で、監査の PASS は Owner の許可や統合の認可の代わりにならない（重い門 = 統合の前に対象 head への Owner の exact-head を別に取る）。中継が固定している checker の登録の入れ替え（Owner の手）と、席の依頼の verifier_sha256 の切り替えは、この単位の範囲の外。本物の GitHub での確かめは作者が読むだけで行った記録であり（PR 本文）、監査の証拠に数えるかは監査の席が決める。",
+  "items": [
+    {
+      "id": "ADA-01",
+      "criterion": "範囲: base からの差分が `scripts/hygiene/audit-admission.mjs`、`tests/audit-admission.test.mjs`、`tests/audit-intake-extra-derive.test.mjs`、`tests/audit-intake-extra-fixtures.mjs`、`tests/audit-intake-extra-proof.test.mjs`、`tests/ci-record-entry.test.mjs`、本項目集合の file、PR 本文だけである。`package.json`・lockfile・`.github/**`・`.shirube/**`・`configs/**`・`scripts/sds/**`・`scripts/hygiene/lib.mjs` に差分が無い。新しい npm 依存・secret・権限・外部 action が無い。判定は全部この 1 file（依頼の `verifier_sha256` が結ばれる唯一の file）に収まる。PR 本文の `json sds-pr` の risk_class と label が R3、`changed_paths` が差分と一致する。",
+      "basis": "Owner の決定 7228297665（変えてよいのは CI の読み方だけ）"
+    },
+    {
+      "id": "ADA-02",
+      "criterion": "読みの置き換え: 受付の道（`--preflight` と `--review`、最後の読み直しを含む）が `check-runs` を 1 度も呼ばない。CI は `repos/{repo}/actions/runs?head_sha={head}&per_page=100` と、その各 run の `repos/{repo}/actions/runs/{id}/jobs?filter=latest&per_page=100` だけで読む。両方の頁で `total_count` が件数と等しくない時、件数や形が読めない時、run の `head_sha` が依頼の head と違う時は、`Incomplete checks observation` で止まる（成功と読まない）。",
+      "basis": "Owner の決定 7228297665（止まる側の形）、S5（観測できずを成功に読み替えない）"
+    },
+    {
+      "id": "ADA-03",
+      "criterion": "判定の核は 1 つ: 成功の定義は `ciGreen` の 1 か所（依頼の head と同じ sha・`status` が `completed`・`conclusion` が `success`）で、Checks API の道（`successfulRun`、`scripts/sds/ci-record-design-audit.mjs` が使う）と Actions API の道（`successfulJob`）の両方がこれを呼ぶ。skipped・cancelled・neutral・timed_out・進行中（`in_progress`、conclusion なし）は成功に数えない。`successfulRun` の外から見た振る舞いは変わらない。",
+      "basis": "S3（知識は 1 か所）、Owner の決定 7228297665（判定の核は 1 つ）"
+    },
+    {
+      "id": "ADA-04",
+      "criterion": "止まる側: 必須の名前ごとに、head の上でその名前を持つ job のうち、いちばん新しい run（run の id が最大）の物で決める。その run の中でその名前の job がちょうど 1 つの時だけ進み、0 個・その run の中に 2 つ以上・Actions の job でない名前・run の id が文字列の物（GitHub が返さない形）は `Required check not observed once: {name}` で止まる。選んだ job も、自分の run の最新の attempt の物（`run_id` が run の id と同じ、`run_attempt` が run の `run_attempt` と同じ）で、成功で、`check_run_url` が `https://api.github.com/repos/{依頼の repo}/check-runs/{数字}` の形の時だけ通る。そうでなければ `Required check not successful: {name}` で止まる。古い run の成功が、新しい run の失敗・skip を覆さない。新しい run の成功は古い run の失敗に勝ち（CI の取り直し）、その新しい job が後の照らし（`workflowCheck`・`checkoutProof`）に渡り、受領に記録される。受領の記録の形（`id` = check run の id、`url` = job の頁）は前と同じ。",
+      "basis": "Owner の決定 7228297665（最新の attempt だけ・0 個と Actions 以外は観測できず）と 7230014768（同じ名前はいちばん新しい run で決める）"
+    },
+    {
+      "id": "ADA-05",
+      "criterion": "後の照らしは変わらない: `workflowCheck`（workflow の path・event・PR・base・head）、`checkoutProof`（job と run と check run の結び付き・log の tested merge・parents が [base, head]）、`extra_checkouts`、`base_moved`、受領の照らし（`reviewChecks`・`itemResults`・依頼と返りの編集の検出）に差分が無く、新しい読みの結果がそのまま渡る。`--review` の最後の読み直しも同じ新しい読みで行う。",
+      "basis": "Owner の決定 7228297665（CI の読み方だけを替える）"
+    },
+    {
+      "id": "ADA-06",
+      "criterion": "試験: 新しい負例（再実行の失敗・古い attempt・別の run・Actions でない名前・job 0・run 0・新しい run の失敗と skip（古い成功の後）・いちばん新しい run の中の同じ名前 2 つ・run の id が数字でない・skipped・cancelled・neutral・timed_out・進行中・別の sha の job・別の sha の run・check run なし・check run が別の repo・job の頁欠け・読めない頁・run の頁欠け）が、前検査と受領の両方で、断る理由の文まで照らして止まる（ほかの理由で落ちて通る形にしない）。正の例 = 古い失敗の後の新しい成功が通り、その新しい job が結び付けと受領に使われる。古い run を後から再実行して失敗しても、新しい run の成功で通る形（ADA-07 の (1)）も試験で固定する。最初の受付の試験が `check-runs` への問いが 0 回である事を照らす。既存の試験の直しは、新しい読みに答える偽の GitHub（同じ check run の data から作る）、問いの順と数（19 → 21）の更新、Checks API の時の負例「別の app の同じ名前」を Actions の読みでの同じ意味の負例「Actions の job でない名前」に替えた 1 件だけで、ほかの既存の負例は消していない。全体の試験と、checker の行の網羅率（許された 2 か所の外は 100%）が通る。",
+      "basis": "Owner の決定 7228297665（負例の試験を付ける）、S8"
+    },
+    {
+      "id": "ADA-07",
+      "criterion": "構造の守り: 同じ名前は、いちばん新しい run で決める。前の道具と結果が違うのは、(1) 古い run を後から再実行した場面（前の道具は再実行でできた新しい check run で決め、古い run の再実行の失敗で止まる。新しい道具は新しい run の成功で通る。どちらも同じ head の上の run）と、(2) 新たに止める物（古い attempt の job・ページ欠け・読めない答え・いちばん新しい run の中の同じ名前の重なり）だけ。(1) の振る舞いは試験で固定する。ほかに、前の道具が止めた依頼を通す形は無い。依頼の投稿者・独立の reviewer・verifier の指紋・期限の照らしに差分が無い。秘密の値・token を読む・出す code が無く、断る理由の文に依頼の外から来た値（API の答えの中身）を入れていない（必須の名前は依頼の中の値）。",
+      "basis": "aidlc-only §2 監査の門（版 24）の構造の守り、KY の表"
+    }
+  ]
+}
